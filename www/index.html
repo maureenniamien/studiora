@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Studiora — Coach IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #F7F6F2;
+  --bg2:       #EFEDE7;
+  --white:     #FFFFFF;
+  --em:        #0B6E4F;
+  --em2:       #0A5C42;
+  --em-soft:   #E3F2EB;
+  --em-mid:    #C2E0CF;
+  --em-glow:   rgba(11,110,79,0.10);
+  --purple:    #5B4FCF;
+  --pur-soft:  #EDE9FF;
+  --amber:     #C47A0B;
+  --amb-soft:  #FEF3DC;
+  --red:       #D13A3A;
+  --red-soft:  #FDEAEA;
+  --text:      #1A1A1A;
+  --text2:     #4A5568;
+  --text3:     #94A3B8;
+  --border:    #E2DDD5;
+  --border2:   #D4CEC5;
+  --r:         20px;
+  --r2:        14px;
+  --r3:        10px;
+  --shadow:    0 2px 12px rgba(0,0,0,0.07);
+  --shadow2:   0 8px 32px rgba(0,0,0,0.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;overflow:hidden;user-select:none}
+
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s}
+.screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
+.screen.slide-left{transform:translateX(-30%);opacity:0;pointer-events:none}
+
+/* ── SCROLL ── */
+.scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.scroll-body::-webkit-scrollbar{display:none}
+
+/* ── TYPOGRAPHY ── */
+.display{font-family:'Fraunces',serif}
+
+/* ── TOPBAR ── */
+.topbar{padding:calc(env(safe-area-inset-top,14px) + 10px) 20px 10px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:50}
+.back-btn{display:flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:7px 14px;color:var(--text2);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
+.back-btn:active{opacity:.7}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.04)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:3px 0;transition:transform .15s}
+.nav-item:active{transform:scale(.9)}
+.nav-icon{font-size:21px;line-height:1}
+.nav-label{font-size:10px;font-weight:600;color:var(--text3)}
+.nav-item.active .nav-label{color:var(--em)}
+.nav-active-dot{width:4px;height:4px;border-radius:50%;background:var(--em)}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.card2{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px}
+
+/* ── BUTTONS ── */
+.btn-em{background:linear-gradient(135deg,var(--em),var(--em2));border:none;border-radius:var(--r2);padding:15px;color:#fff;font-size:15px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;width:100%;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 18px rgba(11,110,79,0.25)}
+.btn-em:active{transform:scale(.97);box-shadow:none}
+.btn-em:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-outline{background:var(--white);border:1.5px solid var(--border2);border-radius:var(--r2);padding:13px;color:var(--text);font-size:14px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;width:100%;cursor:pointer;transition:border-color .2s}
+.btn-outline:active{border-color:var(--em);opacity:.8}
+.btn-pill{background:var(--em-soft);border:1px solid var(--em-mid);border-radius:20px;padding:7px 14px;color:var(--em);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap;transition:all .15s}
+.btn-pill:active{background:var(--em);color:#fff}
+
+/* ── INPUTS ── */
+.input{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);padding:13px 16px;color:var(--text);font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;width:100%;outline:none;transition:border-color .2s,background .2s}
+.input:focus{border-color:var(--em);background:var(--white)}
+.input::placeholder{color:var(--text3)}
+label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:7px;text-transform:uppercase;letter-spacing:.6px}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700}
+.badge-em{background:var(--em-soft);color:var(--em);border:1px solid var(--em-mid)}
+.badge-pur{background:var(--pur-soft);color:var(--purple);border:1px solid rgba(91,79,207,.2)}
+.badge-amb{background:var(--amb-soft);color:var(--amber);border:1px solid rgba(196,122,11,.2)}
+.badge-red{background:var(--red-soft);color:var(--red);border:1px solid rgba(209,58,58,.2)}
+
+/* ── MODAL ── */
+.modal-overlay{position:absolute;inset:0;background:rgba(26,26,26,0.5);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.active{opacity:1;pointer-events:all}
+.modal-sheet{background:var(--white);border-radius:24px 24px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));width:100%;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);border-top:1px solid var(--border)}
+.modal-overlay.active .modal-sheet{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px}
+
+/* ── TOAST ── */
+.toast{position:absolute;bottom:95px;left:16px;right:16px;background:var(--text);border-radius:14px;padding:13px 18px;font-size:13px;font-weight:500;color:#fff;display:flex;align-items:center;gap:10px;z-index:300;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── PROGRESS ── */
+.prog-track{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes typing{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes pulse-em{0%,100%{box-shadow:0 0 0 0 rgba(11,110,79,.35)}50%{box-shadow:0 0 0 10px rgba(11,110,79,0)}}
+.a1{animation:fadeUp .35s ease both}
+.a2{animation:fadeUp .35s .07s ease both}
+.a3{animation:fadeUp .35s .14s ease both}
+.a4{animation:fadeUp .35s .21s ease both}
+.a5{animation:fadeUp .35s .28s ease both}
+
+/* ── ONBOARDING ── */
+#screen-onboarding{background:linear-gradient(160deg,#FFFEF9 0%,var(--em-soft) 100%);justify-content:center;align-items:center;padding:40px 28px;text-align:center}
+.brand-mark{width:100px;height:100px;border-radius:28px;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:48px;margin:0 auto 28px;box-shadow:0 12px 40px rgba(11,110,79,.3);animation:float 3s ease-in-out infinite}
+
+/* ── HOME ── */
+.subject-chip{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.subject-chip:active{transform:scale(.97);border-color:var(--em)}
+
+/* ── CHAT ── */
+.msg-row{display:flex;align-items:flex-end;gap:8px;margin-bottom:10px;animation:fadeUp .25s ease both}
+.msg-row.user{justify-content:flex-end}
+.msg-bubble{max-width:82%;padding:11px 15px;font-size:13.5px;line-height:1.65;border-radius:18px;position:relative}
+.msg-bubble.ai{background:var(--white);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.msg-bubble.user{background:linear-gradient(135deg,var(--em),var(--em2));color:#fff;border-bottom-right-radius:4px}
+.msg-time{font-size:10px;color:var(--text3);margin-top:3px;text-align:right}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--em);animation:typing 1.1s ease-in-out infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+.avatar-ai{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 2px 8px rgba(11,110,79,.2)}
+
+/* ── QUIZ ── */
+.quiz-option{width:100%;background:var(--white);border:2px solid var(--border);border-radius:14px;padding:14px 18px;text-align:left;display:flex;align-items:center;gap:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text);transition:all .2s;margin-bottom:10px}
+.quiz-option:active{transform:scale(.98)}
+.quiz-option.correct{background:var(--em-soft);border-color:var(--em);color:var(--em)}
+.quiz-option.wrong{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.quiz-option.selected{background:var(--bg2);border-color:var(--em)}
+.option-letter{width:30px;height:30px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+
+/* ── PROGRESS SCREEN ── */
+.week-day{display:flex;flex-direction:column;align-items:center;gap:4px}
+.week-bar{width:28px;border-radius:4px 4px 0 0;transition:height .8s cubic-bezier(.4,0,.2,1)}
+
+/* ── PROFILE ── */
+.pref-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.toggle{width:46px;height:26px;border-radius:13px;position:relative;cursor:pointer;transition:background .3s}
+.toggle.on{background:var(--em)}
+.toggle.off{background:var(--border2)}
+.toggle-thumb{width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;transition:left .3s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.toggle.on .toggle-thumb{left:23px}
+.toggle.off .toggle-thumb{left:3px}
+
+/* ── FLASH CARDS ── */
+.flashcard{width:100%;aspect-ratio:3/2;border-radius:var(--r);perspective:1000px;cursor:pointer}
+.flashcard-inner{width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);position:relative}
+.flashcard.flipped .flashcard-inner{transform:rotateY(180deg)}
+.flashcard-face{position:absolute;inset:0;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fc-front{background:linear-gradient(135deg,var(--em),var(--em2));color:#fff;box-shadow:0 8px 32px rgba(11,110,79,.25)}
+.fc-back{background:var(--white);border:1px solid var(--border);transform:rotateY(180deg);box-shadow:var(--shadow2)}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:2px dashed var(--em-mid);background:var(--em-glow);border-radius:var(--r2);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:active{background:var(--em-soft);border-color:var(--em)}
+
+/* ── STREAK ── */
+.streak-flame{font-size:28px;animation:float 2s ease-in-out infinite}
+
+/* ── SUGGESTIONS ── */
+.suggestion-scroll{display:flex;gap:8px;overflow-x:auto;padding:8px 0 4px}
+.suggestion-scroll::-webkit-scrollbar{display:none}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════ ONBOARDING ═══════════════════ -->
+<div id="screen-onboarding" class="screen">
+  <div class="brand-mark">🎓</div>
+  <h1 class="display" style="font-size:38px;font-weight:900;line-height:1.1;margin-bottom:10px;color:var(--em2)">Studiora</h1>
+  <p style="font-size:16px;color:var(--text2);line-height:1.6;max-width:280px;margin:0 auto 10px">Ton coach IA qui comprend les programmes africains.</p>
+  <p style="font-size:13px;color:var(--text3);margin-bottom:40px">BEPC · BAC · Licence · Concours grandes écoles</p>
+  <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px">
+    <button class="btn-em" onclick="showScreen('screen-register')">Commencer gratuitement →</button>
+    <button class="btn-outline" onclick="showScreen('screen-login')">J'ai déjà un compte</button>
+  </div>
+  <p style="font-size:11px;color:var(--text3);margin-top:24px;line-height:1.5">🔒 Tes données restent privées · Fonctionne hors ligne</p>
+</div>
+
+<!-- ═══════════════════ LOGIN ═══════════════════ -->
+<div id="screen-login" class="screen hidden">
+  <div class="scroll-body" style="padding:calc(env(safe-area-inset-top,20px)+24px) 24px 40px">
+    <button onclick="goBack()" style="background:none;border:none;font-size:22px;cursor:pointer;margin-bottom:28px;display:block">←</button>
+    <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Bon retour</p>
+    <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px">Reconnecte-toi</h2>
+    <p style="color:var(--text2);margin-bottom:30px">Continue là où tu t'es arrêté·e</p>
+    <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email"></div>
+    <div style="margin-bottom:8px"><label class="field-label">Mot de passe</label><input class="input" id="login-pwd" placeholder="••••••••" type="password"></div>
+    <p style="text-align:right;font-size:12px;color:var(--em);font-weight:600;margin-bottom:26px;cursor:pointer">Mot de passe oublié ?</p>
+    <button class="btn-em" onclick="doLogin()">Se connecter</button>
+    <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--text2)">Pas encore inscrit ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-register')">Créer un compte</span></p>
+  </div>
+</div>
+
+<!-- ═══════════════════ REGISTER ═══════════════════ -->
+<div id="screen-register" class="screen hidden">
+  <div class="scroll-body" style="padding:calc(env(safe-area-inset-top,20px)+24px) 24px 40px">
+    <button onclick="goBack()" style="background:none;border:none;font-size:22px;cursor:pointer;margin-bottom:28px;display:block">←</button>
+    <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Inscription gratuite</p>
+    <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:26px">Crée ton profil</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div><label class="field-label">Prénom</label><input class="input" id="reg-prenom" placeholder="Aminata"></div>
+      <div><label class="field-label">Nom</label><input class="input" id="reg-nom" placeholder="Koné"></div>
+    </div>
+    <div style="margin-bottom:14px"><label class="field-label">Email</label><input class="input" id="reg-email" type="email" placeholder="aminata@gmail.com"></div>
+    <div style="margin-bottom:14px">
+      <label class="field-label">Niveau scolaire</label>
+      <div id="level-btns" style="display:flex;gap:7px;flex-wrap:wrap">
+        <button onclick="selectLevel(this)" class="level-btn" data-v="3ème" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">3ème</button>
+        <button onclick="selectLevel(this)" class="level-btn" data-v="2nde" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">2nde</button>
+        <button onclick="selectLevel(this)" class="level-btn active-level" data-v="Terminale" style="padding:9px 14px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--em)">Terminale</button>
+        <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 1" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 1</button>
+        <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 2" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 2</button>
+        <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 3" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 3</button>
+      </div>
+    </div>
+    <div style="margin-bottom:24px"><label class="field-label">Mot de passe</label><input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères"></div>
+    <button class="btn-em" onclick="doRegister()">Créer mon compte →</button>
+    <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em)">CGU</span></p>
+  </div>
+</div>
+
+<!-- ═══════════════════ HOME ═══════════════════ -->
+<div id="screen-home" class="screen hidden">
+  <div class="scroll-body" style="padding-top:calc(env(safe-area-inset-top,0px)+16px);padding-bottom:90px">
+
+    <!-- Header -->
+    <div style="padding:0 20px 16px;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:3px">Bonsoir 🌙</p>
+        <h2 class="display" style="font-size:24px;font-weight:700" id="home-greeting">Maureen</h2>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:12px;padding:7px 12px;display:flex;align-items:center;gap:5px;cursor:pointer" onclick="showToast('🔥 7 jours de suite ! Continue !')">
+          <span class="streak-flame">🔥</span>
+          <span style="font-size:13px;font-weight:700;color:var(--amber)" id="streak-count">7</span>
+        </div>
+        <div onclick="showScreen('screen-profile')" style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;cursor:pointer" id="home-avatar">M</div>
+      </div>
+    </div>
+
+    <!-- Search / Ask -->
+    <div style="padding:0 20px 18px" class="a1">
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);cursor:text" onclick="focusChatFromHome()">
+        <div style="width:32px;height:32px;border-radius:10px;background:var(--em-soft);display:flex;align-items:center;justify-content:center;font-size:16px">✨</div>
+        <span style="flex:1;font-size:14px;color:var(--text3)">Pose ta question au coach IA...</span>
+        <div style="background:var(--em);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px">→</div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div style="padding:0 20px 18px" class="a2">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div onclick="showScreen('screen-quiz')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">✏️</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px">Quiz express</div>
+          <div style="font-size:11px;color:var(--text3)">QCM + minuterie</div>
+        </div>
+        <div onclick="showScreen('screen-flashcards')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">🃏</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px">Flashcards</div>
+          <div style="font-size:11px;color:var(--text3)">Mémorisation active</div>
+        </div>
+        <div onclick="showScreen('screen-upload')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">📄</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px">Analyser un cours</div>
+          <div style="font-size:11px;color:var(--text3)">Résumé + fiches IA</div>
+        </div>
+        <div onclick="showScreen('screen-progress')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+          <div style="font-size:28px;margin-bottom:8px">📊</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px">Ma progression</div>
+          <div style="font-size:11px;color:var(--text3)">Stats & objectifs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Matières -->
+    <div style="padding:0 20px 6px" class="a3">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:16px;font-weight:700">Mes matières</h3>
+        <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer">Tout voir</span>
+      </div>
+    </div>
+    <div style="padding:0 20px;display:flex;flex-direction:column;gap:9px" class="a4" id="subjects-list"></div>
+
+    <!-- Conseil du jour -->
+    <div style="padding:16px 20px 0" class="a5">
+      <div style="background:linear-gradient(135deg,var(--em-soft),#fff);border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:18px">💡</span>
+          <span style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px">Conseil du jour</span>
+        </div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6" id="tip-text">La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div><div class="nav-active-dot"></div></div>
+    <div class="nav-item" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
+    <div class="nav-item" onclick="showScreen('screen-quiz')" style="position:relative">
+      <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div>
+      <div class="nav-label" style="margin-top:4px">Quiz</div>
+    </div>
+    <div class="nav-item" onclick="showScreen('screen-progress')"><div class="nav-icon">📊</div><div class="nav-label">Progrès</div></div>
+    <div class="nav-item" onclick="showScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profil</div></div>
+  </nav>
+</div>
+
+<!-- ═══════════════════ CHAT IA ═══════════════════ -->
+<div id="screen-chat" class="screen hidden" style="background:var(--bg)">
+
+  <!-- Header fixe -->
+  <div style="padding:calc(env(safe-area-inset-top,0px)+12px) 16px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+    <button onclick="goBack()" class="back-btn">← Retour</button>
+    <div style="display:flex;align-items:center;gap:10px;flex:1">
+      <div class="avatar-ai">🤖</div>
+      <div>
+        <div style="font-size:14px;font-weight:700">Coach Studiora</div>
+        <div style="font-size:11px;color:var(--em);font-weight:600" id="chat-subject-label">● Prêt à t'aider</div>
+      </div>
+    </div>
+    <button onclick="clearChat()" style="background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Vider</button>
+  </div>
+
+  <!-- Sélecteur matière -->
+  <div style="padding:10px 16px;background:var(--white);border-bottom:1px solid var(--border)">
+    <div class="suggestion-scroll" id="subject-chips-chat"></div>
+  </div>
+
+  <!-- Messages -->
+  <div class="scroll-body" id="chat-messages" style="padding:16px 14px 10px"></div>
+
+  <!-- Suggestions -->
+  <div style="padding:6px 14px 4px;background:var(--bg)">
+    <div class="suggestion-scroll" id="chat-suggestions"></div>
+  </div>
+
+  <!-- Input zone -->
+  <div style="padding:8px 14px calc(env(safe-area-inset-bottom,0px)+12px);background:var(--bg);border-top:1px solid var(--border)">
+    <div style="display:flex;gap:9px;align-items:flex-end">
+      <textarea id="chat-input" class="input" placeholder="Pose ta question..." rows="1" style="flex:1;resize:none;padding:12px 14px;border-radius:14px;min-height:46px;max-height:120px;overflow-y:auto" oninput="autoResize(this)"></textarea>
+      <button id="send-btn" onclick="sendMessage()" class="btn-em" style="width:46px;height:46px;padding:0;border-radius:13px;flex-shrink:0;font-size:20px">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ QUIZ ═══════════════════ -->
+<div id="screen-quiz" class="screen hidden">
+  <div style="padding:calc(env(safe-area-inset-top,0px)+14px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
+    <button onclick="goBack()" class="back-btn">← Retour</button>
+    <span class="display" style="font-size:17px;font-weight:700">Quiz express</span>
+    <div style="width:70px"></div>
+  </div>
+
+  <!-- Config quiz -->
+  <div id="quiz-config" class="scroll-body" style="padding:0 20px 40px">
+    <div style="background:linear-gradient(135deg,var(--purple),#4338CA);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
+      <div style="font-size:40px;margin-bottom:8px">✏️</div>
+      <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Génère ton quiz</h3>
+      <p style="font-size:13px;opacity:.8">L'IA crée des questions sur mesure selon ta matière</p>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="field-label">Matière</label>
+      <div id="quiz-subject-btns" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="field-label">Niveau de difficulté</label>
+      <div style="display:flex;gap:8px">
+        <button onclick="selectDiff(this,'Facile')" class="diff-btn" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">😊 Facile</button>
+        <button onclick="selectDiff(this,'Moyen')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🤔 Moyen</button>
+        <button onclick="selectDiff(this,'Difficile')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🔥 Difficile</button>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="field-label">Sujet précis (optionnel)</label>
+      <input class="input" id="quiz-topic" placeholder="Ex: Théorème de Pythagore, Photosynthèse...">
+    </div>
+    <div style="margin-bottom:24px">
+      <label class="field-label">Nombre de questions</label>
+      <div style="display:flex;gap:8px">
+        <button onclick="selectNQ(this,5)" class="nq-btn active-nq" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">5</button>
+        <button onclick="selectNQ(this,10)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">10</button>
+        <button onclick="selectNQ(this,15)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">15</button>
+      </div>
+    </div>
+    <button class="btn-em" id="start-quiz-btn" onclick="startQuiz()">
+      <span id="quiz-btn-text">✨ Générer le quiz avec l'IA</span>
+    </button>
+  </div>
+
+  <!-- Quiz en cours -->
+  <div id="quiz-play" style="display:none;flex:1;display:none;flex-direction:column">
+    <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--text2)" id="quiz-counter">Question 1/5</span>
+        <div style="background:var(--pur-soft);border-radius:8px;padding:5px 11px;display:flex;align-items:center;gap:5px">
+          <span style="font-size:16px">⏱</span>
+          <span style="font-size:14px;font-weight:700;color:var(--purple)" id="quiz-timer">30</span>
+        </div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="quiz-prog" style="background:var(--purple)"></div></div>
+    </div>
+    <div class="scroll-body" style="padding:20px">
+      <p style="font-size:16px;font-weight:600;line-height:1.55;margin-bottom:20px" id="quiz-question">Chargement...</p>
+      <div id="quiz-options"></div>
+      <div id="quiz-explanation" style="display:none;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px;margin-top:4px">
+        <p style="font-size:12px;font-weight:700;color:var(--em);margin-bottom:4px">💡 Explication</p>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6" id="quiz-expl-text"></p>
+      </div>
+      <button class="btn-em" id="next-q-btn" onclick="nextQuestion()" style="display:none;margin-top:16px">Question suivante →</button>
+    </div>
+  </div>
+
+  <!-- Résultats quiz -->
+  <div id="quiz-results" style="display:none;flex:1;overflow-y:auto;padding:32px 20px;text-align:center">
+    <div id="result-emoji" style="font-size:72px;margin-bottom:16px">🏆</div>
+    <h3 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px" id="result-title">Excellent !</h3>
+    <p style="color:var(--text2);font-size:14px;margin-bottom:6px" id="result-score"></p>
+    <p style="color:var(--text3);font-size:12px;margin-bottom:28px" id="result-msg"></p>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:20px" id="result-details"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-outline" onclick="restartQuiz()" style="flex:1">Recommencer</button>
+      <button class="btn-em" onclick="showScreen('screen-home')" style="flex:1">Accueil</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FLASHCARDS ═══════════════════ -->
+<div id="screen-flashcards" class="screen hidden">
+  <div style="padding:calc(env(safe-area-inset-top,0px)+14px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
+    <button onclick="goBack()" class="back-btn">← Retour</button>
+    <span class="display" style="font-size:17px;font-weight:700">Flashcards IA</span>
+    <div style="width:70px"></div>
+  </div>
+
+  <div id="fc-config" class="scroll-body" style="padding:0 20px 40px">
+    <div style="background:linear-gradient(135deg,var(--amber),#E8920A);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
+      <div style="font-size:40px;margin-bottom:8px">🃏</div>
+      <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Flashcards IA</h3>
+      <p style="font-size:13px;opacity:.8">Mémorise efficacement avec la répétition espacée</p>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="field-label">Sujet à mémoriser</label>
+      <input class="input" id="fc-topic" placeholder="Ex: Les organites de la cellule, La conjugaison...">
+    </div>
+    <div style="margin-bottom:24px">
+      <label class="field-label">Matière</label>
+      <div id="fc-subject-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"></div>
+    </div>
+    <button class="btn-em" id="gen-fc-btn" onclick="generateFlashcards()" style="background:linear-gradient(135deg,var(--amber),#E8920A);box-shadow:0 4px 18px rgba(196,122,11,.3)">
+      <span id="fc-btn-text">✨ Générer les flashcards</span>
+    </button>
+  </div>
+
+  <div id="fc-play" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+    <div style="padding:10px 20px;background:var(--white);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:var(--text2)" id="fc-counter">1 / 8</span>
+      <span style="font-size:12px;color:var(--text3)">Appuie pour retourner</span>
+      <button onclick="showScreen('screen-flashcards')" style="font-size:12px;color:var(--em);background:none;border:none;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Quitter</button>
+    </div>
+    <div class="scroll-body" style="padding:20px">
+      <div id="current-flashcard" class="flashcard" onclick="flipCard()">
+        <div class="flashcard-inner">
+          <div class="flashcard-face fc-front">
+            <div style="font-size:11px;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">Question</div>
+            <p style="font-size:17px;font-weight:600;text-align:center;line-height:1.5" id="fc-front-text">...</p>
+            <div style="margin-top:16px;font-size:12px;opacity:.6">↕ Appuie pour voir la réponse</div>
+          </div>
+          <div class="flashcard-face fc-back">
+            <div style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">Réponse</div>
+            <p style="font-size:15px;color:var(--text);text-align:center;line-height:1.6" id="fc-back-text">...</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="fcRate('again')" style="flex:1;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:12px;color:var(--red);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">😕 À revoir</button>
+        <button onclick="fcRate('good')" style="flex:1;padding:13px;background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:12px;color:var(--amber);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🤔 Hésité</button>
+        <button onclick="fcRate('easy')" style="flex:1;padding:13px;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:12px;color:var(--em);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✅ Facile</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ANALYSER UN COURS ═══════════════════ -->
+<div id="screen-upload" class="screen hidden">
+  <div style="padding:calc(env(safe-area-inset-top,0px)+14px) 20px 14px;display:flex;align-items:center;justify-content:space-between">
+    <button onclick="goBack()" class="back-btn">← Retour</button>
+    <span class="display" style="font-size:17px;font-weight:700">Analyser un cours</span>
+    <div style="width:70px"></div>
+  </div>
+
+  <div id="upload-form" class="scroll-body" style="padding:0 20px 40px">
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()" id="drop-zone" style="margin-bottom:16px">
+      <div style="font-size:40px;margin-bottom:10px">📎</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px">Importer ton cours</div>
+      <div style="font-size:12px;color:var(--text3)">Clique ou glisse un fichier PDF · TXT · Image</div>
+      <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.png,.jpg,.jpeg" onchange="handleFile(this)">
+    </div>
+    <div style="text-align:center;margin-bottom:16px">
+      <span style="font-size:12px;color:var(--text3)">— ou colle ton texte directement —</span>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="field-label">Colle ton cours ici</label>
+      <textarea class="input" id="course-text" placeholder="Colle le contenu de ton cours, chapitre, ou notes ici..." rows="6" style="resize:vertical;min-height:120px"></textarea>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="field-label">Je veux que l'IA</label>
+      <div style="display:flex;flex-direction:column;gap:8px" id="analysis-type-btns">
+        <button onclick="selectAnalysis(this,'summary')" class="analysis-btn active-analysis" style="padding:13px 16px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:12px;color:var(--em);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">📝 Résume ce cours en fiche claire</button>
+        <button onclick="selectAnalysis(this,'quiz')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">✏️ Génère des questions d'examen</button>
+        <button onclick="selectAnalysis(this,'explain')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">💡 Explique les points difficiles</button>
+        <button onclick="selectAnalysis(this,'flashcards')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">🃏 Crée des flashcards</button>
+      </div>
+    </div>
+    <button class="btn-em" id="analyze-btn" onclick="analyzeCourse()">✨ Analyser avec l'IA</button>
+  </div>
+
+  <div id="upload-result" style="display:none;flex:1;flex-direction:column">
+    <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:14px;font-weight:700">Résultat IA</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="showToast('📋 Copié !')" style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:8px;padding:6px 12px;color:var(--em);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📋 Copier</button>
+        <button onclick="resetUpload()" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Nouveau</button>
+      </div>
+    </div>
+    <div class="scroll-body" style="padding:16px 20px 40px">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);white-space:pre-wrap;font-size:13.5px;line-height:1.75;color:var(--text)" id="analysis-result"></div>
+      <button class="btn-em" onclick="continueInChat()" style="margin-top:16px">💬 Continuer avec le coach IA</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PROGRESSION ═══════════════════ -->
+<div id="screen-progress" class="screen hidden">
+  <div style="padding:calc(env(safe-area-inset-top,0px)+16px) 20px 12px">
+    <h2 class="display" style="font-size:24px;font-weight:700;margin-bottom:4px">Ma progression</h2>
+    <p style="color:var(--text3);font-size:13px">Cette semaine · <span style="color:var(--em);font-weight:600">4 sessions</span></p>
+  </div>
+  <div class="scroll-body" style="padding:0 20px 90px">
+    <!-- Streak + score semaine -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:var(--r2);padding:14px;text-align:center">
+        <div style="font-size:32px;margin-bottom:4px">🔥</div>
+        <div class="display" style="font-size:26px;font-weight:700;color:var(--amber)">7</div>
+        <div style="font-size:11px;color:var(--text3)">jours de suite</div>
+      </div>
+      <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:var(--r2);padding:14px;text-align:center">
+        <div style="font-size:32px;margin-bottom:4px">🏆</div>
+        <div class="display" style="font-size:26px;font-weight:700;color:var(--em)">82%</div>
+        <div style="font-size:11px;color:var(--text3)">score moyen</div>
+      </div>
+    </div>
+
+    <!-- Graphe semaine -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:16px">Sessions cette semaine</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:8px" id="week-chart"></div>
+      <div style="display:flex;gap:6px">
+        <div class="week-day" style="flex:1;align-items:center">
+          <div style="font-size:10px;color:var(--text3)">L</div></div>
+        <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">M</div></div>
+        <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">M</div></div>
+        <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">J</div></div>
+        <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">V</div></div>
+        <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">S</div></div>
+        <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">D</div></div>
+      </div>
+    </div>
+
+    <!-- Par matière -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px">Score par matière</div>
+      <div id="subject-scores"></div>
+    </div>
+
+    <!-- Objectifs -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:700">Objectifs de la semaine</div>
+        <span class="badge badge-em">3/4</span>
+      </div>
+      <div id="goals-list"></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
+    <div class="nav-item" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
+    <div class="nav-item" onclick="showScreen('screen-quiz')" style="position:relative"><div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div><div class="nav-label" style="margin-top:4px">Quiz</div></div>
+    <div class="nav-item active"><div class="nav-icon">📊</div><div class="nav-label">Progrès</div><div class="nav-active-dot"></div></div>
+    <div class="nav-item" onclick="showScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profil</div></div>
+  </nav>
+</div>
+
+<!-- ═══════════════════ PROFIL ═══════════════════ -->
+<div id="screen-profile" class="screen hidden">
+  <div style="background:linear-gradient(160deg,var(--em-soft),var(--bg));padding:calc(env(safe-area-inset-top,0px)+20px) 20px 28px;text-align:center">
+    <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:32px;color:#fff;margin:0 auto 14px;box-shadow:0 0 0 4px var(--em-mid), 0 8px 24px rgba(11,110,79,.2)" id="profile-avatar">M</div>
+    <h2 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px" id="profile-name">Maureen Koné</h2>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:12px" id="profile-level">Licence 2 · MIAGE</p>
+    <span class="badge badge-em">✓ Compte actif</span>
+  </div>
+
+  <div class="scroll-body" style="padding:16px 20px 90px">
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <div style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
+        <div class="display" style="font-size:22px;font-weight:700;color:var(--em)">48</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Sessions</div>
+      </div>
+      <div style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
+        <div class="display" style="font-size:22px;font-weight:700;color:var(--purple)">342</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Questions</div>
+      </div>
+      <div style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
+        <div class="display" style="font-size:22px;font-weight:700;color:var(--amber)">7🔥</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Série</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Préférences</h3>
+      <div id="prefs-list"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Mes matières actives</h3>
+      <div id="profile-subjects"></div>
+    </div>
+
+    <button onclick="showToast('👋 À bientôt !');setTimeout(()=>showScreen(\'screen-onboarding\'),700)" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🚪 Se déconnecter</button>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
+    <div class="nav-item" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
+    <div class="nav-item" onclick="showScreen('screen-quiz')" style="position:relative"><div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div><div class="nav-label" style="margin-top:4px">Quiz</div></div>
+    <div class="nav-item" onclick="showScreen('screen-progress')"><div class="nav-icon">📊</div><div class="nav-label">Progrès</div></div>
+    <div class="nav-item active"><div class="nav-icon">👤</div><div class="nav-label">Profil</div><div class="nav-active-dot"></div></div>
+  </nav>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"><span id="toast-msg"></span></div>
+
+<!-- ═══════════════════ JAVASCRIPT ═══════════════════ -->
+<script>
+// ── CONFIGURATION ──
+const API_KEY = window.APP_CONFIG?.API_KEY || ''; // ← Remplace avec ta clé API
+const MODEL   = 'claude-sonnet-4-20250514';
+
+// ── DATA ──
+const SUBJECTS = [
+  { id:'math',    icon:'📐', name:'Mathématiques',  color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+  { id:'physique',icon:'⚗️', name:'Physique-Chimie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+  { id:'svt',     icon:'🧬', name:'SVT',             color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+  { id:'fr',      icon:'📝', name:'Français',        color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)'  },
+  { id:'info',    icon:'💻', name:'Informatique',    color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+  { id:'eco',     icon:'📈', name:'Économie',        color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+  { id:'ang',     icon:'🇬🇧', name:'Anglais',         color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)'  },
+  { id:'hg',      icon:'🗺️', name:'Histoire-Géo',    color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+];
+
+const TIPS = [
+  "La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !",
+  "Explique un concept comme si tu l'enseignais à quelqu'un d'autre. C'est la méthode Feynman !",
+  "Réviser avant de dormir améliore la mémorisation de 20% grâce au sommeil qui consolide l'apprentissage.",
+  "Alterne entre plusieurs matières pour éviter la fatigue cognitive et améliorer la rétention globale.",
+  "Fais des schémas et mindmaps : le cerveau retient 65% des informations visuelles, contre 10% du texte seul.",
+];
+
+const GOALS = [
+  { text:'5 sessions de révision', done:true  },
+  { text:'Finir le chapitre Probabilités', done:true  },
+  { text:'Quiz score > 75% en Maths', done:true  },
+  { text:'Revoir la SVT Terminale', done:false },
+];
+
+const WEEK_DATA = [55, 80, 60, 90, 45, 30, 0];
+
+let APP = {
+  user: { prenom:'Maureen', nom:'Koné', level:'Licence 2', filiere:'MIAGE', streak:7 },
+  chatHistory: [],
+  currentSubject: 'math',
+  quizQuestions: [], quizIndex: 0, quizScore: 0, quizDiff:'Facile', quizNQ:5,
+  flashcards: [], fcIndex: 0, fcFlipped: false,
+  analysisType: 'summary',
+  selectedSubjectQuiz: 'math',
+  selectedSubjectFC: 'math',
+  timerInterval: null,
+};
+
+// ── NAVIGATION ──
+let screenHistory = [];
+function showScreen(id) {
+  const curr = document.querySelector('.screen:not(.hidden):not(.slide-left)');
+  if (curr && curr.id !== id) {
+    screenHistory.push(curr.id);
+    curr.classList.add('slide-left');
+    setTimeout(()=>{ curr.classList.add('hidden'); curr.classList.remove('slide-left'); }, 350);
+  }
+  const next = document.getElementById(id);
+  next.classList.remove('hidden','slide-left');
+  next.offsetHeight;
+  onScreenEnter(id);
+}
+function goBack() {
+  const prev = screenHistory.pop();
+  showScreen(prev || 'screen-home');
+}
+function onScreenEnter(id) {
+  if(id==='screen-home')      renderHome();
+  if(id==='screen-chat')      renderChat();
+  if(id==='screen-quiz')      renderQuizConfig();
+  if(id==='screen-flashcards') renderFCConfig();
+  if(id==='screen-progress')  renderProgress();
+  if(id==='screen-profile')   renderProfile();
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+// ── HOME ──
+function renderHome() {
+  document.getElementById('home-greeting').textContent = APP.user.prenom;
+  document.getElementById('home-avatar').textContent = APP.user.prenom[0];
+  document.getElementById('streak-count').textContent = APP.user.streak;
+  document.getElementById('tip-text').textContent = TIPS[Math.floor(Math.random()*TIPS.length)];
+
+  const el = document.getElementById('subjects-list');
+  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
+    <div class="subject-chip" onclick="openSubjectChat('${s.id}')">
+      <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${s.icon}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">${s.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Appuie pour réviser avec l'IA</div>
+      </div>
+      <div style="color:var(--text3);font-size:18px">›</div>
+    </div>`).join('');
+}
+function openSubjectChat(subjectId) {
+  APP.currentSubject = subjectId;
+  showScreen('screen-chat');
+}
+function focusChatFromHome() {
+  showScreen('screen-chat');
+  setTimeout(()=>document.getElementById('chat-input').focus(), 400);
+}
+
+// ── CHAT ──
+const SYSTEM_PROMPT = `Tu es Studiora, un coach scolaire IA bienveillant et expert, spécialisé pour les élèves et étudiants africains (Côte d'Ivoire, Sénégal, Cameroun, etc.). 
+
+Tes principes :
+- Réponds TOUJOURS en français, avec un ton chaleureux, encourageant et pédagogique
+- Utilise des emojis ponctuellement pour rendre les explications vivantes (sans en abuser)
+- Adapte les exemples au contexte africain quand c'est pertinent
+- Structure tes réponses avec des sauts de ligne pour la lisibilité
+- Si on te pose une question hors scolaire, réponds brièvement et ramène vers les études
+- Quand tu expliques, utilise la méthode : définition → exemple concret → mémo/astuce
+- Encourage toujours à la fin d'une explication
+- Tu connais les programmes : BEPC, BAC Côte d'Ivoire (séries A,B,C,D,E), et les licences MIAGE/ASSRI`;
+
+function renderChat() {
+  const subj = SUBJECTS.find(s=>s.id===APP.currentSubject) || SUBJECTS[0];
+  document.getElementById('chat-subject-label').innerHTML = `● ${subj.name}`;
+  document.getElementById('chat-subject-label').style.color = subj.color;
+
+  // Chips matières
+  document.getElementById('subject-chips-chat').innerHTML = SUBJECTS.map(s=>`
+    <button onclick="switchSubject('${s.id}')" style="flex-shrink:0;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;
+      background:${APP.currentSubject===s.id ? s.color : 'var(--bg2)'};
+      color:${APP.currentSubject===s.id ? '#fff' : 'var(--text2)'};
+      border:1.5px solid ${APP.currentSubject===s.id ? s.color : 'var(--border)'}"
+    >${s.icon} ${s.name}</button>`).join('');
+
+  renderSuggestions();
+
+  const msgEl = document.getElementById('chat-messages');
+  if (APP.chatHistory.length === 0) {
+    msgEl.innerHTML = `
+      <div style="text-align:center;padding:24px 0 16px">
+        <div style="font-size:48px;margin-bottom:10px">🎓</div>
+        <h3 class="display" style="font-size:20px;font-weight:700;margin-bottom:6px">Bonjour ${APP.user.prenom} !</h3>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;max-width:260px;margin:0 auto">Je suis ton coach IA. Pose-moi n'importe quelle question de <strong>${SUBJECTS.find(s=>s.id===APP.currentSubject)?.name}</strong> — je suis là pour t'aider ! 💪</p>
+      </div>`;
+  } else {
+    reRenderMessages();
+  }
+}
+
+function switchSubject(id) {
+  APP.currentSubject = id;
+  renderChat();
+}
+
+function renderSuggestions() {
+  const subj = SUBJECTS.find(s=>s.id===APP.currentSubject) || SUBJECTS[0];
+  const suggestions = {
+    math:    ['Explique le théorème de Pythagore','C\'est quoi une dérivée ?','Exercice sur les probabilités','Résous une équation du 2nd degré'],
+    physique:['Explique la loi d\'Ohm','C\'est quoi l\'énergie cinétique ?','Exercice sur les forces','La loi de gravitation universelle'],
+    svt:     ['Explique la photosynthèse','C\'est quoi l\'ADN ?','La mitose et la méiose','Les fonctions du système nerveux'],
+    fr:      ['Analyse un texte littéraire','Règles de la concordance des temps','Techniques de dissertation','Les figures de style'],
+    info:    ['Explique la récursivité','C\'est quoi une base de données ?','Algorithme de tri','Concepts POO en Java'],
+    eco:     ['Explique le PIB','C\'est quoi l\'inflation ?','Le modèle IS-LM','La loi de l\'offre et de la demande'],
+    ang:     ['Present perfect vs Past simple','Vocabulaire du business','Phrasal verbs courants','Écrire un email formel'],
+    hg:      ['Les grandes découvertes','Causes de la 1ère Guerre Mondiale','La décolonisation en Afrique','Lecture d\'une carte'],
+  };
+  const list = suggestions[APP.currentSubject] || suggestions.math;
+  document.getElementById('chat-suggestions').innerHTML = list.map(s=>`
+    <button onclick="useSuggestion('${s.replace(/'/g,"\\'")}'')" class="btn-pill" style="flex-shrink:0">${s}</button>`).join('');
+}
+
+function useSuggestion(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+}
+
+function reRenderMessages() {
+  const el = document.getElementById('chat-messages');
+  el.innerHTML = APP.chatHistory.map(m => renderMsgHTML(m)).join('');
+  scrollChat();
+}
+
+function renderMsgHTML(m) {
+  if (m.role === 'user') {
+    return `<div class="msg-row user"><div class="msg-bubble user">${escHtml(m.content)}</div></div>`;
+  } else {
+    return `<div class="msg-row">
+      <div class="avatar-ai">🤖</div>
+      <div>
+        <div class="msg-bubble ai">${formatAiMsg(m.content)}</div>
+        <div class="msg-time">${m.time || ''}</div>
+      </div>
+    </div>`;
+  }
+}
+
+function formatAiMsg(text) {
+  return escHtml(text)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>')
+    .replace(/`(.+?)`/g,'<code style="background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:12px;font-family:monospace">$1</code>');
+}
+
+function escHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function scrollChat() {
+  const el = document.getElementById('chat-messages');
+  setTimeout(()=>{ el.scrollTop = el.scrollHeight; }, 50);
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; autoResize(input);
+
+  const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  APP.chatHistory.push({ role:'user', content:text, time });
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true; btn.textContent = '...';
+
+  // Ajouter msg user dans le DOM
+  const el = document.getElementById('chat-messages');
+  if(el.querySelector('.display')) el.innerHTML = ''; // retirer écran accueil
+  el.innerHTML += renderMsgHTML({ role:'user', content:text });
+
+  // Typing indicator
+  const typingId = 'typing-' + Date.now();
+  el.innerHTML += `<div id="${typingId}" class="msg-row">
+    <div class="avatar-ai">🤖</div>
+    <div class="msg-bubble ai" style="padding:12px 16px">
+      <div style="display:flex;gap:5px;align-items:center">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>
+    </div>
+  </div>`;
+  scrollChat();
+
+  try {
+    const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
+    messages.push({role:'user',content:text});
+
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
+    });
+    const data = await res.json();
+    const aiText = data.content?.[0]?.text || 'Je n\'ai pas pu répondre, réessaie !';
+
+    document.getElementById(typingId)?.remove();
+    const aiTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    APP.chatHistory.push({role:'assistant',content:aiText,time:aiTime});
+    el.innerHTML += renderMsgHTML({role:'assistant',content:aiText,time:aiTime});
+    scrollChat();
+
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    const errMsg = 'Connexion impossible. Vérifie ta clé API dans le code (variable API_KEY).';
+    el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
+    scrollChat();
+  }
+
+  btn.disabled = false; btn.textContent = '→';
+}
+
+function clearChat() {
+  APP.chatHistory = [];
+  renderChat();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── AUTH (mock) ──
+let selectedLevel = 'Terminale';
+function selectLevel(btn) {
+  document.querySelectorAll('.level-btn').forEach(b=>{
+    b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';
+  });
+  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+  selectedLevel = btn.dataset.v;
+}
+function doLogin() {
+  const email = document.getElementById('login-email').value;
+  if (!email) { showToast('⚠️ Entre ton email'); return; }
+  showToast('✅ Connexion réussie !');
+  setTimeout(()=>showScreen('screen-home'), 400);
+}
+function doRegister() {
+  const p = document.getElementById('reg-prenom').value;
+  const n = document.getElementById('reg-nom').value;
+  if (!p||!n) { showToast('⚠️ Remplis tous les champs'); return; }
+  APP.user.prenom = p; APP.user.nom = n; APP.user.level = selectedLevel;
+  showToast('🎉 Compte créé !');
+  setTimeout(()=>showScreen('screen-home'), 400);
+}
+
+// ── QUIZ ──
+let selectedDiff = 'Facile', selectedNQ = 5, selectedSubjectQuiz = 'math';
+function renderQuizConfig() {
+  // reset
+  document.getElementById('quiz-config').style.display='block';
+  document.getElementById('quiz-play').style.display='none';
+  document.getElementById('quiz-results').style.display='none';
+
+  const el = document.getElementById('quiz-subject-btns');
+  el.innerHTML = SUBJECTS.map(s=>`
+    <button onclick="selectQuizSubject(this,'${s.id}')" class="qsub-btn" data-id="${s.id}" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectQuiz===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
+      background:${selectedSubjectQuiz===s.id?s.soft:'var(--bg2)'};
+      border:1.5px solid ${selectedSubjectQuiz===s.id?s.color:'var(--border)'};
+      color:${selectedSubjectQuiz===s.id?s.color:'var(--text2)'}">${s.icon} ${s.name}</button>`).join('');
+}
+
+function selectQuizSubject(btn, id) {
+  selectedSubjectQuiz = id;
+  renderQuizConfig();
+}
+function selectDiff(btn, d) {
+  selectedDiff = d;
+  document.querySelectorAll('.diff-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
+  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+}
+function selectNQ(btn, n) {
+  selectedNQ = n;
+  document.querySelectorAll('.nq-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';b.classList.remove('active-nq')});
+  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+}
+
+async function startQuiz() {
+  const subj = SUBJECTS.find(s=>s.id===selectedSubjectQuiz);
+  const topic = document.getElementById('quiz-topic').value;
+  const btn = document.getElementById('start-quiz-btn');
+  const btnTxt = document.getElementById('quiz-btn-text');
+  btn.disabled=true; btnTxt.textContent='⏳ Génération en cours...';
+
+  const prompt = `Génère exactement ${selectedNQ} questions QCM de niveau "${selectedDiff}" en ${subj.name}${topic?', sur le sujet: '+topic:''}.
+Réponds UNIQUEMENT en JSON valide, sans texte avant ou après, au format :
+{"questions":[{"q":"Énoncé de la question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"Explication courte et claire"}]}
+correct est l'index (0-3) de la bonne réponse. Les questions doivent être adaptées aux élèves africains (programme ivoirien).`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      body:JSON.stringify({model:MODEL,max_tokens:2000,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    let raw = data.content?.[0]?.text || '{}';
+    raw = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    APP.quizQuestions = parsed.questions || [];
+    if(APP.quizQuestions.length===0) throw new Error('empty');
+    APP.quizIndex = 0; APP.quizScore = 0;
+    launchQuiz();
+  } catch(e) {
+    showToast('❌ Erreur API. Vérifie ta clé API_KEY dans le code.');
+    btn.disabled=false; btnTxt.textContent='✨ Générer le quiz avec l\'IA';
+  }
+}
+
+function launchQuiz() {
+  document.getElementById('quiz-config').style.display='none';
+  document.getElementById('quiz-play').style.display='flex';
+  document.getElementById('quiz-results').style.display='none';
+  showQuestion();
+}
+
+let timerInterval, timeLeft=30;
+function showQuestion() {
+  clearInterval(timerInterval);
+  const q = APP.quizQuestions[APP.quizIndex];
+  const total = APP.quizQuestions.length;
+  document.getElementById('quiz-counter').textContent = `Question ${APP.quizIndex+1}/${total}`;
+  document.getElementById('quiz-prog').style.width = `${((APP.quizIndex)/total)*100}%`;
+  document.getElementById('quiz-question').textContent = q.q;
+  document.getElementById('quiz-explanation').style.display='none';
+  document.getElementById('next-q-btn').style.display='none';
+
+  document.getElementById('quiz-options').innerHTML = q.options.map((opt,i)=>`
+    <button class="quiz-option" onclick="answerQ(${i})" id="opt-${i}">
+      <div class="option-letter">${String.fromCharCode(65+i)}</div>
+      <span>${opt}</span>
+    </button>`).join('');
+
+  timeLeft=30;
+  document.getElementById('quiz-timer').textContent=timeLeft;
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    document.getElementById('quiz-timer').textContent=timeLeft;
+    if(timeLeft<=0){ clearInterval(timerInterval); answerQ(-1); }
+  },1000);
+}
+
+function answerQ(idx) {
+  clearInterval(timerInterval);
+  const q = APP.quizQuestions[APP.quizIndex];
+  document.querySelectorAll('.quiz-option').forEach((btn,i)=>{
+    btn.onclick=null;
+    if(i===q.correct){ btn.classList.add('correct'); btn.querySelector('.option-letter').textContent='✓'; }
+    else if(i===idx && i!==q.correct){ btn.classList.add('wrong'); btn.querySelector('.option-letter').textContent='✗'; }
+  });
+  if(idx===q.correct) APP.quizScore++;
+  document.getElementById('quiz-expl-text').textContent = q.explication || '';
+  document.getElementById('quiz-explanation').style.display='block';
+  document.getElementById('next-q-btn').style.display='block';
+  document.getElementById('next-q-btn').textContent = APP.quizIndex<APP.quizQuestions.length-1 ? 'Question suivante →' : 'Voir les résultats →';
+}
+
+function nextQuestion() {
+  APP.quizIndex++;
+  if(APP.quizIndex<APP.quizQuestions.length) showQuestion();
+  else showResults();
+}
+
+function showResults() {
+  clearInterval(timerInterval);
+  document.getElementById('quiz-play').style.display='none';
+  document.getElementById('quiz-results').style.display='block';
+  const total=APP.quizQuestions.length, score=APP.quizScore, pct=Math.round(score/total*100);
+  const emojis = pct>=80?'🏆':pct>=60?'🎉':pct>=40?'💪':'📚';
+  const titles = pct>=80?'Excellent !':pct>=60?'Très bien !':pct>=40?'Pas mal !':'Continue !';
+  const msgs = pct>=80?'Tu maîtrises ce sujet !':pct>=60?'Encore un peu de révision.':pct>=40?'Continue, tu progresses !':'La pratique mène à la perfection.';
+  document.getElementById('result-emoji').textContent=emojis;
+  document.getElementById('result-title').textContent=titles;
+  document.getElementById('result-score').textContent=`${score} / ${total} bonnes réponses (${pct}%)`;
+  document.getElementById('result-msg').textContent=msgs;
+  document.getElementById('result-details').innerHTML=`
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--text2);font-size:13px">Matière</span>
+      <span style="font-weight:600;font-size:13px">${SUBJECTS.find(s=>s.id===selectedSubjectQuiz)?.name}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--text2);font-size:13px">Difficulté</span>
+      <span style="font-weight:600;font-size:13px">${selectedDiff}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0">
+      <span style="color:var(--text2);font-size:13px">Score</span>
+      <span style="font-weight:700;font-size:13px;color:${pct>=60?'var(--em)':'var(--red)'}">${pct}%</span>
+    </div>`;
+  APP.user.streak++;
+}
+
+function restartQuiz() {
+  APP.quizQuestions=[]; APP.quizIndex=0; APP.quizScore=0;
+  renderQuizConfig();
+}
+
+// ── FLASHCARDS ──
+let selectedSubjectFC = 'math';
+function renderFCConfig() {
+  document.getElementById('fc-config').style.display='block';
+  document.getElementById('fc-play').style.display='none';
+  document.getElementById('fc-subject-btns').innerHTML = SUBJECTS.map(s=>`
+    <button onclick="selectFCSubject(this,'${s.id}')" class="fcsub-btn" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectFC===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
+      background:${selectedSubjectFC===s.id?s.soft:'var(--bg2)'};
+      border:1.5px solid ${selectedSubjectFC===s.id?s.color:'var(--border)'};
+      color:${selectedSubjectFC===s.id?s.color:'var(--text2)'}">${s.icon} ${s.name}</button>`).join('');
+}
+function selectFCSubject(btn,id){ selectedSubjectFC=id; renderFCConfig(); }
+
+async function generateFlashcards() {
+  const topic = document.getElementById('fc-topic').value;
+  const subj = SUBJECTS.find(s=>s.id===selectedSubjectFC);
+  const btn=document.getElementById('gen-fc-btn'), txt=document.getElementById('fc-btn-text');
+  btn.disabled=true; txt.textContent='⏳ Génération...';
+
+  const prompt=`Génère 8 flashcards en ${subj.name}${topic?' sur: '+topic:''}.
+Réponds UNIQUEMENT en JSON valide sans texte avant/après :
+{"cards":[{"front":"Question ou terme à mémoriser","back":"Réponse ou définition claire et concise"}]}
+Les questions doivent être adaptées aux lycéens et étudiants africains.`;
+
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    let raw=data.content?.[0]?.text||'{}';
+    raw=raw.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(raw);
+    APP.flashcards=parsed.cards||[];
+    APP.fcIndex=0; APP.fcFlipped=false;
+    if(APP.flashcards.length===0) throw new Error('empty');
+    launchFC();
+  } catch(e) {
+    showToast('❌ Erreur API. Vérifie ta clé API_KEY.');
+    btn.disabled=false; txt.textContent='✨ Générer les flashcards';
+  }
+}
+
+function launchFC() {
+  document.getElementById('fc-config').style.display='none';
+  document.getElementById('fc-play').style.display='flex';
+  showFC();
+}
+function showFC() {
+  const card=APP.flashcards[APP.fcIndex];
+  document.getElementById('fc-front-text').textContent=card.front;
+  document.getElementById('fc-back-text').textContent=card.back;
+  document.getElementById('fc-counter').textContent=`${APP.fcIndex+1} / ${APP.flashcards.length}`;
+  APP.fcFlipped=false;
+  document.getElementById('current-flashcard').classList.remove('flipped');
+}
+function flipCard() {
+  APP.fcFlipped=!APP.fcFlipped;
+  document.getElementById('current-flashcard').classList.toggle('flipped');
+}
+function fcRate(r) {
+  if(!APP.fcFlipped) { showToast('👆 Retourne la carte d\'abord !'); return; }
+  if(APP.fcIndex<APP.flashcards.length-1){ APP.fcIndex++; showFC(); }
+  else { showToast('🎉 Tu as terminé toutes les flashcards !'); document.getElementById('fc-config').style.display='block'; document.getElementById('fc-play').style.display='none'; }
+}
+
+// ── ANALYSE COURS ──
+let selectedAnalysis='summary';
+function selectAnalysis(btn, type) {
+  selectedAnalysis=type;
+  document.querySelectorAll('.analysis-btn').forEach(b=>{
+    b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';
+  });
+  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+}
+
+function handleFile(input) {
+  const file=input.files[0];
+  if(!file) return;
+  if(file.type==='text/plain') {
+    const reader=new FileReader();
+    reader.onload=e=>{ document.getElementById('course-text').value=e.target.result; showToast('📄 Fichier chargé !'); };
+    reader.readAsText(file);
+  } else {
+    showToast('📄 Fichier détecté : '+file.name+' — colle le texte manuellement si besoin.');
+  }
+}
+
+const ANALYSIS_PROMPTS = {
+  summary:   (t)=>`Voici un cours :\n\n${t}\n\nFais une fiche de révision structurée avec : titre, points clés numérotés, définitions importantes, et une astuce mémo. En français, clair et concis pour un lycéen africain.`,
+  quiz:      (t)=>`Voici un cours :\n\n${t}\n\nGénère 5 questions d'examen avec leurs réponses complètes, adaptées au programme africain. Format : numéroté, question en gras, réponse développée.`,
+  explain:   (t)=>`Voici un cours :\n\n${t}\n\nIdentifie les 3 points les plus difficiles à comprendre et explique-les simplement avec des exemples concrets adaptés au contexte africain.`,
+  flashcards:(t)=>`Voici un cours :\n\n${t}\n\nCrée 8 paires question/réponse pour mémoriser ce cours, format lisible : Q: ... / R: ...`,
+};
+
+async function analyzeCourse() {
+  const text=document.getElementById('course-text').value.trim();
+  if(!text||text.length<30){ showToast('⚠️ Colle du texte (min 30 caractères)'); return; }
+  const btn=document.getElementById('analyze-btn');
+  btn.disabled=true; btn.textContent='⏳ Analyse en cours...';
+
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
+    });
+    const data=await res.json();
+    const result=data.content?.[0]?.text||'Erreur';
+    document.getElementById('analysis-result').textContent=result;
+    document.getElementById('upload-form').style.display='none';
+    document.getElementById('upload-result').style.display='flex';
+  } catch(e) {
+    showToast('❌ Erreur API. Vérifie ta clé API_KEY.');
+  }
+  btn.disabled=false; btn.textContent='✨ Analyser avec l\'IA';
+}
+
+function resetUpload() {
+  document.getElementById('upload-form').style.display='block';
+  document.getElementById('upload-result').style.display='none';
+  document.getElementById('course-text').value='';
+}
+
+function continueInChat() {
+  const result=document.getElementById('analysis-result').textContent;
+  APP.chatHistory.push({role:'assistant',content:'Voici l\'analyse de ton cours :\n\n'+result,time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})});
+  showScreen('screen-chat');
+}
+
+// ── PROGRESS ──
+function renderProgress() {
+  // Graphe semaine
+  const max=Math.max(...WEEK_DATA,1);
+  document.getElementById('week-chart').innerHTML = WEEK_DATA.map((v,i)=>`
+    <div style="flex:1;display:flex;align-items:flex-end;justify-content:center">
+      <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)}px;background:${v>0?(i===4?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
+    </div>`).join('');
+
+  // Scores par matière
+  const scores=[{s:'math',pct:85},{s:'physique',pct:70},{s:'svt',pct:78},{s:'fr',pct:65},{s:'info',pct:92}];
+  document.getElementById('subject-scores').innerHTML=scores.map(({s,pct})=>{
+    const subj=SUBJECTS.find(x=>x.id===s);
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:500">${subj.icon} ${subj.name}</span>
+        <span style="font-size:13px;font-weight:700;color:${subj.color}">${pct}%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${subj.color}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Objectifs
+  document.getElementById('goals-list').innerHTML=GOALS.map(g=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:22px;height:22px;border-radius:50%;background:${g.done?'var(--em)':'var(--bg2)'};border:2px solid ${g.done?'var(--em)':'var(--border2)'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${g.done?'✓':''}</div>
+      <span style="font-size:13px;color:${g.done?'var(--text)':'var(--text2)'};${g.done?'text-decoration:line-through;opacity:.6':''}">${g.text}</span>
+    </div>`).join('');
+}
+
+// ── PROFILE ──
+function renderProfile() {
+  document.getElementById('profile-avatar').textContent=APP.user.prenom[0];
+  document.getElementById('profile-name').textContent=APP.user.prenom+' '+APP.user.nom;
+  document.getElementById('profile-level').textContent=APP.user.level+' · '+APP.user.filiere;
+
+  const prefs=[
+    {icon:'🔔',label:'Notifications de rappel',sub:'Chaque jour à 18h',toggled:true},
+    {icon:'🌙',label:'Mode sombre',sub:'Thème sombre activé',toggled:false},
+    {icon:'🔊',label:'Sons & vibrations',sub:'Retour haptique',toggled:true},
+    {icon:'📊',label:'Statistiques partagées',sub:'Visible sur mon profil',toggled:false},
+  ];
+  document.getElementById('prefs-list').innerHTML=prefs.map((p,i)=>`
+    <div class="pref-row" ${i===prefs.length-1?'style="border:none"':''}>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:20px">${p.icon}</span>
+        <div><div style="font-size:13px;font-weight:600">${p.label}</div><div style="font-size:11px;color:var(--text3)">${p.sub}</div></div>
+      </div>
+      <div class="toggle ${p.toggled?'on':'off'}" onclick="this.classList.toggle('on');this.classList.toggle('off')">
+        <div class="toggle-thumb"></div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('profile-subjects').innerHTML=SUBJECTS.slice(0,5).map(s=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">${s.icon}</span>
+        <span style="font-size:13px;font-weight:500">${s.name}</span>
+      </div>
+      <span class="badge" style="background:${s.soft};color:${s.color};border:1px solid ${s.border}">Active</span>
+    </div>`).join('');
+}
+
+// ── KEYBOARD ──
+document.getElementById('chat-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+
+// ── INIT ──
+renderHome();
+</script>
+</body>
+</html>

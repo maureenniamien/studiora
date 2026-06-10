@@ -1,0 +1,12 @@
+{
+  "appId": "com.studiora.app",
+  "appName": "Studiora",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
