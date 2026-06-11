@@ -914,9 +914,9 @@ async function sendMessage() {
     const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
     messages.push({role:'user',content:text});
 
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/claude-proxy',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
       body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
     });
     const data = await res.json();
@@ -1016,9 +1016,9 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après, au format :
 correct est l'index (0-3) de la bonne réponse. Les questions doivent être adaptées aux élèves africains (programme ivoirien).`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/claude-proxy',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
       body:JSON.stringify({model:MODEL,max_tokens:2000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
@@ -1147,9 +1147,9 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
 Les questions doivent être adaptées aux lycéens et étudiants africains.`;
 
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/claude-proxy',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
       body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
@@ -1225,9 +1225,9 @@ async function analyzeCourse() {
   btn.disabled=true; btn.textContent='⏳ Analyse en cours...';
 
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/claude-proxy',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
+      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
       body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
     });
     const data=await res.json();
