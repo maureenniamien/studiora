@@ -204,7 +204,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px">Reconnecte-toi</h2>
     <p style="color:var(--text2);margin-bottom:30px">Continue là où tu t'es arrêté·e</p>
     <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email"></div>
-    <div style="margin-bottom:8px"><label class="field-label">Mot de passe</label><input class="input" id="login-pwd" placeholder="••••••••" type="password"></div>
+    <div style="margin-bottom:8px"><label class="field-label">Mot de passe</label><div style="position:relative">
+<input class="input" id="login-pwd" type="password" placeholder="••••••••" style="padding-right:50px">
+<button onclick="togglePwd('login-pwd',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;display:flex;align-items:center" data-open="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+</div></div>
     <p style="text-align:right;font-size:12px;color:var(--em);font-weight:600;margin-bottom:26px;cursor:pointer">Mot de passe oublié ?</p>
     <button class="btn-em" onclick="doLogin()">Se connecter</button>
     <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--text2)">Pas encore inscrit ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-register')">Créer un compte</span></p>
@@ -233,7 +236,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 3" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 3</button>
       </div>
     </div>
-    <div style="margin-bottom:24px"><label class="field-label">Mot de passe</label><input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères"></div>
+    <div style="margin-bottom:24px"><label class="field-label">Mot de passe</label><div style="position:relative">
+<input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères" style="padding-right:50px">
+<button onclick="togglePwd('reg-pwd',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;display:flex;align-items:center" data-open="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+</div></div>
     <button class="btn-em" onclick="doRegister()">Créer mon compte →</button>
     <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em)">CGU</span></p>
   </div>
@@ -1315,6 +1321,22 @@ document.getElementById('chat-input').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
 });
 
+
+function togglePwd(id, btn) {
+  const inp = document.getElementById(id);
+  const isOpen = btn.dataset.open === 'true';
+  const eyeOpen = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const eyeClosed = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  if (isOpen) {
+    inp.type = 'text';
+    btn.innerHTML = eyeClosed;
+    btn.dataset.open = 'false';
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = eyeOpen;
+    btn.dataset.open = 'true';
+  }
+}
 // ── INIT ──
 renderHome();
 </script>
