@@ -3,7 +3,7 @@ workflows:
     name: Studiora Android
     max_build_duration: 60
     environment:
-      node: 18
+      node: 22
       java: 17
     scripts:
       - name: Install deps
