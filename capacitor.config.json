@@ -4,7 +4,10 @@
   "webDir": "www",
   "server": {
     "androidScheme": "https",
-    "cleartext": true
+    "cleartext": true,
+    "allowNavigation": [
+      "*.supabase.co"
+    ]
   },
   "android": {
     "allowMixedContent": true
