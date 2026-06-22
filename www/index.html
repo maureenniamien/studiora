@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -37,10 +37,10 @@
   --shadow2:   0 8px 32px rgba(0,0,0,0.10);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;overflow:hidden;user-select:none}
+html,body{height:100%;max-height:100%;width:100%;max-width:100%;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;overflow:hidden;user-select:none;position:fixed;top:0;left:0;right:0;bottom:0}
 
 /* ── SCREENS ── */
-.screen{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s}
+.screen{position:absolute;inset:0;width:100%;height:100%;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s}
 .screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
 .screen.slide-left{transform:translateX(-30%);opacity:0;pointer-events:none}
 
@@ -52,7 +52,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Plus J
 .display{font-family:'Fraunces',serif}
 
 /* ── TOPBAR ── */
-.topbar{padding:calc(env(safe-area-inset-top,14px) + 10px) 20px 10px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:50}
+.topbar{padding:max(env(safe-area-inset-top,0px) + 10px, 20px) 20px 10px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:50;width:100%}
 .back-btn{display:flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:7px 14px;color:var(--text2);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
 .back-btn:active{opacity:.7}
 
@@ -120,7 +120,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .a5{animation:fadeUp .35s .28s ease both}
 
 /* ── ONBOARDING ── */
-#screen-onboarding{background:linear-gradient(160deg,#FFFEF9 0%,var(--em-soft) 100%);justify-content:center;align-items:center;padding:40px 28px;text-align:center}
+#screen-onboarding{background:linear-gradient(160deg,#FFFEF9 0%,var(--em-soft) 100%);justify-content:center;align-items:center;padding:max(env(safe-area-inset-top,0px) + 40px, 60px) 28px max(env(safe-area-inset-bottom,0px) + 40px, 40px);text-align:center}
 .brand-mark{width:100px;height:100px;border-radius:28px;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:48px;margin:0 auto 28px;box-shadow:0 12px 40px rgba(11,110,79,.3);animation:float 3s ease-in-out infinite}
 
 /* ── HOME ── */
@@ -178,14 +178,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 /* ── SUGGESTIONS ── */
 .suggestion-scroll{display:flex;gap:8px;overflow-x:auto;padding:8px 0 4px}
 .suggestion-scroll::-webkit-scrollbar{display:none}
-
-.premium-banner{background:linear-gradient(135deg,#0B6E4F,#047857);border-radius:16px;padding:16px 18px;margin:0 20px 16px;color:#fff}
-.premium-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:8px}
-.limit-bar{height:5px;background:rgba(255,255,255,0.2);border-radius:3px;margin-top:8px}
-.limit-fill{height:100%;background:#fff;border-radius:3px;transition:width .5s}
-.locked-overlay{position:absolute;inset:0;background:rgba(247,246,242,0.92);border-radius:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
 </style>
-<script src="config.js"></script>
 </head>
 <body>
 
@@ -204,16 +197,13 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ LOGIN ═══════════════════ -->
 <div id="screen-login" class="screen hidden">
-  <div class="scroll-body" style="padding:calc(env(safe-area-inset-top,20px)+24px) 24px 40px">
+  <div class="scroll-body" style="padding:max(env(safe-area-inset-top,0px) + 24px, 44px) 24px 40px">
     <button onclick="goBack()" style="background:none;border:none;font-size:22px;cursor:pointer;margin-bottom:28px;display:block">←</button>
     <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Bon retour</p>
     <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px">Reconnecte-toi</h2>
     <p style="color:var(--text2);margin-bottom:30px">Continue là où tu t'es arrêté·e</p>
     <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email"></div>
-    <div style="margin-bottom:8px"><label class="field-label">Mot de passe</label><div style="position:relative">
-<input class="input" id="login-pwd" type="password" placeholder="••••••••" style="padding-right:50px">
-<button onclick="togglePwd('login-pwd',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;display:flex;align-items:center" data-open="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-</div></div>
+    <div style="margin-bottom:8px"><label class="field-label">Mot de passe</label><input class="input" id="login-pwd" placeholder="••••••••" type="password"></div>
     <p style="text-align:right;font-size:12px;color:var(--em);font-weight:600;margin-bottom:26px;cursor:pointer">Mot de passe oublié ?</p>
     <button class="btn-em" onclick="doLogin()">Se connecter</button>
     <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--text2)">Pas encore inscrit ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-register')">Créer un compte</span></p>
@@ -222,7 +212,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ REGISTER ═══════════════════ -->
 <div id="screen-register" class="screen hidden">
-  <div class="scroll-body" style="padding:calc(env(safe-area-inset-top,20px)+24px) 24px 40px">
+  <div class="scroll-body" style="padding:max(env(safe-area-inset-top,0px) + 24px, 44px) 24px 40px">
     <button onclick="goBack()" style="background:none;border:none;font-size:22px;cursor:pointer;margin-bottom:28px;display:block">←</button>
     <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Inscription gratuite</p>
     <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:26px">Crée ton profil</h2>
@@ -242,10 +232,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 3" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 3</button>
       </div>
     </div>
-    <div style="margin-bottom:24px"><label class="field-label">Mot de passe</label><div style="position:relative">
-<input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères" style="padding-right:50px">
-<button onclick="togglePwd('reg-pwd',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;display:flex;align-items:center" data-open="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-</div></div>
+    <div style="margin-bottom:24px"><label class="field-label">Mot de passe</label><input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères"></div>
     <button class="btn-em" onclick="doRegister()">Créer mon compte →</button>
     <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em)">CGU</span></p>
   </div>
@@ -253,7 +240,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ HOME ═══════════════════ -->
 <div id="screen-home" class="screen hidden">
-  <div class="scroll-body" style="padding-top:calc(env(safe-area-inset-top,0px)+16px);padding-bottom:90px">
+  <div class="scroll-body" style="padding-top:max(env(safe-area-inset-top,0px) + 16px, 44px);padding-bottom:90px">
 
     <!-- Header -->
     <div style="padding:0 20px 16px;display:flex;justify-content:space-between;align-items:flex-start">
@@ -262,7 +249,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <h2 class="display" style="font-size:24px;font-weight:700" id="home-greeting">Maureen</h2>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:12px;padding:7px 12px;display:flex;align-items:center;gap:5px;cursor:pointer" onclick="showToast('🔥 7 jours de suite ! Continue !')">
+        <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:12px;padding:7px 12px;display:flex;align-items:center;gap:5px;cursor:pointer" onclick="showToast('🔥 ' + APP.user.streak + ' jour' + (APP.user.streak > 1 ? 's' : '') + ' de suite ! Continue !')">
           <span class="streak-flame">🔥</span>
           <span style="font-size:13px;font-weight:700;color:var(--amber)" id="streak-count">7</span>
         </div>
@@ -671,107 +658,33 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </nav>
 </div>
 
-
-<!-- MODAL PREMIUM -->
-<div id="modal-premium" class="modal-overlay" onclick="closeModal(event,'modal-premium')">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:48px;margin-bottom:10px">⭐</div>
-      <h3 style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin-bottom:6px">Passe en Premium</h3>
-      <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Débloque l'accès illimité au coach IA</p>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
-      <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">💬</span>
-        <div><div style="font-size:13px;font-weight:700">Messages illimités</div><div style="font-size:11px;color:var(--text2)">Plus de limite quotidienne</div></div>
-      </div>
-      <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">🎯</span>
-        <div><div style="font-size:13px;font-weight:700">Quiz & Flashcards illimités</div><div style="font-size:11px;color:var(--text2)">Génère autant de questions que tu veux</div></div>
-      </div>
-      <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">📄</span>
-        <div><div style="font-size:13px;font-weight:700">Analyse de cours illimitée</div><div style="font-size:11px;color:var(--text2)">Importe autant de cours que tu veux</div></div>
-      </div>
-    </div>
-
-    <div style="background:var(--bg2);border-radius:12px;padding:14px;margin-bottom:16px;text-align:center">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">PRIX SPÉCIAL LANCEMENT</div>
-      <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:var(--em)">500 FCFA<span style="font-size:14px;color:var(--text2)">/mois</span></div>
-    </div>
-
-    <div style="margin-bottom:12px">
-      <label class="field-label">Tu as un code promo ?</label>
-      <div style="display:flex;gap:8px">
-        <input class="input" id="promo-input" placeholder="Ex: MIAGE2025" style="flex:1;text-transform:uppercase">
-        <button onclick="activatePremium(document.getElementById('promo-input').value)" style="background:var(--em);border:none;border-radius:12px;padding:12px 16px;color:#fff;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">OK</button>
-      </div>
-    </div>
-
-    <button onclick="showToast('💳 Paiement Mobile Money bientôt disponible !')" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--em),var(--em2));border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
-      📱 Payer par Mobile Money
-    </button>
-    <button onclick="closeModal(null,'modal-premium')" style="width:100%;padding:12px;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;margin-top:8px;font-family:'Plus Jakarta Sans',sans-serif">
-      Continuer en version gratuite (20 msg/jour)
-    </button>
-  </div>
-</div>
 <!-- TOAST -->
 <div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- ═══════════════════ JAVASCRIPT ═══════════════════ -->
 <script>
 // ── CONFIGURATION ──
-const API_KEY = window.APP_CONFIG?.API_KEY || ''; // ← Remplace avec ta clé API
-const MODEL   = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-sonnet-4-6';
 
-
-// ── FREE / PREMIUM ──
-const FREE_LIMIT = 20; // messages par jour
-let APP_PLAN = localStorage.getItem('studiora_plan') || 'free';
-let MSG_COUNT = parseInt(localStorage.getItem('studiora_msg_count') || '0');
-let MSG_DATE = localStorage.getItem('studiora_msg_date') || '';
-
-function getTodayStr() { return new Date().toISOString().split('T')[0]; }
-
-function checkAndIncrementMsg() {
-  const today = getTodayStr();
-  if (MSG_DATE !== today) { MSG_COUNT = 0; MSG_DATE = today; saveUsage(); }
-  if (APP_PLAN === 'premium') return true;
-  if (MSG_COUNT >= FREE_LIMIT) return false;
-  MSG_COUNT++;
-  saveUsage();
-  return true;
-}
-
-function saveUsage() {
-  localStorage.setItem('studiora_msg_count', MSG_COUNT);
-  localStorage.setItem('studiora_msg_date', MSG_DATE);
-}
-
-function getRemainingMsgs() {
-  const today = getTodayStr();
-  if (MSG_DATE !== today) return FREE_LIMIT;
-  return Math.max(0, FREE_LIMIT - MSG_COUNT);
-}
-
-function showPremiumModal() {
-  showModal('modal-premium');
-}
-
-function activatePremium(code) {
-  const CODES = ['STUDIORA2025','MIAGE2025','PROMO50'];
-  if (CODES.includes(code.toUpperCase())) {
-    APP_PLAN = 'premium';
-    localStorage.setItem('studiora_plan', 'premium');
-    closeModal(null, 'modal-premium');
-    showToast('🎉 Premium activé ! Accès illimité.');
-    renderHome();
-  } else {
-    showToast('❌ Code invalide');
+// ── STREAK (jours de connexion réels) ──
+function computeStreak() {
+  const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  let days = [];
+  try { days = JSON.parse(localStorage.getItem('studiora_days') || '[]'); } catch(e) { days = []; }
+  if (!days.includes(today)) {
+    days.push(today);
+    localStorage.setItem('studiora_days', JSON.stringify(days));
   }
+  // Compter les jours consécutifs jusqu'à aujourd'hui
+  days.sort();
+  let streak = 0;
+  let check = new Date(today);
+  while (true) {
+    const d = check.toISOString().slice(0,10);
+    if (days.includes(d)) { streak++; check.setDate(check.getDate()-1); }
+    else break;
+  }
+  return streak;
 }
 
 // ── DATA ──
@@ -804,7 +717,7 @@ const GOALS = [
 const WEEK_DATA = [55, 80, 60, 90, 45, 30, 0];
 
 let APP = {
-  user: { prenom:'Maureen', nom:'Koné', level:'Licence 2', filiere:'MIAGE', streak:7 },
+  user: { prenom:'Maureen', nom:'Koné', level:'Licence 2', filiere:'MIAGE', streak: computeStreak() },
   chatHistory: [],
   currentSubject: 'math',
   quizQuestions: [], quizIndex: 0, quizScore: 0, quizDiff:'Facile', quizNQ:5,
@@ -854,6 +767,7 @@ function showToast(msg) {
 
 // ── HOME ──
 function renderHome() {
+  APP.user.streak = computeStreak();
   document.getElementById('home-greeting').textContent = APP.user.prenom;
   document.getElementById('home-avatar').textContent = APP.user.prenom[0];
   document.getElementById('streak-count').textContent = APP.user.streak;
@@ -986,11 +900,6 @@ async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
-  if (!checkAndIncrementMsg()) {
-    showToast('⚠️ Limite de 20 messages atteinte. Passe en Premium !');
-    showPremiumModal();
-    return;
-  }
   input.value = ''; autoResize(input);
 
   const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -1019,15 +928,24 @@ async function sendMessage() {
     const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
     messages.push({role:'user',content:text});
 
-    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
       body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
     });
     const data = await res.json();
-    const aiText = data.content?.[0]?.text || 'Je n\'ai pas pu répondre, réessaie !';
 
     document.getElementById(typingId)?.remove();
+
+    if (!res.ok) {
+      const errMsg = `❌ Erreur ${res.status} : ${data.error?.message || JSON.stringify(data)}`;
+      el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
+      scrollChat();
+      btn.disabled = false; btn.textContent = '→';
+      return;
+    }
+
+    const aiText = data.content?.[0]?.text || 'Je n\'ai pas pu répondre, réessaie !';
     const aiTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     APP.chatHistory.push({role:'assistant',content:aiText,time:aiTime});
     el.innerHTML += renderMsgHTML({role:'assistant',content:aiText,time:aiTime});
@@ -1035,7 +953,7 @@ async function sendMessage() {
 
   } catch(e) {
     document.getElementById(typingId)?.remove();
-    const errMsg = 'Connexion impossible. Vérifie ta clé API dans le code (variable API_KEY).';
+    const errMsg = `❌ Erreur réseau : ${e.message}`;
     el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
     scrollChat();
   }
@@ -1121,9 +1039,9 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après, au format :
 correct est l'index (0-3) de la bonne réponse. Les questions doivent être adaptées aux élèves africains (programme ivoirien).`;
 
   try {
-    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
       body:JSON.stringify({model:MODEL,max_tokens:2000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
@@ -1252,9 +1170,9 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
 Les questions doivent être adaptées aux lycéens et étudiants africains.`;
 
   try {
-    const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
       body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
@@ -1330,9 +1248,9 @@ async function analyzeCourse() {
   btn.disabled=true; btn.textContent='⏳ Analyse en cours...';
 
   try {
-    const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':API_KEY},
       body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
     });
     const data=await res.json();
@@ -1426,22 +1344,6 @@ document.getElementById('chat-input').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
 });
 
-
-function togglePwd(id, btn) {
-  const inp = document.getElementById(id);
-  const isOpen = btn.dataset.open === 'true';
-  const eyeOpen = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-  const eyeClosed = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-  if (isOpen) {
-    inp.type = 'text';
-    btn.innerHTML = eyeClosed;
-    btn.dataset.open = 'false';
-  } else {
-    inp.type = 'password';
-    btn.innerHTML = eyeOpen;
-    btn.dataset.open = 'true';
-  }
-}
 // ── INIT ──
 renderHome();
 </script>
