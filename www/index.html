@@ -553,7 +553,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <div id="screen-progress" class="screen hidden">
   <div style="padding:calc(env(safe-area-inset-top,0px)+16px) 20px 12px">
     <h2 class="display" style="font-size:24px;font-weight:700;margin-bottom:4px">Ma progression</h2>
-    <p style="color:var(--text3);font-size:13px">Cette semaine · <span style="color:var(--em);font-weight:600">4 sessions</span></p>
+    <p style="color:var(--text3);font-size:13px">Cette semaine · <span style="color:var(--em);font-weight:600" id="week-sessions-count">0 sessions</span></p>
   </div>
   <div class="scroll-body" style="padding:0 20px 90px">
     <!-- Streak + score semaine -->
@@ -623,11 +623,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   <div class="scroll-body" style="padding:16px 20px 90px">
     <div style="display:flex;gap:8px;margin-bottom:20px">
       <div style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
-        <div class="display" style="font-size:22px;font-weight:700;color:var(--em)">48</div>
+        <div class="display" style="font-size:22px;font-weight:700;color:var(--em)" id="stat-sessions">0</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">Sessions</div>
       </div>
       <div style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
-        <div class="display" style="font-size:22px;font-weight:700;color:var(--purple)">342</div>
+        <div class="display" style="font-size:22px;font-weight:700;color:var(--purple)" id="stat-questions">0</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">Questions</div>
       </div>
       <div style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
@@ -685,6 +685,47 @@ function computeStreak() {
     else break;
   }
   return streak;
+}
+
+// ── STATS RÉELLES (localStorage) ──
+function getStats() {
+  try { return JSON.parse(localStorage.getItem('studiora_stats') || '{}'); } catch(e) { return {}; }
+}
+function saveStats(s) {
+  localStorage.setItem('studiora_stats', JSON.stringify(s));
+}
+function incrementSessions() {
+  const s = getStats();
+  s.sessions = (s.sessions || 0) + 1;
+  const day = new Date().getDay();
+  if (!s.weekData) s.weekData = [0,0,0,0,0,0,0];
+  s.weekData[day] = (s.weekData[day] || 0) + 1;
+  saveStats(s);
+}
+function incrementQuestions(n) {
+  const s = getStats();
+  s.questions = (s.questions || 0) + n;
+  saveStats(s);
+}
+function addSubjectScore(subjectId, pct) {
+  const s = getStats();
+  if (!s.scores) s.scores = {};
+  if (!s.scores[subjectId]) s.scores[subjectId] = [];
+  s.scores[subjectId].push(pct);
+  if (s.scores[subjectId].length > 10) s.scores[subjectId].shift();
+  saveStats(s);
+}
+function getAvgScore() {
+  const s = getStats();
+  if (!s.scores) return 0;
+  const all = Object.values(s.scores).flat();
+  if (!all.length) return 0;
+  return Math.round(all.reduce((a,b)=>a+b,0)/all.length);
+}
+function getWeekData() {
+  const s = getStats();
+  const raw = s.weekData || [0,0,0,0,0,0,0];
+  return [raw[1],raw[2],raw[3],raw[4],raw[5],raw[6],raw[0]];
 }
 
 // ── DATA ──
@@ -928,7 +969,7 @@ async function sendMessage() {
     const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
     messages.push({role:'user',content:text});
 
-    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
       body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
@@ -1138,6 +1179,9 @@ function showResults() {
       <span style="font-weight:700;font-size:13px;color:${pct>=60?'var(--em)':'var(--red)'}">${pct}%</span>
     </div>`;
   APP.user.streak++;
+  incrementSessions();
+  incrementQuestions(APP.quizQuestions.length);
+  addSubjectScore(selectedSubjectQuiz, pct);
 }
 
 function restartQuiz() {
@@ -1279,14 +1323,20 @@ function continueInChat() {
 // ── PROGRESS ──
 function renderProgress() {
   // Graphe semaine
-  const max=Math.max(...WEEK_DATA,1);
-  document.getElementById('week-chart').innerHTML = WEEK_DATA.map((v,i)=>`
+  const wData = getWeekData();
+  const max=Math.max(...wData,1);
+  document.getElementById('week-chart').innerHTML = wData.map((v,i)=>`
     <div style="flex:1;display:flex;align-items:flex-end;justify-content:center">
-      <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)}px;background:${v>0?(i===4?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
+      <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)||4}px;background:${v>0?(i===new Date().getDay()-1?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
     </div>`).join('');
 
-  // Scores par matière
-  const scores=[{s:'math',pct:85},{s:'physique',pct:70},{s:'svt',pct:78},{s:'fr',pct:65},{s:'info',pct:92}];
+  // Scores par matière depuis localStorage
+  const rawScores = getSubjectScores() || {};
+  const scores = SUBJECTS.slice(0,5).map(subj => {
+    const arr = rawScores[subj.id] || [];
+    const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
+    return {s: subj.id, pct: avg};
+  }).filter(x => x.pct > 0);
   document.getElementById('subject-scores').innerHTML=scores.map(({s,pct})=>{
     const subj=SUBJECTS.find(x=>x.id===s);
     return `<div style="margin-bottom:12px">
@@ -1298,6 +1348,16 @@ function renderProgress() {
     </div>`;
   }).join('');
 
+  // Sessions semaine
+  const weekTotal = getWeekData().reduce((a,b)=>a+b,0);
+  const wsEl = document.getElementById('week-sessions-count');
+  if(wsEl) wsEl.textContent = weekTotal + ' session' + (weekTotal>1?'s':'');
+
+  // Score moyen
+  const avg = getAvgScore();
+  const avgEl = document.getElementById('avg-score');
+  if(avgEl) avgEl.textContent = avg > 0 ? avg + '%' : '--';
+
   // Objectifs
   document.getElementById('goals-list').innerHTML=GOALS.map(g=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
@@ -1308,6 +1368,9 @@ function renderProgress() {
 
 // ── PROFILE ──
 function renderProfile() {
+  const st = getStats();
+  document.getElementById('stat-sessions').textContent = st.sessions || 0;
+  document.getElementById('stat-questions').textContent = st.questions || 0;
   document.getElementById('profile-avatar').textContent=APP.user.prenom[0];
   document.getElementById('profile-name').textContent=APP.user.prenom+' '+APP.user.nom;
   document.getElementById('profile-level').textContent=APP.user.level+' · '+APP.user.filiere;
