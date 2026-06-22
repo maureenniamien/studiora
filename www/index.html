@@ -928,7 +928,7 @@ async function sendMessage() {
     const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
     messages.push({role:'user',content:text});
 
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
       body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
