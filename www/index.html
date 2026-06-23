@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -35,6 +36,21 @@
   --r3:        10px;
   --shadow:    0 2px 12px rgba(0,0,0,0.07);
   --shadow2:   0 8px 32px rgba(0,0,0,0.10);
+}
+
+[data-theme="dark"] {
+  --bg:        #0F0F0F;
+  --bg2:       #1A1A1A;
+  --white:     #1E1E1E;
+  --text:      #F0F0F0;
+  --text2:     #A0A0A0;
+  --text3:     #707070;
+  --border:    #2A2A2A;
+  --border2:   #333333;
+  --shadow:    0 2px 12px rgba(0,0,0,.4);
+  --em-soft:   #0D2318;
+  --amb-soft:  #1A1200;
+  --purple-soft:#1A1028;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;max-height:100%;width:100%;max-width:100%;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;overflow:hidden;user-select:none;position:fixed;top:0;left:0;right:0;bottom:0}
@@ -347,7 +363,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Messages -->
-  <div class="scroll-body" id="chat-messages" style="padding:16px 14px 10px"></div>
+  <div class="scroll-body" id="chat-messages" style="padding:16px 14px 80px"></div>
 
   <!-- Suggestions -->
   <div style="padding:6px 14px 4px;background:var(--bg)">
@@ -668,23 +684,40 @@ const MODEL = 'claude-sonnet-4-6';
 
 // ── STREAK (jours de connexion réels) ──
 function computeStreak() {
-  const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  const today = new Date().toISOString().slice(0,10);
   let days = [];
   try { days = JSON.parse(localStorage.getItem('studiora_days') || '[]'); } catch(e) { days = []; }
+
+  // Enregistrer aujourd'hui si pas déjà fait
   if (!days.includes(today)) {
     days.push(today);
+    // Garder max 365 jours
+    if (days.length > 365) days = days.slice(-365);
     localStorage.setItem('studiora_days', JSON.stringify(days));
   }
-  // Compter les jours consécutifs jusqu'à aujourd'hui
-  days.sort();
+
+  // Trier et compter jours consécutifs en remontant depuis aujourd'hui
+  const set = new Set(days);
   let streak = 0;
-  let check = new Date(today);
+  let check = new Date(today + 'T12:00:00'); // midi pour éviter DST
   while (true) {
     const d = check.toISOString().slice(0,10);
-    if (days.includes(d)) { streak++; check.setDate(check.getDate()-1); }
-    else break;
+    if (set.has(d)) {
+      streak++;
+      check.setDate(check.getDate() - 1);
+    } else {
+      // Tolérer 1 jour manqué (hier absent mais avant-hier présent = streak continue)
+      const yesterday = new Date(check);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().slice(0,10);
+      if (streak > 0 && set.has(yStr)) {
+        check.setDate(check.getDate() - 1); // sauter le jour manqué
+      } else {
+        break;
+      }
+    }
   }
-  return streak;
+  return Math.max(streak, 1); // minimum 1 si connecté aujourd'hui
 }
 
 // ── STATS RÉELLES (localStorage) ──
