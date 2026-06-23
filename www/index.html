@@ -52,7 +52,7 @@ html,body{height:100%;max-height:100%;width:100%;max-width:100%;background:var(-
 .display{font-family:'Fraunces',serif}
 
 /* ── TOPBAR ── */
-.topbar{padding:max(env(safe-area-inset-top,0px) + 10px, 20px) 20px 10px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:50;width:100%}
+.topbar{padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 10px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);position:sticky;top:0;z-index:50;width:100%}
 .back-btn{display:flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:7px 14px;color:var(--text2);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
 .back-btn:active{opacity:.7}
 
@@ -329,7 +329,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <div id="screen-chat" class="screen hidden" style="background:var(--bg)">
 
   <!-- Header fixe -->
-  <div style="padding:calc(env(safe-area-inset-top,0px)+12px) 16px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+  <div style="padding:max(env(safe-area-inset-top,0px) + 12px, 44px) 16px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
     <button onclick="goBack()" class="back-btn">← Retour</button>
     <div style="display:flex;align-items:center;gap:10px;flex:1">
       <div class="avatar-ai">🤖</div>
@@ -365,7 +365,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ QUIZ ═══════════════════ -->
 <div id="screen-quiz" class="screen hidden">
-  <div style="padding:calc(env(safe-area-inset-top,0px)+14px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
+  <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
     <button onclick="goBack()" class="back-btn">← Retour</button>
     <span class="display" style="font-size:17px;font-weight:700">Quiz express</span>
     <div style="width:70px"></div>
@@ -446,7 +446,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ FLASHCARDS ═══════════════════ -->
 <div id="screen-flashcards" class="screen hidden">
-  <div style="padding:calc(env(safe-area-inset-top,0px)+14px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
+  <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
     <button onclick="goBack()" class="back-btn">← Retour</button>
     <span class="display" style="font-size:17px;font-weight:700">Flashcards IA</span>
     <div style="width:70px"></div>
@@ -502,7 +502,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ ANALYSER UN COURS ═══════════════════ -->
 <div id="screen-upload" class="screen hidden">
-  <div style="padding:calc(env(safe-area-inset-top,0px)+14px) 20px 14px;display:flex;align-items:center;justify-content:space-between">
+  <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 14px;display:flex;align-items:center;justify-content:space-between">
     <button onclick="goBack()" class="back-btn">← Retour</button>
     <span class="display" style="font-size:17px;font-weight:700">Analyser un cours</span>
     <div style="width:70px"></div>
@@ -551,7 +551,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ PROGRESSION ═══════════════════ -->
 <div id="screen-progress" class="screen hidden">
-  <div style="padding:calc(env(safe-area-inset-top,0px)+16px) 20px 12px">
+  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px">
     <h2 class="display" style="font-size:24px;font-weight:700;margin-bottom:4px">Ma progression</h2>
     <p style="color:var(--text3);font-size:13px">Cette semaine · <span style="color:var(--em);font-weight:600" id="week-sessions-count">0 sessions</span></p>
   </div>
@@ -613,7 +613,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ PROFIL ═══════════════════ -->
 <div id="screen-profile" class="screen hidden">
-  <div style="background:linear-gradient(160deg,var(--em-soft),var(--bg));padding:calc(env(safe-area-inset-top,0px)+20px) 20px 28px;text-align:center">
+  <div style="background:linear-gradient(160deg,var(--em-soft),var(--bg));padding:max(env(safe-area-inset-top,0px) + 20px, 52px) 20px 28px;text-align:center">
     <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:32px;color:#fff;margin:0 auto 14px;box-shadow:0 0 0 4px var(--em-mid), 0 8px 24px rgba(11,110,79,.2)" id="profile-avatar">M</div>
     <h2 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px" id="profile-name">Maureen Koné</h2>
     <p style="color:var(--text2);font-size:13px;margin-bottom:12px" id="profile-level">Licence 2 · MIAGE</p>
@@ -969,11 +969,15 @@ async function sendMessage() {
     const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
     messages.push({role:'user',content:text});
 
+    const ctrl1 = new AbortController();
+    const t1 = setTimeout(()=>ctrl1.abort(), 30000);
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
+      signal: ctrl1.signal,
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
       body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
     });
+    clearTimeout(t1);
     const data = await res.json();
 
     document.getElementById(typingId)?.remove();
@@ -994,7 +998,7 @@ async function sendMessage() {
 
   } catch(e) {
     document.getElementById(typingId)?.remove();
-    const errMsg = `❌ Erreur réseau : ${e.message}`;
+    const errMsg = e.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : `❌ Erreur réseau : ${e.message}`;
     el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
     scrollChat();
   }
@@ -1094,7 +1098,7 @@ correct est l'index (0-3) de la bonne réponse. Les questions doivent être adap
     APP.quizIndex = 0; APP.quizScore = 0;
     launchQuiz();
   } catch(e) {
-    showToast('❌ Erreur réseau. Vérifie ta connexion.');
+    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur réseau. Vérifie ta connexion.');
     btn.disabled=false; btnTxt.textContent='✨ Générer le quiz avec l\'IA';
   }
 }
@@ -1214,8 +1218,11 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
 Les questions doivent être adaptées aux lycéens et étudiants africains.`;
 
   try {
+    const ctrl2 = new AbortController();
+    const t2 = setTimeout(()=>ctrl2.abort(), 30000);
     const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
+      signal: ctrl2.signal,
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
@@ -1228,7 +1235,7 @@ Les questions doivent être adaptées aux lycéens et étudiants africains.`;
     if(APP.flashcards.length===0) throw new Error('empty');
     launchFC();
   } catch(e) {
-    showToast('❌ Erreur réseau. Vérifie ta connexion.');
+    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur réseau. Vérifie ta connexion.');
     btn.disabled=false; txt.textContent='✨ Générer les flashcards';
   }
 }
@@ -1292,8 +1299,11 @@ async function analyzeCourse() {
   btn.disabled=true; btn.textContent='⏳ Analyse en cours...';
 
   try {
+    const ctrl2 = new AbortController();
+    const t2 = setTimeout(()=>ctrl2.abort(), 30000);
     const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
+      signal: ctrl2.signal,
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
     });
@@ -1303,7 +1313,7 @@ async function analyzeCourse() {
     document.getElementById('upload-form').style.display='none';
     document.getElementById('upload-result').style.display='flex';
   } catch(e) {
-    showToast('❌ Erreur réseau. Vérifie ta connexion.');
+    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur réseau. Vérifie ta connexion.');
   }
   btn.disabled=false; btn.textContent='✨ Analyser avec l\'IA';
 }
@@ -1367,6 +1377,18 @@ function renderProgress() {
 }
 
 // ── PROFILE ──
+function getPrefs() {
+  try { return JSON.parse(localStorage.getItem('studiora_prefs') || '{}'); } catch(e) { return {}; }
+}
+function savePrefs(key, val) {
+  const p = getPrefs(); p[key] = val;
+  localStorage.setItem('studiora_prefs', JSON.stringify(p));
+  if (key === 'dark') applyDark(val);
+}
+function applyDark(on) {
+  document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+}
+
 function renderProfile() {
   const st = getStats();
   document.getElementById('stat-sessions').textContent = st.sessions || 0;
@@ -1375,11 +1397,12 @@ function renderProfile() {
   document.getElementById('profile-name').textContent=APP.user.prenom+' '+APP.user.nom;
   document.getElementById('profile-level').textContent=APP.user.level+' · '+APP.user.filiere;
 
+  const savedPrefs = getPrefs();
   const prefs=[
-    {icon:'🔔',label:'Notifications de rappel',sub:'Chaque jour à 18h',toggled:true},
-    {icon:'🌙',label:'Mode sombre',sub:'Thème sombre activé',toggled:false},
-    {icon:'🔊',label:'Sons & vibrations',sub:'Retour haptique',toggled:true},
-    {icon:'📊',label:'Statistiques partagées',sub:'Visible sur mon profil',toggled:false},
+    {key:'notif', icon:'🔔',label:'Notifications de rappel',sub:'Chaque jour à 18h',toggled: savedPrefs.notif !== false},
+    {key:'dark',  icon:'🌙',label:'Mode sombre',sub:'Thème sombre activé',toggled: savedPrefs.dark === true},
+    {key:'sound', icon:'🔊',label:'Sons & vibrations',sub:'Retour haptique',toggled: savedPrefs.sound !== false},
+    {key:'stats', icon:'📊',label:'Statistiques partagées',sub:'Visible sur mon profil',toggled: savedPrefs.stats === true},
   ];
   document.getElementById('prefs-list').innerHTML=prefs.map((p,i)=>`
     <div class="pref-row" ${i===prefs.length-1?'style="border:none"':''}>
@@ -1387,7 +1410,7 @@ function renderProfile() {
         <span style="font-size:20px">${p.icon}</span>
         <div><div style="font-size:13px;font-weight:600">${p.label}</div><div style="font-size:11px;color:var(--text3)">${p.sub}</div></div>
       </div>
-      <div class="toggle ${p.toggled?'on':'off'}" onclick="this.classList.toggle('on');this.classList.toggle('off')">
+      <div class="toggle ${p.toggled?'on':'off'}" onclick="this.classList.toggle('on');this.classList.toggle('off');savePrefs('${p.key}',this.classList.contains('on'))">
         <div class="toggle-thumb"></div>
       </div>
     </div>`).join('');
