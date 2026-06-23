@@ -5,11 +5,15 @@
   "server": {
     "androidScheme": "http",
     "cleartext": true,
-    "allowNavigation": [
-      "*.supabase.co"
-    ]
+    "allowNavigation": ["*.supabase.co"]
   },
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "useLegacyBridge": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
   }
 }
