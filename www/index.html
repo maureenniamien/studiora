@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -261,7 +261,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <!-- Header -->
     <div style="padding:0 20px 16px;display:flex;justify-content:space-between;align-items:flex-start">
       <div>
-        <p style="font-size:12px;color:var(--text3);margin-bottom:3px">Bonsoir 🌙</p>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:3px" id="home-salut">Bonjour ☀️</p>
         <h2 class="display" style="font-size:24px;font-weight:700" id="home-greeting">Maureen</h2>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
@@ -662,7 +662,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       <div id="profile-subjects"></div>
     </div>
 
-    <button onclick="showToast('👋 À bientôt !');setTimeout(()=>showScreen(\'screen-onboarding\'),700)" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🚪 Se déconnecter</button>
+    <button onclick="localStorage.removeItem('studiora_session');showToast('👋 À bientôt !');setTimeout(()=>showScreen(\'screen-onboarding\'),700)" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🚪 Se déconnecter</button>
   </div>
 
   <nav class="bottom-nav">
@@ -762,16 +762,86 @@ function getWeekData() {
 }
 
 // ── DATA ──
-const SUBJECTS = [
-  { id:'math',    icon:'📐', name:'Mathématiques',  color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
-  { id:'physique',icon:'⚗️', name:'Physique-Chimie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
-  { id:'svt',     icon:'🧬', name:'SVT',             color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
-  { id:'fr',      icon:'📝', name:'Français',        color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)'  },
-  { id:'info',    icon:'💻', name:'Informatique',    color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
-  { id:'eco',     icon:'📈', name:'Économie',        color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
-  { id:'ang',     icon:'🇬🇧', name:'Anglais',         color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)'  },
-  { id:'hg',      icon:'🗺️', name:'Histoire-Géo',    color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+const ALL_SUBJECTS = [
+  { id:'math',    icon:'📐', name:'Mathématiques',     color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+  { id:'physique',icon:'⚗', name:'Physique-Chimie',   color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+  { id:'svt',     icon:'🧬', name:'SVT',               color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+  { id:'fr',      icon:'📝', name:'Français',          color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)'  },
+  { id:'info',    icon:'💻', name:'Informatique',      color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+  { id:'eco',     icon:'📈', name:'Économie',          color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+  { id:'ang',     icon:'EN', name:'Anglais',           color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)'  },
+  { id:'hg',      icon:'🗺', name:'Histoire-Géo',      color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+  { id:'philo',   icon:'🧠', name:'Philosophie',       color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+  { id:'stats',   icon:'📊', name:'Statistiques',      color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+  { id:'algo',    icon:'💡', name:'Algorithmique',     color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+  { id:'bdd',     icon:'📦', name:'Bases de données',  color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+  { id:'gestion', icon:'📋', name:'Gestion',           color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)'  },
+  { id:'compta',  icon:'💰', name:'Comptabilité',      color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)'  },
+  { id:'droit',   icon:'⚖', name:'Droit',             color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+  { id:'si',      icon:'🔩', name:'Systemes info',  color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
 ];
+
+// Matières par niveau et filière
+const SUBJECTS_BY_LEVEL = {
+  '3ème':      ['math','physique','svt','fr','ang','hg'],
+  '2nde':      ['math','physique','svt','fr','ang','hg','eco'],
+  'Terminale': {
+    'default': ['math','physique','svt','fr','ang','hg','philo'],
+    'A':       ['fr','philo','hg','ang','eco','math'],
+    'A1':      ['fr','philo','hg','ang','eco','math'],
+    'A2':      ['fr','philo','hg','ang','eco','math'],
+    'B':       ['math','physique','svt','fr','ang','hg','philo'],
+    'C':       ['math','physique','svt','fr','ang','hg'],
+    'D':       ['math','physique','svt','fr','ang','hg'],
+    'E':       ['math','physique','svt','fr','ang','hg'],
+    'STMG':    ['math','eco','gestion','fr','ang','hg'],
+  },
+  'Licence 1': {
+    'default': ['math','info','ang','eco','fr'],
+    'MIAGE':   ['math','info','algo','stats','ang'],
+    'ASSRI':   ['math','info','algo','bdd','ang'],
+    'Informatique': ['math','info','algo','bdd','ang'],
+    'Économie':['math','eco','stats','compta','ang'],
+    'Droit':   ['droit','fr','ang','hg','eco'],
+    'Gestion': ['gestion','compta','eco','math','ang'],
+  },
+  'Licence 2': {
+    'default': ['math','info','ang','eco','stats'],
+    'MIAGE':   ['info','algo','bdd','stats','si','eco','ang'],
+    'ASSRI':   ['info','algo','bdd','si','droit','ang'],
+    'Informatique': ['info','algo','bdd','si','math','ang'],
+    'Économie':['eco','stats','compta','gestion','ang'],
+    'Droit':   ['droit','fr','ang','eco','gestion'],
+    'Gestion': ['gestion','compta','eco','stats','droit'],
+  },
+  'Licence 3': {
+    'default': ['info','math','ang','eco','stats'],
+    'MIAGE':   ['si','bdd','algo','stats','gestion','ang'],
+    'ASSRI':   ['si','bdd','droit','algo','ang'],
+    'Informatique': ['algo','bdd','si','info','ang'],
+    'Économie':['eco','stats','compta','gestion','droit'],
+    'Droit':   ['droit','eco','gestion','ang','fr'],
+    'Gestion': ['gestion','compta','eco','droit','ang'],
+  },
+};
+
+function getSubjects() {
+  const level = APP.user.level || 'Licence 2';
+  const filiere = APP.user.filiere || '';
+  const byLevel = SUBJECTS_BY_LEVEL[level];
+  let ids;
+  if (!byLevel) {
+    ids = ['math','fr','ang','eco','info'];
+  } else if (Array.isArray(byLevel)) {
+    ids = byLevel;
+  } else {
+    ids = byLevel[filiere] || byLevel['default'] || ['math','fr','ang'];
+  }
+  return ids.map(id => ALL_SUBJECTS.find(s => s.id === id)).filter(Boolean);
+}
+
+// SUBJECTS dynamique selon le profil
+let SUBJECTS = getSubjects();
 
 const TIPS = [
   "La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !",
@@ -845,6 +915,11 @@ function renderHome() {
   document.getElementById('home-greeting').textContent = APP.user.prenom;
   document.getElementById('home-avatar').textContent = APP.user.prenom[0];
   document.getElementById('streak-count').textContent = APP.user.streak;
+  // Salutation selon l'heure
+  const h = new Date().getHours();
+  const salut = h >= 5 && h < 12 ? 'Bonjour ☀️' : h >= 12 && h < 18 ? 'Bon après-midi 🌤️' : h >= 18 && h < 22 ? 'Bonsoir 🌙' : 'Bonne nuit 🌙';
+  const salutEl = document.getElementById('home-salut');
+  if (salutEl) salutEl.textContent = salut;
   document.getElementById('tip-text').textContent = TIPS[Math.floor(Math.random()*TIPS.length)];
 
   const el = document.getElementById('subjects-list');
@@ -1058,9 +1133,38 @@ function selectLevel(btn) {
   btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
   selectedLevel = btn.dataset.v;
 }
+function saveSession() {
+  localStorage.setItem('studiora_session', JSON.stringify({
+    prenom: APP.user.prenom,
+    nom: APP.user.nom,
+    level: APP.user.level,
+    filiere: APP.user.filiere,
+    email: APP.user.email || ''
+  }));
+}
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('studiora_session') || 'null');
+    if (s && s.prenom) {
+      APP.user.prenom = s.prenom;
+      APP.user.nom = s.nom;
+      APP.user.level = s.level || 'Licence 2';
+      APP.user.filiere = s.filiere || 'MIAGE';
+      APP.user.email = s.email || '';
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
 function doLogin() {
   const email = document.getElementById('login-email').value;
   if (!email) { showToast('⚠️ Entre ton email'); return; }
+  APP.user.email = email;
+  // Extraire prénom depuis email si possible
+  const name = email.split('@')[0].split('.')[0];
+  APP.user.prenom = name.charAt(0).toUpperCase() + name.slice(1);
+  saveSession();
+  SUBJECTS = getSubjects();
   showToast('✅ Connexion réussie !');
   setTimeout(()=>showScreen('screen-home'), 400);
 }
@@ -1069,6 +1173,9 @@ function doRegister() {
   const n = document.getElementById('reg-nom').value;
   if (!p||!n) { showToast('⚠️ Remplis tous les champs'); return; }
   APP.user.prenom = p; APP.user.nom = n; APP.user.level = selectedLevel;
+  APP.user.filiere = getFiliere(selectedLevel);
+  saveSession();
+  SUBJECTS = getSubjects();
   showToast('🎉 Compte créé !');
   setTimeout(()=>showScreen('screen-home'), 400);
 }
@@ -1354,7 +1461,7 @@ async function analyzeCourse() {
 function resetUpload() {
   document.getElementById('upload-form').style.display='block';
   document.getElementById('upload-result').style.display='none';
-  document.getElementById('course-text').value='';
+  // Ne pas vider le texte - l'utilisateur peut vouloir refaire une analyse
 }
 
 function continueInChat() {
