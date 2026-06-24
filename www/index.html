@@ -218,6 +218,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Bon retour</p>
     <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px">Reconnecte-toi</h2>
     <p style="color:var(--text2);margin-bottom:30px">Continue là où tu t'es arrêté·e</p>
+    <div style="margin-bottom:14px"><label class="field-label">Prénom</label><input class="input" id="login-prenom" placeholder="Ton prénom"></div>
     <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email"></div>
     <div style="margin-bottom:8px"><label class="field-label">Mot de passe</label><input class="input" id="login-pwd" placeholder="••••••••" type="password"></div>
     <p style="text-align:right;font-size:12px;color:var(--em);font-weight:600;margin-bottom:26px;cursor:pointer">Mot de passe oublié ?</p>
@@ -576,12 +577,12 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:var(--r2);padding:14px;text-align:center">
         <div style="font-size:32px;margin-bottom:4px">🔥</div>
-        <div class="display" style="font-size:26px;font-weight:700;color:var(--amber)">7</div>
+        <div class="display" style="font-size:26px;font-weight:700;color:var(--amber)" id="progress-streak">0</div>
         <div style="font-size:11px;color:var(--text3)">jours de suite</div>
       </div>
       <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:var(--r2);padding:14px;text-align:center">
         <div style="font-size:32px;margin-bottom:4px">🏆</div>
-        <div class="display" style="font-size:26px;font-weight:700;color:var(--em)">82%</div>
+        <div class="display" style="font-size:26px;font-weight:700;color:var(--em)" id="avg-score">--</div>
         <div style="font-size:11px;color:var(--text3)">score moyen</div>
       </div>
     </div>
@@ -748,6 +749,10 @@ function addSubjectScore(subjectId, pct) {
   if (s.scores[subjectId].length > 10) s.scores[subjectId].shift();
   saveStats(s);
 }
+function getSubjectScores() {
+  const s = getStats();
+  return s.scores || null;
+}
 function getAvgScore() {
   const s = getStats();
   if (!s.scores) return 0;
@@ -779,6 +784,12 @@ const ALL_SUBJECTS = [
   { id:'compta',  icon:'💰', name:'Comptabilité',      color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)'  },
   { id:'droit',   icon:'⚖', name:'Droit',             color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
   { id:'si',      icon:'🔩', name:'Systemes info',  color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+  { id:'java',    icon:'☕', name:'Java',             color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+  { id:'uml',     icon:'📊', name:'UML',              color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+  { id:'mobile',  icon:'📱', name:'Prog. Mobile',     color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+  { id:'ia',      icon:'🤖', name:'Intelligence Artif',color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+  { id:'reseau',  icon:'🌐', name:'Reseaux',          color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)'  },
+  { id:'poo',     icon:'🧩', name:'POO',              color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)'  },
 ];
 
 // Matières par niveau et filière
@@ -798,8 +809,8 @@ const SUBJECTS_BY_LEVEL = {
   },
   'Licence 1': {
     'default': ['math','info','ang','eco','fr'],
-    'MIAGE':   ['math','info','algo','stats','ang'],
-    'ASSRI':   ['math','info','algo','bdd','ang'],
+    'MIAGE':   ['math','java','poo','algo','stats','ang','si'],
+    'ASSRI':   ['math','java','poo','algo','reseau','ang','si'],
     'Informatique': ['math','info','algo','bdd','ang'],
     'Économie':['math','eco','stats','compta','ang'],
     'Droit':   ['droit','fr','ang','hg','eco'],
@@ -807,17 +818,17 @@ const SUBJECTS_BY_LEVEL = {
   },
   'Licence 2': {
     'default': ['math','info','ang','eco','stats'],
-    'MIAGE':   ['info','algo','bdd','stats','si','eco','ang'],
-    'ASSRI':   ['info','algo','bdd','si','droit','ang'],
-    'Informatique': ['info','algo','bdd','si','math','ang'],
+    'MIAGE':   ['java','poo','algo','bdd','stats','si','math','uml','mobile','ia','ang'],
+    'ASSRI':   ['java','poo','algo','bdd','si','reseau','math','droit','ang'],
+    'Informatique': ['java','poo','algo','bdd','si','mobile','math','uml','ang'],
     'Économie':['eco','stats','compta','gestion','ang'],
     'Droit':   ['droit','fr','ang','eco','gestion'],
     'Gestion': ['gestion','compta','eco','stats','droit'],
   },
   'Licence 3': {
     'default': ['info','math','ang','eco','stats'],
-    'MIAGE':   ['si','bdd','algo','stats','gestion','ang'],
-    'ASSRI':   ['si','bdd','droit','algo','ang'],
+    'MIAGE':   ['ia','mobile','reseau','si','bdd','gestion','ang','uml'],
+    'ASSRI':   ['reseau','si','bdd','ia','mobile','droit','ang'],
     'Informatique': ['algo','bdd','si','info','ang'],
     'Économie':['eco','stats','compta','gestion','droit'],
     'Droit':   ['droit','eco','gestion','ang','fr'],
@@ -840,8 +851,8 @@ function getSubjects() {
   return ids.map(id => ALL_SUBJECTS.find(s => s.id === id)).filter(Boolean);
 }
 
-// SUBJECTS dynamique selon le profil
-let SUBJECTS = getSubjects();
+// SUBJECTS - initialisé après APP
+let SUBJECTS = ALL_SUBJECTS.slice(0, 8); // valeur par défaut
 
 const TIPS = [
   "La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !",
@@ -851,12 +862,34 @@ const TIPS = [
   "Fais des schémas et mindmaps : le cerveau retient 65% des informations visuelles, contre 10% du texte seul.",
 ];
 
-const GOALS = [
-  { text:'5 sessions de révision', done:true  },
-  { text:'Finir le chapitre Probabilités', done:true  },
-  { text:'Quiz score > 75% en Maths', done:true  },
-  { text:'Revoir la SVT Terminale', done:false },
-];
+function getGoals() {
+  const st = getStats();
+  const sessions = st.sessions || 0;
+  const questions = st.questions || 0;
+  const avgScore = getAvgScore();
+  const level = APP.user.level || '';
+  const filiere = APP.user.filiere || '';
+
+  // Objectifs générés selon les vraies stats
+  const goals = [
+    { text: '5 sessions de révision', done: sessions >= 5 },
+    { text: '50 questions répondues', done: questions >= 50 },
+    { text: 'Score moyen > 70%', done: avgScore >= 70 },
+  ];
+
+  // Objectif spécifique selon filière/niveau
+  if (filiere === 'MIAGE' || filiere === 'ASSRI' || filiere === 'Informatique') {
+    goals.push({ text: 'Faire un quiz Algorithmique', done: !!(getSubjectScores() || {})['algo'] });
+  } else if (level.includes('Terminale')) {
+    goals.push({ text: 'Reviser un cours avec l IA', done: false });
+  } else if (filiere.includes('Économie') || filiere.includes('Gestion')) {
+    goals.push({ text: 'Faire un quiz Économie', done: !!(getSubjectScores() || {})['eco'] });
+  } else {
+    goals.push({ text: 'Générer 3 quiz différents', done: Object.keys(getSubjectScores() || {}).length >= 3 });
+  }
+  return goals;
+}
+const GOALS = [];
 
 const WEEK_DATA = [55, 80, 60, 90, 45, 30, 0];
 
@@ -1077,15 +1110,11 @@ async function sendMessage() {
     const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
     messages.push({role:'user',content:text});
 
-    const ctrl1 = new AbortController();
-    const t1 = setTimeout(()=>ctrl1.abort(), 30000);
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
-      signal: ctrl1.signal,
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
       body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
     });
-    clearTimeout(t1);
     const data = await res.json();
 
     document.getElementById(typingId)?.remove();
@@ -1158,11 +1187,10 @@ function loadSession() {
 }
 function doLogin() {
   const email = document.getElementById('login-email').value;
+  const prenom = document.getElementById('login-prenom')?.value || '';
   if (!email) { showToast('⚠️ Entre ton email'); return; }
   APP.user.email = email;
-  // Extraire prénom depuis email si possible
-  const name = email.split('@')[0].split('.')[0];
-  APP.user.prenom = name.charAt(0).toUpperCase() + name.slice(1);
+  if (prenom) APP.user.prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1);
   saveSession();
   SUBJECTS = getSubjects();
   showToast('✅ Connexion réussie !');
@@ -1179,6 +1207,9 @@ function doRegister() {
   showToast('🎉 Compte créé !');
   setTimeout(()=>showScreen('screen-home'), 400);
 }
+
+// Mettre à jour SUBJECTS selon le profil chargé
+SUBJECTS = getSubjects();
 
 // ── QUIZ ──
 let selectedDiff = 'Facile', selectedNQ = 5, selectedSubjectQuiz = 'math';
@@ -1358,11 +1389,8 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
 Les questions doivent être adaptées aux lycéens et étudiants africains.`;
 
   try {
-    const ctrl2 = new AbortController();
-    const t2 = setTimeout(()=>ctrl2.abort(), 30000);
     const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
-      signal: ctrl2.signal,
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:prompt}]})
     });
@@ -1439,11 +1467,8 @@ async function analyzeCourse() {
   btn.disabled=true; btn.textContent='⏳ Analyse en cours...';
 
   try {
-    const ctrl2 = new AbortController();
-    const t2 = setTimeout(()=>ctrl2.abort(), 30000);
     const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
-      signal: ctrl2.signal,
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
     });
@@ -1472,6 +1497,10 @@ function continueInChat() {
 
 // ── PROGRESS ──
 function renderProgress() {
+  // Streak réel
+  const streakEl = document.getElementById('progress-streak');
+  if(streakEl) streakEl.textContent = computeStreak();
+
   // Graphe semaine
   const wData = getWeekData();
   const max=Math.max(...wData,1);
@@ -1509,7 +1538,11 @@ function renderProgress() {
   if(avgEl) avgEl.textContent = avg > 0 ? avg + '%' : '--';
 
   // Objectifs
-  document.getElementById('goals-list').innerHTML=GOALS.map(g=>`
+  const goals = getGoals();
+  const doneCount = goals.filter(g=>g.done).length;
+  const goalsEl = document.getElementById('goals-count');
+  if(goalsEl) goalsEl.textContent = doneCount + '/' + goals.length;
+  document.getElementById('goals-list').innerHTML=goals.map(g=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="width:22px;height:22px;border-radius:50%;background:${g.done?'var(--em)':'var(--bg2)'};border:2px solid ${g.done?'var(--em)':'var(--border2)'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${g.done?'✓':''}</div>
       <span style="font-size:13px;color:${g.done?'var(--text)':'var(--text2)'};${g.done?'text-decoration:line-through;opacity:.6':''}">${g.text}</span>
