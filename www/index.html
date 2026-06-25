@@ -246,13 +246,59 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <div style="margin-bottom:14px"><label class="field-label">Email</label><input class="input" id="reg-email" type="email" placeholder="aminata@gmail.com"></div>
     <div style="margin-bottom:14px">
       <label class="field-label">Niveau scolaire</label>
-      <div id="level-btns" style="display:flex;gap:7px;flex-wrap:wrap">
-        <button onclick="selectLevel(this)" class="level-btn" data-v="3ème" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">3ème</button>
-        <button onclick="selectLevel(this)" class="level-btn" data-v="2nde" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">2nde</button>
-        <button onclick="selectLevel(this)" class="level-btn active-level" data-v="Terminale" style="padding:9px 14px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--em)">Terminale</button>
-        <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 1" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 1</button>
-        <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 2" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 2</button>
-        <button onclick="selectLevel(this)" class="level-btn" data-v="Licence 3" style="padding:9px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Licence 3</button>
+      <select id="reg-niveau" class="input" onchange="onNiveauChange()" style="margin-bottom:8px">
+        <option value="">-- Choisir le niveau --</option>
+        <optgroup label="Collège">
+          <option value="6ème">6ème</option>
+          <option value="5ème">5ème</option>
+          <option value="4ème">4ème</option>
+          <option value="3ème">3ème (BEPC)</option>
+        </optgroup>
+        <optgroup label="Lycée">
+          <option value="2nde">2nde</option>
+          <option value="1ère">1ère</option>
+          <option value="Terminale" selected>Terminale (BAC)</option>
+        </optgroup>
+        <optgroup label="Université — Licence">
+          <option value="Licence 1">Licence 1 (L1)</option>
+          <option value="Licence 2">Licence 2 (L2)</option>
+          <option value="Licence 3">Licence 3 (L3)</option>
+        </optgroup>
+        <optgroup label="Université — Master">
+          <option value="Master 1">Master 1 (M1)</option>
+          <option value="Master 2">Master 2 (M2)</option>
+        </optgroup>
+        <optgroup label="Université — Doctorat">
+          <option value="Doctorat">Doctorat (PhD)</option>
+        </optgroup>
+        <optgroup label="Classes préparatoires">
+          <option value="CPGE 1">CPGE 1ère année</option>
+          <option value="CPGE 2">CPGE 2ème année</option>
+        </optgroup>
+        <optgroup label="BTS / DUT">
+          <option value="BTS 1">BTS 1ère année</option>
+          <option value="BTS 2">BTS 2ème année</option>
+          <option value="DUT">DUT / BUT</option>
+        </optgroup>
+      </select>
+      <div id="reg-serie-block" style="display:block;margin-bottom:8px">
+        <label class="field-label">Série / Option</label>
+        <select id="reg-serie" class="input" onchange="onSerieChange()">
+          <option value="">-- Choisir la série --</option>
+          <option value="D">Série D — Sciences de la Vie</option>
+          <option value="C">Série C — Mathématiques et Sciences Physiques</option>
+          <option value="A">Série A — Littéraire (Philosophie)</option>
+          <option value="B">Série B — Sciences Économiques et Sociales</option>
+          <option value="E">Série E — Sciences et Technologies</option>
+          <option value="F">Série F — Techniques Industrielles</option>
+          <option value="G">Série G — Techniques de Gestion</option>
+        </select>
+      </div>
+      <div id="reg-filiere-block" style="display:none;margin-bottom:8px">
+        <label class="field-label">Filière / Spécialité</label>
+        <select id="reg-filiere" class="input">
+          <option value="">-- Choisir la filière --</option>
+        </select>
       </div>
     </div>
     <div style="margin-bottom:24px"><label class="field-label">Mot de passe</label><input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères"></div>
@@ -542,6 +588,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       <span style="font-size:12px;color:var(--text3)">— ou colle ton texte directement —</span>
     </div>
     <div style="margin-bottom:16px">
+      <label class="field-label" style="margin-bottom:4px">TITRE DU COURS (optionnel)</label>
+      <input id="course-title-input" class="input" placeholder="Ex: Chap 3 — Algorithmes de tri" style="margin-bottom:10px">
       <label class="field-label">Colle ton cours ici</label>
       <textarea class="input" id="course-text" placeholder="Colle le contenu de ton cours, chapitre, ou notes ici..." rows="6" style="resize:vertical;min-height:120px"></textarea>
     </div>
@@ -654,8 +702,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <div style="font-size:11px;color:var(--text3);margin-top:4px">Questions</div>
       </div>
       <div style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
-        <div class="display" style="font-size:22px;font-weight:700;color:var(--amber)">7🔥</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">Série</div>
+        <div class="display" style="font-size:22px;font-weight:700;color:var(--amber)" id="profile-streak-stat">--</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Série 🔥</div>
       </div>
     </div>
 
@@ -669,7 +717,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       <div id="profile-subjects"></div>
     </div>
 
-    <button onclick="localStorage.removeItem('studiora_session');showToast('👋 À bientôt !');setTimeout(()=>showScreen(\'screen-onboarding\'),700)" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🚪 Se déconnecter</button>
+    <button onclick="doLogout()" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Se déconnecter</button>
   </div>
 
   <nav class="bottom-nav">
@@ -699,7 +747,21 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       <label class="field-label" style="margin-bottom:10px">💻 Terminaux</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
         <div onclick="openTerminal('linux')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.96)'" onmouseup="this.style.transform=''">
-          <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="14" ry="16" fill="#f5c842"/><ellipse cx="24" cy="26" rx="11" ry="13" fill="#f0b500"/><circle cx="19" cy="22" r="3.5" fill="#fff"/><circle cx="29" cy="22" r="3.5" fill="#fff"/><circle cx="19" cy="22" r="1.5" fill="#000"/><circle cx="29" cy="22" r="1.5" fill="#000"/><path d="M20 30 q4 3 8 0" stroke="#000" stroke-width="1.2" fill="none"/><path d="M14 18 q-4-8 2-13 q3 6 0 9" fill="#f5c842"/><path d="M34 18 q4-8-2-13 q-3 6 0 9" fill="#f5c842"/><ellipse cx="16" cy="42" rx="4" ry="3" fill="#333"/><ellipse cx="32" cy="42" rx="4" ry="3" fill="#333"/><path d="M16 40 q0-8-5-12" stroke="#333" stroke-width="2.5" fill="none"/><path d="M32 40 q0-8 5-12" stroke="#333" stroke-width="2.5" fill="none"/></svg></div>
+          <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" viewBox="0 0 100 100">
+    <ellipse cx="50" cy="55" rx="28" ry="32" fill="#1a1a1a"/>
+    <ellipse cx="50" cy="38" rx="20" ry="22" fill="#f5f5f5"/>
+    <ellipse cx="42" cy="32" rx="7" ry="9" fill="#1a1a1a"/>
+    <ellipse cx="58" cy="32" rx="7" ry="9" fill="#1a1a1a"/>
+    <circle cx="42" cy="33" r="4" fill="#fff"/>
+    <circle cx="58" cy="33" r="4" fill="#fff"/>
+    <circle cx="43" cy="34" r="2" fill="#1a1a1a"/>
+    <circle cx="59" cy="34" r="2" fill="#1a1a1a"/>
+    <ellipse cx="50" cy="56" rx="12" ry="9" fill="#f5a623"/>
+    <ellipse cx="30" cy="80" rx="10" ry="7" fill="#f5a623" transform="rotate(-20,30,80)"/>
+    <ellipse cx="70" cy="80" rx="10" ry="7" fill="#f5a623" transform="rotate(20,70,80)"/>
+    <path d="M28 68 q-8 5-6 14" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M72 68 q8 5 6 14" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+  </svg></div>
           <div style="font-size:12px;font-weight:700">Linux</div>
           <div style="font-size:10px;color:var(--text3)">Bash / Shell</div>
         </div>
@@ -709,12 +771,23 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
           <div style="font-size:10px;color:var(--text3)">CMD / PowerShell</div>
         </div>
         <div onclick="openTerminal('python')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.96)'" onmouseup="this.style.transform=''">
-          <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" viewBox="0 0 48 48"><path d="M24 4C14 4 11 9 11 14L11 20L24 20L24 22L8 22C4 22 4 28 4 28L4 34C4 39 9 44 18 44L30 44C38 44 44 40 44 34L44 28C44 23 40 22 36 22L24 22L24 20L37 20L37 14C37 9 34 4 24 4Z" fill="#3776AB"/><path d="M24 44C34 44 37 39 37 34L37 28L24 28L24 26L40 26C44 26 44 20 44 20L44 14C44 9 39 4 30 4L18 4C10 4 4 8 4 14L4 20C4 25 8 26 12 26L24 26L24 28L11 28L11 34C11 39 14 44 24 44Z" fill="#FFD43B"/><circle cx="18" cy="14" r="2.5" fill="#fff"/><circle cx="30" cy="34" r="2.5" fill="#fff"/></svg></div>
+          <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" viewBox="0 0 48 48">
+    <path d="M24.1 2.8C13.5 2.8 14.2 7.5 14.2 7.5L14.2 12.4 24.3 12.4 24.3 14 9.3 14C9.3 14 3.8 13.3 3.8 24 3.8 34.7 8.6 34.3 8.6 34.3L11.5 34.3 11.5 29.1C11.5 29.1 11.3 24.3 16.2 24.3L26.1 24.3C26.1 24.3 30.8 24.4 30.8 19.8L30.8 8.4C30.8 8.4 31.5 2.8 24.1 2.8Z" fill="#3776ab"/>
+    <circle cx="18.8" cy="8" r="2.2" fill="#ffd43b"/>
+    <path d="M23.9 45.2C34.5 45.2 33.8 40.5 33.8 40.5L33.8 35.6 23.7 35.6 23.7 34 38.7 34C38.7 34 44.2 34.7 44.2 24 44.2 13.3 39.4 13.7 39.4 13.7L36.5 13.7 36.5 18.9C36.5 18.9 36.7 23.7 31.8 23.7L21.9 23.7C21.9 23.7 17.2 23.6 17.2 28.2L17.2 39.6C17.2 39.6 16.5 45.2 23.9 45.2Z" fill="#ffd43b"/>
+    <circle cx="29.2" cy="40" r="2.2" fill="#3776ab"/>
+  </svg></div>
           <div style="font-size:12px;font-weight:700">Python</div>
           <div style="font-size:10px;color:var(--text3)">Interpréteur</div>
         </div>
         <div onclick="openTerminal('java')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.96)'" onmouseup="this.style.transform=''">
-          <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" viewBox="0 0 48 48"><path d="M18 34c0 0-3 2 2 3 2 0 7 0 10-1 0 0 1 1-1 2-7 2-17 0-11-4z" fill="#0074BD"/><path d="M17 30c0 0-4 2 3 3 5 0 13 0 17-2 0 0 1 1-2 2-9 3-23 1-18-3z" fill="#0074BD"/><path d="M26 4c0 0 5 3-4 8-7 4-2 7 0 8-6-6-2-9 4-16z" fill="#EA2D2E"/><path d="M19 38c0 0-3 1 1 2 5 1 15 1 19-1 0 0 1 1-1 2-8 3-25 0-19-3z" fill="#0074BD"/><path d="M37 27c0 0 3 3-5 4-6 1-17 1-19-1 0 0 1-1 4-1 6 0 17 0 20-2z" fill="#0074BD"/><path d="M24 24c0 0-7 2-3 3 3 1 9 0 11-1 0 0 1 1-1 1-5 2-15 0-7-3z" fill="#0074BD"/></svg></div>
+          <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" viewBox="0 0 48 48">
+    <path d="M19 30s-3 2 2 3c2.5.5 7.5.5 11-1 0 0 1.2 1-1 2.3-7.5 2.5-18.5.3-12-4.3z" fill="#f89820"/>
+    <path d="M17.5 26s-4 2.5 3 3.5c5.5.7 14 .7 18.5-2.5 0 0 1.3 1.3-2 2.5-9.5 3.5-24.5 1.5-19.5-3.5z" fill="#f89820"/>
+    <path d="M27 4s5.5 3-4 9c-7.5 4.5-2 7.5 0 8.5C16.5 15.5 21 12 27 4z" fill="#f89820"/>
+    <path d="M20.5 34.5s-3 1.5 1 2.5C27 39 38 39 42 37c0 0 1 1.3-1 2.3-9 3.5-28 .5-20.5-4.8z" fill="#f89820"/>
+    <path d="M38.5 23.5s3 3.5-5.5 4.5c-6.5 1-18 1-20.5-1 0 0 1.5-1.3 5-1.3 6 0 18.5.5 21-3.2z" fill="#f89820"/>
+  </svg></div>
           <div style="font-size:12px;font-weight:700">Java</div>
           <div style="font-size:10px;color:var(--text3)">Compilateur</div>
         </div>
@@ -795,27 +868,52 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ TERMINAL IA ═══════════════════ -->
 <div id="screen-terminal" class="screen hidden" style="background:#0D0D0D;display:flex;flex-direction:column">
-  <div style="padding:max(env(safe-area-inset-top,0px) + 12px, 44px) 16px 10px;background:#1A1A1A;border-bottom:1px solid #333;display:flex;align-items:center;gap:12px;flex-shrink:0">
-    <button onclick="goBack()" style="background:#2A2A2A;border:1px solid #444;border-radius:10px;padding:7px 14px;color:#aaa;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">← Retour</button>
-    <div style="display:flex;align-items:center;gap:8px;flex:1">
-      <div id="terminal-lang-icon" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center"></div>
-      <span style="font-size:14px;font-weight:700;color:#fff" id="terminal-title">Terminal Linux</span>
+  <div style="padding:max(env(safe-area-inset-top,0px)+12px,44px) 12px 10px;background:#1A1A1A;border-bottom:1px solid #333;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button onclick="goBack()" style="background:#2A2A2A;border:1px solid #444;border-radius:10px;padding:7px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">← Retour</button>
+    <div id="terminal-lang-icon" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0"></div>
+    <span style="font-size:14px;font-weight:700;color:#fff;flex:1" id="terminal-title">Terminal</span>
+    <button onclick="clearTerminal()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:5px 10px;color:#aaa;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">🗑 Clear</button>
+  </div>
+
+  <!-- Tab bar: Output / Éditeur -->
+  <div style="background:#111;border-bottom:1px solid #222;display:flex;flex-shrink:0">
+    <button id="tab-output" onclick="switchTermTab('output')" style="flex:1;padding:9px;background:#1A1A1A;border:none;border-bottom:2px solid #00ff41;color:#00ff41;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">▶ Sortie</button>
+    <button id="tab-editor" onclick="switchTermTab('editor')" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid transparent;color:#888;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✏️ Éditeur</button>
+  </div>
+
+  <!-- PANEL SORTIE -->
+  <div id="term-panel-output" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div id="terminal-output" style="flex:1;overflow-y:auto;padding:10px 12px;font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.7;word-break:break-all;-webkit-overflow-scrolling:touch"></div>
+    <!-- Autocomplétion -->
+    <div id="term-autocomplete" style="background:#1A1A1A;border-top:1px solid #222;padding:6px 10px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;display:none"></div>
+    <!-- Input ligne -->
+    <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <span style="color:#00ff41;font-family:monospace;font-size:14px;flex-shrink:0" id="terminal-prompt">$</span>
+      <input id="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        style="flex:1;background:transparent;border:none;color:#00ff41;font-family:'Courier New',monospace;font-size:14px;outline:none;caret-color:#00ff41"
+        placeholder="Tape une commande...">
+      <button onclick="runTerminalCmd()" style="background:#00ff41;border:none;border-radius:8px;padding:9px 13px;color:#000;font-weight:700;font-size:14px;cursor:pointer;flex-shrink:0">▶</button>
     </div>
-    <button onclick="clearTerminal()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:5px 10px;color:#aaa;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🗑 Clear</button>
   </div>
-  <!-- Tab bar -->
-  <div style="background:#111;border-bottom:1px solid #222;padding:6px 12px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0" id="terminal-tabs">
-    <div style="background:#1A1A1A;border:1px solid #333;border-radius:6px;padding:3px 10px;color:#0f0;font-size:11px;font-family:monospace;white-space:nowrap" id="terminal-tab-label">bash</div>
-  </div>
-  <!-- Output -->
-  <div id="terminal-output" style="flex:1;overflow-y:auto;padding:10px 12px;font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.7;word-break:break-all;-webkit-overflow-scrolling:touch"></div>
-  <!-- Input -->
-  <div style="padding:8px 12px calc(env(safe-area-inset-bottom,0px)+10px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
-    <span style="color:#0f0;font-family:monospace;font-size:14px;flex-shrink:0" id="terminal-prompt">$</span>
-    <input id="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      style="flex:1;background:transparent;border:none;color:#0f0;font-family:'Courier New',monospace;font-size:14px;outline:none;caret-color:#0f0"
-      placeholder="">
-    <button onclick="runTerminalCmd()" style="background:#0f0;border:none;border-radius:8px;padding:9px 14px;color:#000;font-weight:700;font-size:14px;cursor:pointer">▶</button>
+
+  <!-- PANEL ÉDITEUR -->
+  <div id="term-panel-editor" style="flex:1;display:none;flex-direction:column;overflow:hidden">
+    <!-- Autocomplétion éditeur -->
+    <div id="editor-autocomplete" style="background:#1A1A1A;border-bottom:1px solid #222;padding:6px 10px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0"></div>
+    <!-- Zone de code -->
+    <textarea id="terminal-editor" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      style="flex:1;background:#0D0D0D;border:none;color:#e0e0e0;font-family:'Courier New',monospace;font-size:13px;line-height:1.7;padding:12px;outline:none;resize:none;-webkit-overflow-scrolling:touch;tab-size:2"
+      placeholder="// Écris ton code ici...
+// Appuie sur Exécuter pour voir le résultat"></textarea>
+    <!-- Barre inférieure éditeur -->
+    <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <button onclick="insertTab()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:8px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:monospace">⇥ Tab</button>
+      <button onclick="clearEditor()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:8px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🗑</button>
+      <div style="flex:1"></div>
+      <button onclick="runEditorCode()" style="background:linear-gradient(135deg,#00b894,#00cec9);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Exécuter
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1184,7 +1282,7 @@ function onScreenEnter(id) {
   if(id==='screen-flashcards') renderFCConfig();
   if(id==='screen-progress')  renderProgress();
   if(id==='screen-profile')   renderProfile();
-  if(id==='screen-travaux')   renderSavedDiagrams();
+  if(id==='screen-travaux')   { renderSavedDiagrams(); renderCoursesInTravaux(); }
   if(id==='screen-diagrams')  renderSavedDiagrams();
 }
 
@@ -1443,84 +1541,76 @@ function autoResize(el) {
 
 // ── AUTH (mock) ──
 let selectedLevel = 'Terminale';
-function selectLevel(btn) {
-  document.querySelectorAll('.level-btn').forEach(b=>{
-    b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';
-  });
-  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
-  selectedLevel = btn.dataset.v;
-}
-function saveSession() {
-  localStorage.setItem('studiora_session', JSON.stringify({
-    prenom: APP.user.prenom,
-    nom: APP.user.nom,
-    level: APP.user.level,
-    filiere: APP.user.filiere,
-    email: APP.user.email || ''
-  }));
-}
-function loadSession() {
-  try {
-    const s = JSON.parse(localStorage.getItem('studiora_session') || 'null');
-    if (s && s.prenom) {
-      APP.user.prenom = s.prenom;
-      APP.user.nom = s.nom;
-      APP.user.level = s.level || 'Licence 2';
-      APP.user.filiere = s.filiere || 'MIAGE';
-      APP.user.email = s.email || '';
-      return true;
-    }
-  } catch(e) {}
-  return false;
-}
-function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const prenom = document.getElementById('login-prenom')?.value.trim() || '';
-  if (!email) { showToast('⚠️ Entre ton email'); return; }
-  
-  // Essayer de charger une session existante avec cet email
-  const existingSession = getExistingSession(email);
-  if (existingSession) {
-    APP.user = {...APP.user, ...existingSession};
-  } else {
-    APP.user.email = email;
-    if (prenom) APP.user.prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1);
-  }
-  saveSession();
-  SUBJECTS = getSubjects();
-  const prefs = getPrefs();
-  if (prefs.dark) applyDark(true);
-  showToast('✅ Connexion réussie ! Bienvenue ' + APP.user.prenom + ' !');
-  setTimeout(()=>showScreen('screen-home'), 500);
-}
+let selectedSerie  = 'D';
+let selectedFiliere = '';
 
-function getExistingSession(email) {
-  try {
-    const s = JSON.parse(localStorage.getItem('studiora_session') || 'null');
-    if (s && s.email === email) return s;
-  } catch(e) {}
-  return null;
+const FILIERES_BY_NIVEAU = {
+  'Licence 1':['MIAGE','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Histoire','Psychologie','Sociologie','Communication','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Agronomie','Pharmacie'],
+  'Licence 2':['MIAGE','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Histoire','Psychologie','Sociologie','Communication','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Agronomie','Pharmacie'],
+  'Licence 3':['MIAGE','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Histoire','Psychologie','Sociologie','Communication','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Agronomie','Pharmacie'],
+  'Master 1':['MIAGE','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel'],
+  'Master 2':['MIAGE','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel'],
+  'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
+  'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
+  'BTS 2':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
+  'DUT':['Informatique','Génie Électrique','Génie Civil','Gestion des Entreprises','Techniques de Commercialisation','Mesures Physiques'],
+  'CPGE 1':['MP — Maths-Physique','PC — Physique-Chimie','PSI — Physique-SI','BCPST — Bio-Chimie','ECG — Éco-Commercial','Littéraire B/L'],
+  'CPGE 2':['MP — Maths-Physique','PC — Physique-Chimie','PSI — Physique-SI','BCPST — Bio-Chimie','ECG — Éco-Commercial','Littéraire B/L'],
+};
+const SERIES_BY_NIVEAU = {
+  '2nde':['2nde Générale'],
+  '1ère':['1ère A','1ère C','1ère D','1ère E','1ère F (Tech. Ind.)','1ère G (Gestion)'],
+  'Terminale':['Série A — Lettres & Philosophie','Série B — Sciences Écon. & Soc.','Série C — Maths & Physique','Série D — Sciences de la Vie','Série E — Sciences & Tech.','Série F — Techniques Industrielles','Série G — Techniques de Gestion'],
+  '6ème':['Général'],'5ème':['Général'],'4ème':['Général'],'3ème':['Général (BEPC)'],
+};
+
+function onNiveauChange() {
+  const niv = document.getElementById('reg-niveau').value;
+  selectedLevel = niv;
+  const serieBlock   = document.getElementById('reg-serie-block');
+  const filiereBlock = document.getElementById('reg-filiere-block');
+  const serieEl   = document.getElementById('reg-serie');
+  const filiereEl = document.getElementById('reg-filiere');
+  serieEl.innerHTML   = '<option value="">-- Choisir --</option>';
+  filiereEl.innerHTML = '<option value="">-- Choisir --</option>';
+
+  const series   = SERIES_BY_NIVEAU[niv];
+  const filieres = FILIERES_BY_NIVEAU[niv];
+
+  if (series) {
+    serieBlock.style.display = 'block';
+    series.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; serieEl.appendChild(o); });
+    filiereBlock.style.display = 'none';
+  } else if (filieres) {
+    filiereBlock.style.display = 'block';
+    filieres.forEach(f => { const o=document.createElement('option'); o.value=f; o.textContent=f; filiereEl.appendChild(o); });
+    serieBlock.style.display = 'none';
+  } else {
+    serieBlock.style.display = 'none';
+    filiereBlock.style.display = 'none';
+  }
 }
-// ── FILIÈRE PAR DÉFAUT SELON LE NIVEAU ──
-function getFiliere(level) {
-  if (level === '3ème' || level === '2nde') return '';
-  if (level === 'Terminale') return 'D';
-  if (level === 'Licence 1' || level === 'Licence 2' || level === 'Licence 3') return 'MIAGE';
-  return '';
-}
+function onSerieChange() { selectedSerie = document.getElementById('reg-serie').value; }
+function selectLevel(btn) { selectedLevel = btn?.dataset?.v || btn; }
+
 
 function doRegister() {
   const p = document.getElementById('reg-prenom').value.trim();
   const n = document.getElementById('reg-nom').value.trim();
   const e = document.getElementById('reg-email')?.value.trim() || '';
   const pwd = document.getElementById('reg-pwd')?.value || '';
+  const niv = document.getElementById('reg-niveau')?.value || selectedLevel;
+  const serie = document.getElementById('reg-serie')?.value || '';
+  const filiere = document.getElementById('reg-filiere')?.value || '';
   if (!p||!n) { showToast('⚠️ Remplis Prénom et Nom'); return; }
+  if (!niv) { showToast('⚠️ Choisis ton niveau'); return; }
   if (pwd && pwd.length < 8) { showToast('⚠️ Mot de passe trop court (8 min)'); return; }
   APP.user.prenom = p.charAt(0).toUpperCase()+p.slice(1);
   APP.user.nom = n;
-  APP.user.level = selectedLevel;
+  APP.user.level = niv;
+  APP.user.serie = serie;
+  APP.user.filiere = filiere || getFiliere(niv);
   APP.user.email = e;
-  APP.user.filiere = getFiliere(selectedLevel);
   saveSession();
   SUBJECTS = getSubjects();
   showToast('🎉 Compte créé ! Bienvenue '+APP.user.prenom+' !');
@@ -1585,8 +1675,8 @@ correct est l'index (0-3) de la bonne réponse.`;
   try {
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:MODEL,max_tokens:2000,messages:[{role:'user',content:prompt}]})
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:MODEL,max_tokens:2000,system:'Tu es un professeur expert qui génère des QCM éducatifs en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
     let raw = data.content?.[0]?.text || '{}';
@@ -1728,8 +1818,8 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
   try {
     const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:MODEL,max_tokens:1500,messages:[{role:'user',content:prompt}]})
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:MODEL,max_tokens:1500,system:'Tu es un professeur expert qui génère des flashcards éducatives en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
     let raw=data.content?.[0]?.text||'{}';
@@ -1815,7 +1905,7 @@ async function analyzeCourse() {
   try {
     const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
       body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
     });
     const data=await res.json();
@@ -1823,6 +1913,26 @@ async function analyzeCourse() {
     document.getElementById('analysis-result').textContent=result;
     document.getElementById('upload-form').style.display='none';
     document.getElementById('upload-result').style.display='flex';
+    // ── Sauvegarder dans la liste des cours importés ──
+    const titleEl = document.getElementById('course-title-input');
+    const title   = (titleEl && titleEl.value.trim()) || ('Cours du ' + new Date().toLocaleDateString('fr-FR'));
+    const snippet = text.slice(0, 200);
+    try {
+      const saved = JSON.parse(localStorage.getItem('studiora_courses') || '[]');
+      saved.unshift({
+        id: Date.now(),
+        title,
+        subject: APP.currentSubject || '',
+        snippet,
+        fullText: text,
+        result,
+        analysis: selectedAnalysis,
+        date: new Date().toLocaleDateString('fr-FR')
+      });
+      if (saved.length > 20) saved.pop();
+      localStorage.setItem('studiora_courses', JSON.stringify(saved));
+      renderCoursesInTravaux();
+    } catch(e2) {}
   } catch(e) {
     showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur réseau. Vérifie ta connexion.');
   }
@@ -1912,6 +2022,8 @@ function renderProfile() {
   const st = getStats();
   document.getElementById('stat-sessions').textContent = st.sessions || 0;
   document.getElementById('stat-questions').textContent = st.questions || 0;
+  const streakEl = document.getElementById('profile-streak-stat');
+  if (streakEl) streakEl.textContent = computeStreak() + '🔥';
   document.getElementById('profile-avatar').textContent=APP.user.prenom[0];
   document.getElementById('profile-name').textContent=APP.user.prenom+' '+APP.user.nom;
   document.getElementById('profile-level').textContent=APP.user.level+' · '+APP.user.filiere;
@@ -1949,6 +2061,113 @@ document.getElementById('chat-input').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
 });
 
+// ── COURS IMPORTÉS ──
+function renderCoursesInTravaux() {
+  const el = document.getElementById('courses-list-travaux');
+  if (!el) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem('studiora_courses') || '[]');
+    if (!saved.length) {
+      el.innerHTML = `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;color:var(--text3);font-size:13px">
+        📎 Aucun cours importé<br><span style="font-size:11px">Utilise "Analyser un cours" pour importer</span>
+      </div>`;
+      return;
+    }
+    el.innerHTML = saved.map((c,i) => `
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer" onclick="openSavedCourse(${i})">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;margin-bottom:2px">${escHtml(c.title)}</div>
+            <div style="font-size:11px;color:var(--text3)">${c.date} · ${c.analysis || 'résumé'}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.4">${escHtml(c.snippet.slice(0,80))}...</div>
+          </div>
+          <button onclick="event.stopPropagation();deleteSavedCourse(${i})" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;flex-shrink:0;padding:2px">🗑</button>
+        </div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function openSavedCourse(i) {
+  try {
+    const saved = JSON.parse(localStorage.getItem('studiora_courses') || '[]');
+    const c = saved[i];
+    if (!c) return;
+    // Go to upload screen and show result
+    document.getElementById('course-text').value = c.fullText || '';
+    document.getElementById('analysis-result').textContent = c.result || '';
+    document.getElementById('upload-form').style.display = 'none';
+    document.getElementById('upload-result').style.display = 'flex';
+    showScreen('screen-upload');
+  } catch(e) {}
+}
+
+function deleteSavedCourse(i) {
+  try {
+    const saved = JSON.parse(localStorage.getItem('studiora_courses') || '[]');
+    saved.splice(i, 1);
+    localStorage.setItem('studiora_courses', JSON.stringify(saved));
+    renderCoursesInTravaux();
+  } catch(e) {}
+}
+
+
+// ── SESSION & AUTH ──
+const SESSION_KEY = 'studiora_session';
+
+function saveSession() {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(APP.user));
+  } catch(e) {}
+}
+
+function loadSession() {
+  try {
+    const s = localStorage.getItem(SESSION_KEY);
+    if (!s) return false;
+    const data = JSON.parse(s);
+    if (!data || !data.prenom) return false;
+    APP.user = { ...APP.user, ...data };
+    return true;
+  } catch(e) { return false; }
+}
+
+function getExistingSession(email) {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (s && s.email === email) return s;
+  } catch(e) {}
+  return null;
+}
+
+function doLogin() {
+  const email  = document.getElementById('login-email').value.trim();
+  const prenom = document.getElementById('login-prenom')?.value.trim() || '';
+  if (!email) { showToast('⚠️ Entre ton email'); return; }
+  const existing = getExistingSession(email);
+  if (existing) {
+    APP.user = { ...APP.user, ...existing };
+  } else {
+    APP.user.email = email;
+    if (prenom) APP.user.prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1);
+  }
+  saveSession();
+  SUBJECTS = getSubjects();
+  const prefs = getPrefs();
+  if (prefs.dark) applyDark(true);
+  showToast('✅ Bienvenue ' + APP.user.prenom + ' !');
+  setTimeout(() => showScreen('screen-home'), 500);
+}
+
+function doLogout() {
+  localStorage.removeItem(SESSION_KEY);
+  APP.chatHistory = [];
+  showToast('👋 À bientôt ' + APP.user.prenom + ' !');
+  setTimeout(() => {
+    APP.user = { prenom:'', nom:'', level:'', filiere:'', serie:'' };
+    showScreen('screen-onboarding');
+  }, 700);
+}
+
 // ── INIT : auto-login si session sauvegardée ──
 (function init() {
   if (loadSession()) {
@@ -1966,132 +2185,341 @@ document.getElementById('chat-input').addEventListener('keydown',e=>{
 // ── UPDATE NAV: replace Progrès with Travaux in home nav ──
 // (done via HTML directly in bottom navs)
 
-// ── TERMINAL IA — Vrai émulateur ──
+// ── TERMINAL IA — Éditeur + Sortie + Autocomplétion ──
 const TERM_LOGOS = {
-  linux:   `<svg width="26" height="26" viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="14" ry="16" fill="#f5c842"/><ellipse cx="24" cy="26" rx="11" ry="13" fill="#f0b500"/><circle cx="19" cy="22" r="3.5" fill="#fff"/><circle cx="29" cy="22" r="3.5" fill="#fff"/><circle cx="19" cy="22" r="1.5" fill="#000"/><circle cx="29" cy="22" r="1.5" fill="#000"/><path d="M20 30 q4 3 8 0" stroke="#000" stroke-width="1.2" fill="none"/><path d="M14 18 q-4-8 2-13 q3 6 0 9" fill="#f5c842"/><path d="M34 18 q4-8-2-13 q-3 6 0 9" fill="#f5c842"/><ellipse cx="16" cy="42" rx="4" ry="3" fill="#333"/><ellipse cx="32" cy="42" rx="4" ry="3" fill="#333"/><path d="M16 40 q0-8-5-12" stroke="#333" stroke-width="2.5" fill="none"/><path d="M32 40 q0-8 5-12" stroke="#333" stroke-width="2.5" fill="none"/></svg>`,
-  windows: `<svg width="26" height="26" viewBox="0 0 48 48"><rect x="4" y="6" width="18" height="18" rx="2" fill="#f35325"/><rect x="26" y="6" width="18" height="18" rx="2" fill="#81bc06"/><rect x="4" y="28" width="18" height="18" rx="2" fill="#05a6f0"/><rect x="26" y="28" width="18" height="18" rx="2" fill="#ffba08"/></svg>`,
-  python:  `<svg width="26" height="26" viewBox="0 0 48 48"><path d="M24 4 C14 4 11 9 11 14 L11 20 L24 20 L24 22 L8 22 C4 22 4 28 4 28 L4 34 C4 39 9 44 18 44 L30 44 C38 44 44 40 44 34 L44 28 C44 23 40 22 36 22 L24 22 L24 20 L37 20 L37 14 C37 9 34 4 24 4Z" fill="#3776AB"/><path d="M24 44 C34 44 37 39 37 34 L37 28 L24 28 L24 26 L40 26 C44 26 44 20 44 20 L44 14 C44 9 39 4 30 4 L18 4 C10 4 4 8 4 14 L4 20 C4 25 8 26 12 26 L24 26 L24 28 L11 28 L11 34 C11 39 14 44 24 44Z" fill="#FFD43B"/><circle cx="18" cy="14" r="2.5" fill="#fff"/><circle cx="30" cy="34" r="2.5" fill="#fff"/></svg>`,
-  java:    `<svg width="26" height="26" viewBox="0 0 48 48"><path d="M18 34 C18 34 15 36 20 37 C22 37 27 37 30 36 C30 36 31 37 29 38 C22 40 12 38 18 34Z" fill="#0074BD"/><path d="M17 30 C17 30 13 32 20 33 C25 33 33 33 37 31 C37 31 38 32 35 33 C26 36 12 34 17 30Z" fill="#0074BD"/><path d="M26 4 C26 4 31 7 22 12 C15 16 20 19 22 20 C16 14 20 11 26 4Z" fill="#EA2D2E"/><path d="M19 38 C19 38 16 39 20 40 C25 41 35 41 39 39 C39 39 40 40 38 41 C30 44 13 41 19 38Z" fill="#0074BD"/><path d="M37 27 C37 27 40 30 32 31 C26 32 15 32 13 30 C13 30 14 29 17 29 C23 29 34 29 37 27Z" fill="#0074BD"/><path d="M24 24 C24 24 17 26 21 27 C24 28 30 27 32 26 C32 26 33 27 31 27 C26 29 16 27 24 24Z" fill="#0074BD"/></svg>`,
-  sql:     `<svg width="26" height="26" viewBox="0 0 48 48"><ellipse cx="24" cy="12" rx="16" ry="6" fill="#336791"/><rect x="8" y="12" width="32" height="6" fill="#336791"/><ellipse cx="24" cy="18" rx="16" ry="6" fill="#4a90d9"/><rect x="8" y="18" width="32" height="8" fill="#336791"/><ellipse cx="24" cy="26" rx="16" ry="6" fill="#4a90d9"/><rect x="8" y="26" width="32" height="8" fill="#336791"/><ellipse cx="24" cy="34" rx="16" ry="6" fill="#4a90d9"/></svg>`,
-  algo:    `<svg width="26" height="26" viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="4" fill="#6c5ce7"/><rect x="12" y="14" width="24" height="3" rx="1.5" fill="#fff"/><rect x="12" y="21" width="18" height="3" rx="1.5" fill="#a29bfe"/><rect x="12" y="28" width="21" height="3" rx="1.5" fill="#a29bfe"/><circle cx="34" cy="34" r="5" fill="#00b894"/><path d="M31 34 L33 36 L37 32" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`,
+  // Tux Linux - noir et blanc reconnaissable
+  linux: `<svg width="26" height="26" viewBox="0 0 100 100">
+    <ellipse cx="50" cy="55" rx="28" ry="32" fill="#1a1a1a"/>
+    <ellipse cx="50" cy="50" rx="22" ry="26" fill="#1a1a1a"/>
+    <ellipse cx="50" cy="38" rx="20" ry="22" fill="#f5f5f5"/>
+    <ellipse cx="42" cy="32" rx="7" ry="9" fill="#1a1a1a"/>
+    <ellipse cx="58" cy="32" rx="7" ry="9" fill="#1a1a1a"/>
+    <circle cx="42" cy="33" r="4" fill="#fff"/>
+    <circle cx="58" cy="33" r="4" fill="#fff"/>
+    <circle cx="43" cy="34" r="2" fill="#1a1a1a"/>
+    <circle cx="59" cy="34" r="2" fill="#1a1a1a"/>
+    <ellipse cx="50" cy="56" rx="12" ry="9" fill="#f5a623"/>
+    <path d="M44 56 q6 5 12 0" stroke="#e8900a" stroke-width="1.5" fill="none"/>
+    <ellipse cx="30" cy="80" rx="10" ry="7" fill="#f5a623" transform="rotate(-20,30,80)"/>
+    <ellipse cx="70" cy="80" rx="10" ry="7" fill="#f5a623" transform="rotate(20,70,80)"/>
+    <path d="M28 68 q-8 5-6 14" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <path d="M72 68 q8 5 6 14" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+  </svg>`,
+  // Windows - 4 carreaux colorés officiels
+  windows: `<svg width="26" height="26" viewBox="0 0 88 88">
+    <polygon points="0,12.4 36.7,7.2 36.7,42.8 0,42.8" fill="#f35325"/>
+    <polygon points="40,6.6 88,0 88,42.8 40,42.8" fill="#81bc06"/>
+    <polygon points="0,45.2 36.7,45.2 36.7,80.8 0,75.6" fill="#05a6f0"/>
+    <polygon points="40,45.2 88,45.2 88,88 40,81.4" fill="#ffba08"/>
+  </svg>`,
+  // Python - serpent bleu/jaune officiel simplifié
+  python: `<svg width="26" height="26" viewBox="0 0 48 48">
+    <path d="M24.1 2.8C13.5 2.8 14.2 7.5 14.2 7.5L14.2 12.4 24.3 12.4 24.3 14 9.3 14C9.3 14 3.8 13.3 3.8 24 3.8 34.7 8.6 34.3 8.6 34.3L11.5 34.3 11.5 29.1C11.5 29.1 11.3 24.3 16.2 24.3L26.1 24.3C26.1 24.3 30.8 24.4 30.8 19.8L30.8 8.4C30.8 8.4 31.5 2.8 24.1 2.8Z" fill="#3776ab"/>
+    <circle cx="18.8" cy="8" r="1.8" fill="#ffd43b"/>
+    <path d="M23.9 45.2C34.5 45.2 33.8 40.5 33.8 40.5L33.8 35.6 23.7 35.6 23.7 34 38.7 34C38.7 34 44.2 34.7 44.2 24 44.2 13.3 39.4 13.7 39.4 13.7L36.5 13.7 36.5 18.9C36.5 18.9 36.7 23.7 31.8 23.7L21.9 23.7C21.9 23.7 17.2 23.6 17.2 28.2L17.2 39.6C17.2 39.6 16.5 45.2 23.9 45.2Z" fill="#ffd43b"/>
+    <circle cx="29.2" cy="40" r="1.8" fill="#3776ab"/>
+  </svg>`,
+  // Java - tasse à café rouge/bleue officielle
+  java: `<svg width="26" height="26" viewBox="0 0 48 48">
+    <path d="M19 30s-3 2 2 3c2.5.5 7.5.5 11-1 0 0 1.2 1-1 2.3-7.5 2.5-18.5.3-12-4.3z" fill="#f89820"/>
+    <path d="M17.5 26s-4 2.5 3 3.5c5.5.7 14 .7 18.5-2.5 0 0 1.3 1.3-2 2.5-9.5 3.5-24.5 1.5-19.5-3.5z" fill="#f89820"/>
+    <path d="M27 4s5.5 3-4 9c-7.5 4.5-2 7.5 0 8.5C16.5 15.5 21 12 27 4z" fill="#f89820"/>
+    <path d="M20.5 34.5s-3 1.5 1 2.5C27 39 38 39 42 37c0 0 1 1.3-1 2.3-9 3.5-28 .5-20.5-4.8z" fill="#f89820"/>
+    <path d="M38.5 23.5s3 3.5-5.5 4.5c-6.5 1-18 1-20.5-1 0 0 1.5-1.3 5-1.3 6 0 18.5.5 21-3.2z" fill="#f89820"/>
+    <rect x="20" y="40" width="10" height="2" rx="1" fill="#f89820"/>
+    <ellipse cx="24.5" cy="44" rx="8" ry="1.5" fill="#f89820"/>
+  </svg>`,
+  // SQL/MySQL - cylindres bleus base de données
+  sql: `<svg width="26" height="26" viewBox="0 0 48 48">
+    <ellipse cx="24" cy="10" rx="17" ry="6" fill="#00758f"/>
+    <rect x="7" y="10" width="34" height="10" fill="#00758f"/>
+    <ellipse cx="24" cy="20" rx="17" ry="6" fill="#f29111"/>
+    <rect x="7" y="20" width="34" height="10" fill="#00758f"/>
+    <ellipse cx="24" cy="30" rx="17" ry="6" fill="#f29111"/>
+    <rect x="7" y="30" width="34" height="8" fill="#00758f"/>
+    <ellipse cx="24" cy="38" rx="17" ry="6" fill="#f29111"/>
+  </svg>`,
+  // Algo - flowchart / organigramme
+  algo: `<svg width="26" height="26" viewBox="0 0 48 48">
+    <rect x="4" y="4" width="40" height="10" rx="2" fill="#6c5ce7"/>
+    <rect x="4" y="4" width="40" height="10" rx="2" fill="#6c5ce7"/>
+    <rect x="12" y="20" width="24" height="8" rx="1" fill="#a29bfe"/>
+    <path d="M24 14 L24 20" stroke="#6c5ce7" stroke-width="2"/>
+    <polygon points="14,32 24,44 34,32" fill="#00b894"/>
+    <path d="M24 28 L24 32" stroke="#a29bfe" stroke-width="2"/>
+    <rect x="2" y="20" width="8" height="8" rx="1" fill="#fd79a8" opacity="0.5"/>
+    <rect x="38" y="20" width="8" height="8" rx="1" fill="#fd79a8" opacity="0.5"/>
+  </svg>`,
 };
-
-const terminalTitles  = {linux:'Terminal Linux',windows:'Terminal Windows',python:'Python',java:'Java',sql:'SQL',algo:'Algorithmique'};
+const terminalTitles  = {linux:'Terminal Linux',windows:'Terminal Windows',python:'Python',java:'Java',sql:'SQL / MySQL',algo:'Algorithmique'};
 const terminalPrompts = {linux:'$',windows:'>',python:'>>>',java:'javac>',sql:'sql>',algo:'algo>'};
 const terminalColors  = {linux:'#00ff41',windows:'#569cd6',python:'#ffd43b',java:'#ea2d2e',sql:'#4a90d9',algo:'#a29bfe'};
 
-// Historique des commandes par terminal
+// Suggestions d'autocomplétion par langage
+const TERM_SUGGESTIONS = {
+  linux:   ['ls','ls -la','pwd','cd ','mkdir ','touch ','cat ','grep ','chmod ','echo ','cp ','mv ','rm ','man ','sudo ','apt install ','git status','git add .','git commit -m ""','git push','ping ','wget ','curl ','tar -xvf ','df -h','ps aux','kill ','history'],
+  windows: ['dir','cd ','mkdir ','copy ','del ','echo ','ipconfig','ping ','tasklist','taskkill ','cls','ver','systeminfo','net user','reg query','powershell','Get-Process','Set-Location ','New-Item '],
+  python:  ['print()','input()','len()','range()','list()','dict()','int()','str()','float()','bool()','type()','for i in range():','if __name__ == "__main__":','def ():\n    ','class ():\n    def __init__(self):\n        ','import ','from  import ','with open() as f:','try:\n    \nexcept Exception as e:','return ','lambda ','[x for x in ]'],
+  java:    ['public class Main {','public static void main(String[] args) {','System.out.println()','int ','String ','if () {','for (int i=0; i<; i++) {','while () {','return ','new ','import java.util.','Scanner sc = new Scanner(System.in);','ArrayList<>()','try { } catch (Exception e) {}'],
+  sql:     ['SELECT * FROM ','SELECT  FROM  WHERE ','INSERT INTO  VALUES ()','UPDATE  SET  WHERE ','DELETE FROM  WHERE ','CREATE TABLE  ()','DROP TABLE ','ALTER TABLE ','JOIN  ON ','GROUP BY ','ORDER BY ','HAVING ','LIMIT ','CREATE INDEX ','BEGIN TRANSACTION;','COMMIT;','ROLLBACK;'],
+  algo:    ['ALGORITHME ','DEBUT','FIN','SI  ALORS','SINON','FIN SI','POUR  DE  A  FAIRE','FIN POUR','TANT QUE  FAIRE','FIN TANT QUE','ECRIRE()','LIRE()','FONCTION ()','RETOURNER ','TABLEAU [] DE '],
+};
+
 const termHistory = {linux:[],windows:[],python:[],java:[],sql:[],algo:[]};
 let termHistIdx = -1;
 let terminalType = 'linux';
+let activeTermTab = 'output';
 
 function openTerminal(type) {
   terminalType = type;
   const color = terminalColors[type] || '#00ff41';
   document.getElementById('terminal-title').textContent = terminalTitles[type] || type;
   document.getElementById('terminal-lang-icon').innerHTML = TERM_LOGOS[type] || '';
-  document.getElementById('terminal-prompt').textContent = terminalPrompts[type] || '$';
   document.getElementById('terminal-prompt').style.color = color;
   document.getElementById('terminal-input').style.color = color;
-  document.getElementById('terminal-tab-label').textContent = type;
-  document.getElementById('terminal-tab-label').style.color = color;
+  document.getElementById('terminal-input').style.caretColor = color;
+  document.getElementById('tab-output').style.borderBottomColor = color;
+  document.getElementById('tab-output').style.color = color;
+  document.getElementById('terminal-editor').style.color = '#e0e0e0';
+
   const out = document.getElementById('terminal-output');
   const welcomes = {
-    linux:   'Studiora Terminal — GNU/Linux Bash\nTape des commandes bash pour voir leur simulation.\n──────────────────────────────────',
-    windows: 'Studiora Terminal — Windows CMD/PowerShell\nTape des commandes Windows pour voir leur simulation.\n──────────────────────────────────',
-    python:  'Python 3.11.0 (Studiora)\nType "help" for more information.\n──────────────────────────────────',
-    java:    'Studiora Java Compiler\nTape du code Java ou une commande javac.\n──────────────────────────────────',
-    sql:     'Studiora SQL Shell\nTape des requêtes SQL pour voir leur résultat simulé.\n──────────────────────────────────',
-    algo:    'Studiora Algorithmique\nTape du pseudo-code pour analyse et correction.\n──────────────────────────────────',
+    linux:   'Studiora Terminal — GNU/Linux Bash\nTape des commandes ou écris un script dans l\'Éditeur.\n' + '─'.repeat(44),
+    windows: 'Studiora Terminal — Windows CMD/PowerShell\nTape des commandes Windows.\n' + '─'.repeat(44),
+    python:  'Python 3.11.0 (Studiora)\nType help for more information.\n' + '─'.repeat(44),
+    java:    'Studiora Java Compiler\nÉcris ton code dans l\'Éditeur puis clique Exécuter.\n' + '─'.repeat(44),
+    sql:     'Studiora SQL Shell (MySQL 8.0)\nTape des requêtes SQL.\n' + '─'.repeat(44),
+    algo:    'Studiora Algorithmique\nÉcris ton pseudo-code dans l\'Éditeur.\n' + '─'.repeat(44),
   };
-  out.innerHTML = `<div style="color:#888;white-space:pre-wrap">${welcomes[type]||''}</div>`;
+  out.innerHTML = `<div style="color:#666;white-space:pre-wrap;font-size:12px">${escHtml(welcomes[type]||'')}</div>`;
   document.getElementById('terminal-input').value = '';
+  // Hook input event for autocomplete
+  const termInp = document.getElementById('terminal-input');
+  termInp.oninput = onTermInputKey;
+  document.getElementById('terminal-editor').value = getEditorTemplate(type);
   termHistIdx = -1;
+  switchTermTab('output');
+  renderTermSuggestions();
   showScreen('screen-terminal');
   setTimeout(()=>document.getElementById('terminal-input').focus(), 300);
 }
 
+function getEditorTemplate(type) {
+  const tpl = {
+    python:  '# Ton programme Python\n\ndef main():\n    print("Bonjour Studiora !")\n\nmain()',
+    java:    'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Bonjour Studiora !");\n    }\n}',
+    sql:     '-- Tes requêtes SQL\nSELECT * FROM etudiants\nWHERE niveau = \'Licence 2\'\nORDER BY nom;',
+    algo:    'ALGORITHME Bonjour\nDEBUT\n    ECRIRE("Bonjour Studiora !")\nFIN',
+    linux:   '#!/bin/bash\n# Ton script bash\necho "Bonjour Studiora !"\nls -la',
+    windows: 'REM Ton script Windows\necho Bonjour Studiora !\ndir',
+  };
+  return tpl[type] || '';
+}
+
+function switchTermTab(tab) {
+  activeTermTab = tab;
+  const color = terminalColors[terminalType] || '#00ff41';
+  document.getElementById('term-panel-output').style.display = tab === 'output' ? 'flex' : 'none';
+  document.getElementById('term-panel-editor').style.display = tab === 'editor' ? 'flex' : 'none';
+  const tabOut = document.getElementById('tab-output');
+  const tabEd  = document.getElementById('tab-editor');
+  tabOut.style.background = tab === 'output' ? '#1A1A1A' : 'transparent';
+  tabOut.style.borderBottomColor = tab === 'output' ? color : 'transparent';
+  tabOut.style.color = tab === 'output' ? color : '#888';
+  tabEd.style.background = tab === 'editor' ? '#1A1A1A' : 'transparent';
+  tabEd.style.borderBottomColor = tab === 'editor' ? '#888' : 'transparent';
+  tabEd.style.color = tab === 'editor' ? '#ccc' : '#888';
+  if (tab === 'editor') {
+    renderEditorSuggestions();
+    setTimeout(()=>document.getElementById('terminal-editor').focus(), 200);
+  } else {
+    setTimeout(()=>document.getElementById('terminal-input').focus(), 200);
+  }
+}
+
+function renderTermSuggestions() {
+  // Barre de raccourcis rapides fixes (10 max) - sous l'input
+  const suggestions = TERM_SUGGESTIONS[terminalType] || [];
+  const ac = document.getElementById('term-autocomplete');
+  if (!ac) return;
+  ac.style.display = 'flex';
+  ac.innerHTML = suggestions.slice(0, 10).map(s => {
+    const label = s.split('\n')[0].trim();
+    const safe = s.replace(/\\/g,'\\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
+    return `<button onclick="insertSuggestion('${safe}')" style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:6px;padding:5px 10px;color:#888;font-size:11px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;transition:all .15s" onmousedown="this.style.background='#2a2a2a';this.style.color='#0f0'" onmouseup="this.style.background='#1e1e1e';this.style.color='#888'">${escHtml(label)}</button>`;
+  }).join('');
+}
+
+function renderEditorSuggestions() {
+  // Snippets rapides au-dessus de l'éditeur
+  const suggestions = TERM_SUGGESTIONS[terminalType] || [];
+  const ac = document.getElementById('editor-autocomplete');
+  if (!ac) return;
+  ac.innerHTML = suggestions.slice(0, 12).map(s => {
+    const label = s.split('\n')[0].trim();
+    const safe = s.replace(/\\/g,'\\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
+    return `<button onclick="insertEditorSnippet('${safe}')" style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:6px;padding:5px 10px;color:#888;font-size:11px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;transition:all .15s">${escHtml(label)}</button>`;
+  }).join('');
+}
+
+// ── Popup d'autocomplétion pendant la frappe ──
+let acPopupTimeout = null;
+function onTermInputKey(e) {
+  const inp = document.getElementById('terminal-input');
+  const val = inp.value;
+  const suggestions = TERM_SUGGESTIONS[terminalType] || [];
+
+  // Supprimer l'ancien popup
+  const old = document.getElementById('ac-popup');
+  if (old) old.remove();
+  clearTimeout(acPopupTimeout);
+
+  if (!val || val.length < 1) return;
+
+  // Filtrer les suggestions qui commencent par ce qui est tapé
+  const matches = suggestions.filter(s => s.toLowerCase().startsWith(val.toLowerCase()));
+  if (!matches.length) return;
+
+  acPopupTimeout = setTimeout(() => {
+    const popup = document.createElement('div');
+    popup.id = 'ac-popup';
+    popup.style.cssText = 'position:fixed;bottom:80px;left:10px;right:10px;background:#1A1A1A;border:1px solid #444;border-radius:10px;z-index:9999;overflow:hidden;box-shadow:0 -4px 20px rgba(0,0,0,.6)';
+    popup.innerHTML = matches.slice(0, 6).map(s => {
+      const safe = s.replace(/'/g, '&apos;').replace(/\n/g,'\\n');
+      const label = s.split('\n')[0];
+      const typed = escHtml(val);
+      const rest  = escHtml(label.slice(val.length));
+      return `<div onclick="selectACItem('${safe}')" style="padding:9px 14px;border-bottom:1px solid #2a2a2a;cursor:pointer;font-family:monospace;font-size:13px;color:#e0e0e0;display:flex;align-items:center;gap:6px" onmousedown="event.preventDefault()">
+        <span style="color:#0f0;font-size:10px">›</span>
+        <span style="color:#0f0">${typed}</span><span>${rest}</span>
+      </div>`;
+    }).join('');
+    document.body.appendChild(popup);
+
+    // Fermer popup au clic ailleurs
+    setTimeout(() => document.addEventListener('click', closeACPopup, {once:true}), 100);
+  }, 120);
+}
+
+function closeACPopup() {
+  const p = document.getElementById('ac-popup');
+  if (p) p.remove();
+}
+
+function selectACItem(text) {
+  const inp = document.getElementById('terminal-input');
+  const t = text.replace(/\\n/g, '\n');
+  inp.value = t;
+  inp.focus();
+  inp.setSelectionRange(t.length, t.length);
+  closeACPopup();
+}
+
+function insertSuggestion(text) {
+  const inp = document.getElementById('terminal-input');
+  const t = text.replace(/\\n/g, '\n');
+  inp.value = t;
+  inp.focus();
+  inp.setSelectionRange(t.length, t.length);
+}
+
+function insertEditorSnippet(text) {
+  const ed = document.getElementById('terminal-editor');
+  const t  = text.replace(/\\n/g, '\n');
+  const start = ed.selectionStart;
+  const val = ed.value;
+  ed.value = val.slice(0, start) + t + val.slice(ed.selectionEnd);
+  ed.selectionStart = ed.selectionEnd = start + t.length;
+  ed.focus();
+}
+
+function insertTab() {
+  insertEditorSnippet('  ');
+}
+function clearEditor() {
+  document.getElementById('terminal-editor').value = '';
+  document.getElementById('terminal-editor').focus();
+}
 function clearTerminal() {
   document.getElementById('terminal-output').innerHTML = '';
 }
 
-// Navigation historique avec flèches
+// ── Historique clavier ──
 document.addEventListener('keydown', function(e) {
-  const inp = document.getElementById('terminal-input');
   if (document.getElementById('screen-terminal').classList.contains('hidden')) return;
+  if (activeTermTab !== 'output') return;
+  const inp = document.getElementById('terminal-input');
   if (e.key === 'ArrowUp') {
     e.preventDefault();
-    const hist = termHistory[terminalType] || [];
-    if (termHistIdx < hist.length - 1) termHistIdx++;
-    inp.value = hist[termHistIdx] || '';
+    const h = termHistory[terminalType] || [];
+    if (termHistIdx < h.length - 1) termHistIdx++;
+    inp.value = h[termHistIdx] || '';
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    if (termHistIdx > 0) { termHistIdx--; inp.value = termHistory[terminalType][termHistIdx] || ''; }
+    if (termHistIdx > 0) { termHistIdx--; inp.value = (termHistory[terminalType]||[])[termHistIdx]||''; }
     else { termHistIdx = -1; inp.value = ''; }
-  } else if (e.key === 'Enter') {
-    if (document.activeElement === inp) runTerminalCmd();
+  } else if (e.key === 'Enter' && document.activeElement === inp) {
+    runTerminalCmd();
   }
 });
 
-// Simulation de commandes côté client
+// ── Commandes simulées localement ──
 const CMD_LINUX = {
-  'ls':       'bin  boot  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var',
-  'ls -la':   'total 64\ndrwxr-xr-x  2 user user 4096 Jun 24 10:00 .\ndrwxr-xr-x 18 user user 4096 Jun 24 09:58 ..\n-rw-r--r--  1 user user  220 Jun 24 09:58 .bash_logout\n-rw-r--r--  1 user user 3526 Jun 24 09:58 .bashrc',
-  'pwd':      '/home/user',
-  'whoami':   'user',
-  'date':     new Date().toString(),
-  'uname -a': 'Linux studiora 5.15.0 #1 SMP x86_64 GNU/Linux',
-  'echo hello': 'hello',
-  'clear':    '__CLEAR__',
-  'help':     'Commandes disponibles : ls, pwd, whoami, date, uname, echo, mkdir, cat, grep, chmod, man, history\nAutres commandes simulées par IA.',
-  'history':  ()=> (termHistory.linux||[]).slice(0,10).map((c,i)=>`  ${i+1}  ${c}`).join('\n') || '(vide)',
+  'ls':        'bin  boot  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var',
+  'ls -la':    'total 64\ndrwxr-xr-x  2 user user 4096 Jun 24 10:00 .\ndrwxr-xr-x 18 user user 4096 Jun 24 09:58 ..\n-rw-r--r--  1 user user  220 Jun 24 09:58 .bash_logout\n-rw-r--r--  1 user user 3526 Jun 24 09:58 .bashrc\n-rw-r--r--  1 user user 1807 Jun 24 09:58 .profile',
+  'pwd':       '/home/user',
+  'whoami':    'user',
+  'date':      ()=>new Date().toString(),
+  'uname -a':  'Linux studiora 5.15.0 #1 SMP x86_64 GNU/Linux',
+  'clear':     '__CLEAR__',
+  'help':      'Commandes: ls, ls -la, pwd, whoami, date, uname -a, echo, mkdir, cd, cat, chmod, history, clear\nAutres commandes → simulées par IA.',
+  'history':   ()=>(termHistory.linux||[]).slice(0,10).map((c,i)=>`  ${i+1}  ${c}`).join('\n')||'(vide)',
+  'df -h':     'Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1        50G   12G   38G  24% /\ntmpfs           2.0G     0  2.0G   0% /dev/shm',
+  'ps aux':    'USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nroot         1  0.0  0.1  19364  1544 ?        Ss   10:00   0:01 /sbin/init\nuser      1234  0.1  0.5  45678  4321 pts/0    S    10:05   0:00 bash',
+  'git status':'On branch main\nYour branch is up to date.\nnothing to commit, working tree clean',
+  'git log --oneline':'a1b2c3d feat: terminal éditeur split\nb4c5d6e fix: bugs quiz session\nc7d8e9f feat: onglet Travaux',
 };
 const CMD_WINDOWS = {
   'dir':        ' Volume in drive C has no label.\n Directory of C:\\Users\\User\n\n06/24/2025  10:00    <DIR>          .\n06/24/2025  10:00    <DIR>          ..\n06/24/2025  09:58           3,526 .bashrc',
-  'cd':         'C:\\Users\\User',
   'cls':        '__CLEAR__',
-  'whoami':     'DESKTOP\\User',
-  'ipconfig':   'Windows IP Configuration\n\nEthernet adapter:\n   IPv4 Address: 192.168.1.100\n   Subnet Mask:  255.255.255.0\n   Default Gateway: 192.168.1.1',
+  'whoami':     'DESKTOP-STUDIORA\\User',
   'ver':        'Microsoft Windows [Version 10.0.22621.2428]',
-  'echo hello': 'hello',
-  'help':       'Commandes disponibles : dir, cd, cls, whoami, ipconfig, ver, echo, ping, tasklist',
-  'systeminfo': 'Host Name: STUDIORA-PC\nOS Name: Windows 11 Pro\nOS Version: 10.0.22621',
-};
-const CMD_PYTHON = {
-  'print("Hello, World!")': 'Hello, World!',
-  "print('hello')": 'hello',
-  '2+2':     '4',
-  '2**10':   '1024',
-  'import os': '>>>',
-  'import sys': '>>>',
-  'type(42)':  "<class 'int'>",
-  "type('hi')":"<class 'str'>",
-  'len("bonjour")': '7',
-  'range(5)': 'range(0, 5)',
-  'list(range(5))': '[0, 1, 2, 3, 4]',
-  'help': 'Fonctions built-in: print, len, type, range, list, dict, input, int, str, float, bool, sum, min, max, sorted',
-  'exit()': '__EXIT__',
+  'ipconfig':   'Windows IP Configuration\n\nEthernet adapter:\n   IPv4 Address: 192.168.1.100\n   Subnet Mask:  255.255.255.0\n   Default Gateway: 192.168.1.1',
+  'systeminfo': 'Host Name: STUDIORA-PC\nOS Name: Windows 11 Pro\nOS Version: 10.0.22621 N/A Build 22621',
+  'tasklist':   'Image Name                     PID  Mem Usage\n========================= ======== ===========\nSystem Idle Process              0     8 K\nexplorer.exe                  1234 52,340 K\ncmd.exe                       5678  4,120 K',
+  'help':       'Commandes: dir, cls, whoami, ver, ipconfig, systeminfo, tasklist, echo, mkdir, cd, del',
 };
 const CMD_SQL = {
-  'show databases;':   '+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| studiora_db        |\n| test               |\n+--------------------+\n3 rows in set',
-  'show tables;':      '+---------------------+\n| Tables_in_studiora  |\n+---------------------+\n| etudiants           |\n| cours               |\n| inscriptions        |\n+---------------------+',
-  'select now();':     `+---------------------+\n| now()               |\n+---------------------+\n| ${new Date().toISOString().slice(0,19)} |\n+---------------------+`,
-  'select version();': '+------------------+\n| version()        |\n+------------------+\n| 8.0.35           |\n+------------------+',
-  'help':              'Mots-clés SQL : SELECT, FROM, WHERE, JOIN, INSERT, UPDATE, DELETE, CREATE TABLE, DROP, ALTER, INDEX',
+  'show databases;':    '+--------------------+\n| Database           |\n+--------------------+\n| information_schema |\n| studiora_db        |\n| mysql              |\n+--------------------+\n3 rows in set (0.00 sec)',
+  'show tables;':       '+---------------------+\n| Tables_in_studiora  |\n+---------------------+\n| etudiants           |\n| cours               |\n| inscriptions        |\n+---------------------+\n3 rows in set (0.01 sec)',
+  'select now();':      ()=>`+---------------------+\n| now()               |\n+---------------------+\n| ${new Date().toISOString().slice(0,19)} |\n+---------------------+\n1 row in set (0.00 sec)`,
+  'select version();':  '+------------------+\n| version()        |\n+------------------+\n| 8.0.35-MySQL     |\n+------------------+\n1 row in set (0.00 sec)',
+  'select 1+1;':        '+-------+\n| 1+1   |\n+-------+\n|     2 |\n+-------+\n1 row in set (0.00 sec)',
+  'help':               'Mots-clés SQL: SELECT FROM WHERE JOIN INSERT UPDATE DELETE CREATE DROP ALTER GROUP BY ORDER BY HAVING LIMIT',
 };
 
-function evalPythonExpr(cmd) {
-  // Safe eval for simple Python expressions
+function evalPythonLine(cmd) {
   try {
-    const jsCmd = cmd
-      .replace(/\*\*/g, '**')
-      .replace(/print\(["'](.+?)["']\)/g, (_, s) => `"__PRINT__${s}"`)
-      .replace(/print\((.+)\)/g, (_, e) => `"__PRINT__"+String(${e})`);
-    const res = Function('"use strict";return (' + cmd
-      .replace(/\*\*/g, '**')
+    // Print detection
+    const printMatch = cmd.match(/^print\((.+)\)$/);
+    if (printMatch) {
+      const inner = printMatch[1];
+      // String print
+      const strMatch = inner.match(/^["'](.*)["']$/);
+      if (strMatch) return strMatch[1];
+      // f-string simple (skip)
+      // Numeric expression
+      const val = Function('"use strict";return (' + inner
+        .replace(/True/g,'true').replace(/False/g,'false').replace(/None/g,'null')
+        .replace(/\*\*/g,'**')
+      + ')')();
+      return val !== undefined ? String(val) : '';
+    }
+    // Direct expression
+    const val = Function('"use strict";return (' + cmd
       .replace(/True/g,'true').replace(/False/g,'false').replace(/None/g,'null')
     + ')')();
-    return res !== undefined ? String(res) : null;
+    return val !== undefined ? String(val) : null;
   } catch(e) { return null; }
 }
 
@@ -2102,83 +2530,142 @@ async function runTerminalCmd() {
   inp.value = '';
   termHistIdx = -1;
 
-  // Save to history
   if (!termHistory[terminalType]) termHistory[terminalType] = [];
   termHistory[terminalType].unshift(cmd);
   if (termHistory[terminalType].length > 50) termHistory[terminalType].pop();
 
-  const out = document.getElementById('terminal-output');
+  const out   = document.getElementById('terminal-output');
   const color = terminalColors[terminalType] || '#00ff41';
-  const prompt = terminalPrompts[terminalType] || '$';
+  const prompt= terminalPrompts[terminalType] || '$';
 
-  // Display command
-  out.innerHTML += `<div><span style="color:${color}">${prompt} </span><span style="color:#fff">${escHtml(cmd)}</span></div>`;
+  out.innerHTML += `<div style="margin:2px 0"><span style="color:${color}">${escHtml(prompt)} </span><span style="color:#fff;font-weight:600">${escHtml(cmd)}</span></div>`;
 
   let result = null;
+  const cmdLow = cmd.toLowerCase().trim();
 
-  // ── Commandes locales ──
-  const cmdMap = {linux:CMD_LINUX, windows:CMD_WINDOWS, python:CMD_PYTHON, sql:CMD_SQL}[terminalType];
-  if (cmdMap) {
-    const key = cmd.toLowerCase().trim();
-    const val = cmdMap[key] || cmdMap[cmd];
+  // Local command tables
+  const maps = {linux:CMD_LINUX, windows:CMD_WINDOWS, sql:CMD_SQL};
+  const map = maps[terminalType];
+  if (map) {
+    const val = map[cmd] ?? map[cmdLow];
     if (val === '__CLEAR__') { clearTerminal(); out.scrollTop = out.scrollHeight; return; }
-    if (val === '__EXIT__') { result = 'Session terminée.'; }
-    else if (typeof val === 'function') { result = val(); }
-    else if (val !== undefined) { result = val; }
+    if (typeof val === 'function') result = val();
+    else if (val !== undefined) result = val;
   }
 
-  // Python: essayer eval simple
-  if (!result && terminalType === 'python') {
-    const ev = evalPythonExpr(cmd);
+  // echo universal
+  if (result === null) {
+    const m = cmd.match(/^echo\s+(.+)/i);
+    if (m) result = m[1].replace(/^["']|["']$/g,'');
+  }
+
+  // mkdir/touch/cd/cp/mv/rm
+  if (result === null && /^(mkdir|touch|cd|cp|mv|rm|del|md)\s+/.test(cmd)) {
+    const p = cmd.split(/\s+/);
+    const r = {mkdir:`mkdir: répertoire '${p[1]}' créé`,md:`Sous-répertoire créé : ${p[1]}`,touch:`touch: fichier '${p[1]}' créé`,cd:``,cp:`cp: '${p[1]}' copié vers '${p[2]||'.'}'`,mv:`mv: '${p[1]}' déplacé`,rm:`rm: '${p[1]}' supprimé`,del:`Supprimé(s): ${p[1]}`};
+    result = r[p[0]] ?? '';
+  }
+
+  // Python single-line eval
+  if (result === null && terminalType === 'python') {
+    const ev = evalPythonLine(cmd);
     if (ev !== null) result = ev;
   }
 
-  // Commandes echo universelles
-  if (!result) {
-    const echoMatch = cmd.match(/^echo\s+(.+)/i);
-    if (echoMatch) result = echoMatch[1].replace(/^["']|["']$/g,'');
-  }
-
-  // mkdir, touch, cd simulés
-  if (!result && /^(mkdir|touch|cd|cp|mv|rm)\s+/.test(cmd)) {
-    const parts = cmd.split(/\s+/);
-    const cmds = {mkdir:`mkdir: répertoire '${parts[1]}' créé`,touch:`touch: fichier '${parts[1]}' créé`,cd:`cd: changement vers ${parts[1]}`,cp:`cp: copié`,mv:`mv: déplacé`,rm:`rm: supprimé`};
-    result = cmds[parts[0]] || '';
-  }
-
   if (result !== null) {
-    out.innerHTML += `<div style="color:#e0e0e0;white-space:pre-wrap;margin-bottom:4px">${escHtml(String(result))}</div>`;
+    if (result) out.innerHTML += `<div style="color:#e0e0e0;white-space:pre-wrap;margin-bottom:2px">${escHtml(String(result))}</div>`;
     out.scrollTop = out.scrollHeight;
     return;
   }
 
-  // ── Commande inconnue → IA pour simulation ──
-  out.innerHTML += `<div style="color:#888;font-style:italic">⏳ Simulation...</div>`;
+  // Unknown → IA simulation
+  out.innerHTML += `<div id="term-loading" style="color:#555;font-style:italic;font-size:12px">simulation en cours...</div>`;
   out.scrollTop = out.scrollHeight;
 
-  const sysPrompts = {
-    linux:   `Tu simules un terminal Bash Linux éducatif. L'utilisateur tape une commande shell. Simule la sortie exacte qu'un vrai terminal afficherait (sans explications, juste la sortie). Si la commande a une erreur de syntaxe, affiche le message d'erreur bash exact. Sois concis.`,
-    windows: `Tu simules un terminal Windows CMD/PowerShell éducatif. Simule la sortie exacte de Windows (sans explications). Si erreur, affiche le message Windows exact.`,
-    python:  `Tu simules un interpréteur Python 3. L'utilisateur entre du code Python. Affiche uniquement la sortie ou l'erreur qu'un vrai interpréteur Python afficherait. Pas d'explications.`,
-    java:    `Tu simules un compilateur/runtime Java éducatif. L'utilisateur entre du code Java ou une commande javac/java. Affiche le résultat de compilation et d'exécution, ou les erreurs exactes du compilateur Java. Pas d'explications.`,
-    sql:     `Tu simules un serveur MySQL/PostgreSQL éducatif. L'utilisateur tape des requêtes SQL. Affiche le résultat tabulaire exact comme un vrai serveur SQL. Si erreur SQL, affiche le message d'erreur exact. Pas d'explications.`,
-    algo:    `Tu analyses du pseudo-code algorithmique. Explique brièvement ce que fait le code, sa complexité O(n), et donne une implémentation Python équivalente. Sois pédagogique et concis.`,
+  const sysP = {
+    linux:   'Tu simules un terminal Bash Linux. Donne UNIQUEMENT la sortie exacte de la commande, comme un vrai terminal, sans explication. Si erreur: affiche le message d\'erreur bash exact.',
+    windows: 'Tu simules un terminal Windows CMD. Donne UNIQUEMENT la sortie exacte, comme Windows CMD, sans explication.',
+    python:  'Tu simules Python 3.11. Affiche UNIQUEMENT ce qu\'un interpréteur Python afficherait (résultat ou erreur traceback). Aucune explication.',
+    java:    'Tu simules javac + java. Montre la compilation et l\'exécution, ou les erreurs exactes du compilateur Java. UNIQUEMENT la sortie, pas d\'explication.',
+    sql:     'Tu simules MySQL 8.0. Donne UNIQUEMENT la sortie tabulaire exacte d\'un serveur SQL, ou le message d\'erreur SQL exact. Aucune explication.',
+    algo:    'Tu analyses du pseudo-code algorithmique. Explique brièvement ce que fait ce code, sa complexité, et montre l\'équivalent Python. Sois concis.',
   };
 
   try {
-    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:MODEL, max_tokens:500, system: sysPrompts[terminalType]||sysPrompts.linux, messages:[{role:'user',content:cmd}]})
+    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+      method:'POST', headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
+      body: JSON.stringify({model:MODEL, max_tokens:400, system: sysP[terminalType]||sysP.linux, messages:[{role:'user',content:cmd}]})
     });
     const data = await res.json();
     const output = data.content?.[0]?.text || 'command not found';
-    // Remove last "Simulation..." line
-    const lines = out.innerHTML.split('\n');
-    out.innerHTML = out.innerHTML.replace('<div style="color:#888;font-style:italic">⏳ Simulation...</div>','');
-    out.innerHTML += `<div style="color:#e0e0e0;white-space:pre-wrap;margin-bottom:4px">${escHtml(output)}</div>`;
+    const loadEl = document.getElementById('term-loading');
+    if (loadEl) loadEl.remove();
+    out.innerHTML += `<div style="color:#e0e0e0;white-space:pre-wrap;margin-bottom:2px">${escHtml(output)}</div>`;
   } catch(e) {
-    out.innerHTML = out.innerHTML.replace('<div style="color:#888;font-style:italic">⏳ Simulation...</div>','');
-    out.innerHTML += `<div style="color:#ff4444">bash: connexion réseau requise pour cette commande</div>`;
+    const loadEl = document.getElementById('term-loading');
+    if (loadEl) loadEl.remove();
+    out.innerHTML += `<div style="color:#ff4444;font-size:12px">connexion réseau requise pour simuler cette commande</div>`;
+  }
+  out.scrollTop = out.scrollHeight;
+}
+
+// ── Exécuter le code de l'éditeur ──
+async function runEditorCode() {
+  const code = document.getElementById('terminal-editor').value.trim();
+  if (!code) { showToast('⚠️ L\'éditeur est vide'); return; }
+
+  switchTermTab('output');
+
+  const out   = document.getElementById('terminal-output');
+  const color = terminalColors[terminalType] || '#00ff41';
+  const lines = code.split('\n').map(l=>`<span style="color:#555">${escHtml(l)}</span>`).join('\n');
+  out.innerHTML += `<div style="border-left:2px solid ${color};padding-left:8px;margin:6px 0;white-space:pre-wrap;font-size:11px">${lines}</div>`;
+  out.innerHTML += `<div id="term-loading" style="color:#555;font-style:italic;font-size:12px">⏳ Exécution...</div>`;
+  out.scrollTop = out.scrollHeight;
+
+  // Python simple eval local
+  if (terminalType === 'python') {
+    const codeLines = code.split('\n');
+    let localOutput = [];
+    let allLocal = true;
+    for (const line of codeLines) {
+      if (!line.trim() || line.trim().startsWith('#')) continue;
+      const ev = evalPythonLine(line.trim());
+      if (ev !== null) { if (ev) localOutput.push(ev); }
+      else { allLocal = false; break; }
+    }
+    if (allLocal && localOutput.length > 0) {
+      const loadEl = document.getElementById('term-loading');
+      if (loadEl) loadEl.remove();
+      out.innerHTML += `<div style="color:#e0e0e0;white-space:pre-wrap;margin-bottom:2px">${escHtml(localOutput.join('\n'))}</div>`;
+      out.scrollTop = out.scrollHeight;
+      return;
+    }
+  }
+
+  const sysE = {
+    linux:   'Tu simules l\'exécution d\'un script bash. Affiche UNIQUEMENT la sortie comme un vrai terminal bash.',
+    windows: 'Tu simules l\'exécution d\'un script CMD/PowerShell. Affiche UNIQUEMENT la sortie Windows exacte.',
+    python:  'Tu simules l\'exécution d\'un script Python 3. Affiche UNIQUEMENT ce que print() produirait, ou les erreurs avec traceback Python exact.',
+    java:    'Tu simules la compilation javac et l\'exécution java. Affiche la sortie exacte ou les erreurs de compilation Java.',
+    sql:     'Tu simules l\'exécution de requêtes MySQL 8.0. Affiche UNIQUEMENT les résultats tabulaires ou messages d\'erreur SQL exacts.',
+    algo:    'Tu analyses ce pseudo-code. Trace l\'exécution pas à pas et affiche chaque ECRIRE(), puis donne l\'équivalent Python.',
+  };
+
+  try {
+    const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+      method:'POST', headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
+      body: JSON.stringify({model:MODEL, max_tokens:600, system: sysE[terminalType]||sysE.linux, messages:[{role:'user',content:code}]})
+    });
+    const data = await res.json();
+    const output = data.content?.[0]?.text || '(aucune sortie)';
+    const loadEl = document.getElementById('term-loading');
+    if (loadEl) loadEl.remove();
+    out.innerHTML += `<div style="color:#e0e0e0;white-space:pre-wrap;border-left:2px solid #00b894;padding-left:8px;margin-bottom:6px">${escHtml(output)}</div>`;
+  } catch(e) {
+    const loadEl = document.getElementById('term-loading');
+    if (loadEl) loadEl.remove();
+    out.innerHTML += `<div style="color:#ff4444;font-size:12px">❌ Erreur réseau. Vérifie ta connexion.</div>`;
   }
   out.scrollTop = out.scrollHeight;
 }
@@ -2235,7 +2722,7 @@ async function searchDict() {
   };
   try {
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
       body:JSON.stringify({model:MODEL,max_tokens:600,system:'Tu es un assistant pédagogique expert pour étudiants africains. Réponds toujours en français de façon claire et structurée.',messages:[{role:'user',content:prompts[dictMode]}]})
     });
     const data = await res.json();
@@ -2277,8 +2764,8 @@ async function generateDiagram() {
     const prompt = `Génère un ${typeLabels[diagType]||diagType} pour : ${desc}.
 Fournis le code PlantUML complet (commence par @startuml, termine par @enduml) et explique brièvement les choix de conception. Adapté au contexte académique africain (MIAGE/Informatique).`;
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:MODEL,max_tokens:1200,messages:[{role:'user',content:prompt}]})
+      method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:MODEL,max_tokens:1200,system:'Tu es un professeur expert qui génère des flashcards éducatives en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
     currentDiagCode = data.content?.[0]?.text || 'Erreur';
