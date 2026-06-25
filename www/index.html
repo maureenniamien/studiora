@@ -226,7 +226,13 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <p style="color:var(--text2);margin-bottom:30px">Continue là où tu t'es arrêté·e</p>
     <div style="margin-bottom:14px"><label class="field-label">Prénom</label><input class="input" id="login-prenom" placeholder="Ton prénom"></div>
     <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email"></div>
-    <div style="margin-bottom:8px"><label class="field-label">Mot de passe</label><input class="input" id="login-pwd" placeholder="••••••••" type="password"></div>
+    <div style="margin-bottom:8px">
+  <label class="field-label">Mot de passe</label>
+  <div style="position:relative">
+    <input class="input" id="login-pwd" placeholder="••••••••" type="password" style="padding-right:44px">
+    <span onclick="togglePwd('login-pwd',this)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;user-select:none">👁</span>
+  </div>
+</div>
     <p style="text-align:right;font-size:12px;color:var(--em);font-weight:600;margin-bottom:26px;cursor:pointer">Mot de passe oublié ?</p>
     <button class="btn-em" onclick="doLogin()">Se connecter</button>
     <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--text2)">Pas encore inscrit ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-register')">Créer un compte</span></p>
@@ -301,7 +307,23 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         </select>
       </div>
     </div>
-    <div style="margin-bottom:24px"><label class="field-label">Mot de passe</label><input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères"></div>
+    <div style="margin-bottom:14px">
+  <label class="field-label">Mot de passe</label>
+  <div style="position:relative">
+    <input class="input" id="reg-pwd" type="password" placeholder="Minimum 8 caractères" style="padding-right:44px" oninput="onPwdInput()">
+    <span onclick="togglePwd('reg-pwd',this)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;user-select:none">👁</span>
+  </div>
+  <div id="pwd-strength-bar" style="height:4px;border-radius:4px;margin-top:6px;background:var(--border);overflow:hidden"><div id="pwd-strength-fill" style="height:100%;width:0;transition:width .3s,background .3s"></div></div>
+  <p id="pwd-strength-label" style="font-size:11px;color:var(--text3);margin-top:3px"></p>
+</div>
+<div style="margin-bottom:24px">
+  <label class="field-label">Confirmer le mot de passe</label>
+  <div style="position:relative">
+    <input class="input" id="reg-pwd2" type="password" placeholder="Répète ton mot de passe" style="padding-right:44px" oninput="checkPwdMatch()">
+    <span onclick="togglePwd('reg-pwd2',this)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;user-select:none">👁</span>
+  </div>
+  <p id="pwd-match-label" style="font-size:11px;margin-top:3px"></p>
+</div>
     <button class="btn-em" onclick="doRegister()">Créer mon compte →</button>
     <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em)">CGU</span></p>
   </div>
@@ -926,52 +948,93 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <button onclick="goBack()" class="back-btn">← Retour</button>
     <span class="display" style="font-size:17px;font-weight:700">🧮 Calculatrice</span>
   </div>
-  <div class="scroll-body" style="padding:16px 20px 40px">
-    <div style="background:var(--text);border-radius:var(--r);padding:20px;margin-bottom:16px;text-align:right">
-      <div style="font-size:12px;color:#888;min-height:18px" id="calc-history"></div>
-      <div style="font-size:32px;font-weight:700;color:#fff;min-height:44px;word-break:break-all" id="calc-display">0</div>
+  <!-- Onglets -->
+  <div style="display:flex;border-bottom:1px solid var(--border);background:var(--white)">
+    <button id="calc-tab-std" onclick="switchCalcTab('std')" style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--em-soft);color:var(--em);border-bottom:2px solid var(--em)">🔢 Standard</button>
+    <button id="calc-tab-graph" onclick="switchCalcTab('graph')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text2);border-bottom:2px solid transparent">📈 Graphe</button>
+  </div>
+
+  <!-- TAB STANDARD -->
+  <div id="calc-panel-std" class="scroll-body" style="padding:12px 14px 40px">
+    <div style="background:#1a1a2e;border-radius:14px;padding:16px;margin-bottom:12px;text-align:right">
+      <div style="font-size:11px;color:#888;min-height:16px" id="calc-history"></div>
+      <div style="font-size:30px;font-weight:700;color:#fff;min-height:42px;word-break:break-all" id="calc-display">0</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-      <!-- Row 1 -->
-      <button onclick="calcInput('sin(')" class="calc-btn calc-fn">sin</button>
-      <button onclick="calcInput('cos(')" class="calc-btn calc-fn">cos</button>
-      <button onclick="calcInput('tan(')" class="calc-btn calc-fn">tan</button>
+    <!-- Fonctions scientifiques row 1 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px">
+      <button onclick="calcInput('Math.sin(')" class="calc-btn calc-fn">sin</button>
+      <button onclick="calcInput('Math.cos(')" class="calc-btn calc-fn">cos</button>
+      <button onclick="calcInput('Math.tan(')" class="calc-btn calc-fn">tan</button>
       <button onclick="calcInput('Math.sqrt(')" class="calc-btn calc-fn">√</button>
-      <!-- Row 2 -->
+    </div>
+    <!-- Fonctions scientifiques row 2 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px">
       <button onclick="calcInput('Math.log(')" class="calc-btn calc-fn">ln</button>
       <button onclick="calcInput('Math.log10(')" class="calc-btn calc-fn">log</button>
+      <button onclick="calcInput('Math.abs(')" class="calc-btn calc-fn">|x|</button>
+      <button onclick="calcInput('Math.cbrt(')" class="calc-btn calc-fn">∛</button>
+    </div>
+    <!-- Fonctions scientifiques row 3 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
       <button onclick="calcInput('Math.PI')" class="calc-btn calc-fn">π</button>
-      <button onclick="calcInput('**')" class="calc-btn calc-fn">x^y</button>
-      <!-- Row 3 -->
+      <button onclick="calcInput('Math.E')" class="calc-btn calc-fn">e</button>
+      <button onclick="calcInput('**')" class="calc-btn calc-fn">xʸ</button>
+      <button onclick="calcInput('%')" class="calc-btn calc-fn">mod</button>
+    </div>
+    <!-- Chiffres + opérations -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
       <button onclick="calcInput('7')" class="calc-btn">7</button>
       <button onclick="calcInput('8')" class="calc-btn">8</button>
       <button onclick="calcInput('9')" class="calc-btn">9</button>
       <button onclick="calcInput('/')" class="calc-btn calc-op">÷</button>
-      <!-- Row 4 -->
       <button onclick="calcInput('4')" class="calc-btn">4</button>
       <button onclick="calcInput('5')" class="calc-btn">5</button>
       <button onclick="calcInput('6')" class="calc-btn">6</button>
       <button onclick="calcInput('*')" class="calc-btn calc-op">×</button>
-      <!-- Row 5 -->
       <button onclick="calcInput('1')" class="calc-btn">1</button>
       <button onclick="calcInput('2')" class="calc-btn">2</button>
       <button onclick="calcInput('3')" class="calc-btn">3</button>
       <button onclick="calcInput('-')" class="calc-btn calc-op">−</button>
-      <!-- Row 6 -->
       <button onclick="calcInput('0')" class="calc-btn">0</button>
       <button onclick="calcInput('.')" class="calc-btn">.</button>
       <button onclick="calcEqual()" class="calc-btn" style="background:var(--em);color:#fff;font-size:18px">=</button>
       <button onclick="calcInput('+')" class="calc-btn calc-op">+</button>
-      <!-- Row 7 -->
       <button onclick="calcInput('(')" class="calc-btn calc-fn">(</button>
       <button onclick="calcInput(')')" class="calc-btn calc-fn">)</button>
-      <button onclick="calcClear()" class="calc-btn" style="background:var(--red-soft);color:var(--red)">C</button>
-      <button onclick="calcDelete()" class="calc-btn" style="background:var(--bg2);color:var(--text2)">⌫</button>
+      <button onclick="calcClear()" class="calc-btn" style="background:#ffe4e4;color:#c0392b">C</button>
+      <button onclick="calcDelete()" class="calc-btn" style="background:var(--bg2)">⌫</button>
     </div>
-    <div style="margin-top:16px;background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">HISTORIQUE</div>
-      <div id="calc-log" style="font-size:12px;color:var(--text2);line-height:1.8;max-height:100px;overflow-y:auto"></div>
+    <div style="margin-top:12px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">HISTORIQUE</div>
+      <div id="calc-log" style="font-size:12px;color:var(--text2);line-height:1.9;max-height:90px;overflow-y:auto"></div>
     </div>
+  </div>
+
+  <!-- TAB GRAPHE -->
+  <div id="calc-panel-graph" class="scroll-body" style="padding:14px;display:none">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Fonction f(x) =</label>
+      <div style="display:flex;gap:8px">
+        <input id="graph-fn-input" class="input" placeholder="Ex: sin(x), x**2, Math.cos(x)*2" style="flex:1;font-size:14px">
+        <button onclick="plotGraph()" style="background:var(--em);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Tracer</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <button onclick="setGraphFn('Math.sin(x)')" class="calc-btn calc-fn" style="font-size:11px;padding:5px 10px">sin(x)</button>
+        <button onclick="setGraphFn('Math.cos(x)')" class="calc-btn calc-fn" style="font-size:11px;padding:5px 10px">cos(x)</button>
+        <button onclick="setGraphFn('x**2')" class="calc-btn calc-fn" style="font-size:11px;padding:5px 10px">x²</button>
+        <button onclick="setGraphFn('Math.sqrt(Math.abs(x))')" class="calc-btn calc-fn" style="font-size:11px;padding:5px 10px">√|x|</button>
+        <button onclick="setGraphFn('Math.log(Math.abs(x)+0.001)')" class="calc-btn calc-fn" style="font-size:11px;padding:5px 10px">ln|x|</button>
+        <button onclick="setGraphFn('1/x')" class="calc-btn calc-fn" style="font-size:11px;padding:5px 10px">1/x</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <label style="font-size:11px;color:var(--text2);white-space:nowrap">x de</label>
+        <input id="graph-xmin" class="input" value="-10" style="width:60px;font-size:13px;padding:6px 8px;text-align:center">
+        <label style="font-size:11px;color:var(--text2)">à</label>
+        <input id="graph-xmax" class="input" value="10" style="width:60px;font-size:13px;padding:6px 8px;text-align:center">
+      </div>
+    </div>
+    <canvas id="graph-canvas" width="340" height="260" style="width:100%;border-radius:12px;background:#1a1a2e;display:block"></canvas>
+    <p id="graph-info" style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px"></p>
   </div>
 </div>
 
@@ -1018,9 +1081,17 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       <input class="input" id="diag-desc" placeholder="Décris ton diagramme (ex: Système de gestion de bibliothèque avec Livre, Auteur, Emprunt...)" style="margin-bottom:8px">
       <button class="btn-em" onclick="generateDiagram()">✨ Générer avec l'IA</button>
     </div>
-    <div id="diag-result" style="display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-top:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--em);margin-bottom:8px">DIAGRAMME GÉNÉRÉ</div>
-      <pre id="diag-code" style="font-size:11px;line-height:1.6;white-space:pre-wrap;color:var(--text);overflow-x:auto"></pre>
+    <div id="diag-result" style="display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--em);margin-bottom:10px">DIAGRAMME GÉNÉRÉ</div>
+      <!-- Aperçu visuel kroki.io -->
+      <div id="diag-img-wrap" style="display:none;margin-bottom:10px;background:#f8f8f8;border-radius:10px;padding:10px;text-align:center">
+        <img id="diag-img" style="max-width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12)" alt="Diagramme UML" onerror="this.parentElement.style.display='none'">
+      </div>
+      <!-- Code rétractable -->
+      <details>
+        <summary style="font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;padding:4px 0">📋 Voir le code PlantUML</summary>
+        <pre id="diag-code" style="font-size:10px;line-height:1.5;white-space:pre-wrap;color:var(--text);overflow-x:auto;margin-top:8px;background:var(--bg2);border-radius:8px;padding:10px;max-height:180px;overflow-y:auto"></pre>
+      </details>
       <div style="margin-top:10px;display:flex;gap:8px">
         <button onclick="showToast('📋 Copié !')" style="flex:1;padding:10px;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📋 Copier</button>
         <button onclick="saveDiagram()" style="flex:1;padding:10px;background:var(--pur-soft);border:1px solid rgba(91,79,207,.2);border-radius:10px;color:var(--purple);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">💾 Sauvegarder</button>
@@ -1360,7 +1431,9 @@ Tes principes :
 - Si on te pose une question hors scolaire, réponds brièvement et ramène vers les études
 - Quand tu expliques, utilise la méthode : définition → exemple concret → mémo/astuce
 - Encourage toujours à la fin d'une explication
-- Tu connais les programmes : BEPC, BAC Côte d'Ivoire (séries A,B,C,D,E), et les licences MIAGE/ASSRI`;
+- Tu connais les programmes ivoiriens : BEPC, BAC (séries A,B,C,D,E), et les filières universitaires de toutes disciplines (Informatique, MIAGE, Géographie, Droit, Médecine, Économie, Génie Civil, Géomatique, etc.)
+- Adapte TON discours à la filière réelle de l'étudiant. Un étudiant en Géographie n'a rien à voir avec MIAGE/ASSRI. Ne mentionne MIAGE/ASSRI que si l'étudiant est explicitement dans cette filière
+- Utilise le profil utilisateur (niveau, filière) pour personnaliser chaque réponse`;
 
 function renderChat() {
   const subj = SUBJECTS.find(s=>s.id===APP.currentSubject) || SUBJECTS[0];
@@ -1563,11 +1636,11 @@ let selectedSerie  = 'D';
 let selectedFiliere = '';
 
 const FILIERES_BY_NIVEAU = {
-  'Licence 1':['MIAGE','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Histoire','Psychologie','Sociologie','Communication','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Agronomie','Pharmacie'],
-  'Licence 2':['MIAGE','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Histoire','Psychologie','Sociologie','Communication','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Agronomie','Pharmacie'],
-  'Licence 3':['MIAGE','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Histoire','Psychologie','Sociologie','Communication','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Agronomie','Pharmacie'],
-  'Master 1':['MIAGE','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel'],
-  'Master 2':['MIAGE','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel'],
+  'Licence 1':['MIAGE','ASSRI','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Géomatique','Géologie','Histoire','Archéologie','Psychologie','Sociologie','Anthropologie','Communication','Journalisme','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Génie Électrique','Génie Mécanique','Agronomie','Pharmacie','Sciences de l\'Éducation','Langues Étrangères'],
+  'Licence 2':['MIAGE','ASSRI','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Géomatique','Géologie','Histoire','Archéologie','Psychologie','Sociologie','Anthropologie','Communication','Journalisme','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Génie Électrique','Génie Mécanique','Agronomie','Pharmacie','Sciences de l\'Éducation','Langues Étrangères'],
+  'Licence 3':['MIAGE','ASSRI','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Géomatique','Géologie','Histoire','Archéologie','Psychologie','Sociologie','Anthropologie','Communication','Journalisme','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Génie Électrique','Génie Mécanique','Agronomie','Pharmacie','Sciences de l\'Éducation','Langues Étrangères'],
+  'Master 1':['MIAGE','ASSRI','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Géomatique & SIG','Géographie','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel','Génie Civil','Environnement','Agronomie'],
+  'Master 2':['MIAGE','ASSRI','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Géomatique & SIG','Géographie','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel','Génie Civil','Environnement','Agronomie'],
   'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
   'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
   'BTS 2':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
@@ -1612,6 +1685,83 @@ function onSerieChange() { selectedSerie = document.getElementById('reg-serie').
 function selectLevel(btn) { selectedLevel = btn?.dataset?.v || btn; }
 
 
+
+
+// ── SANITIZE JSON IA ──
+function sanitizeJsonStr(raw) {
+  // Supprimer les caractères de contrôle sauf tab/newline légitimes hors strings
+  // Stratégie : parser string par string et échapper les retours à la ligne dedans
+  let out = '';
+  let inStr = false;
+  let escape = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (escape) { out += c; escape = false; continue; }
+    if (c === '\\') { escape = true; out += c; continue; }
+    if (c === '"') { inStr = !inStr; out += c; continue; }
+    if (inStr) {
+      // Dans une string JSON, les retours à la ligne doivent être échappés
+      if (c === '\n') { out += '\\n'; continue; }
+      if (c === '\r') { out += '\\r'; continue; }
+      if (c === '\t') { out += '\\t'; continue; }
+      // Supprimer autres caractères de contrôle
+      if (c.charCodeAt(0) < 32) continue;
+    }
+    out += c;
+  }
+  return out;
+}
+
+// ── UTILITAIRES MOT DE PASSE ──
+function simpleHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+  }
+  return h.toString(36);
+}
+
+function togglePwd(id, icon) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text'; icon.textContent = '🙈'; }
+  else { inp.type = 'password'; icon.textContent = '👁'; }
+}
+
+function getPwdStrength(pwd) {
+  if (!pwd) return { score: 0, label: '', color: '' };
+  let score = 0;
+  if (pwd.length >= 8)  score++;
+  if (pwd.length >= 12) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+  if (score <= 1) return { score: 1, label: 'Trop faible', color: '#E53E3E' };
+  if (score === 2) return { score: 2, label: 'Faible', color: '#ED8936' };
+  if (score === 3) return { score: 3, label: 'Moyen', color: '#ECC94B' };
+  if (score === 4) return { score: 4, label: 'Fort', color: '#48BB78' };
+  return { score: 5, label: 'Très fort 💪', color: '#38A169' };
+}
+
+function onPwdInput() {
+  const pwd = document.getElementById('reg-pwd')?.value || '';
+  const { score, label, color } = getPwdStrength(pwd);
+  const fill = document.getElementById('pwd-strength-fill');
+  const lbl  = document.getElementById('pwd-strength-label');
+  if (fill) { fill.style.width = (score * 20) + '%'; fill.style.background = color; }
+  if (lbl)  { lbl.textContent = label; lbl.style.color = color; }
+  checkPwdMatch();
+}
+
+function checkPwdMatch() {
+  const pwd  = document.getElementById('reg-pwd')?.value  || '';
+  const pwd2 = document.getElementById('reg-pwd2')?.value || '';
+  const lbl  = document.getElementById('pwd-match-label');
+  if (!lbl || !pwd2) return;
+  if (pwd === pwd2) { lbl.textContent = '✅ Les mots de passe correspondent'; lbl.style.color = '#48BB78'; }
+  else              { lbl.textContent = '❌ Ne correspond pas'; lbl.style.color = '#E53E3E'; }
+}
+
 function doRegister() {
   const p = document.getElementById('reg-prenom').value.trim();
   const n = document.getElementById('reg-nom').value.trim();
@@ -1622,13 +1772,18 @@ function doRegister() {
   const filiere = document.getElementById('reg-filiere')?.value || '';
   if (!p||!n) { showToast('⚠️ Remplis Prénom et Nom'); return; }
   if (!niv) { showToast('⚠️ Choisis ton niveau'); return; }
-  if (pwd && pwd.length < 8) { showToast('⚠️ Mot de passe trop court (8 min)'); return; }
+  if (!pwd) { showToast('⚠️ Le mot de passe est obligatoire'); return; }
+  if (pwd.length < 8) { showToast('⚠️ Mot de passe trop court (8 caractères min)'); return; }
+  if (!/[A-Za-z]/.test(pwd) || !/[0-9]/.test(pwd)) { showToast('⚠️ Mot de passe : mélange lettres et chiffres'); return; }
+  const pwd2 = document.getElementById('reg-pwd2')?.value || '';
+  if (pwd !== pwd2) { showToast('⚠️ Les mots de passe ne correspondent pas'); return; }
   APP.user.prenom = p.charAt(0).toUpperCase()+p.slice(1);
   APP.user.nom = n;
   APP.user.level = niv;
   APP.user.serie = serie;
   APP.user.filiere = filiere || getFiliere(niv);
   APP.user.email = e;
+  APP.user.pwdHash = simpleHash(pwd);
   saveSession();
   SUBJECTS = getSubjects();
   showToast('🎉 Compte créé ! Bienvenue '+APP.user.prenom+' !');
@@ -1701,16 +1856,14 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
     if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
     const data = await res.json();
     let raw = data.content?.[0]?.text || '{}';
-    raw = raw.replace(/```json|```/g,'').trim();
-    // Nettoyer les apostrophes non échappées dans les valeurs JSON qui cassent le parsing
-    raw = raw.replace(/([^\\])'(?=[^,:\[\]{}\n]*")/g, "$1\'");
+    raw = raw.replace(/```json[\s\S]*?```|```/g,'').trim();
+    raw = sanitizeJsonStr(raw);
     let parsed;
     try { parsed = JSON.parse(raw); }
     catch(je) {
-      // Tentative de récupération : extraire le JSON avec une regex
       const match = raw.match(/\{[\s\S]*\}/);
-      if(match) { try { parsed = JSON.parse(match[0]); } catch(e2) { throw je; } }
-      else throw je;
+      if(match){ try{ parsed=JSON.parse(sanitizeJsonStr(match[0])); }catch(e2){ throw new Error('JSON invalide: '+je.message); } }
+      else throw new Error('Réponse IA non parseable. Réessaie.');
     }
     APP.quizQuestions = parsed.questions || [];
     if(APP.quizQuestions.length===0) throw new Error('empty');
@@ -1854,13 +2007,14 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
     if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
     const data=await res.json();
     let raw=data.content?.[0]?.text||'{}';
-    raw=raw.replace(/```json|```/g,'').trim();
+    raw=raw.replace(/```json[\s\S]*?```|```/g,'').trim();
+    raw=sanitizeJsonStr(raw);
     let parsed;
     try { parsed=JSON.parse(raw); }
     catch(je) {
       const match=raw.match(/\{[\s\S]*\}/);
-      if(match){ try{ parsed=JSON.parse(match[0]); }catch(e2){ throw je; } }
-      else throw je;
+      if(match){ try{ parsed=JSON.parse(sanitizeJsonStr(match[0])); }catch(e2){ throw new Error('JSON invalide: '+je.message); } }
+      else throw new Error('Réponse IA non parseable. Réessaie.');
     }
     APP.flashcards=parsed.cards||[];
     APP.fcIndex=0; APP.fcFlipped=false;
@@ -2180,12 +2334,18 @@ function getExistingSession(email) {
 function doLogin() {
   const email  = document.getElementById('login-email').value.trim();
   const prenom = document.getElementById('login-prenom')?.value.trim() || '';
+  const pwd    = document.getElementById('login-pwd')?.value || '';
   if (!email) { showToast('⚠️ Entre ton email'); return; }
+  if (!pwd)   { showToast('⚠️ Entre ton mot de passe'); return; }
   const existing = getExistingSession(email);
   if (existing) {
+    if (existing.pwdHash && existing.pwdHash !== simpleHash(pwd)) {
+      showToast('❌ Mot de passe incorrect'); return;
+    }
     APP.user = { ...APP.user, ...existing };
   } else {
     APP.user.email = email;
+    APP.user.pwdHash = simpleHash(pwd);
     if (prenom) APP.user.prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1);
   }
   saveSession();
@@ -2711,33 +2871,131 @@ async function runEditorCode() {
 // ── CALCULATRICE ──
 let calcExpr = '';
 let calcLog = [];
+
+function switchCalcTab(tab) {
+  document.getElementById('calc-panel-std').style.display   = tab==='std'   ? '' : 'none';
+  document.getElementById('calc-panel-graph').style.display = tab==='graph' ? '' : 'none';
+  const std   = document.getElementById('calc-tab-std');
+  const graph = document.getElementById('calc-tab-graph');
+  if(tab==='std'){
+    std.style.background='var(--em-soft)';std.style.color='var(--em)';std.style.borderBottom='2px solid var(--em)';std.style.fontWeight='700';
+    graph.style.background='var(--bg)';graph.style.color='var(--text2)';graph.style.borderBottom='2px solid transparent';graph.style.fontWeight='600';
+  } else {
+    graph.style.background='var(--em-soft)';graph.style.color='var(--em)';graph.style.borderBottom='2px solid var(--em)';graph.style.fontWeight='700';
+    std.style.background='var(--bg)';std.style.color='var(--text2)';std.style.borderBottom='2px solid transparent';std.style.fontWeight='600';
+  }
+}
+
 function calcInput(val) {
-  if (calcExpr === '0') calcExpr = '';
-  // Map display chars to JS
-  const map = {'÷':'/','×':'*','−':'-'};
-  calcExpr += (map[val] || val);
+  if (calcExpr === '0' && /^[0-9]$/.test(val)) calcExpr = '';
+  calcExpr += val;
   document.getElementById('calc-display').textContent = calcExpr || '0';
 }
 function calcEqual() {
   if (!calcExpr) return;
   try {
-    // Safe eval: only allow math
-    const safe = calcExpr.replace(/sin/g,'Math.sin').replace(/cos/g,'Math.cos').replace(/tan/g,'Math.tan');
-    const result = Function('"use strict"; return (' + safe + ')')();
-    const rounded = Math.round(result * 1e10) / 1e10;
+    const result = Function('"use strict"; const {sin,cos,tan,sqrt,log,log10,abs,cbrt,pow,PI,E,floor,ceil,round,exp,sign}=Math; return (' + calcExpr + ')')();
+    const rounded = (typeof result === 'number' && isFinite(result)) ? (Math.round(result * 1e10) / 1e10) : result;
     calcLog.unshift(calcExpr + ' = ' + rounded);
-    if(calcLog.length > 10) calcLog.pop();
+    if(calcLog.length > 15) calcLog.pop();
     document.getElementById('calc-history').textContent = calcExpr + ' =';
     document.getElementById('calc-display').textContent = rounded;
-    document.getElementById('calc-log').innerHTML = calcLog.map(l=>`<div>${escHtml(l)}</div>`).join('');
+    document.getElementById('calc-log').innerHTML = calcLog.map(l=>`<div>${escHtml(String(l))}</div>`).join('');
     calcExpr = String(rounded);
   } catch(e) {
     document.getElementById('calc-display').textContent = 'Erreur';
     calcExpr = '';
   }
 }
-function calcClear() { calcExpr = ''; document.getElementById('calc-display').textContent = '0'; document.getElementById('calc-history').textContent = ''; }
-function calcDelete() { calcExpr = calcExpr.slice(0,-1); document.getElementById('calc-display').textContent = calcExpr || '0'; }
+function calcClear() {
+  calcExpr = '';
+  document.getElementById('calc-display').textContent = '0';
+  document.getElementById('calc-history').textContent = '';
+}
+function calcDelete() {
+  calcExpr = calcExpr.slice(0,-1);
+  document.getElementById('calc-display').textContent = calcExpr || '0';
+}
+
+// ── GRAPHIQUE ──
+function setGraphFn(fn) {
+  document.getElementById('graph-fn-input').value = fn;
+}
+function plotGraph() {
+  const fnStr = document.getElementById('graph-fn-input').value.trim();
+  const xmin  = parseFloat(document.getElementById('graph-xmin').value) || -10;
+  const xmax  = parseFloat(document.getElementById('graph-xmax').value) || 10;
+  const canvas = document.getElementById('graph-canvas');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Évaluer la fonction
+  let fn;
+  try {
+    fn = new Function('x', '"use strict"; const {sin,cos,tan,sqrt,log,log10,abs,cbrt,pow,PI,E,floor,ceil,round,exp}=Math; return '+fnStr);
+    fn(0); // test
+  } catch(e) { showToast('❌ Fonction invalide'); return; }
+
+  // Calculer les valeurs
+  const N = 400;
+  const pts = [];
+  for (let i=0; i<=N; i++) {
+    const x = xmin + (xmax-xmin)*(i/N);
+    try { const y = fn(x); pts.push({x,y}); } catch(e) { pts.push({x,y:NaN}); }
+  }
+
+  const ys = pts.map(p=>p.y).filter(y=>isFinite(y));
+  if (!ys.length) { showToast('⚠️ Aucune valeur calculable'); return; }
+  let ymin = Math.min(...ys), ymax = Math.max(...ys);
+  if (ymin === ymax) { ymin -= 1; ymax += 1; }
+  const pad = (ymax-ymin)*0.1;
+  ymin -= pad; ymax += pad;
+
+  const toX = x => (x-xmin)/(xmax-xmin)*W;
+  const toY = y => H - (y-ymin)/(ymax-ymin)*H;
+
+  // Fond
+  ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,W,H);
+
+  // Grille
+  ctx.strokeStyle='#2a2a4a'; ctx.lineWidth=1;
+  const xStep = (xmax-xmin)/10, yStep=(ymax-ymin)/8;
+  for(let xi=Math.ceil(xmin/xStep)*xStep; xi<=xmax; xi+=xStep){
+    ctx.beginPath(); ctx.moveTo(toX(xi),0); ctx.lineTo(toX(xi),H); ctx.stroke();
+  }
+  for(let yi=Math.ceil(ymin/yStep)*yStep; yi<=ymax; yi+=yStep){
+    ctx.beginPath(); ctx.moveTo(0,toY(yi)); ctx.lineTo(W,toY(yi)); ctx.stroke();
+  }
+
+  // Axes x=0 et y=0
+  ctx.strokeStyle='#4a4a7a'; ctx.lineWidth=1.5;
+  if(xmin<=0&&0<=xmax){ ctx.beginPath(); ctx.moveTo(toX(0),0); ctx.lineTo(toX(0),H); ctx.stroke(); }
+  if(ymin<=0&&0<=ymax){ ctx.beginPath(); ctx.moveTo(0,toY(0)); ctx.lineTo(W,toY(0)); ctx.stroke(); }
+
+  // Labels axes
+  ctx.fillStyle='#8888aa'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  for(let xi=Math.ceil(xmin); xi<=xmax; xi+=Math.ceil((xmax-xmin)/8)){
+    ctx.fillText(xi, toX(xi), Math.min(H-4, Math.max(14, toY(0)+14)));
+  }
+  ctx.textAlign='right';
+  for(let yi=Math.ceil(ymin); yi<=ymax; yi+=Math.ceil((ymax-ymin)/6)){
+    ctx.fillText(yi.toFixed(1), Math.max(28, toX(0)-4), toY(yi)+4);
+  }
+
+  // Courbe
+  ctx.strokeStyle='#48bb78'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  ctx.beginPath();
+  let started=false;
+  for(const p of pts){
+    if(!isFinite(p.y)){ started=false; continue; }
+    const px=toX(p.x), py=toY(p.y);
+    if(!started){ ctx.moveTo(px,py); started=true; } else { ctx.lineTo(px,py); }
+  }
+  ctx.stroke();
+
+  document.getElementById('graph-info').textContent = `f(x) = ${fnStr}  |  x ∈ [${xmin}, ${xmax}]`;
+}
 
 // ── DICTIONNAIRE IA ──
 let dictMode = 'define';
@@ -2800,14 +3058,26 @@ async function generateDiagram() {
   document.getElementById('diag-code').textContent = '⏳ Génération en cours...';
   try {
     const prompt = `Génère un ${typeLabels[diagType]||diagType} pour : ${desc}.
-Fournis le code PlantUML complet (commence par @startuml, termine par @enduml) et explique brièvement les choix de conception. Adapté au contexte académique africain (MIAGE/Informatique).`;
+Fournis le code PlantUML complet (commence par @startuml, termine par @enduml) et explique brièvement les choix de conception. Adapté au contexte académique africain et à la filière concernée.`;
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
       method:'POST',headers:{'Content-Type':'application/json',},
       body:JSON.stringify({model:MODEL,max_tokens:1200,system:'Tu es un professeur expert qui génère des flashcards éducatives en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
     currentDiagCode = data.content?.[0]?.text || 'Erreur';
-    document.getElementById('diag-code').textContent = currentDiagCode;
+    // Extraire uniquement le code PlantUML
+    const pumlMatch = currentDiagCode.match(/@startuml[\s\S]*?@enduml/);
+    const pumlCode = pumlMatch ? pumlMatch[0] : currentDiagCode;
+    currentDiagCode = pumlCode;
+    document.getElementById('diag-code').textContent = pumlCode;
+    // Rendu visuel via kroki.io
+    try {
+      const encoded = btoa(unescape(encodeURIComponent(pumlCode)));
+      const imgUrl = `https://kroki.io/plantuml/png/${encoded}`;
+      const imgEl = document.getElementById('diag-img');
+      imgEl.src = imgUrl;
+      document.getElementById('diag-img-wrap').style.display = 'block';
+    } catch(imgErr) { /* Affichage texte uniquement si erreur */ }
   } catch(e) {
     document.getElementById('diag-code').textContent = '❌ Erreur réseau.';
   }
@@ -2846,6 +3116,11 @@ function loadDiagram(i) {
     currentDiagCode = d.code;
     document.getElementById('diag-code').textContent = d.code;
     document.getElementById('diag-result').style.display = 'block';
+    try {
+      const enc2 = btoa(unescape(encodeURIComponent(d.code)));
+      document.getElementById('diag-img').src = `https://kroki.io/plantuml/png/${enc2}`;
+      document.getElementById('diag-img-wrap').style.display = 'block';
+    } catch(e2) {}
   } catch(e) {}
 }
 function newDiagram() {
