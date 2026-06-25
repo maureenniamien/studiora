@@ -477,8 +477,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Quiz en cours -->
-  <div id="quiz-play" style="display:none;flex:1;display:none;flex-direction:column;position:relative">
-    <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border)">
+  <div id="quiz-play" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+    <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <span style="font-size:12px;color:var(--text2)" id="quiz-counter">Question 1/5</span>
         <div style="background:var(--pur-soft);border-radius:8px;padding:5px 11px;display:flex;align-items:center;gap:5px">
@@ -488,7 +488,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       </div>
       <div class="prog-track"><div class="prog-fill" id="quiz-prog" style="background:var(--purple)"></div></div>
     </div>
-    <div class="scroll-body" style="padding:20px 20px 90px">
+    <div class="scroll-body" style="padding:20px;flex:1;min-height:0">
       <p style="font-size:16px;font-weight:600;line-height:1.55;margin-bottom:20px" id="quiz-question">Chargement...</p>
       <div id="quiz-options"></div>
       <div id="quiz-explanation" style="display:none;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px;margin-top:4px">
@@ -496,8 +496,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <p style="font-size:13px;color:var(--text2);line-height:1.6" id="quiz-expl-text"></p>
       </div>
     </div>
-    <!-- Bouton suivant fixe en bas -->
-    <div id="next-q-wrapper" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)">
+    <!-- Bouton suivant collé en bas via flexbox -->
+    <div id="next-q-wrapper" style="display:none;flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)">
       <button class="btn-em" id="next-q-btn" onclick="nextQuestion()">Question suivante →</button>
     </div>
   </div>
