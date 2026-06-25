@@ -1671,9 +1671,11 @@ RÈGLES ABSOLUES :
 - Les questions doivent être adaptées au niveau ${level}${filiere?' ('+filiere+')':''}
 - L'explication doit être pédagogique et détaillée (3-5 phrases minimum), avec la démonstration ou le raisonnement complet
 
+RÈGLE CRITIQUE : correct=0 signifie A est la bonne réponse, correct=1=B, correct=2=C, correct=3=D.
+L'explication DOIT commencer par "La bonne réponse est X)" où X correspond à l'index correct. Vérifie deux fois avant de générer.
+
 Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
-{"questions":[{"q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"Explication détaillée avec le raisonnement complet, exemples et mémo"}]}
-correct est l'index (0-3) de la bonne réponse.`;
+{"questions":[{"q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."}]}`;
 
   try {
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
@@ -1681,6 +1683,7 @@ correct est l'index (0-3) de la bonne réponse.`;
       headers:{'Content-Type':'application/json',},
       body:JSON.stringify({model:MODEL,max_tokens:2000,system:'Tu es un professeur expert qui génère des QCM éducatifs en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
     });
+    if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
     const data = await res.json();
     let raw = data.content?.[0]?.text || '{}';
     raw = raw.replace(/```json|```/g,'').trim();
@@ -1690,7 +1693,7 @@ correct est l'index (0-3) de la bonne réponse.`;
     APP.quizIndex = 0; APP.quizScore = 0;
     launchQuiz();
   } catch(e) {
-    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur réseau. Vérifie ta connexion.');
+    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur : '+(e?.message||'Connexion impossible'));
     btn.disabled=false; btnTxt.textContent='✨ Générer le quiz avec l\'IA';
   }
 }
@@ -1824,6 +1827,7 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
       headers:{'Content-Type':'application/json',},
       body:JSON.stringify({model:MODEL,max_tokens:1500,system:'Tu es un professeur expert qui génère des flashcards éducatives en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
     });
+    if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
     const data=await res.json();
     let raw=data.content?.[0]?.text||'{}';
     raw=raw.replace(/```json|```/g,'').trim();
@@ -1833,7 +1837,7 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
     if(APP.flashcards.length===0) throw new Error('empty');
     launchFC();
   } catch(e) {
-    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur réseau. Vérifie ta connexion.');
+    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur : '+(e?.message||'Connexion impossible'));
     btn.disabled=false; txt.textContent='✨ Générer les flashcards';
   }
 }
@@ -1935,9 +1939,10 @@ async function analyzeCourse() {
       if (saved.length > 20) saved.pop();
       localStorage.setItem('studiora_courses', JSON.stringify(saved));
       renderCoursesInTravaux();
-    } catch(e2) {}
+      showToast('✅ Cours "'+title+'" sauvegardé !');
+    } catch(e2) { showToast('⚠️ Cours analysé mais non sauvegardé (stockage plein ?).'); }
   } catch(e) {
-    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur réseau. Vérifie ta connexion.');
+    showToast(e?.name==='AbortError' ? '⏱️ Délai dépassé. Réessaie.' : '❌ Erreur : '+(e?.message||'Connexion impossible'));
   }
   btn.disabled=false; btn.textContent='✨ Analyser avec l\'IA';
 }
