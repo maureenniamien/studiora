@@ -477,7 +477,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Quiz en cours -->
-  <div id="quiz-play" style="display:none;flex:1;display:none;flex-direction:column">
+  <div id="quiz-play" style="display:none;flex:1;display:none;flex-direction:column;position:relative">
     <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <span style="font-size:12px;color:var(--text2)" id="quiz-counter">Question 1/5</span>
@@ -488,14 +488,17 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       </div>
       <div class="prog-track"><div class="prog-fill" id="quiz-prog" style="background:var(--purple)"></div></div>
     </div>
-    <div class="scroll-body" style="padding:20px">
+    <div class="scroll-body" style="padding:20px 20px 90px">
       <p style="font-size:16px;font-weight:600;line-height:1.55;margin-bottom:20px" id="quiz-question">Chargement...</p>
       <div id="quiz-options"></div>
       <div id="quiz-explanation" style="display:none;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px;margin-top:4px">
         <p style="font-size:12px;font-weight:700;color:var(--em);margin-bottom:4px">💡 Explication</p>
         <p style="font-size:13px;color:var(--text2);line-height:1.6" id="quiz-expl-text"></p>
       </div>
-      <button class="btn-em" id="next-q-btn" onclick="nextQuestion()" style="display:none;margin-top:16px">Question suivante →</button>
+    </div>
+    <!-- Bouton suivant fixe en bas -->
+    <div id="next-q-wrapper" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)">
+      <button class="btn-em" id="next-q-btn" onclick="nextQuestion()">Question suivante →</button>
     </div>
   </div>
 
@@ -1708,7 +1711,7 @@ function showQuestion() {
   document.getElementById('quiz-prog').style.width = `${((APP.quizIndex)/total)*100}%`;
   document.getElementById('quiz-question').textContent = q.q;
   document.getElementById('quiz-explanation').style.display='none';
-  document.getElementById('next-q-btn').style.display='none';
+  document.getElementById('next-q-wrapper').style.display='none';
 
   document.getElementById('quiz-options').innerHTML = q.options.map((opt,i)=>`
     <button class="quiz-option" onclick="answerQ(${i})" id="opt-${i}">
@@ -1736,7 +1739,7 @@ function answerQ(idx) {
   if(idx===q.correct) APP.quizScore++;
   document.getElementById('quiz-expl-text').textContent = q.explication || '';
   document.getElementById('quiz-explanation').style.display='block';
-  document.getElementById('next-q-btn').style.display='block';
+  document.getElementById('next-q-wrapper').style.display='block';
   document.getElementById('next-q-btn').textContent = APP.quizIndex<APP.quizQuestions.length-1 ? 'Question suivante →' : 'Voir les résultats →';
 }
 
