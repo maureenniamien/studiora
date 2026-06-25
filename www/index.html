@@ -1275,6 +1275,21 @@ function showScreen(id) {
   onScreenEnter(id);
 }
 function goBack() {
+  // Reset quiz si on quitte en cours de génération ou de jeu
+  clearInterval(timerInterval);
+  const startBtn = document.getElementById('start-quiz-btn');
+  const startBtnTxt = document.getElementById('quiz-btn-text');
+  if(startBtn){ startBtn.disabled=false; }
+  if(startBtnTxt){ startBtnTxt.textContent='✨ Générer le quiz avec l\'IA'; }
+  document.getElementById('quiz-config') && (document.getElementById('quiz-config').style.display='block');
+  document.getElementById('quiz-play')   && (document.getElementById('quiz-play').style.display='none');
+  document.getElementById('quiz-results')&& (document.getElementById('quiz-results').style.display='none');
+  APP.quizQuestions=[]; APP.quizIndex=0; APP.quizScore=0;
+  // Reset flashcards aussi si on quitte
+  const fcBtn = document.getElementById('gen-fc-btn');
+  const fcTxt = document.getElementById('fc-btn-text');
+  if(fcBtn){ fcBtn.disabled=false; }
+  if(fcTxt){ fcTxt.textContent='✨ Générer les flashcards'; }
   const prev = screenHistory.pop();
   showScreen(prev || 'screen-home');
 }
@@ -1687,7 +1702,16 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
     const data = await res.json();
     let raw = data.content?.[0]?.text || '{}';
     raw = raw.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(raw);
+    // Nettoyer les apostrophes non échappées dans les valeurs JSON qui cassent le parsing
+    raw = raw.replace(/([^\\])'(?=[^,:\[\]{}\n]*")/g, "$1\'");
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch(je) {
+      // Tentative de récupération : extraire le JSON avec une regex
+      const match = raw.match(/\{[\s\S]*\}/);
+      if(match) { try { parsed = JSON.parse(match[0]); } catch(e2) { throw je; } }
+      else throw je;
+    }
     APP.quizQuestions = parsed.questions || [];
     if(APP.quizQuestions.length===0) throw new Error('empty');
     APP.quizIndex = 0; APP.quizScore = 0;
@@ -1831,7 +1855,13 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
     const data=await res.json();
     let raw=data.content?.[0]?.text||'{}';
     raw=raw.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(raw);
+    let parsed;
+    try { parsed=JSON.parse(raw); }
+    catch(je) {
+      const match=raw.match(/\{[\s\S]*\}/);
+      if(match){ try{ parsed=JSON.parse(match[0]); }catch(e2){ throw je; } }
+      else throw je;
+    }
     APP.flashcards=parsed.cards||[];
     APP.fcIndex=0; APP.fcFlipped=false;
     if(APP.flashcards.length===0) throw new Error('empty');
