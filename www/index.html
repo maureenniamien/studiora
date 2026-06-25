@@ -1474,17 +1474,37 @@ function switchSubject(id) {
 
 function renderSuggestions() {
   const subj = SUBJECTS.find(s=>s.id===APP.currentSubject) || SUBJECTS[0];
+  const filiere = APP.user.filiere || '';
+  const level   = APP.user.level   || '';
   const suggestions = {
-    math:    ['Explique le théorème de Pythagore','C\'est quoi une dérivée ?','Exercice sur les probabilités','Résous une équation du 2nd degré'],
-    physique:['Explique la loi d\'Ohm','C\'est quoi l\'énergie cinétique ?','Exercice sur les forces','La loi de gravitation universelle'],
-    svt:     ['Explique la photosynthèse','C\'est quoi l\'ADN ?','La mitose et la méiose','Les fonctions du système nerveux'],
-    fr:      ['Analyse un texte littéraire','Règles de la concordance des temps','Techniques de dissertation','Les figures de style'],
-    info:    ['Explique la récursivité','C\'est quoi une base de données ?','Algorithme de tri','Concepts POO en Java'],
-    eco:     ['Explique le PIB','C\'est quoi l\'inflation ?','Le modèle IS-LM','La loi de l\'offre et de la demande'],
-    ang:     ['Present perfect vs Past simple','Vocabulaire du business','Phrasal verbs courants','Écrire un email formel'],
-    hg:      ['Les grandes découvertes','Causes de la 1ère Guerre Mondiale','La décolonisation en Afrique','Lecture d\'une carte'],
+    math:    level.startsWith('Licence') || level.startsWith('Master')
+      ? ['Calcul intégral : méthodes','Espaces vectoriels','Séries numériques','Probabilités : loi normale']
+      : ['Théorème de Pythagore','Dérivées et primitives','Équation du 2nd degré','Probabilités classiques'],
+    physique:['Loi d\'Ohm et circuits','Énergie cinétique et potentielle','Lois de Newton','Optique géométrique'],
+    svt:     ['La photosynthèse','Structure de l\'ADN','Mitose et méiose','Système immunitaire'],
+    fr:      ['Analyse d\'un texte littéraire','Concordance des temps','Techniques de dissertation','Figures de style'],
+    info:    ['Récursivité en programmation','Bases de données relationnelles','Algorithmes de tri','Structures de données'],
+    eco:     ['Le PIB et la croissance','Inflation et politique monétaire','Modèle IS-LM','Offre et demande'],
+    ang:     ['Present perfect vs Past simple','Business vocabulary','Phrasal verbs courants','Formal email writing'],
+    hg:      ['La décolonisation en Afrique','Géopolitique africaine','Cartographie et SIG','Les grandes découvertes'],
+    java:    ['Classes et objets en Java','Héritage et polymorphisme','Gestion des exceptions','Collections Java (ArrayList, HashMap)'],
+    poo:     ['Les 4 piliers de la POO','Classe abstraite vs Interface','Encapsulation et accesseurs','Diagramme de classes UML'],
+    algo:    ['Complexité algorithmique O(n)','Algorithmes de tri (bulles, fusion)','Récursivité et pile d\'appels','Structures de données : pile, file'],
+    bdd:     ['SQL : JOIN et sous-requêtes','Normalisation (1NF, 2NF, 3NF)','Modèle Entité-Association','Index et optimisation SQL'],
+    stats:   ['Loi normale et z-score','Tests d\'hypothèse','Régression linéaire','Intervalles de confiance'],
+    si:      ['Architecture client-serveur','Systèmes d\'exploitation','Virtualisation et cloud','Sécurité des systèmes'],
+    uml:     ['Diagramme de classes','Diagramme de séquence','Use case diagram','Diagramme de déploiement'],
+    mobile:  ['Cycle de vie Android','Intents et Activities','RecyclerView et adaptateurs','API REST avec Retrofit'],
+    ia:      ['Réseaux de neurones','Machine Learning supervisé','Algorithme k-means','Traitement du langage (NLP)'],
+    reseau:  ['Modèle OSI et TCP/IP','Adressage IP et sous-réseaux','Protocoles HTTP/HTTPS','Sécurité réseau et pare-feu'],
+    geo:     filiere.includes('Géomatique')
+      ? ['SIG et cartographie numérique','Télédétection et imagerie satellite','Projections cartographiques','Géodésie et GPS']
+      : ['Géographie humaine et économique','Climatologie','Géopolitique mondiale','Aménagement du territoire'],
+    droit:   ['Sources du droit','Contrats et obligations','Droit constitutionnel','Procédure civile'],
+    gestion: ['Comptabilité analytique','Gestion de trésorerie','Management des organisations','Analyse financière'],
+    compta:  ['Bilan et compte de résultat','Amortissements','Provisions et charges','TVA et fiscalité'],
   };
-  const list = suggestions[APP.currentSubject] || suggestions.math;
+  const list = suggestions[APP.currentSubject] || suggestions[Object.keys(suggestions)[0]] || [];
   document.getElementById('chat-suggestions').innerHTML = list.map((s,i)=>`
     <button onclick="useSuggestion(document.querySelectorAll('.chat-sug')[${i}].dataset.v)" data-v="${s}" class="btn-pill chat-sug" style="flex-shrink:0">${s}</button>`).join('');
 }
@@ -1856,15 +1876,14 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
     if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
     const data = await res.json();
     let raw = data.content?.[0]?.text || '{}';
-    raw = raw.replace(/```json[\s\S]*?```|```/g,'').trim();
+    const qStart = raw.indexOf('{');
+    const qEnd   = raw.lastIndexOf('}');
+    if (qStart !== -1 && qEnd > qStart) raw = raw.slice(qStart, qEnd+1);
+    else raw = raw.replace(/```json[\s\S]*?```|```/g,'').trim();
     raw = sanitizeJsonStr(raw);
     let parsed;
     try { parsed = JSON.parse(raw); }
-    catch(je) {
-      const match = raw.match(/\{[\s\S]*\}/);
-      if(match){ try{ parsed=JSON.parse(sanitizeJsonStr(match[0])); }catch(e2){ throw new Error('JSON invalide: '+je.message); } }
-      else throw new Error('Réponse IA non parseable. Réessaie.');
-    }
+    catch(je) { throw new Error('JSON invalide: '+je.message+' — Réessaie.'); }
     APP.quizQuestions = parsed.questions || [];
     if(APP.quizQuestions.length===0) throw new Error('empty');
     APP.quizIndex = 0; APP.quizScore = 0;
@@ -2007,15 +2026,16 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
     if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
     const data=await res.json();
     let raw=data.content?.[0]?.text||'{}';
-    raw=raw.replace(/```json[\s\S]*?```|```/g,'').trim();
-    raw=sanitizeJsonStr(raw);
+    // 1. Extraire d'abord le bloc JSON brut (avant sanitize)
+    const jsonStart = raw.indexOf('{');
+    const jsonEnd   = raw.lastIndexOf('}');
+    if (jsonStart !== -1 && jsonEnd > jsonStart) raw = raw.slice(jsonStart, jsonEnd+1);
+    else raw = raw.replace(/```json[\s\S]*?```|```/g,'').trim();
+    // 2. Sanitizer les caractères de contrôle dans les strings
+    raw = sanitizeJsonStr(raw);
     let parsed;
     try { parsed=JSON.parse(raw); }
-    catch(je) {
-      const match=raw.match(/\{[\s\S]*\}/);
-      if(match){ try{ parsed=JSON.parse(sanitizeJsonStr(match[0])); }catch(e2){ throw new Error('JSON invalide: '+je.message); } }
-      else throw new Error('Réponse IA non parseable. Réessaie.');
-    }
+    catch(je) { throw new Error('JSON invalide: '+je.message+' — Réessaie.'); }
     APP.flashcards=parsed.cards||[];
     APP.fcIndex=0; APP.fcFlipped=false;
     if(APP.flashcards.length===0) throw new Error('empty');
@@ -2339,14 +2359,18 @@ function doLogin() {
   if (!pwd)   { showToast('⚠️ Entre ton mot de passe'); return; }
   const existing = getExistingSession(email);
   if (existing) {
+    // Compte existant : le mot de passe DOIT correspondre
     if (existing.pwdHash && existing.pwdHash !== simpleHash(pwd)) {
       showToast('❌ Mot de passe incorrect'); return;
     }
+    if (!existing.pwdHash) {
+      // Ancien compte sans hash → on enregistre le mdp maintenant
+      existing.pwdHash = simpleHash(pwd);
+    }
     APP.user = { ...APP.user, ...existing };
   } else {
-    APP.user.email = email;
-    APP.user.pwdHash = simpleHash(pwd);
-    if (prenom) APP.user.prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1);
+    // Nouveau compte via login (pas via register) → refuser, demander de s'inscrire
+    showToast('⚠️ Aucun compte trouvé. Crée un compte d\'abord.'); return;
   }
   saveSession();
   SUBJECTS = getSubjects();
