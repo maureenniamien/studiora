@@ -406,7 +406,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 </div>
 
 <!-- ═══════════════════ CHAT IA ═══════════════════ -->
-<div id="screen-chat" class="screen hidden" style="background:var(--bg)">
+<div id="screen-chat" class="screen hidden" style="background:var(--bg);display:none;flex-direction:column">
 
   <!-- Header fixe -->
   <div style="padding:max(env(safe-area-inset-top,0px) + 12px, 44px) 16px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
@@ -427,7 +427,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Messages -->
-  <div class="scroll-body" id="chat-messages" style="padding:16px 14px 80px"></div>
+  <div class="scroll-body" id="chat-messages" style="padding:16px 14px 16px;flex:1;min-height:0"></div>
 
   <!-- Suggestions -->
   <div style="padding:6px 14px 4px;background:var(--bg)">
@@ -435,7 +435,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Input zone -->
-  <div style="padding:8px 14px calc(env(safe-area-inset-bottom,0px)+12px);background:var(--bg);border-top:1px solid var(--border)">
+  <div style="padding:8px 14px calc(env(safe-area-inset-bottom,0px)+12px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0">
     <div style="display:flex;gap:9px;align-items:flex-end">
       <textarea id="chat-input" class="input" placeholder="Pose ta question..." rows="1" style="flex:1;resize:none;padding:12px 14px;border-radius:14px;min-height:46px;max-height:120px;overflow-y:auto" oninput="autoResize(this)"></textarea>
       <button id="send-btn" onclick="sendMessage()" class="btn-em" style="width:46px;height:46px;padding:0;border-radius:13px;flex-shrink:0;font-size:20px">→</button>
@@ -619,17 +619,17 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <button class="btn-em" id="analyze-btn" onclick="analyzeCourse()">✨ Analyser avec l'IA</button>
   </div>
 
-  <div id="upload-result" style="display:none;flex:1;flex-direction:column">
-    <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:14px;font-weight:700">Résultat IA</span>
-      <div style="display:flex;gap:8px">
-        <button onclick="showToast('📋 Copié !')" style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:8px;padding:6px 12px;color:var(--em);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📋 Copier</button>
-        <button onclick="resetUpload()" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Nouveau</button>
+  <div id="upload-result" style="display:none;flex-direction:column;padding:0 20px 30px">
+    <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;color:var(--em)">✅ Analyse terminée — cours sauvegardé</span>
+        <div style="display:flex;gap:6px">
+          <button onclick="copyAnalysis()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📋</button>
+          <button onclick="resetUpload()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🔄 Nouveau</button>
+        </div>
       </div>
-    </div>
-    <div class="scroll-body" style="padding:16px 20px 90px">
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);white-space:pre-wrap;font-size:13.5px;line-height:1.75;color:var(--text)" id="analysis-result"></div>
-      <button class="btn-em" onclick="continueInChat()" style="margin-top:16px">💬 Continuer avec le coach IA</button>
+      <div id="analysis-result" style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;line-height:1.75;color:var(--text);max-height:300px;overflow-y:auto"></div>
+      <button class="btn-em" onclick="continueInChat()" style="margin-top:10px;width:100%">💬 Continuer avec le coach IA →</button>
     </div>
   </div>
 </div>
@@ -1520,6 +1520,9 @@ function showScreen(id) {
   onScreenEnter(id);
 }
 function goBack() {
+  // Toujours remettre la nav visible en quittant
+  const nav = document.getElementById('bottom-nav');
+  if (nav) nav.style.display = '';
   // Reset quiz si on quitte en cours de génération ou de jeu
   clearInterval(timerInterval);
   const startBtn = document.getElementById('start-quiz-btn');
@@ -1540,7 +1543,14 @@ function goBack() {
 }
 function onScreenEnter(id) {
   if(id==='screen-home')      renderHome();
-  if(id==='screen-chat')      renderChat();
+  if(id==='screen-chat') {
+    renderChat();
+    const nav = document.getElementById('bottom-nav');
+    if(nav) nav.style.display = 'none';
+  } else {
+    const nav = document.getElementById('bottom-nav');
+    if(nav) nav.style.display = '';
+  }
   if(id==='screen-quiz')      renderQuizConfig();
   if(id==='screen-flashcards') renderFCConfig();
   if(id==='screen-progress')  renderProgress();
@@ -2317,9 +2327,14 @@ async function analyzeCourse() {
     });
     const data=await res.json();
     const result=data.content?.[0]?.text||'Erreur';
-    document.getElementById('analysis-result').textContent=result;
-    document.getElementById('upload-form').style.display='none';
+    // Formatter le résultat avec sauts de ligne HTML
+    document.getElementById('analysis-result').innerHTML = result
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\n/g,'<br>');
+    // Garder le formulaire visible, afficher le résultat en dessous
     document.getElementById('upload-result').style.display='flex';
+    // Scroller vers le résultat
+    setTimeout(()=>document.getElementById('upload-result').scrollIntoView({behavior:'smooth'}),100);
     // ── Sauvegarder dans la liste des cours importés ──
     const titleEl = document.getElementById('course-title-input');
     const title   = (titleEl && titleEl.value.trim()) || ('Cours du ' + new Date().toLocaleDateString('fr-FR'));
@@ -2347,10 +2362,30 @@ async function analyzeCourse() {
   btn.disabled=false; btn.textContent='✨ Analyser avec l\'IA';
 }
 
+
+function copyAnalysis() {
+  const el = document.getElementById('analysis-result');
+  if (!el) return;
+  const text = el.innerText || el.textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(()=>showToast('📋 Copié !'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('📋 Copié !');
+  }
+}
+
 function resetUpload() {
   document.getElementById('upload-form').style.display='block';
   document.getElementById('upload-result').style.display='none';
-  // Ne pas vider le texte - l'utilisateur peut vouloir refaire une analyse
+  document.getElementById('course-text').value='';
+  document.getElementById('course-title-input').value='';
+  // Remise à zéro
 }
 
 function continueInChat() {
@@ -3297,6 +3332,30 @@ function selectDiagType(btn, type) {
   document.querySelectorAll('.diag-type-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
   btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
 }
+
+// ── KROKI.IO : rendu PlantUML en image via API POST ──
+async function renderKrokiDiagram(pumlCode) {
+  try {
+    // kroki.io accepte le texte PlantUML en POST et retourne une image PNG
+    const res = await fetch('https://kroki.io/plantuml/png', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: pumlCode
+    });
+    if (!res.ok) throw new Error('Kroki HTTP ' + res.status);
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const img  = document.getElementById('diag-img');
+    if (img) {
+      img.src = url;
+      document.getElementById('diag-img-wrap').style.display = 'block';
+    }
+  } catch(e) {
+    // Affichage texte uniquement si kroki inaccessible
+    console.warn('Kroki indisponible:', e.message);
+  }
+}
+
 async function generateDiagram() {
   const desc = document.getElementById('diag-desc').value.trim();
   if (!desc) { showToast('⚠️ Décris ton diagramme'); return; }
@@ -3318,14 +3377,8 @@ Fournis le code PlantUML complet (commence par @startuml, termine par @enduml) e
     const pumlCode = pumlMatch ? pumlMatch[0] : currentDiagCode;
     currentDiagCode = pumlCode;
     document.getElementById('diag-code').textContent = pumlCode;
-    // Rendu visuel via kroki.io
-    try {
-      const encoded = btoa(unescape(encodeURIComponent(pumlCode)));
-      const imgUrl = `https://kroki.io/plantuml/png/${encoded}`;
-      const imgEl = document.getElementById('diag-img');
-      imgEl.src = imgUrl;
-      document.getElementById('diag-img-wrap').style.display = 'block';
-    } catch(imgErr) { /* Affichage texte uniquement si erreur */ }
+    // Rendu visuel via kroki.io (POST avec texte brut)
+    renderKrokiDiagram(pumlCode);
   } catch(e) {
     document.getElementById('diag-code').textContent = '❌ Erreur réseau.';
   }
@@ -3364,11 +3417,7 @@ function loadDiagram(i) {
     currentDiagCode = d.code;
     document.getElementById('diag-code').textContent = d.code;
     document.getElementById('diag-result').style.display = 'block';
-    try {
-      const enc2 = btoa(unescape(encodeURIComponent(d.code)));
-      document.getElementById('diag-img').src = `https://kroki.io/plantuml/png/${enc2}`;
-      document.getElementById('diag-img-wrap').style.display = 'block';
-    } catch(e2) {}
+    renderKrokiDiagram(d.code);
   } catch(e) {}
 }
 function newDiagram() {
@@ -3457,7 +3506,7 @@ function setAppLang(lang, btn) {
   }
   applyAppLang(lang);
   const info = document.getElementById('app-lang-info');
-  if (info) info.style.display = 'block';
+  if (info) info.style.display = 'none';
 }
 
 function applyAppLang(lang) {
@@ -3482,6 +3531,19 @@ function applyAppLang(lang) {
   if (dictInput && t.dict_placeholder) dictInput.placeholder = t.dict_placeholder;
   // Direction pour arabe
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  // Bouton home search bar
+  const homeSearch = document.getElementById('home-search-placeholder');
+  if (homeSearch && t.chat_placeholder) homeSearch.placeholder = t.chat_placeholder;
+  // Re-render les écrans actifs si besoin
+  const activeScreen = document.querySelector('.screen:not(.hidden)');
+  if (activeScreen) {
+    const sid = activeScreen.id;
+    if (sid === 'screen-home') renderHome();
+    if (sid === 'screen-chat') renderChat();
+  }
+  // Supprimer le message "recharge nécessaire"
+  const info = document.getElementById('app-lang-info');
+  if (info) info.style.display = 'none';
 }
 
 function initAppLang() {
