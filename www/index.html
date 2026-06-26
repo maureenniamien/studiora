@@ -177,10 +177,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .toggle.off .toggle-thumb{left:3px}
 
 /* ── FLASH CARDS ── */
-.flashcard{width:100%;aspect-ratio:3/2;border-radius:var(--r);perspective:1000px;cursor:pointer}
+.flashcard{width:100%;min-height:260px;max-height:70vh;border-radius:var(--r);perspective:1000px;cursor:pointer}
 .flashcard-inner{width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);position:relative}
 .flashcard.flipped .flashcard-inner{transform:rotateY(180deg)}
-.flashcard-face{position:absolute;inset:0;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flashcard-face{position:absolute;inset:0;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px 18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .fc-front{background:linear-gradient(135deg,var(--em),var(--em2));color:#fff;box-shadow:0 8px 32px rgba(11,110,79,.25)}
 .fc-back{background:var(--white);border:1px solid var(--border);transform:rotateY(180deg);box-shadow:var(--shadow2)}
 
@@ -716,6 +716,32 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <div class="card" style="margin-bottom:14px">
       <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Préférences</h3>
       <div id="prefs-list"></div>
+    </div>
+
+    <!-- ── Changer de niveau ── -->
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">🎓 Mon niveau</h3>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Tu passes en L2 ? Change ici sans recréer un compte.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NIVEAU</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="level-btns">
+            <button onclick="setUserLevel('Terminal',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Terminal</button>
+            <button onclick="setUserLevel('Licence 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 1</button>
+            <button onclick="setUserLevel('Licence 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 2</button>
+            <button onclick="setUserLevel('Licence 3',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 3</button>
+            <button onclick="setUserLevel('Master 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Master 1</button>
+            <button onclick="setUserLevel('Master 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Master 2</button>
+            <button onclick="setUserLevel('BTS',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">BTS</button>
+            <button onclick="setUserLevel('DEUG',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">DEUG</button>
+          </div>
+        </div>
+        <div style="margin-top:4px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">FILIÈRE</div>
+          <input id="filiere-input" class="input" style="font-size:13px;padding:10px 14px" placeholder="Ex: MIAGE, Informatique, ASSRI..." value="">
+        </div>
+        <button onclick="saveUserLevel()" style="width:100%;padding:11px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:4px">✅ Enregistrer le niveau</button>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:14px">
@@ -2088,8 +2114,10 @@ function launchFC() {
 }
 function showFC() {
   const card=APP.flashcards[APP.fcIndex];
-  document.getElementById('fc-front-text').textContent=card.front;
-  document.getElementById('fc-back-text').textContent=card.back;
+  // Nettoyer backticks et corriger apostrophes courantes
+  const clean = s => (s||'').replace(/`/g,'\'').replace(/\\'/g,'\'');
+  document.getElementById('fc-front-text').textContent=clean(card.front);
+  document.getElementById('fc-back-text').textContent=clean(card.back);
   document.getElementById('fc-counter').textContent=`${APP.fcIndex+1} / ${APP.flashcards.length}`;
   APP.fcFlipped=false;
   document.getElementById('current-flashcard').classList.remove('flipped');
@@ -2301,6 +2329,8 @@ function renderProfile() {
       </div>
       <span class="badge" style="background:${s.soft};color:${s.color};border:1px solid ${s.border}">Active</span>
     </div>`).join('');
+  // Init boutons niveau
+  setTimeout(initLevelBtns, 0);
 }
 
 // ── KEYBOARD ──
@@ -3299,13 +3329,17 @@ function setAppLang(lang, btn) {
 
 function applyAppLang(lang) {
   const t = APP_TRANSLATIONS[lang] || APP_TRANSLATIONS['fr'];
-  // Nav labels
-  const navLabels = document.querySelectorAll('.nav-label');
-  const navKeys = ['nav_home','nav_coach','nav_quiz','nav_tools','nav_profile'];
-  // Chaque bottom-nav a 5 items
-  document.querySelectorAll('.bottom-nav').forEach(nav => {
-    const items = nav.querySelectorAll('.nav-label');
-    items.forEach((el, i) => { if (navKeys[i] && t[navKeys[i]]) el.textContent = t[navKeys[i]]; });
+  // Nav globale - cibler uniquement les items par ID pour éviter de casser la structure
+  const navMap = {
+    'nav-home': t.nav_home, 'nav-chat': t.nav_coach,
+    'nav-quiz': t.nav_quiz, 'nav-travaux': t.nav_tools, 'nav-profile': t.nav_profile
+  };
+  Object.entries(navMap).forEach(([id, label]) => {
+    const el = document.getElementById(id);
+    if (el && label) {
+      const labelEl = el.querySelector('.nav-label');
+      if (labelEl) labelEl.textContent = label;
+    }
   });
   // Chat placeholder
   const chatInput = document.getElementById('chat-input');
@@ -3331,6 +3365,54 @@ function initAppLang() {
       btn.style.fontWeight = '700';
     }
   });
+}
+
+
+// ── CHANGEMENT DE NIVEAU ──
+function setUserLevel(level, btn) {
+  document.querySelectorAll('.level-btn').forEach(b => {
+    b.style.background = 'var(--bg2)';
+    b.style.borderColor = 'var(--border)';
+    b.style.color = 'var(--text2)';
+    b.style.fontWeight = '600';
+  });
+  if (btn) {
+    btn.style.background = 'var(--em-soft)';
+    btn.style.borderColor = 'var(--em)';
+    btn.style.color = 'var(--em)';
+    btn.style.fontWeight = '700';
+  }
+  APP._pendingLevel = level;
+}
+
+function saveUserLevel() {
+  const level = APP._pendingLevel || APP.user.level;
+  const filiere = (document.getElementById('filiere-input')?.value || '').trim() || APP.user.filiere;
+  if (!level) { showToast('⚠️ Choisis un niveau'); return; }
+  APP.user.level = level;
+  APP.user.filiere = filiere;
+  saveSession();
+  // Mettre à jour l'affichage
+  const levelEl = document.getElementById('profile-level');
+  if (levelEl) levelEl.textContent = level + ' · ' + filiere;
+  SUBJECTS = getSubjects();
+  renderHome();
+  showToast('✅ Niveau mis à jour : ' + level + ' · ' + filiere);
+}
+
+function initLevelBtns() {
+  const current = APP.user.level || '';
+  document.querySelectorAll('.level-btn').forEach(btn => {
+    if (btn.textContent.trim() === current) {
+      btn.style.background = 'var(--em-soft)';
+      btn.style.borderColor = 'var(--em)';
+      btn.style.color = 'var(--em)';
+      btn.style.fontWeight = '700';
+    }
+  });
+  const filiereInput = document.getElementById('filiere-input');
+  if (filiereInput) filiereInput.value = APP.user.filiere || '';
+  APP._pendingLevel = current;
 }
 
 </script>
