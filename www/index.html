@@ -52,12 +52,12 @@
   --amb-soft:  #1A1200;
   --purple-soft:#1A1028;
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}button,a,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;max-height:100%;width:100%;max-width:100%;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;overflow:hidden;user-select:none;position:fixed;top:0;left:0;right:0;bottom:0}
 
 /* ── SCREENS ── */
 .screen{position:absolute;inset:0;width:100%;height:100%;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s}
-.screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none;visibility:hidden}
+.screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
 .screen.slide-left{transform:translateX(-30%);opacity:0;pointer-events:none}
 
 /* ── SCROLL ── */
@@ -742,6 +742,21 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       <div id="profile-subjects"></div>
     </div>
 
+    <!-- ── Langue de l'application ── -->
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🌐 Langue de l'application</h3>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">L'interface de Studiora s'affichera dans la langue choisie.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="app-lang-btns">
+        <button onclick="setAppLang('fr',this)" class="app-lang-btn" style="padding:8px 12px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇫🇷 Français</button>
+        <button onclick="setAppLang('en',this)" class="app-lang-btn" style="padding:8px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇬🇧 English</button>
+        <button onclick="setAppLang('es',this)" class="app-lang-btn" style="padding:8px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇪🇸 Español</button>
+        <button onclick="setAppLang('ar',this)" class="app-lang-btn" style="padding:8px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇸🇦 العربية</button>
+        <button onclick="setAppLang('pt',this)" class="app-lang-btn" style="padding:8px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇧🇷 Português</button>
+        <button onclick="setAppLang('de',this)" class="app-lang-btn" style="padding:8px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇩🇪 Deutsch</button>
+      </div>
+      <p id="app-lang-info" style="font-size:11px;color:var(--text3);margin-top:8px;display:none">⚠️ Recharge l'app pour appliquer la langue.</p>
+    </div>
+
     <button onclick="doLogout()" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Se déconnecter</button>
   </div>
 
@@ -835,10 +850,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <label class="field-label" style="margin-bottom:0">📚 Mes Cours importés</label>
         <button onclick="showScreen('screen-upload')" style="font-size:11px;color:var(--em);font-weight:600;background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Importer</button>
       </div>
-      <div id="courses-list-travaux" style="display:flex;flex-direction:column;gap:8px">
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;color:var(--text3);font-size:13px">
-          📎 Aucun cours importé<br><span style="font-size:11px">Utilise "Analyser un cours" pour importer</span>
-        </div>
+      <div id="courses-list-travaux" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
 
@@ -1047,10 +1059,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   <div class="scroll-body" style="padding:16px 20px 40px">
     <div style="margin-bottom:12px">
       <input class="input" id="dict-word" placeholder="Entrer un mot ou une phrase à définir..." style="margin-bottom:8px">
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button onclick="selectDictMode(this,'define')" class="dict-mode-btn" style="flex:1;padding:9px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📝 Définir</button>
-        <button onclick="selectDictMode(this,'translate_en')" class="dict-mode-btn" style="flex:1;padding:9px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇬🇧 → FR</button>
-        <button onclick="selectDictMode(this,'translate_fr')" class="dict-mode-btn" style="flex:1;padding:9px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇫🇷 → EN</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <button onclick="selectDictMode(this,'define')" class="dict-mode-btn" style="padding:8px 10px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📝 Définir</button>
+        <button onclick="selectDictMode(this,'translate_en')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇬🇧→FR</button>
+        <button onclick="selectDictMode(this,'translate_fr')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇫🇷→EN</button>
+
+        <button onclick="selectDictMode(this,'translate_es')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇪🇸→ES</button>
+        <button onclick="selectDictMode(this,'translate_ar')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇸🇦→AR</button>
+        <button onclick="selectDictMode(this,'translate_de')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇩🇪→DE</button>
+        <button onclick="selectDictMode(this,'translate_pt')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇧🇷→PT</button>
+        <button onclick="selectDictMode(this,'translate_zh')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇨🇳→ZH</button>
       </div>
       <button class="btn-em" onclick="searchDict()">🔍 Rechercher</button>
     </div>
@@ -1338,11 +1356,10 @@ function showScreen(id) {
   if (curr && curr.id !== id) {
     screenHistory.push(curr.id);
     curr.classList.add('slide-left');
-    setTimeout(()=>{ curr.classList.add('hidden'); curr.classList.remove('slide-left'); curr.style.visibility=''; }, 350);
+    setTimeout(()=>{ curr.classList.add('hidden'); curr.classList.remove('slide-left'); }, 350);
   }
   const next = document.getElementById(id);
   next.classList.remove('hidden','slide-left');
-  next.style.visibility = 'visible';
   next.offsetHeight;
   onScreenEnter(id);
 }
@@ -2033,16 +2050,25 @@ Réponds UNIQUEMENT en JSON valide sans texte avant/après :
     if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
     const data=await res.json();
     let raw=data.content?.[0]?.text||'{}';
-    // 1. Extraire d'abord le bloc JSON brut (avant sanitize)
+    // 1. Supprimer les blocs markdown ```json ... ```
+    raw = raw.replace(/[`]{3}json\s*/gi,'').replace(/[`]{3}\s*/g,'').trim();
+    // 2. Extraire uniquement le bloc JSON { ... }
     const jsonStart = raw.indexOf('{');
     const jsonEnd   = raw.lastIndexOf('}');
     if (jsonStart !== -1 && jsonEnd > jsonStart) raw = raw.slice(jsonStart, jsonEnd+1);
-    else raw = raw.replace(/```json[\s\S]*?```|```/g,'').trim();
-    // 2. Sanitizer les caractères de contrôle dans les strings
-    raw = sanitizeJsonStr(raw);
+    // 3. Nettoyer les caractères de contrôle sauf \n \r \t
+    raw = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    // 4. Corriger les virgules en trop avant } ou ]
+    raw = raw.replace(/,\s*([}\]])/g, '$1');
     let parsed;
     try { parsed=JSON.parse(raw); }
-    catch(je) { throw new Error('JSON invalide: '+je.message+' — Réessaie.'); }
+    catch(je) {
+      // Tentative de récupération : eval JSON relaxé
+      try {
+        const fixedRaw = raw.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+        parsed = JSON.parse(fixedRaw);
+      } catch(je2) { throw new Error('JSON invalide: '+je.message+' — Réessaie.'); }
+    }
     APP.flashcards=parsed.cards||[];
     APP.fcIndex=0; APP.fcFlipped=false;
     if(APP.flashcards.length===0) throw new Error('empty');
@@ -2398,7 +2424,7 @@ function doLogout() {
 }
 
 // ── INIT : auto-login si session sauvegardée ──
-function _runInit() {
+(function init() {
   if (loadSession()) {
     SUBJECTS = getSubjects();
     const prefs = getPrefs();
@@ -2409,12 +2435,7 @@ function _runInit() {
   }
   loadChatHistories();
   renderHome();
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _runInit);
-} else {
-  _runInit();
-}
+})();
 
 // ── UPDATE NAV: replace Progrès with Travaux in home nav ──
 // (done via HTML directly in bottom navs)
@@ -2817,12 +2838,12 @@ async function runTerminalCmd() {
   out.scrollTop = out.scrollHeight;
 
   const sysP = {
-    linux:   'Tu simules un terminal Bash Linux. Donne UNIQUEMENT la sortie exacte de la commande, comme un vrai terminal, sans explication. Si erreur: affiche le message d\'erreur bash exact.',
-    windows: 'Tu simules un terminal Windows CMD. Donne UNIQUEMENT la sortie exacte, comme Windows CMD, sans explication.',
-    python:  'Tu simules Python 3.11. Affiche UNIQUEMENT ce qu\'un interpréteur Python afficherait (résultat ou erreur traceback). Aucune explication.',
-    java:    'Tu simules javac + java. Montre la compilation et l\'exécution, ou les erreurs exactes du compilateur Java. UNIQUEMENT la sortie, pas d\'explication.',
-    sql:     'Tu simules MySQL 8.0. Donne UNIQUEMENT la sortie tabulaire exacte d\'un serveur SQL, ou le message d\'erreur SQL exact. Aucune explication.',
-    algo:    'Tu analyses du pseudo-code algorithmique. Explique brièvement ce que fait ce code, sa complexité, et montre l\'équivalent Python. Sois concis.',
+    linux:   'Terminal Bash Linux. Sortie brute UNIQUEMENT. Zéro explication. Zéro markdown.',
+    windows: 'Terminal Windows CMD. Sortie brute UNIQUEMENT. Zéro explication. Zéro markdown.',
+    python:  'Interpréteur Python 3.11. Sortie brute UNIQUEMENT (résultat print ou traceback). Zéro explication. Zéro markdown.',
+    java:    'Terminal Java. Sortie brute UNIQUEMENT. Si System.out.println("X") alors réponds juste: X. Zéro explication. Zéro markdown.',
+    sql:     'MySQL 8.0. Sortie tabulaire brute UNIQUEMENT. Zéro explication. Zéro markdown.',
+    algo:    'Analyse pseudo-code: 3 lignes max. Complexité + équivalent Python court. Zéro markdown.',
   };
 
   try {
@@ -2966,12 +2987,32 @@ function plotGraph() {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0,0,W,H);
 
+  // Normaliser la saisie utilisateur → JS valide
+  let fnNorm = fnStr
+    .replace(/[Xx]\u00B2/g,'x*x')           // X² → x*x
+    .replace(/[Xx]\u00B3/g,'x*x*x')         // X³ → x*x*x
+    .replace(/([Xx])\^(\d+)/g,'Math.pow(x,$2)') // x^n → Math.pow(x,n)
+    .replace(/\^(\d+)/g,'**$1')             // ^n  → **n
+    .replace(/\b([Xx])\b/g,'x')             // X   → x (casse)
+    .replace(/\bln\(/g,'Math.log(')         // ln( → Math.log(
+    .replace(/\blog\(/g,'Math.log10(')      // log( → Math.log10(
+    .replace(/\bsqrt\(/g,'Math.sqrt(')      // sqrt( → Math.sqrt(
+    .replace(/\babs\(/g,'Math.abs(')        // abs( → Math.abs(
+    .replace(/\bsin\(/g,'Math.sin(')
+    .replace(/\bcos\(/g,'Math.cos(')
+    .replace(/\btan\(/g,'Math.tan(')
+    .replace(/\bpi\b/gi,'Math.PI')          // pi → Math.PI
+    .replace(/\be\b/g,'Math.E')             // e  → Math.E (isolé)
+    .replace(/(\d)([Xx])/g,'$1*x')          // 2x → 2*x
+    .replace(/([Xx])(\d)/g,'x*$2')          // x2 → x*2
+    .trim();
+
   // Évaluer la fonction
   let fn;
   try {
-    fn = new Function('x', '"use strict"; const {sin,cos,tan,sqrt,log,log10,abs,cbrt,pow,PI,E,floor,ceil,round,exp}=Math; return '+fnStr);
+    fn = new Function('x', 'return '+fnNorm);
     fn(0); // test
-  } catch(e) { showToast('❌ Fonction invalide'); return; }
+  } catch(e) { showToast('❌ Fonction invalide : ' + fnNorm); return; }
 
   // Calculer les valeurs
   const N = 400;
@@ -3048,9 +3089,15 @@ async function searchDict() {
   resultEl.style.display = 'block';
   resultEl.textContent = '⏳ Recherche en cours...';
   const prompts = {
-    define: `Donne la définition complète et pédagogique du mot/terme "${word}" avec : définition, étymologie si pertinent, exemples d'utilisation, synonymes, et contexte d'usage dans les études. En français, clair pour un étudiant africain.`,
-    translate_en: `Traduis "${word}" de l'anglais vers le français. Donne : traduction principale, traductions alternatives, exemples de phrases, et contexte d'utilisation. Format clair et pédagogique.`,
-    translate_fr: `Traduis "${word}" du français vers l'anglais. Donne : traduction principale, traductions alternatives, exemples de phrases, et contexte d'utilisation. Format clair et pédagogique.`,
+    define:          `Donne la définition complète et pédagogique du terme "${word}" : définition, étymologie si pertinent, exemples, synonymes, contexte dans les études. En français, pour un étudiant africain.`,
+    translate_en:    `Traduis "${word}" de l'anglais vers le français. Donne : traduction principale, alternatives, exemples de phrases et contexte. Format clair.`,
+    translate_fr:    `Traduis "${word}" du français vers l'anglais. Donne : traduction principale, alternatives, exemples de phrases et contexte. Format clair.`,
+
+    translate_es:    `Traduits "${word}" du français vers l'espagnol. Donne : traduction principale, genre grammatical si applicable, alternatives, exemples de phrases et contexte. Format clair.`,
+    translate_ar:    `Traduis "${word}" du français vers l'arabe (arabe standard moderne). Donne : traduction en arabe avec translittération latine, exemples de phrases et contexte. Format clair.`,
+    translate_de:    `Traduis "${word}" du français vers l'allemand. Donne : traduction principale, genre grammatical, alternatives, exemples de phrases et contexte. Format clair.`,
+    translate_pt:    `Traduis "${word}" du français vers le portugais (brésilien). Donne : traduction principale, alternatives, exemples de phrases et contexte. Format clair.`,
+    translate_zh:    `Traduis "${word}" du français vers le mandarin (chinois simplifié). Donne : caractères chinois, pinyin, traduction et exemples de phrases. Format clair.`,
   };
   try {
     const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
@@ -3165,6 +3212,124 @@ function newDiagram() {
   currentDiagCode = '';
 }
 
+
+
+// ── LANGUE DE L'APPLICATION ──
+const APP_TRANSLATIONS = {
+  fr: {
+    home_title: 'Bonjour', home_sub: 'Prêt à apprendre ?',
+    nav_home: 'Accueil', nav_coach: 'Coach IA', nav_quiz: 'Quiz', nav_tools: 'Travaux', nav_profile: 'Profil',
+    chat_placeholder: 'Pose ta question à Studiora…',
+    dict_placeholder: 'Entrer un mot ou une phrase à définir...',
+    dict_search: '🔍 Rechercher',
+    logout: 'Se déconnecter',
+    lang_label: '🌐 Langue de l\'application',
+  },
+  en: {
+    home_title: 'Hello', home_sub: 'Ready to learn?',
+    nav_home: 'Home', nav_coach: 'AI Coach', nav_quiz: 'Quiz', nav_tools: 'Tools', nav_profile: 'Profile',
+    chat_placeholder: 'Ask Studiora a question…',
+    dict_placeholder: 'Enter a word or phrase to define...',
+    dict_search: '🔍 Search',
+    logout: 'Log out',
+    lang_label: '🌐 App Language',
+  },
+  es: {
+    home_title: 'Hola', home_sub: '¿Listo para aprender?',
+    nav_home: 'Inicio', nav_coach: 'Coach IA', nav_quiz: 'Quiz', nav_tools: 'Tareas', nav_profile: 'Perfil',
+    chat_placeholder: 'Haz una pregunta a Studiora…',
+    dict_placeholder: 'Escribe una palabra o frase para definir...',
+    dict_search: '🔍 Buscar',
+    logout: 'Cerrar sesión',
+    lang_label: '🌐 Idioma de la app',
+  },
+  ar: {
+    home_title: 'مرحباً', home_sub: 'هل أنت مستعد للتعلم؟',
+    nav_home: 'الرئيسية', nav_coach: 'مدرب ذكي', nav_quiz: 'اختبار', nav_tools: 'أدوات', nav_profile: 'الملف',
+    chat_placeholder: 'اطرح سؤالك على Studiora…',
+    dict_placeholder: 'أدخل كلمة أو جملة للتعريف...',
+    dict_search: '🔍 بحث',
+    logout: 'تسجيل الخروج',
+    lang_label: '🌐 لغة التطبيق',
+  },
+  pt: {
+    home_title: 'Olá', home_sub: 'Pronto para aprender?',
+    nav_home: 'Início', nav_coach: 'Coach IA', nav_quiz: 'Quiz', nav_tools: 'Trabalhos', nav_profile: 'Perfil',
+    chat_placeholder: 'Faça uma pergunta ao Studiora…',
+    dict_placeholder: 'Digite uma palavra ou frase para definir...',
+    dict_search: '🔍 Pesquisar',
+    logout: 'Sair',
+    lang_label: '🌐 Idioma do app',
+  },
+  de: {
+    home_title: 'Hallo', home_sub: 'Bereit zum Lernen?',
+    nav_home: 'Start', nav_coach: 'KI-Coach', nav_quiz: 'Quiz', nav_tools: 'Werkzeuge', nav_profile: 'Profil',
+    chat_placeholder: 'Stelle Studiora eine Frage…',
+    dict_placeholder: 'Wort oder Satz eingeben...',
+    dict_search: '🔍 Suchen',
+    logout: 'Abmelden',
+    lang_label: '🌐 App-Sprache',
+  },
+};
+
+let APP_LANG = localStorage.getItem('studiora_lang') || 'fr';
+
+function setAppLang(lang, btn) {
+  APP_LANG = lang;
+  localStorage.setItem('studiora_lang', lang);
+  // Highlight bouton actif
+  document.querySelectorAll('.app-lang-btn').forEach(b => {
+    b.style.background = 'var(--bg2)';
+    b.style.borderColor = 'var(--border)';
+    b.style.color = 'var(--text2)';
+    b.style.fontWeight = '600';
+  });
+  if (btn) {
+    btn.style.background = 'var(--em-soft)';
+    btn.style.borderColor = 'var(--em)';
+    btn.style.color = 'var(--em)';
+    btn.style.fontWeight = '700';
+  }
+  applyAppLang(lang);
+  const info = document.getElementById('app-lang-info');
+  if (info) info.style.display = 'block';
+}
+
+function applyAppLang(lang) {
+  const t = APP_TRANSLATIONS[lang] || APP_TRANSLATIONS['fr'];
+  // Nav labels
+  const navLabels = document.querySelectorAll('.nav-label');
+  const navKeys = ['nav_home','nav_coach','nav_quiz','nav_tools','nav_profile'];
+  // Chaque bottom-nav a 5 items
+  document.querySelectorAll('.bottom-nav').forEach(nav => {
+    const items = nav.querySelectorAll('.nav-label');
+    items.forEach((el, i) => { if (navKeys[i] && t[navKeys[i]]) el.textContent = t[navKeys[i]]; });
+  });
+  // Chat placeholder
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput && t.chat_placeholder) chatInput.placeholder = t.chat_placeholder;
+  // Dict placeholder
+  const dictInput = document.getElementById('dict-word');
+  if (dictInput && t.dict_placeholder) dictInput.placeholder = t.dict_placeholder;
+  // Direction pour arabe
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}
+
+function initAppLang() {
+  const lang = APP_LANG;
+  applyAppLang(lang);
+  // Highlight le bouton actif dans le profil
+  const btns = document.querySelectorAll('.app-lang-btn');
+  const langMap = ['fr','en','es','ar','pt','de'];
+  btns.forEach((btn, i) => {
+    if (langMap[i] === lang) {
+      btn.style.background = 'var(--em-soft)';
+      btn.style.borderColor = 'var(--em)';
+      btn.style.color = 'var(--em)';
+      btn.style.fontWeight = '700';
+    }
+  });
+}
 
 </script>
 </body>
