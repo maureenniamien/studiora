@@ -403,17 +403,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       </div>
     </div>
   </div>
-
-  <nav class="bottom-nav">
-    <div class="nav-item active" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div><div class="nav-active-dot"></div></div>
-    <div class="nav-item" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
-    <div class="nav-item" onclick="showScreen('screen-quiz')" style="position:relative">
-      <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div>
-      <div class="nav-label" style="margin-top:4px">Quiz</div>
-    </div>
-    <div class="nav-item" onclick="showScreen('screen-travaux')"><div class="nav-icon">🛠️</div><div class="nav-label">Travaux</div></div>
-    <div class="nav-item" onclick="showScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profil</div></div>
-  </nav>
 </div>
 
 <!-- ═══════════════════ CHAT IA ═══════════════════ -->
@@ -463,7 +452,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Config quiz -->
-  <div id="quiz-config" class="scroll-body" style="padding:0 20px 40px">
+  <div id="quiz-config" class="scroll-body" style="padding:0 20px 90px">
     <div style="background:linear-gradient(135deg,var(--purple),#4338CA);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
       <div style="font-size:40px;margin-bottom:8px">✏️</div>
       <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Génère ton quiz</h3>
@@ -546,7 +535,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <div style="width:70px"></div>
   </div>
 
-  <div id="fc-config" class="scroll-body" style="padding:0 20px 40px">
+  <div id="fc-config" class="scroll-body" style="padding:0 20px 90px">
     <div style="background:linear-gradient(135deg,var(--amber),#E8920A);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
       <div style="font-size:40px;margin-bottom:8px">🃏</div>
       <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Flashcards IA</h3>
@@ -602,7 +591,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <div style="width:70px"></div>
   </div>
 
-  <div id="upload-form" class="scroll-body" style="padding:0 20px 40px">
+  <div id="upload-form" class="scroll-body" style="padding:0 20px 90px">
     <div class="upload-zone" onclick="document.getElementById('file-input').click()" id="drop-zone" style="margin-bottom:16px">
       <div style="font-size:40px;margin-bottom:10px">📎</div>
       <div style="font-size:14px;font-weight:700;margin-bottom:4px">Importer ton cours</div>
@@ -638,7 +627,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <button onclick="resetUpload()" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Nouveau</button>
       </div>
     </div>
-    <div class="scroll-body" style="padding:16px 20px 40px">
+    <div class="scroll-body" style="padding:16px 20px 90px">
       <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);white-space:pre-wrap;font-size:13.5px;line-height:1.75;color:var(--text)" id="analysis-result"></div>
       <button class="btn-em" onclick="continueInChat()" style="margin-top:16px">💬 Continuer avec le coach IA</button>
     </div>
@@ -697,14 +686,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       <div id="goals-list"></div>
     </div>
   </div>
-
-  <nav class="bottom-nav">
-    <div class="nav-item" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
-    <div class="nav-item" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
-    <div class="nav-item" onclick="showScreen('screen-quiz')" style="position:relative"><div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div><div class="nav-label" style="margin-top:4px">Quiz</div></div>
-    <div class="nav-item" onclick="showScreen('screen-travaux')"><div class="nav-icon">🛠️</div><div class="nav-label">Travaux</div></div>
-    <div class="nav-item" onclick="showScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profil</div></div>
-  </nav>
 </div>
 
 <!-- ═══════════════════ PROFIL ═══════════════════ -->
@@ -759,14 +740,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
     <button onclick="doLogout()" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Se déconnecter</button>
   </div>
-
-  <nav class="bottom-nav">
-    <div class="nav-item" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
-    <div class="nav-item" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
-    <div class="nav-item" onclick="showScreen('screen-quiz')" style="position:relative"><div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div><div class="nav-label" style="margin-top:4px">Quiz</div></div>
-    <div class="nav-item" onclick="showScreen('screen-travaux')"><div class="nav-icon">🛠️</div><div class="nav-label">Travaux</div></div>
-    <div class="nav-item active"><div class="nav-icon">👤</div><div class="nav-label">Profil</div><div class="nav-active-dot"></div></div>
-  </nav>
 </div>
 
 <!-- TOAST -->
@@ -893,14 +866,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
       </div>
     </div>
   </div>
-
-  <nav class="bottom-nav">
-    <div class="nav-item" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
-    <div class="nav-item" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
-    <div class="nav-item" onclick="showScreen('screen-quiz')" style="position:relative"><div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div><div class="nav-label" style="margin-top:4px">Quiz</div></div>
-    <div class="nav-item active" onclick="showScreen('screen-travaux')"><div class="nav-icon">🛠️</div><div class="nav-label">Travaux</div><div class="nav-active-dot"></div></div>
-    <div class="nav-item" onclick="showScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profil</div></div>
-  </nav>
 </div>
 
 <!-- ═══════════════════ TERMINAL IA ═══════════════════ -->
@@ -967,7 +932,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- TAB STANDARD -->
-  <div id="calc-panel-std" class="scroll-body" style="padding:12px 14px 40px">
+  <div id="calc-panel-std" class="scroll-body" style="padding:12px 14px 90px">
     <div style="background:#1a1a2e;border-radius:14px;padding:16px;margin-bottom:12px;text-align:right">
       <div style="font-size:11px;color:#888;min-height:16px" id="calc-history"></div>
       <div style="font-size:30px;font-weight:700;color:#fff;min-height:42px;word-break:break-all" id="calc-display">0</div>
@@ -1056,7 +1021,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <button onclick="goBack()" class="back-btn">← Retour</button>
     <span class="display" style="font-size:17px;font-weight:700">📖 Dictionnaire IA</span>
   </div>
-  <div class="scroll-body" style="padding:16px 20px 40px">
+  <div class="scroll-body" style="padding:16px 20px 90px">
     <div style="margin-bottom:12px">
       <input class="input" id="dict-word" placeholder="Entrer un mot ou une phrase à définir..." style="margin-bottom:8px">
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
@@ -1087,7 +1052,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <span class="display" style="font-size:17px;font-weight:700">📐 Diagrammes</span>
     <button onclick="newDiagram()" style="margin-left:auto;background:var(--em);border:none;border-radius:10px;padding:7px 14px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Nouveau</button>
   </div>
-  <div class="scroll-body" style="padding:16px 20px 40px">
+  <div class="scroll-body" style="padding:16px 20px 90px">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
       <button onclick="selectDiagType(this,'class')" class="diag-type-btn" style="padding:8px 12px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Classes</button>
       <button onclick="selectDiagType(this,'sequence')" class="diag-type-btn" style="padding:8px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Séquence</button>
@@ -1351,6 +1316,42 @@ let APP = {
 
 // ── NAVIGATION ──
 let screenHistory = [];
+// Screens qui affichent la nav globale
+const NAV_SCREENS = new Set(['screen-home','screen-chat','screen-quiz','screen-flashcards',
+  'screen-progress','screen-profile','screen-travaux','screen-upload',
+  'screen-calc','screen-dict','screen-diagrams']);
+const NAV_ACTIVE_MAP = {
+  'screen-home':'nav-home','screen-chat':'nav-chat','screen-quiz':'nav-quiz',
+  'screen-flashcards':'nav-quiz','screen-progress':'nav-home','screen-upload':'nav-travaux',
+  'screen-calc':'nav-travaux','screen-dict':'nav-travaux','screen-diagrams':'nav-travaux',
+  'screen-travaux':'nav-travaux','screen-profile':'nav-profile',
+};
+
+function updateGlobalNav(id) {
+  const nav = document.getElementById('global-nav');
+  if (!nav) return;
+  if (NAV_SCREENS.has(id)) {
+    nav.style.display = 'flex';
+    nav.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.remove('active');
+      const dot = el.querySelector('.nav-active-dot');
+      if (dot) dot.remove();
+    });
+    const activeId = NAV_ACTIVE_MAP[id];
+    if (activeId) {
+      const activeEl = document.getElementById(activeId);
+      if (activeEl) {
+        activeEl.classList.add('active');
+        const dot = document.createElement('div');
+        dot.className = 'nav-active-dot';
+        activeEl.appendChild(dot);
+      }
+    }
+  } else {
+    nav.style.display = 'none';
+  }
+}
+
 function showScreen(id) {
   const curr = document.querySelector('.screen:not(.hidden):not(.slide-left)');
   if (curr && curr.id !== id) {
@@ -1361,6 +1362,7 @@ function showScreen(id) {
   const next = document.getElementById(id);
   next.classList.remove('hidden','slide-left');
   next.offsetHeight;
+  updateGlobalNav(id);
   onScreenEnter(id);
 }
 function goBack() {
@@ -3332,5 +3334,17 @@ function initAppLang() {
 }
 
 </script>
+
+<!-- ── BOTTOM NAV GLOBALE ── -->
+<nav id="global-nav" class="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200">
+  <div class="nav-item" id="nav-home" onclick="showScreen('screen-home')"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
+  <div class="nav-item" id="nav-chat" onclick="showScreen('screen-chat')"><div class="nav-icon">💬</div><div class="nav-label">Coach IA</div></div>
+  <div class="nav-item" id="nav-quiz" onclick="showScreen('screen-quiz')" style="position:relative">
+    <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-20px;box-shadow:0 4px 18px rgba(11,110,79,.35)">✏️</div>
+    <div class="nav-label" style="margin-top:4px">Quiz</div>
+  </div>
+  <div class="nav-item" id="nav-travaux" onclick="showScreen('screen-travaux')"><div class="nav-icon">🛠️</div><div class="nav-label">Travaux</div></div>
+  <div class="nav-item" id="nav-profile" onclick="showScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profil</div></div>
+</nav>
 </body>
 </html>
