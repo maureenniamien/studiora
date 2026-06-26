@@ -452,7 +452,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Config quiz -->
-  <div id="quiz-config" class="scroll-body" style="padding:0 20px 90px">
+  <div id="quiz-config" class="scroll-body" style="padding:0 20px 20px">
     <div style="background:linear-gradient(135deg,var(--purple),#4338CA);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
       <div style="font-size:40px;margin-bottom:8px">✏️</div>
       <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Génère ton quiz</h3>
@@ -535,7 +535,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <div style="width:70px"></div>
   </div>
 
-  <div id="fc-config" class="scroll-body" style="padding:0 20px 90px">
+  <div id="fc-config" class="scroll-body" style="padding:0 20px 20px">
     <div style="background:linear-gradient(135deg,var(--amber),#E8920A);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
       <div style="font-size:40px;margin-bottom:8px">🃏</div>
       <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Flashcards IA</h3>
@@ -939,7 +939,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <button onclick="showScreen('screen-upload')" style="font-size:11px;color:var(--em);font-weight:600;background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Importer</button>
       </div>
       <div id="courses-list-travaux" style="display:flex;flex-direction:column;gap:8px"></div>
-      </div>
     </div>
 
     <!-- Éditeur Média -->
@@ -1472,12 +1471,12 @@ let APP = {
 // ── NAVIGATION ──
 let screenHistory = [];
 // Screens qui affichent la nav globale
-const NAV_SCREENS = new Set(['screen-home','screen-chat','screen-quiz','screen-flashcards',
+const NAV_SCREENS = new Set(['screen-home','screen-chat',
   'screen-progress','screen-profile','screen-travaux','screen-upload',
   'screen-calc','screen-dict','screen-diagrams','screen-media']);
 const NAV_ACTIVE_MAP = {
-  'screen-home':'nav-home','screen-chat':'nav-chat','screen-quiz':'nav-quiz',
-  'screen-flashcards':'nav-quiz','screen-progress':'nav-home','screen-upload':'nav-travaux',
+  'screen-home':'nav-home','screen-chat':'nav-chat',
+  'screen-progress':'nav-home','screen-upload':'nav-travaux',
   'screen-calc':'nav-travaux','screen-dict':'nav-travaux','screen-diagrams':'nav-travaux',
   'screen-travaux':'nav-travaux','screen-media':'nav-travaux','screen-profile':'nav-profile',
 };
