@@ -1484,6 +1484,14 @@ const NAV_ACTIVE_MAP = {
 function updateGlobalNav(id) {
   const nav = document.getElementById('global-nav');
   if (!nav) return;
+  // Écrans sans nav (auth + sous-écrans)
+  const noNavScreens = new Set([
+    'screen-onboarding','screen-login','screen-register'
+  ]);
+  if (noNavScreens.has(id)) {
+    nav.style.display = 'none';
+    return;
+  }
   if (NAV_SCREENS.has(id)) {
     nav.style.display = 'flex';
     nav.querySelectorAll('.nav-item').forEach(el => {
@@ -1521,9 +1529,7 @@ function showScreen(id) {
   onScreenEnter(id);
 }
 function goBack() {
-  // Toujours remettre la nav visible en quittant
-  const nav = document.getElementById('global-nav');
-  if (nav) nav.style.display = '';
+  // La nav sera gérée par updateGlobalNav via showScreen
   // Reset quiz si on quitte en cours de génération ou de jeu
   clearInterval(timerInterval);
   const startBtn = document.getElementById('start-quiz-btn');
@@ -1546,11 +1552,6 @@ function onScreenEnter(id) {
   if(id==='screen-home')      renderHome();
   if(id==='screen-chat') {
     renderChat();
-    const nav = document.getElementById('global-nav');
-    if(nav) nav.style.display = 'none';
-  } else {
-    const nav = document.getElementById('global-nav');
-    if(nav) nav.style.display = '';
   }
   if(id==='screen-quiz')      renderQuizConfig();
   if(id==='screen-flashcards') renderFCConfig();
@@ -1841,11 +1842,11 @@ let selectedSerie  = 'D';
 let selectedFiliere = '';
 
 const FILIERES_BY_NIVEAU = {
-  'Licence 1':['MIAGE','ASSRI','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Géomatique','Géologie','Histoire','Archéologie','Psychologie','Sociologie','Anthropologie','Communication','Journalisme','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Génie Électrique','Génie Mécanique','Agronomie','Pharmacie','Sciences de l\'Éducation','Langues Étrangères'],
-  'Licence 2':['MIAGE','ASSRI','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Géomatique','Géologie','Histoire','Archéologie','Psychologie','Sociologie','Anthropologie','Communication','Journalisme','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Génie Électrique','Génie Mécanique','Agronomie','Pharmacie','Sciences de l\'Éducation','Langues Étrangères'],
-  'Licence 3':['MIAGE','ASSRI','Informatique','Mathématiques','Physique','Chimie','Biologie','SES','Droit','AES','LEA','STAPS','Médecine','Géographie','Géomatique','Géologie','Histoire','Archéologie','Psychologie','Sociologie','Anthropologie','Communication','Journalisme','Gestion','Marketing','Finance','Comptabilité','Électronique','Génie Civil','Génie Électrique','Génie Mécanique','Agronomie','Pharmacie','Sciences de l\'Éducation','Langues Étrangères'],
-  'Master 1':['MIAGE','ASSRI','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Géomatique & SIG','Géographie','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel','Génie Civil','Environnement','Agronomie'],
-  'Master 2':['MIAGE','ASSRI','Informatique','Intelligence Artificielle','Cybersécurité','Data Science','Réseaux & Télécoms','Géomatique & SIG','Géographie','Droit des Affaires','Finance','Marketing Digital','Gestion de Projet','Génie Logiciel','Génie Civil','Environnement','Agronomie'],
+  'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+  'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+  'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+  'Master 1':['Agronomie', 'ASSRI', 'Cybersécurité', 'Data Science', 'Droit des Affaires', 'Droit privé', 'Droit public', 'Environnement', 'Finance', 'Génie Civil', 'Génie Logiciel', 'Géographie', 'Géomatique & SIG', 'Gestion de Projet', 'Informatique', 'Intelligence Artificielle', 'Marketing Digital', 'MIAGE', 'Réseaux & Télécoms', 'RIT', 'SEA', 'SEG'],
+  'Master 2':['Agronomie', 'ASSRI', 'Cybersécurité', 'Data Science', 'Droit des Affaires', 'Droit privé', 'Droit public', 'Environnement', 'Finance', 'Génie Civil', 'Génie Logiciel', 'Géographie', 'Géomatique & SIG', 'Gestion de Projet', 'Informatique', 'Intelligence Artificielle', 'Marketing Digital', 'MIAGE', 'Réseaux & Télécoms', 'RIT', 'SEA', 'SEG'],
   'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
   'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
   'BTS 2':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
@@ -1911,17 +1912,16 @@ function extractJsonBlock(raw) {
 }
 
 function sanitizeJsonStr(raw) {
-  // Séquences d'échappement valides en JSON
   const VALID_ESC = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);
   let out = '', inStr = false, esc = false;
   for (let i = 0; i < raw.length; i++) {
     const c = raw[i];
     if (esc) {
       if (VALID_ESC.has(c)) {
-        out += c; // séquence valide : garder
+        out += c; // valide : garder le char (le \ est déjà dans out)
       } else {
-        // séquence invalide ex: \q \p → supprimer le backslash, garder le char
-        out += c;
+        // invalide : retirer le \ déjà ajouté, garder juste le char
+        out = out.slice(0, -1) + c;
       }
       esc = false;
       continue;
