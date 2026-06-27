@@ -427,7 +427,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
   </div>
 
   <!-- Messages -->
-  <div class="scroll-body" id="chat-messages" style="padding:16px 14px 16px;flex:1;min-height:0"></div>
+  <div class="scroll-body" id="chat-messages" style="padding:16px 14px 80px;flex:1;min-height:0"></div>
 
   <!-- Suggestions -->
   <div style="padding:6px 14px 4px;background:var(--bg)">
@@ -1522,7 +1522,7 @@ function showScreen(id) {
 }
 function goBack() {
   // Toujours remettre la nav visible en quittant
-  const nav = document.getElementById('bottom-nav');
+  const nav = document.getElementById('global-nav');
   if (nav) nav.style.display = '';
   // Reset quiz si on quitte en cours de génération ou de jeu
   clearInterval(timerInterval);
@@ -1546,10 +1546,10 @@ function onScreenEnter(id) {
   if(id==='screen-home')      renderHome();
   if(id==='screen-chat') {
     renderChat();
-    const nav = document.getElementById('bottom-nav');
+    const nav = document.getElementById('global-nav');
     if(nav) nav.style.display = 'none';
   } else {
-    const nav = document.getElementById('bottom-nav');
+    const nav = document.getElementById('global-nav');
     if(nav) nav.style.display = '';
   }
   if(id==='screen-quiz')      renderQuizConfig();
@@ -1911,10 +1911,21 @@ function extractJsonBlock(raw) {
 }
 
 function sanitizeJsonStr(raw) {
+  // Séquences d'échappement valides en JSON
+  const VALID_ESC = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);
   let out = '', inStr = false, esc = false;
   for (let i = 0; i < raw.length; i++) {
     const c = raw[i];
-    if (esc) { out += c; esc = false; continue; }
+    if (esc) {
+      if (VALID_ESC.has(c)) {
+        out += c; // séquence valide : garder
+      } else {
+        // séquence invalide ex: \q \p → supprimer le backslash, garder le char
+        out += c;
+      }
+      esc = false;
+      continue;
+    }
     if (c === '\\') { esc = true; out += c; continue; }
     if (c === '"') { inStr = !inStr; out += c; continue; }
     if (inStr) {
