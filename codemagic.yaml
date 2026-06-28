@@ -14,7 +14,7 @@ workflows:
           npx cap sync android
       - name: Patch AndroidManifest
         script: |
-          python3 - << 'EOF'
+          python3 - << 'PYEOF'
           import re
           path = "android/app/src/main/AndroidManifest.xml"
           with open(path) as f:
@@ -28,7 +28,7 @@ workflows:
           with open(path, 'w') as f:
               f.write(content)
           print("Patched OK")
-          EOF
+          PYEOF
       - name: Build APK
         script: |
           cd android
@@ -36,3 +36,43 @@ workflows:
           ./gradlew assembleDebug
     artifacts:
       - android/app/build/outputs/apk/debug/app-debug.apk
+
+  ios-workflow:
+    name: Studiora iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 22
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install deps
+        script: npm install
+      - name: Sync Capacitor iOS
+        script: |
+          npx cap add ios || true
+          npx cap sync ios
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
+      - name: Build IPA
+        script: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/App.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ios/App/exportOptions.plist || true
+    artifacts:
+      - build/App.xcarchive
+      - build/ipa/*.ipa
