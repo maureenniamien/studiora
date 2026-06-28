@@ -2303,6 +2303,49 @@ function handleFile(input) {
     const reader=new FileReader();
     reader.onload=e=>{ document.getElementById('course-text').value=e.target.result; showToast('📄 Fichier chargé !'); };
     reader.readAsText(file);
+  } else if(file.type==='application/pdf') {
+    showToast('⏳ Lecture du PDF...');
+    const reader=new FileReader();
+    reader.onload=async e=>{
+      try {
+        const base64=e.target.result.split(',')[1];
+        const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
+            messages:[{role:'user',content:[
+              {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+              {type:'text',text:'Extrais tout le texte de ce document PDF. Retourne uniquement le texte brut, sans commentaires.'}
+            ]}]})
+        });
+        const data=await res.json();
+        const text=(data.content&&data.content[0]?data.content[0].text:'')||'';
+        if(text){document.getElementById('course-text').value=text;showToast('📄 PDF extrait !');}
+        else showToast('⚠️ PDF vide ou illisible');
+      }catch(err){showToast('❌ Erreur lecture PDF');}
+    };
+    reader.readAsDataURL(file);
+  } else if(file.type.startsWith('image/')) {
+    showToast('⏳ Lecture de l\'image...');
+    const reader=new FileReader();
+    reader.onload=async e=>{
+      try {
+        const base64=e.target.result.split(',')[1];
+        const mime=file.type;
+        const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
+            messages:[{role:'user',content:[
+              {type:'image',source:{type:'base64',media_type:mime,data:base64}},
+              {type:'text',text:'Transcris tout le texte visible dans cette image de cours. Retourne uniquement le texte brut.'}
+            ]}]})
+        });
+        const data=await res.json();
+        const text=(data.content&&data.content[0]?data.content[0].text:'')||'';
+        if(text){document.getElementById('course-text').value=text;showToast('🖼️ Image transcrite !');}
+        else showToast('⚠️ Aucun texte détecté');
+      }catch(err){showToast('❌ Erreur lecture image');}
+    };
+    reader.readAsDataURL(file);
   } else {
     showToast('📄 Fichier détecté : '+file.name+' — colle le texte manuellement si besoin.');
   }
@@ -2648,7 +2691,9 @@ function doLogout() {
 }
 
 // ── INIT : auto-login si session sauvegardée ──
-(function init() {
+// Utilise setTimeout(0) pour s'assurer que la nav (#global-nav) est dans le DOM
+// avant d'appeler showScreen → updateGlobalNav
+function _runInit() {
   try {
     if (loadSession()) {
       SUBJECTS = getSubjects();
@@ -2663,7 +2708,13 @@ function doLogout() {
     console.error('Init error:', e.message);
     try { showScreen('screen-onboarding'); } catch(e2) {}
   }
-})();
+}
+// On attend que tout le HTML (dont la nav) soit parsé
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _runInit);
+} else {
+  setTimeout(_runInit, 0);
+}
 
 // ── UPDATE NAV: replace Progrès with Travaux in home nav ──
 // (done via HTML directly in bottom navs)
