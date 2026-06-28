@@ -1,19 +1,9 @@
 {
-  "appId": "com.studiora.app",
+  "appId": "com.maureen.studiora",
   "appName": "Studiora",
   "webDir": "www",
   "server": {
-    "androidScheme": "http",
-    "cleartext": true,
-    "allowNavigation": ["*.supabase.co"]
-  },
-  "android": {
-    "allowMixedContent": true,
-    "useLegacyBridge": false
-  },
-  "plugins": {
-    "CapacitorHttp": {
-      "enabled": true
-    }
+    "url": "https://maureenniamien.github.io/studiora-git/",
+    "cleartext": true
   }
 }
