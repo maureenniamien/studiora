@@ -23,7 +23,6 @@ workflows:
               content = content.replace(
                   '<application',
                   '<application android:usesCleartextTraffic="true"',
-                  1
               )
           with open(path, 'w') as f:
               f.write(content)
@@ -48,6 +47,10 @@ workflows:
     scripts:
       - name: Install deps
         script: npm install
+      - name: Install Capacitor iOS
+        script: |
+          # S'assurer que @capacitor/ios est installé
+          npm install @capacitor/ios@^8.4.0 || true
       - name: Sync Capacitor iOS
         script: |
           npx cap add ios || true
@@ -72,7 +75,8 @@ workflows:
             -exportArchive \
             -archivePath build/App.xcarchive \
             -exportPath build/ipa \
-            -exportOptionsPlist ios/App/exportOptions.plist || true
+            -exportOptionsPlist ios/App/exportOptions.plist \
+            || true
     artifacts:
       - build/App.xcarchive
       - build/ipa/*.ipa
