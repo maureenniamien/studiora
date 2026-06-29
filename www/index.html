@@ -485,6 +485,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <button onclick="selectNQ(this,15)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">15</button>
       </div>
     </div>
+    <!-- Quiz Libre VIP -->
+    <div id="quiz-libre-section" style="display:none;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">👑 QUIZ LIBRE VIP — N'IMPORTE QUEL SUJET</div>
+      <input class="input" id="quiz-libre-topic" placeholder="Ex: Marketing digital, Permis de conduire, Cuisine..." style="font-size:13px">
+    </div>
     <button class="btn-em" id="start-quiz-btn" onclick="startQuiz()">
       <span id="quiz-btn-text">✨ Générer le quiz avec l'IA</span>
     </button>
@@ -698,6 +703,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
     <h2 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px" id="profile-name">Maureen Koné</h2>
     <p style="color:var(--text2);font-size:13px;margin-bottom:12px" id="profile-level">Licence 2 · MIAGE</p>
     <span class="badge badge-em">✓ Compte actif</span>
+    <span id="profile-plan-badge" style="display:inline-block;margin-left:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:var(--bg2);color:var(--text2)">🆓 Gratuit</span>
+    <div id="profile-usage" style="margin-top:10px"></div>
   </div>
 
   <div class="scroll-body" style="padding:16px 20px 90px">
@@ -765,6 +772,57 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
         <button onclick="setAppLang('de',this)" class="app-lang-btn" style="padding:8px 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🇩🇪 Deutsch</button>
       </div>
       <p id="app-lang-info" style="font-size:11px;color:var(--text3);margin-top:8px;display:none">⚠️ Recharge l'app pour appliquer la langue.</p>
+    </div>
+
+    <!-- Abonnement -->
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">💎 Mon abonnement</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div onclick="showUpgradeModal('Passe à Premium ou VIP pour débloquer plus de fonctionnalités !')" style="background:linear-gradient(135deg,#0B6E4F,#16a34a);border-radius:14px;padding:14px 18px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:800;font-size:14px">⭐ Premium — 1 490 FCFA/mois</div><div style="font-size:11px;opacity:.85">45 questions IA · 10 quiz · 30 flashcards</div></div>
+          <div style="font-size:18px">›</div>
+        </div>
+        <div onclick="showUpgradeModal('Passe VIP pour un accès illimité !')" style="background:linear-gradient(135deg,#b45309,#f59e0b);border-radius:14px;padding:14px 18px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:800;font-size:14px">👑 VIP — 3 490 FCFA/mois</div><div style="font-size:11px;opacity:.85">Tout illimité · Quiz libre</div></div>
+          <div style="font-size:18px">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Changer mot de passe -->
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🔑 Changer le mot de passe</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input class="input" id="pwd-current" type="password" placeholder="Mot de passe actuel" style="font-size:13px">
+        <input class="input" id="pwd-new" type="password" placeholder="Nouveau mot de passe (8 car. min)" style="font-size:13px">
+        <input class="input" id="pwd-confirm" type="password" placeholder="Confirmer le nouveau mot de passe" style="font-size:13px">
+        <button onclick="changePassword()" style="padding:12px;border-radius:12px;background:var(--em);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Changer le mot de passe</button>
+      </div>
+    </div>
+
+    <!-- Dashboard Admin -->
+    <div id="admin-dashboard" style="display:none;margin-bottom:14px">
+      <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:16px;padding:18px 20px;color:#fff;margin-bottom:10px">
+        <div style="font-size:16px;font-weight:800;margin-bottom:14px">🔮 Dashboard Admin</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px;text-align:center">
+            <div id="admin-total" style="font-size:26px;font-weight:800">0</div>
+            <div style="font-size:11px;opacity:.8">Total inscrits</div>
+          </div>
+          <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px;text-align:center">
+            <div id="admin-premium" style="font-size:26px;font-weight:800;color:#4ade80">0</div>
+            <div style="font-size:11px;opacity:.8">Premium</div>
+          </div>
+          <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px;text-align:center">
+            <div id="admin-vip" style="font-size:26px;font-weight:800;color:#fbbf24">0</div>
+            <div style="font-size:11px;opacity:.8">VIP</div>
+          </div>
+          <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px;text-align:center">
+            <div id="admin-free" style="font-size:26px;font-weight:800;color:#94a3b8">0</div>
+            <div style="font-size:11px;opacity:.8">Gratuit</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <button onclick="doLogout()" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Se déconnecter</button>
@@ -1742,6 +1800,12 @@ async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
+  // Check limite IA
+  if (!canUseIA()) {
+    showUpgradeModal("Tu as utilisé tes " + getPlanLimits().ia_per_4h + " questions IA. Reset dans " + iaTimeLeft() + ".");
+    return;
+  }
+  incUsage('ia');
   input.value = ''; autoResize(input);
 
   const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -2036,6 +2100,9 @@ function renderQuizConfig() {
   document.getElementById('quiz-config').style.display='block';
   document.getElementById('quiz-play').style.display='none';
   document.getElementById('quiz-results').style.display='none';
+  // Afficher Quiz Libre pour VIP/Admin
+  const qlSection = document.getElementById('quiz-libre-section');
+  if (qlSection) qlSection.style.display = isVipOrAdmin() ? 'block' : 'none';
 
   const el = document.getElementById('quiz-subject-btns');
   el.innerHTML = SUBJECTS.map(s=>`
@@ -2060,7 +2127,52 @@ function selectNQ(btn, n) {
   btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
 }
 
+
+async function startQuizLibre(topic) {
+  const btn=document.getElementById('start-quiz-btn');
+  const btnTxt=document.getElementById('quiz-btn-text');
+  btn.disabled=true; btnTxt.textContent='⏳ Génération en cours...';
+  const level=APP.user.level||'Licence 2';
+  const prompt='Genere exactement '+selectedNQ+' questions QCM de niveau "'+selectedDiff+'" sur ce sujet libre: '+topic+'. Reponds UNIQUEMENT en JSON valide: {"questions":[{"q":"question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"La bonne reponse est A) ..."}]}';
+  try {
+    const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:MODEL,max_tokens:2000,
+        system:'Tu es un generateur de QCM. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres.',
+        messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    let raw=(data.content&&data.content[0]?data.content[0].text:'')||'{}';
+    raw=extractJsonBlock(raw);
+    raw=raw.replace(/[\u0000-\u001f]/g,'');
+    const parsed=JSON.parse(raw);
+    APP.quizQuestions=parsed.questions||[];
+    if(APP.quizQuestions.length===0) throw new Error('empty');
+    APP.quizIndex=0; APP.quizScore=0; APP.quizAnswers=[];
+    APP.currentSubject='quiz-libre';
+    APP.currentSubjectName=topic;
+    launchQuiz();
+  } catch(e) {
+    showToast('❌ Erreur quiz libre: '+(e.message||'Réessaie'));
+  }
+  btn.disabled=false; btnTxt.textContent="✨ Générer le quiz avec l'IA";
+}
 async function startQuiz() {
+  // Check VIP pour quiz libre (sans matière imposée)
+  if (!isVipOrAdmin() && !SUBJECTS.find(s=>s.id===selectedSubjectQuiz)) {
+    showUpgradeModal('Le Quiz Libre est réservé aux membres VIP.');
+    return;
+  }
+  if (!canUseQuiz()) {
+    showUpgradeModal("Tu as atteint ta limite de " + getPlanLimits().quiz_per_day + " quiz aujourd'hui. Passe Premium !");
+    return;
+  }
+  incUsage('quiz');
+  // Quiz libre VIP
+  const libreTopic = (document.getElementById('quiz-libre-topic')||{}).value?.trim();
+  if (isVipOrAdmin() && libreTopic) {
+    return startQuizLibre(libreTopic);
+  }
   const subj = SUBJECTS.find(s=>s.id===selectedSubjectQuiz);
   const topic = document.getElementById('quiz-topic').value;
   const btn = document.getElementById('start-quiz-btn');
@@ -2215,6 +2327,11 @@ function renderFCConfig() {
 function selectFCSubject(btn,id){ selectedSubjectFC=id; renderFCConfig(); }
 
 async function generateFlashcards() {
+  if (!canUseFC()) {
+    showUpgradeModal("Tu as atteint ta limite de " + getPlanLimits().fc_per_day + " flashcards aujourd'hui. Passe Premium !");
+    return;
+  }
+  incUsage('fc');
   const topic = document.getElementById('fc-topic').value;
   const subj = SUBJECTS.find(s=>s.id===selectedSubjectFC);
   const btn=document.getElementById('gen-fc-btn'), txt=document.getElementById('fc-btn-text');
@@ -2238,8 +2355,8 @@ async function generateFlashcards() {
     const data=await res.json();
     let raw=(data.content && data.content[0] ? data.content[0].text : '')||'{}';
     raw = extractJsonBlock(raw);
-    // Nettoyage caractères problématiques
-    raw = raw.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').replace(/\t/g,' ');
+    // Nettoyage OK
+    raw = raw.replace(/\t/g,' ');
     let parsed;
     try { parsed=JSON.parse(raw); }
     catch(je) {
@@ -2522,6 +2639,42 @@ function renderProfile() {
   document.getElementById('profile-avatar').textContent=APP.user.prenom[0];
   document.getElementById('profile-name').textContent=APP.user.prenom+' '+APP.user.nom;
   document.getElementById('profile-level').textContent=APP.user.level+' · '+APP.user.filiere;
+  // Badge plan
+  const planKey=getPlan();
+  const planInfo=PLANS[planKey];
+  const badgeEl=document.getElementById('profile-plan-badge');
+  if(badgeEl){
+    const icons={free:'🆓',premium:'⭐',vip:'👑',admin:'🔮'};
+    badgeEl.textContent=(icons[planKey]||'')+ ' ' + planInfo.name;
+    badgeEl.style.background=planKey==='vip'?'linear-gradient(135deg,#b45309,#f59e0b)':
+      planKey==='admin'?'linear-gradient(135deg,#5b21b6,#7c3aed)':
+      planKey==='premium'?'linear-gradient(135deg,var(--em),var(--em2))':'var(--bg2)';
+    badgeEl.style.color=planKey==='free'?'var(--text2)':'#fff';
+  }
+  // Dashboard admin
+  const adminDash=document.getElementById('admin-dashboard');
+  if(adminDash){
+    adminDash.style.display=isAdmin()?'block':'none';
+    if(isAdmin()){
+      const stats=getGlobalStats();
+      document.getElementById('admin-total').textContent=stats.total;
+      document.getElementById('admin-free').textContent=stats.free;
+      document.getElementById('admin-premium').textContent=stats.premium;
+      document.getElementById('admin-vip').textContent=stats.vip;
+    }
+  }
+  // Compteurs usage
+  const usageEl=document.getElementById('profile-usage');
+  if(usageEl){
+    const d=getUsageToday();
+    const lim=getPlanLimits();
+    usageEl.innerHTML=
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<span style="font-size:11px;padding:4px 8px;background:var(--bg2);border-radius:8px;color:var(--text2)">💬 IA: '+(d.ia||0)+'/'+lim.ia_per_4h+' /4h</span>'+
+      '<span style="font-size:11px;padding:4px 8px;background:var(--bg2);border-radius:8px;color:var(--text2)">✏️ Quiz: '+(d.quiz||0)+'/'+lim.quiz_per_day+' /j</span>'+
+      '<span style="font-size:11px;padding:4px 8px;background:var(--bg2);border-radius:8px;color:var(--text2)">🃏 FC: '+(d.fc||0)+'/'+lim.fc_per_day+' /j</span>'+
+      '</div>';
+  }
 
   const savedPrefs = getPrefs();
   const prefs=[
@@ -2633,9 +2786,223 @@ function deleteSavedCourse(i) {
 // ── SESSION & AUTH ──
 const SESSION_KEY = 'studiora_session';
 
+// ══════════════════════════════════════════════
+// ── SYSTÈME PREMIUM / FREEMIUM ──
+// ══════════════════════════════════════════════
+const ADMIN_EMAIL = 'm16reen@gmail.com';
+
+const PLANS = {
+  free:    { name:'Gratuit',  color:'#6b7280', ia_per_4h:15, quiz_per_day:3,  fc_per_day:10 },
+  premium: { name:'Premium', color:'#0B6E4F', ia_per_4h:45, quiz_per_day:10, fc_per_day:30 },
+  vip:     { name:'VIP',     color:'#f59e0b', ia_per_4h:999,quiz_per_day:999,fc_per_day:999 },
+  admin:   { name:'Admin',   color:'#7c3aed', ia_per_4h:999,quiz_per_day:999,fc_per_day:999 }
+};
+
+function getPlan() {
+  if (APP.user.email === ADMIN_EMAIL) return 'admin';
+  return APP.user.plan || 'free';
+}
+function getPlanLimits() { return PLANS[getPlan()]; }
+function isAdmin() { return APP.user.email === ADMIN_EMAIL; }
+function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'; }
+
+// Compteurs journaliers
+function getTodayKey() { return new Date().toISOString().slice(0,10); }
+function getUsage() {
+  try { return JSON.parse(localStorage.getItem('studiora_usage')||'{}'); } catch(e){return{};}
+}
+function saveUsage(u) { localStorage.setItem('studiora_usage', JSON.stringify(u)); }
+
+function getUsageToday() {
+  const u=getUsage(), today=getTodayKey();
+  if (!u[today]) u[today]={ia:0,quiz:0,fc:0,ia_reset:Date.now()};
+  return u[today];
+}
+function incUsage(type) {
+  const u=getUsage(), today=getTodayKey();
+  if (!u[today]) u[today]={ia:0,quiz:0,fc:0,ia_reset:Date.now()};
+  u[today][type]=(u[today][type]||0)+1;
+  saveUsage(u);
+}
+
+// Check IA (reset toutes les 4h)
+function canUseIA() {
+  if (isAdmin()||getPlan()==='vip'||getPlan()==='premium'&&getPlanLimits().ia_per_4h>=999) return true;
+  const u=getUsage(), today=getTodayKey();
+  if (!u[today]) return true;
+  const d=u[today];
+  const elapsed=(Date.now()-(d.ia_reset||0))/(1000*3600);
+  if (elapsed>=4) { d.ia=0; d.ia_reset=Date.now(); saveUsage(u); return true; }
+  return (d.ia||0) < getPlanLimits().ia_per_4h;
+}
+function iaTimeLeft() {
+  const u=getUsage(), today=getTodayKey();
+  if (!u[today]) return 0;
+  const d=u[today];
+  const elapsed=(Date.now()-(d.ia_reset||0))/(1000*3600);
+  const left=Math.max(0,4-elapsed);
+  const h=Math.floor(left), m=Math.floor((left-h)*60);
+  return h+'h'+String(m).padStart(2,'0');
+}
+function canUseQuiz() {
+  if (isAdmin()||getPlan()==='vip') return true;
+  const d=getUsageToday();
+  return (d.quiz||0) < getPlanLimits().quiz_per_day;
+}
+function canUseFC() {
+  if (isAdmin()||getPlan()==='vip') return true;
+  const d=getUsageToday();
+  return (d.fc||0) < getPlanLimits().fc_per_day;
+}
+
+// Modal upgrade
+function showUpgradeModal(reason) {
+  const plan=getPlan();
+  const overlay=document.createElement('div');
+  overlay.id='upgrade-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML=`
+  <div style="background:var(--white);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;animation:slideUp .3s ease">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:40px;margin-bottom:8px">🚀</div>
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px">Limite atteinte</h2>
+      <p style="font-size:13px;color:var(--text2)">${reason}</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <div onclick="startPayment('premium')" style="background:linear-gradient(135deg,#0B6E4F,#16a34a);border-radius:16px;padding:16px 20px;cursor:pointer;color:#fff">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:16px;font-weight:800">⭐ Premium</div>
+            <div style="font-size:12px;opacity:.85">45 questions IA/4h · 10 quiz/jour · 30 flashcards/jour</div>
+          </div>
+          <div style="font-size:18px;font-weight:800">1 490<br><span style="font-size:11px;font-weight:400">FCFA/mois</span></div>
+        </div>
+      </div>
+      <div onclick="startPayment('vip')" style="background:linear-gradient(135deg,#b45309,#f59e0b);border-radius:16px;padding:16px 20px;cursor:pointer;color:#fff">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:16px;font-weight:800">👑 VIP</div>
+            <div style="font-size:12px;opacity:.85">Tout illimité · Quiz libre · Priorité IA</div>
+          </div>
+          <div style="font-size:18px;font-weight:800">3 490<br><span style="font-size:11px;font-weight:400">FCFA/mois</span></div>
+        </div>
+      </div>
+    </div>
+    <button onclick="document.getElementById('upgrade-overlay').remove()" style="width:100%;padding:14px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg2);font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Continuer en Gratuit</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Paiement FedaPay
+function startPayment(plan) {
+  document.getElementById('upgrade-overlay')?.remove();
+  const amounts={'premium':1490,'vip':3490};
+  const amount=amounts[plan]||1490;
+  const planName=PLANS[plan]?.name||plan;
+  // FedaPay Checkout
+  const overlay=document.createElement('div');
+  overlay.id='payment-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+  <div style="background:var(--white);border-radius:20px;padding:28px 24px;width:100%;max-width:400px">
+    <h3 style="font-size:18px;font-weight:800;margin-bottom:6px;text-align:center">💳 Paiement ${planName}</h3>
+    <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px">${amount.toLocaleString()} FCFA / mois</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <button onclick="fedaPayCheckout('${plan}','orange_money')" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">📱 Orange Money</button>
+      <button onclick="fedaPayCheckout('${plan}','mtn_open')" style="padding:14px;border-radius:12px;border:1.5px solid #ffcc00;background:#fffdf0;color:#b8860b;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">📱 MTN Mobile Money</button>
+      <button onclick="fedaPayCheckout('${plan}','moov_money')" style="padding:14px;border-radius:12px;border:1.5px solid #0066cc;background:#f0f5ff;color:#0066cc;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">📱 Moov Money</button>
+      <button onclick="fedaPayCheckout('${plan}','wave')" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">🌊 Wave</button>
+      <button onclick="fedaPayCheckout('${plan}','card')" style="padding:14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text1);font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">💳 Carte bancaire</button>
+    </div>
+    <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function fedaPayCheckout(plan, method) {
+  document.getElementById('payment-overlay')?.remove();
+  showToast('⏳ Redirection vers FedaPay...');
+  const amounts={'premium':149000,'vip':349000}; // en centimes FCFA
+  const amount=amounts[plan]||149000;
+  const planName=PLANS[plan]?.name||plan;
+  try {
+    // Création transaction FedaPay (mode live - clé à configurer)
+    const res = await fetch('https://api.fedapay.com/v1/transactions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer sk_live_VOTRE_CLE_FEDAPAY' // à remplacer
+      },
+      body:JSON.stringify({
+        description: 'Studiora '+planName,
+        amount: amount,
+        currency: {iso: 'XOF'},
+        callback_url: 'https://maureenniamien.github.io/studiora/?payment=success&plan='+plan,
+        customer: { email: APP.user.email||'', firstname: APP.user.prenom||'', lastname: APP.user.nom||'' }
+      })
+    });
+    const data=await res.json();
+    if (data.v1&&data.v1.transaction) {
+      const token=data.v1.transaction.token;
+      window.location.href='https://checkout.fedapay.com/'+token+'?method='+method;
+    } else {
+      throw new Error('Token manquant');
+    }
+  } catch(e) {
+    // Fallback : simuler l'activation pour test
+    showToast('❌ FedaPay non configuré — mode test activé');
+    setTimeout(()=>{
+      APP.user.plan=plan;
+      APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
+      saveSession();
+      showToast('✅ Plan '+planName+' activé (mode test) !');
+      renderProfile();
+    },1500);
+  }
+}
+
+// Vérifier paiement retour URL
+function checkPaymentReturn() {
+  const params=new URLSearchParams(window.location.search);
+  if (params.get('payment')==='success') {
+    const plan=params.get('plan');
+    if (plan&&PLANS[plan]) {
+      APP.user.plan=plan;
+      APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
+      saveSession();
+      showToast('🎉 Abonnement '+PLANS[plan].name+' activé !');
+    }
+  }
+}
+
+// Stats globales (admin)
+function getGlobalStats() {
+  try {
+    const users=JSON.parse(localStorage.getItem('studiora_all_users')||'[]');
+    return {
+      total: users.length,
+      free: users.filter(u=>!u.plan||u.plan==='free').length,
+      premium: users.filter(u=>u.plan==='premium').length,
+      vip: users.filter(u=>u.plan==='vip').length,
+    };
+  } catch(e){return{total:0,free:0,premium:0,vip:0};}
+}
+function registerUserGlobally() {
+  try {
+    const users=JSON.parse(localStorage.getItem('studiora_all_users')||'[]');
+    const exists=users.find(u=>u.email===APP.user.email);
+    if (!exists) {
+      users.push({email:APP.user.email,plan:APP.user.plan||'free',date:new Date().toISOString()});
+      localStorage.setItem('studiora_all_users',JSON.stringify(users));
+    }
+  } catch(e){}
+}
+
+
 function saveSession() {
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify(APP.user));
+    registerUserGlobally();
   } catch(e) {}
 }
 
@@ -2687,6 +3054,25 @@ function doLogin() {
   setTimeout(() => showScreen('screen-home'), 500);
 }
 
+
+function changePassword() {
+  const cur  = document.getElementById('pwd-current').value;
+  const nw   = document.getElementById('pwd-new').value;
+  const conf = document.getElementById('pwd-confirm').value;
+  if (!cur || !nw || !conf) { showToast('⚠️ Remplis tous les champs'); return; }
+  if (APP.user.pwdHash && APP.user.pwdHash !== simpleHash(cur)) {
+    showToast('❌ Mot de passe actuel incorrect'); return;
+  }
+  if (nw.length < 8) { showToast('⚠️ 8 caractères minimum'); return; }
+  if (!/[A-Za-z]/.test(nw) || !/[0-9]/.test(nw)) { showToast('⚠️ Mélange lettres et chiffres'); return; }
+  if (nw !== conf) { showToast('❌ Les mots de passe ne correspondent pas'); return; }
+  APP.user.pwdHash = simpleHash(nw);
+  saveSession();
+  document.getElementById('pwd-current').value = '';
+  document.getElementById('pwd-new').value = '';
+  document.getElementById('pwd-confirm').value = '';
+  showToast('✅ Mot de passe changé avec succès !');
+}
 function doLogout() {
   localStorage.removeItem(SESSION_KEY);
   APP.chatHistory = [];
@@ -2702,6 +3088,7 @@ function doLogout() {
 // avant d'appeler showScreen → updateGlobalNav
 function _runInit() {
   try {
+    checkPaymentReturn();
     if (loadSession()) {
       SUBJECTS = getSubjects();
       try { const prefs = getPrefs(); if (prefs.dark) applyDark(true); } catch(e) {}
@@ -3631,6 +4018,8 @@ function applyAppLang(lang) {
   // Persister la langue
   try { localStorage.setItem('studiora_lang', lang); } catch(e) {}
   APP_LANG = lang;
+  // Toast confirmation
+  showToast('✅ Langue changée !');
   // Supprimer le message "recharge nécessaire"
   const info = document.getElementById('app-lang-info');
   if (info) info.style.display = 'none';
