@@ -46,19 +46,20 @@ workflows:
       cocoapods: default
     scripts:
       - name: Install deps
-        script: npm install
-      - name: Install Capacitor iOS
+        script: npm install @capacitor/ios@^8.4.0 && npm install
+      - name: Add iOS platform
         script: |
-          # S'assurer que @capacitor/ios est installé
-          npm install @capacitor/ios@^8.4.0 || true
+          # Supprimer l'ancien dossier ios s'il existe mais est incomplet
+          if [ ! -f ios/App/Podfile ]; then
+            rm -rf ios
+            npx cap add ios
+          fi
       - name: Sync Capacitor iOS
-        script: |
-          npx cap add ios || true
-          npx cap sync ios
+        script: npx cap sync ios
       - name: Install CocoaPods
         script: |
           cd ios/App
-          pod install
+          pod install --repo-update
       - name: Build IPA
         script: |
           xcodebuild \
