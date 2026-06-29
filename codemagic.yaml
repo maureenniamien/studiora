@@ -49,21 +49,26 @@ workflows:
         script: npm install @capacitor/ios@^8.4.0 && npm install
       - name: Add iOS platform
         script: |
-          # Supprimer l'ancien dossier ios s'il existe mais est incomplet
-          if [ ! -f ios/App/Podfile ]; then
-            rm -rf ios
-            npx cap add ios
-          fi
-      - name: Sync Capacitor iOS
-        script: npx cap sync ios
+          rm -rf ios
+          npx cap add ios
+          npx cap sync ios
+          # Trouver le Podfile et noter son chemin
+          echo "=== Structure ios ==="
+          find ios -name "Podfile" 2>/dev/null || echo "Podfile non trouvé"
+          find ios -name "*.xcworkspace" 2>/dev/null || echo "xcworkspace non trouvé"
       - name: Install CocoaPods
         script: |
-          cd ios/App
+          # Trouver le dossier contenant le Podfile
+          PODFILE_DIR=$(dirname $(find ios -name "Podfile" | head -1))
+          echo "Podfile trouvé dans: $PODFILE_DIR"
+          cd "$PODFILE_DIR"
           pod install --repo-update
       - name: Build IPA
         script: |
+          WORKSPACE=$(find ios -name "*.xcworkspace" | head -1)
+          echo "Workspace: $WORKSPACE"
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            -workspace "$WORKSPACE" \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
@@ -72,11 +77,12 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
+          PODFILE_DIR=$(dirname $(find ios -name "Podfile" | head -1))
           xcodebuild \
             -exportArchive \
             -archivePath build/App.xcarchive \
             -exportPath build/ipa \
-            -exportOptionsPlist ios/App/exportOptions.plist \
+            -exportOptionsPlist "$PODFILE_DIR/../exportOptions.plist" \
             || true
     artifacts:
       - build/App.xcarchive
