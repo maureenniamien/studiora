@@ -4114,14 +4114,13 @@ function applyAppLang(lang) {
     if (t[key] !== undefined) el.placeholder = t[key];
   });
 
-  // Re-render ecran actif
+  // Re-render ecran actif (seulement les ecrans qui ont une fonction de rendu)
   try {
     const activeScreen = document.querySelector('.screen:not(.hidden)');
     if (activeScreen) {
       const sid = activeScreen.id;
-      if (sid === 'screen-home') renderHome();
-      if (sid === 'screen-chat') renderChat();
-      if (sid === 'screen-profile') renderProfile();
+      if (sid === 'screen-home' && typeof renderHome === 'function') renderHome();
+      if (sid === 'screen-profile' && typeof renderProfile === 'function') renderProfile();
     }
   } catch(e) {}
 
@@ -4133,7 +4132,8 @@ function applyAppLang(lang) {
 
 function initAppLang() {
  const lang = APP_LANG;
- applyAppLang(lang);
+ // Au demarrage, appliquer seulement les traductions statiques (pas de re-render des ecrans)
+ try { applyAppLang(lang); } catch(e) { console.warn('initAppLang error:', e.message); }
  // Highlight le bouton actif dans le profil
  const btns = document.querySelectorAll('.app-lang-btn');
  const langMap = ['fr','en','es','ar','pt','de'];
