@@ -343,7 +343,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="display:flex;align-items:center;gap:10px">
  <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:12px;padding:7px 12px;display:flex;align-items:center;gap:5px;cursor:pointer" onclick="showToast(' ' + APP.user.streak + ' jour' + (APP.user.streak > 1 ? 's' : '') + ' de suite ! Continue !')">
- 
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--amber)" stroke="none"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c2 2 3 5 3 7a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 1.5 1.5 2 2 2 0-3-1-5-1-7 0 0 1 0 1 0z"/></svg>
  <span style="font-size:13px;font-weight:700;color:var(--amber)" id="streak-count">7</span>
  </div>
  <div onclick="showScreen('screen-profile')" style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;cursor:pointer" id="home-avatar">M</div>
@@ -386,6 +386,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <h3 style="font-size:16px;font-weight:700" id="subjects-title">Mes matières</h3>
  <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" id="subjects-see-all">Tout voir</span>
  </div>
+ <div id="subjects-list" style="display:flex;flex-direction:column;gap:10px"></div>
  </div>
  
  <!-- Conseil du jour -->
@@ -453,6 +454,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-bottom:16px">
  <label class="field-label">Matière</label>
+ <div id="quiz-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
  <div style="margin-bottom:16px">
  <label class="field-label">Niveau de difficulté</label>
@@ -498,6 +500,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div class="scroll-body" style="padding:20px;flex:1;min-height:0">
  <p style="font-size:16px;font-weight:600;line-height:1.55;margin-bottom:20px" id="quiz-question">Chargement...</p>
+ <div id="quiz-options" style="display:flex;flex-direction:column;gap:10px"></div>
  <div id="quiz-explanation" style="display:none;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px;margin-top:4px">
  <p style="font-size:12px;font-weight:700;color:var(--em);margin-bottom:4px"> Explication</p>
  <p style="font-size:13px;color:var(--text2);line-height:1.6" id="quiz-expl-text"></p>
@@ -511,9 +514,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <!-- Résultats quiz -->
  <div id="quiz-results" style="display:none;flex:1;overflow-y:auto;padding:32px 20px;text-align:center">
+ <div style="font-size:56px;margin-bottom:6px" id="result-emoji"></div>
  <h3 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px" id="result-title">Excellent !</h3>
  <p style="color:var(--text2);font-size:14px;margin-bottom:6px" id="result-score"></p>
  <p style="color:var(--text3);font-size:12px;margin-bottom:28px" id="result-msg"></p>
+ <div id="result-details" style="text-align:left;margin-bottom:24px"></div>
  <div style="display:flex;gap:10px">
  <button class="btn-outline" onclick="restartQuiz()" style="flex:1">Recommencer</button>
  <button class="btn-em" onclick="showScreen('screen-home')" style="flex:1">Accueil</button>
@@ -539,6 +544,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-bottom:24px">
  <label class="field-label">Matière</label>
+ <div id="fc-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
  <button class="btn-em" id="gen-fc-btn" onclick="generateFlashcards()" style="background:linear-gradient(135deg,var(--amber),#E8920A);box-shadow:0 4px 18px rgba(196,122,11,.3)">
  <span id="fc-btn-text"> Générer les flashcards</span>
@@ -626,6 +632,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="resetUpload()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Nouveau</button>
  </div>
  </div>
+ <div id="analysis-result" style="font-size:13px;color:var(--text2);line-height:1.65;margin-top:10px"></div>
  <button class="btn-em" onclick="continueInChat()" style="margin-top:10px;width:100%"> Continuer avec le coach IA →</button>
  </div>
  </div>
@@ -653,29 +660,31 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- Graphe semaine -->
  <div class="card" style="margin-bottom:14px">
  <div style="font-size:14px;font-weight:700;margin-bottom:16px">Sessions cette semaine</div>
- <div style="display:flex;gap:6px">
- <div class="week-day" style="flex:1;align-items:center">
- <div style="font-size:10px;color:var(--text3)">L</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">M</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">M</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">J</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">V</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">S</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">D</div></div>
+ <div id="week-chart" style="display:flex;gap:6px;height:80px"></div>
+ <div style="display:flex;gap:6px;margin-top:6px">
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">L</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">M</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">M</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">J</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">V</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">S</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">D</div>
  </div>
  </div>
 
  <!-- Par matière -->
  <div class="card" style="margin-bottom:14px">
  <div style="font-size:14px;font-weight:700;margin-bottom:14px">Score par matière</div>
+ <div id="subject-scores"></div>
  </div>
 
  <!-- Objectifs -->
  <div class="card">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
  <div style="font-size:14px;font-weight:700">Objectifs de la semaine</div>
- <span class="badge badge-em">3/4</span>
+ <span class="badge badge-em" id="goals-count">3/4</span>
  </div>
+ <div id="goals-list"></div>
  </div>
  </div>
 </div>
@@ -706,8 +715,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  </div>
 
+ <div id="profile-usage" style="margin-bottom:20px"></div>
+
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Préférences</h3>
+ <div id="prefs-list"></div>
  </div>
 
  <!-- ── Changer de niveau ── -->
@@ -738,6 +750,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Mes matières actives</h3>
+ <div id="profile-subjects"></div>
  </div>
 
  <!-- Langue -->
@@ -979,6 +992,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <label class="field-label" style="margin-bottom:0"> Mes Cours importés</label>
  <button onclick="showScreen('screen-upload')" style="font-size:11px;color:var(--em);font-weight:600;background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Importer</button>
  </div>
+ <div id="courses-list-travaux"></div>
  </div>
 
  <!-- Éditeur Média -->
@@ -1036,6 +1050,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <div id="screen-terminal" class="screen hidden" style="background:#0D0D0D;display:flex;flex-direction:column">
  <div style="padding:max(env(safe-area-inset-top,0px)+12px,44px) 12px 10px;background:#1A1A1A;border-bottom:1px solid #333;display:flex;align-items:center;gap:10px;flex-shrink:0">
  <button onclick="goBack()" style="background:#2A2A2A;border:1px solid #444;border-radius:10px;padding:7px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">← Retour</button>
+ <span id="terminal-lang-icon" style="flex-shrink:0"></span>
  <span style="font-size:14px;font-weight:700;color:#fff;flex:1" id="terminal-title">Terminal</span>
  <button onclick="clearTerminal()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:5px 10px;color:#aaa;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap"> Clear</button>
  </div>
@@ -1048,7 +1063,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <!-- PANEL SORTIE -->
  <div id="term-panel-output" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+ <div id="terminal-output" class="scroll-body" style="flex:1;padding:12px;font-family:'Courier New',monospace;font-size:12px;color:#e0e0e0"></div>
  <!-- Autocomplétion -->
+ <div id="term-autocomplete" style="display:none;gap:6px;overflow-x:auto;padding:6px 10px;background:#111;border-top:1px solid #222;flex-shrink:0"></div>
  <!-- Input ligne -->
  <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
  <span style="color:#00ff41;font-family:monospace;font-size:14px;flex-shrink:0" id="terminal-prompt">$</span>
@@ -1062,6 +1079,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- PANEL ÉDITEUR -->
  <div id="term-panel-editor" style="flex:1;display:none;flex-direction:column;overflow:hidden">
  <!-- Autocomplétion éditeur -->
+ <div id="editor-autocomplete" style="display:flex;gap:6px;overflow-x:auto;padding:6px 10px;background:#111;border-bottom:1px solid #222;flex-shrink:0"></div>
  <!-- Zone de code -->
  <textarea id="terminal-editor" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
  style="flex:1;background:#0D0D0D;border:none;color:#e0e0e0;font-family:'Courier New',monospace;font-size:13px;line-height:1.7;padding:12px;outline:none;resize:none;-webkit-overflow-scrolling:touch;tab-size:2"
@@ -1093,8 +1111,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- TAB STANDARD -->
  <div id="calc-panel-std" class="scroll-body" style="padding:12px 14px 100px;flex:1">
  <div style="background:#1a1a2e;border-radius:14px;padding:16px;margin-bottom:12px;text-align:right">
+ <div id="calc-history" style="font-size:12px;color:#888;min-height:16px"></div>
  <div style="font-size:30px;font-weight:700;color:#fff;min-height:42px;word-break:break-all" id="calc-display">0</div>
  </div>
+ <div id="calc-log" style="font-size:11px;color:var(--text3);margin-bottom:10px;max-height:80px;overflow-y:auto"></div>
  <!-- Fonctions scientifiques row 1 -->
  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px">
  <button onclick="calcInput('Math.sin(')" class="calc-btn calc-fn">sin</button>
@@ -1194,8 +1214,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <button class="btn-em" onclick="searchDict()"> Rechercher</button>
  </div>
+ <div id="dict-result" style="display:none;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6;color:var(--text2);white-space:pre-wrap"></div>
  <div style="margin-top:16px">
  <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">HISTORIQUE</div>
+ <div id="dict-history" style="display:flex;flex-direction:column;gap:8px"></div>
  </div>
  </div>
 </div>
@@ -1237,6 +1259,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-top:16px">
  <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">MES DIAGRAMMES SAUVEGARDÉS</div>
+ <div id="saved-diagrams"></div>
  </div>
  </div>
 </div>
@@ -1330,6 +1353,19 @@ function getWeekData() {
 }
 
 // ── DATA ──
+// Initiales d'une matière (ex: "Bases de données" -> "BD", "Java" -> "Jav", "SVT" -> "SVT")
+function subjInitials(name) {
+ if (!name) return '';
+ const words = name.replace(/[()]/g,'').trim().split(/[\s-]+/).filter(Boolean);
+ if (words.length === 1) {
+ const w = words[0];
+ // Déjà un acronyme court en majuscules (SVT, UML...) : on le garde tel quel
+ if (w.length <= 4 && w === w.toUpperCase()) return w;
+ return w.charAt(0).toUpperCase() + w.slice(1,3).toLowerCase();
+ }
+ return (words[0][0] + words[1][0]).toUpperCase();
+}
+
 const ALL_SUBJECTS = [
  { id:'math', icon:'', name:'Mathématiques', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
  { id:'physique',icon:'', name:'Physique-Chimie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
@@ -1616,7 +1652,7 @@ function renderHome() {
  const el = document.getElementById('subjects-list');
  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
  <div class="subject-chip" onclick="openSubjectChat('${s.id}')">
- <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${s.icon}</div>
+ <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</div>
  <div style="flex:1">
  <div style="font-size:13px;font-weight:700">${s.name}</div>
  <div style="font-size:11px;color:var(--text3);margin-top:2px">Appuie pour réviser avec l'IA</div>
@@ -1661,7 +1697,7 @@ function renderChat() {
  background:${APP.currentSubject===s.id ? s.color : 'var(--bg2)'};
  color:${APP.currentSubject===s.id ? '#fff' : 'var(--text2)'};
  border:1.5px solid ${APP.currentSubject===s.id ? s.color : 'var(--border)'}"
- >${s.icon} ${s.name}</button>`).join('');
+ >${s.name}</button>`).join('');
 
  renderSuggestions();
 
@@ -2073,7 +2109,7 @@ function renderQuizConfig() {
  <button onclick="selectQuizSubject(this,'${s.id}')" class="qsub-btn" data-id="${s.id}" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectQuiz===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
  background:${selectedSubjectQuiz===s.id?s.soft:'var(--bg2)'};
  border:1.5px solid ${selectedSubjectQuiz===s.id?s.color:'var(--border)'};
- color:${selectedSubjectQuiz===s.id?s.color:'var(--text2)'}">${s.icon} ${s.name}</button>`).join('');
+ color:${selectedSubjectQuiz===s.id?s.color:'var(--text2)'}">${s.name}</button>`).join('');
 }
 
 function selectQuizSubject(btn, id) {
@@ -2286,7 +2322,7 @@ function renderFCConfig() {
  <button onclick="selectFCSubject(this,'${s.id}')" class="fcsub-btn" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectFC===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
  background:${selectedSubjectFC===s.id?s.soft:'var(--bg2)'};
  border:1.5px solid ${selectedSubjectFC===s.id?s.color:'var(--border)'};
- color:${selectedSubjectFC===s.id?s.color:'var(--text2)'}">${s.icon} ${s.name}</button>`).join('');
+ color:${selectedSubjectFC===s.id?s.color:'var(--text2)'}">${s.name}</button>`).join('');
 }
 function selectFCSubject(btn,id){ selectedSubjectFC=id; renderFCConfig(); }
 
@@ -2573,7 +2609,7 @@ function renderProgress() {
  const subj=SUBJECTS.find(x=>x.id===s);
  return `<div style="margin-bottom:12px">
  <div style="display:flex;justify-content:space-between;margin-bottom:5px">
- <span style="font-size:13px;font-weight:500">${subj.icon} ${subj.name}</span>
+ <span style="font-size:13px;font-weight:500">${subj.name}</span>
  <span style="font-size:13px;font-weight:700;color:${subj.color}">${pct}%</span>
  </div>
  <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${subj.color}"></div></div>
@@ -2683,7 +2719,7 @@ function renderProfile() {
  document.getElementById('profile-subjects').innerHTML=SUBJECTS.slice(0,5).map(s=>`
  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
  <div style="display:flex;align-items:center;gap:10px">
- <span style="font-size:18px">${s.icon}</span>
+ <span style="width:28px;height:28px;border-radius:9px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</span>
  <span style="font-size:13px;font-weight:500">${s.name}</span>
  </div>
  <span class="badge" style="background:${s.soft};color:${s.color};border:1px solid ${s.border}">Active</span>
@@ -4365,6 +4401,9 @@ function mediaExtractAudio() {
 }
 
 </script>
+
+<!-- ── TOAST ── -->
+<div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- ── BOTTOM NAV GLOBALE ── -->
 <nav id="global-nav" class="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200">
