@@ -631,7 +631,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button class="btn-em" id="analyze-btn" onclick="analyzeCourse()"> Analyser avec l'IA</button>
  </div>
 
- <div id="upload-result" class="scroll-body" style="display:none;flex-direction:column;padding:0 20px 30px">
+ <div id="upload-result" class="scroll-body" style="display:none;flex-direction:column;padding:0 20px 100px">
  <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
  <span style="font-size:13px;font-weight:700;color:var(--em)"> Analyse terminée — cours sauvegardé</span>
@@ -3147,11 +3147,29 @@ async function registerUserInDatabase() {
  plan: APP.user.plan || 'free',
  prenom: APP.user.prenom || null,
  level: APP.user.level || null,
- filiere: APP.user.filiere || null
+ filiere: APP.user.filiere || null,
+ pwd_hash: APP.user.pwdHash || null
  })
  });
  } catch(e) {
  // Pas de connexion : le cache local prend le relais, on retentera à la prochaine session
+ }
+}
+
+// Cherche un compte dans Supabase par email (utilisé quand aucune session locale n'existe,
+// par ex. après réinstallation de l'app)
+async function findUserInDatabase(email) {
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=*&limit=1`, {
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return null;
+ const rows = await res.json();
+ if (!Array.isArray(rows) || !rows.length) return null;
+ const r = rows[0];
+ return { email: r.email, plan: r.plan, prenom: r.prenom, level: r.level, filiere: r.filiere, pwdHash: r.pwd_hash };
+ } catch(e) {
+ return null; // hors ligne ou erreur réseau
  }
 }
 
@@ -3182,13 +3200,18 @@ function getExistingSession(email) {
  return null;
 }
 
-function doLogin() {
+async function doLogin() {
  const email = document.getElementById('login-email').value.trim();
  const prenom = (document.getElementById('login-prenom')||{}).value.trim() || '';
  const pwd = (document.getElementById('login-pwd')||{}).value || '';
  if (!email) { showToast('! Entre ton email'); return; }
  if (!pwd) { showToast('! Entre ton mot de passe'); return; }
- const existing = getExistingSession(email);
+ let existing = getExistingSession(email);
+ if (!existing) {
+ // Pas de session locale (ex: app réinstallée) → on cherche le compte dans la base
+ showToast(' Vérification du compte...');
+ existing = await findUserInDatabase(email);
+ }
  if (existing) {
  // Compte existant : le mot de passe DOIT correspondre
  if (existing.pwdHash && existing.pwdHash !== simpleHash(pwd)) {
@@ -3246,6 +3269,7 @@ function doLogout() {
 function _runInit() {
  try {
  checkPaymentReturn();
+ try { initAppLang(); } catch(e) { console.warn('initAppLang error:', e.message); }
  if (loadSession()) {
  SUBJECTS = getSubjects();
  try { const prefs = getPrefs(); if (prefs.dark) applyDark(true); } catch(e) {}
@@ -4221,7 +4245,7 @@ function setAppLang(lang, btn) {
  if (info) info.style.display = 'none';
 }
 
-function applyAppLang(lang) {
+function applyAppLang(lang, silent) {
   if (typeof APP_TRANSLATIONS === 'undefined') return;
   const t = APP_TRANSLATIONS[lang] || APP_TRANSLATIONS['fr'];
   APP_LANG = lang;
@@ -4310,14 +4334,14 @@ function applyAppLang(lang) {
 
   const info = document.getElementById('app-lang-info');
   if (info) info.style.display = 'none';
-  try { showToast('✓ Langue changee !'); } catch(e) {}
+  if (!silent) { try { showToast('✓ Langue changée !'); } catch(e) {} }
 }
 
 
 function initAppLang() {
  const lang = APP_LANG;
  // Au demarrage, appliquer seulement les traductions statiques (pas de re-render des ecrans)
- try { applyAppLang(lang); } catch(e) { console.warn('initAppLang error:', e.message); }
+ try { applyAppLang(lang, true); } catch(e) { console.warn('initAppLang error:', e.message); }
  // Highlight le bouton actif dans le profil
  const btns = document.querySelectorAll('.app-lang-btn');
  const langMap = ['fr','en','es','ar','pt','de'];
