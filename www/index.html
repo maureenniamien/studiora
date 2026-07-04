@@ -62,6 +62,13 @@ html,body{height:100%;max-height:100%;width:100%;max-width:100%;background:var(-
 
 /* ── SCROLL ── */
 .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+
+/* ── SLIDERS (range) — rendu fiable sur WebView Android ── */
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:var(--border);outline:none;margin:10px 0}
+input[type="range"]::-webkit-slider-runnable-track{-webkit-appearance:none;height:6px;border-radius:3px;background:var(--border)}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--em);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);margin-top:-7px;cursor:pointer}
+input[type="range"]::-moz-range-track{height:6px;border-radius:3px;background:var(--border)}
+input[type="range"]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--em);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer}
 .scroll-body::-webkit-scrollbar{display:none}
 
 /* ── TYPOGRAPHY ── */
@@ -999,7 +1006,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="margin-bottom:20px">
  <div class="section-label"> ÉDITEUR MÉDIA</div>
  <div onclick="showScreen('screen-media')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer">
- <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"></div>
+ <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+ </div>
  <div style="flex:1">
  <div style="font-size:14px;font-weight:700">Éditeur Audio & Vidéo</div>
  <div style="font-size:12px;color:var(--text3)">Couper, fusionner, convertir, extraire</div>
@@ -1963,7 +1972,7 @@ function selectLevel(btn) { selectedLevel = (btn && btn.dataset && btn.dataset.v
 // ── EXTRACTION ET SANITIZE JSON IA ──
 function extractJsonBlock(raw) {
  // Retirer les blocs markdown ```json ... ```
- raw = raw.replace(/```json[\s\S]*?```/g, '').replace(/```[\s\S]*?```/g, '').trim();
+ raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
  // Trouver le premier { et le } correspondant (en comptant la profondeur)
  const start = raw.indexOf('{');
  if (start === -1) return '{}';
@@ -2004,6 +2013,30 @@ function sanitizeJsonStr(raw) {
  out += c;
  }
  return out;
+}
+
+// Répare un JSON tronqué (réponse IA coupée en plein milieu d'un tableau d'objets)
+// en retirant le dernier élément incomplet et en refermant proprement les structures.
+function repairTruncatedJson(raw, arrayKey) {
+ try { return JSON.parse(raw); } catch(e) {}
+ // Coupe au dernier objet complet "}" du tableau, puis referme
+ const lastComplete = raw.lastIndexOf('},');
+ if (lastComplete === -1) throw new Error('JSON invalide — Réessaie.');
+ let trimmed = raw.slice(0, lastComplete + 1);
+ // Compte les crochets/accolades ouverts restants et les referme
+ let openBraces = 0, openBrackets = 0, inStr = false, esc = false;
+ for (const c of trimmed) {
+ if (esc) { esc = false; continue; }
+ if (c === '\\') { esc = true; continue; }
+ if (c === '"') { inStr = !inStr; continue; }
+ if (inStr) continue;
+ if (c === '{') openBraces++;
+ else if (c === '}') openBraces--;
+ else if (c === '[') openBrackets++;
+ else if (c === ']') openBrackets--;
+ }
+ trimmed += ']'.repeat(Math.max(0,openBrackets)) + '}'.repeat(Math.max(0,openBraces));
+ return JSON.parse(trimmed);
 }
 
 // ── UTILITAIRES MOT DE PASSE ──
@@ -2349,7 +2382,7 @@ async function generateFlashcards() {
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
  headers:{'Content-Type':'application/json',},
- body:JSON.stringify({model:MODEL,max_tokens:1200,system:'Tu es un generateur de flashcards JSON. Reponds UNIQUEMENT avec du JSON valide, format exact: {"cards":[{"front":"...","back":"..."}]}. Aucun texte avant ou apres. Aucun markdown. Aucune apostrophe ou guillemet dans les valeurs JSON, utilise des synonymes si necessaire.',messages:[{role:'user',content:prompt}]})
+ body:JSON.stringify({model:MODEL,max_tokens:2200,system:'Tu es un generateur de flashcards JSON. Reponds UNIQUEMENT avec du JSON valide, format exact: {"cards":[{"front":"...","back":"..."}]}. Aucun texte avant ou apres. Aucun markdown. Aucune apostrophe ou guillemet dans les valeurs JSON, utilise des synonymes si necessaire.',messages:[{role:'user',content:prompt}]})
  });
  if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
  const data=await res.json();
@@ -2360,11 +2393,15 @@ async function generateFlashcards() {
  let parsed;
  try { parsed=JSON.parse(raw); }
  catch(je) {
- // Tentative de réparation basique
+ // Tentative de réparation basique (apostrophes mal échappées)
  try {
  const fixedRaw = raw.replace(/([{,]\s*")([^"]+)(":\s*")([^"]*?)(")/g, (m,a,b,c,d,e)=>a+b+c+d.replace(/"/g,"'")+e);
  parsed=JSON.parse(fixedRaw);
- } catch(je2) { throw new Error('JSON invalide — Réessaie.'); }
+ } catch(je2) {
+ // Dernier recours : réponse tronquée par l'IA, on repare en coupant proprement
+ try { parsed=repairTruncatedJson(raw); }
+ catch(je3) { throw new Error('JSON invalide — Réessaie.'); }
+ }
  }
  APP.flashcards=parsed.cards||[];
  APP.fcIndex=0; APP.fcFlipped=false;
@@ -3324,7 +3361,7 @@ function renderTermSuggestions() {
  ac.style.display = 'flex';
  ac.innerHTML = suggestions.slice(0, 10).map(s => {
  const label = s.split('\n')[0].trim();
- const safe = s.replace(/\\/g,'\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
+ const safe = s.replace(/\\/g,'\\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
  return `<button onclick="insertSuggestion('${safe}')" style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:6px;padding:5px 10px;color:#888;font-size:11px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;transition:all .15s" onmousedown="this.style.background='#2a2a2a';this.style.color='#0f0'" onmouseup="this.style.background='#1e1e1e';this.style.color='#888'">${escHtml(label)}</button>`;
  }).join('');
 }
@@ -3336,7 +3373,7 @@ function renderEditorSuggestions() {
  if (!ac) return;
  ac.innerHTML = suggestions.slice(0, 12).map(s => {
  const label = s.split('\n')[0].trim();
- const safe = s.replace(/\\/g,'\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
+ const safe = s.replace(/\\/g,'\\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
  return `<button onclick="insertEditorSnippet('${safe}')" style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:6px;padding:5px 10px;color:#888;font-size:11px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;transition:all .15s">${escHtml(label)}</button>`;
  }).join('');
 }
@@ -3892,7 +3929,7 @@ async function generateDiagram() {
 Fournis le code PlantUML complet (commence par @startuml, termine par @enduml) et explique brièvement les choix de conception. Adapté au contexte académique africain et à la filière concernée.`;
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',headers:{'Content-Type':'application/json',},
- body:JSON.stringify({model:MODEL,max_tokens:1200,system:'Tu es un professeur expert qui génère des flashcards éducatives en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
+ body:JSON.stringify({model:MODEL,max_tokens:2200,system:'Tu es un professeur expert en modélisation UML qui génère des diagrammes PlantUML clairs et pédagogiques.',messages:[{role:'user',content:prompt}]})
  });
  const data = await res.json();
  currentDiagCode = (data.content && data.content[0] ? data.content[0].text : '') || 'Erreur';
