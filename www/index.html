@@ -1076,7 +1076,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- Autocomplétion -->
  <div id="term-autocomplete" style="display:none;gap:6px;overflow-x:auto;padding:6px 10px;background:#111;border-top:1px solid #222;flex-shrink:0"></div>
  <!-- Input ligne -->
- <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
+ <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
  <span style="color:#00ff41;font-family:monospace;font-size:14px;flex-shrink:0" id="terminal-prompt">$</span>
  <input id="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
  style="flex:1;background:transparent;border:none;color:#00ff41;font-family:'Courier New',monospace;font-size:14px;outline:none;caret-color:#00ff41"
@@ -1095,7 +1095,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  placeholder="// Écris ton code ici...
 // Appuie sur Exécuter pour voir le résultat"></textarea>
  <!-- Barre inférieure éditeur -->
- <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
+ <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
  <button onclick="insertTab()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:8px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:monospace">⇥ Tab</button>
  <button onclick="clearEditor()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:8px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"></button>
  <button onclick="runEditorCode()" style="background:linear-gradient(135deg,#00b894,#00cec9);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:6px">
@@ -1629,7 +1629,7 @@ function onScreenEnter(id) {
  if(id==='screen-flashcards') renderFCConfig();
  if(id==='screen-progress') renderProgress();
  if(id==='screen-profile') renderProfile();
- if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); }
+ if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); }
  if(id==='screen-diagrams') renderSavedDiagrams();
 }
 
@@ -2588,6 +2588,7 @@ async function analyzeCourse() {
  if (saved.length > 10) saved.pop();
  setCoursesStorage(saved);
  renderCoursesInTravaux();
+ saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), result, selectedAnalysis);
  showToast(' Cours "'+title+'" sauvegardé !');
  } catch(e2) { showToast('! Cours analysé mais non sauvegardé (stockage plein ?).'); }
  } catch(e) {
@@ -2798,6 +2799,52 @@ function setCoursesStorage(data) {
  const json = JSON.stringify(data);
  try { localStorage.setItem('studiora_courses', json); } catch(e) {}
  try { sessionStorage.setItem('studiora_courses', json); } catch(e) {}
+}
+
+// Enregistre le cours importé dans Supabase, lié au compte qui l'a importé
+async function saveCourseToDatabase(title, subject, snippet, fullText, result, analysis) {
+ if (!APP.user || !APP.user.email) return;
+ try {
+ await fetch(`${SUPABASE_URL}/rest/v1/courses`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+ 'Prefer': 'return=minimal'
+ },
+ body: JSON.stringify({
+ user_email: APP.user.email,
+ title, subject, snippet,
+ full_text: fullText,
+ result, analysis
+ })
+ });
+ } catch(e) {
+ // Pas de connexion : le cache local (déjà sauvegardé) prend le relais
+ }
+}
+
+// Récupère les cours du compte connecté depuis Supabase, et complète le cache local
+async function syncCoursesFromDatabase() {
+ if (!APP.user || !APP.user.email) return;
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/courses?user_email=eq.${encodeURIComponent(APP.user.email)}&order=created_at.desc&limit=10`, {
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return;
+ const rows = await res.json();
+ if (!Array.isArray(rows) || !rows.length) return;
+ const mapped = rows.map(r => ({
+ id: r.id, title: r.title, subject: r.subject, snippet: r.snippet,
+ fullText: r.full_text, result: r.result, analysis: r.analysis,
+ date: new Date(r.created_at).toLocaleDateString('fr-FR')
+ }));
+ setCoursesStorage(mapped);
+ renderCoursesInTravaux();
+ } catch(e) {
+ // Hors ligne : on garde ce qui est déjà en cache local
+ }
 }
 
 function renderCoursesInTravaux() {
