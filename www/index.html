@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Studiora — Coach IA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.2/mammoth.browser.min.js"></script>
 <style>
 :root {
  --bg: #F7F6F2;
@@ -598,7 +599,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div class="upload-zone" onclick="document.getElementById('file-input').click()" id="drop-zone" style="margin-bottom:16px">
  <div style="font-size:14px;font-weight:700;margin-bottom:4px">Importer ton cours</div>
  <div style="font-size:12px;color:var(--text3)">Clique ou glisse un fichier PDF · TXT · Image</div>
- <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.png,.jpg,.jpeg" onchange="handleFile(this)">
+ <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.md,.csv,.docx,.png,.jpg,.jpeg,.webp" onchange="handleFile(this)">
  </div>
  <div style="text-align:center;margin-bottom:16px">
  <span style="font-size:12px;color:var(--text3)">— ou colle ton texte directement —</span>
@@ -1211,15 +1212,15 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="margin-bottom:12px">
  <input class="input" id="dict-word" placeholder="Entrer un mot ou une phrase à définir..." style="margin-bottom:8px">
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
- <button onclick="selectDictMode(this,'define')" class="dict-mode-btn" style="padding:8px 10px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Définir</button>
- <button onclick="selectDictMode(this,'translate_en')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">EN→FR</button>
- <button onclick="selectDictMode(this,'translate_fr')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">FR→EN</button>
+ <button onclick="selectDictMode(this,'define')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Définir<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--em)"></span></button>
+ <button onclick="selectDictMode(this,'translate_en')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 20 14" style="flex-shrink:0;border-radius:2px"><rect width="20" height="14" fill="#00247d"/><path d="M0 0L20 14M20 0L0 14" stroke="#fff" stroke-width="2.4"/><path d="M0 0L20 14M20 0L0 14" stroke="#cf142b" stroke-width="1.2"/><path d="M10 0V14M0 7H20" stroke="#fff" stroke-width="4"/><path d="M10 0V14M0 7H20" stroke="#cf142b" stroke-width="2.2"/></svg>EN→FR<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_fr')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="1" height="2" fill="#0055A4"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#EF4135"/></svg>FR→EN<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
 
- <button onclick="selectDictMode(this,'translate_es')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">ES→ES</button>
- <button onclick="selectDictMode(this,'translate_ar')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">AR→AR</button>
- <button onclick="selectDictMode(this,'translate_de')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">DE→DE</button>
- <button onclick="selectDictMode(this,'translate_pt')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">PT→PT</button>
- <button onclick="selectDictMode(this,'translate_zh')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">→ZH</button>
+ <button onclick="selectDictMode(this,'translate_es')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="2" fill="#AA151B"/><rect width="3" height="1" y="0.5" fill="#F1BF00"/></svg>FR→ES<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_ar')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="0.667" fill="#007A3D"/><rect width="3" height="0.667" y="0.667" fill="#fff"/><rect width="3" height="0.667" y="1.333" fill="#000"/><polygon points="0,0 1,1 0,2" fill="#CE1126"/></svg>FR→AR<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_de')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 3" style="flex-shrink:0;border-radius:2px"><rect width="3" height="1" fill="#000"/><rect width="3" height="1" y="1" fill="#DD0000"/><rect width="3" height="1" y="2" fill="#FFCE00"/></svg>FR→DE<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_pt')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 5 3" style="flex-shrink:0;border-radius:2px"><rect width="2" height="3" fill="#046A38"/><rect width="3" height="3" x="2" fill="#DA291C"/></svg>FR→PT<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_zh')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="2" fill="#DE2910"/><polygon points="0.5,0.4 0.6,0.7 0.9,0.7 0.65,0.9 0.75,1.2 0.5,1.0 0.25,1.2 0.35,0.9 0.1,0.7 0.4,0.7" fill="#FFDE00"/></svg>FR→ZH<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
  </div>
  <button class="btn-em" onclick="searchDict()"> Rechercher</button>
  </div>
@@ -2488,11 +2489,25 @@ function clearFileInput() {
 function handleFile(input) {
  const file=input.files[0];
  if(!file) return;
- if(file.type==='text/plain') {
+ const name=file.name.toLowerCase();
+ if(file.type==='text/plain' || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.csv')) {
  const reader=new FileReader();
  reader.onload=e=>{ document.getElementById('course-text').value=e.target.result; showFileLoaded(file.name,'Texte extrait — prêt pour analyse'); };
  reader.readAsText(file);
- } else if(file.type==='application/pdf') {
+ } else if(name.endsWith('.docx')) {
+ showToast(' Lecture du document Word...');
+ const reader=new FileReader();
+ reader.onload=async e=>{
+ try {
+ if (typeof mammoth === 'undefined') { showToast(' Librairie Word indisponible hors-ligne.'); return; }
+ const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+ const text = (result && result.value) ? result.value.trim() : '';
+ if(text){ document.getElementById('course-text').value=text; showFileLoaded(file.name,'Document Word extrait — prêt pour analyse'); }
+ else showToast('! Document Word vide ou illisible');
+ } catch(err){ showToast(' Erreur lecture du document Word'); }
+ };
+ reader.readAsArrayBuffer(file);
+ } else if(file.type==='application/pdf' || name.endsWith('.pdf')) {
  showToast(' Lecture du PDF...');
  const reader=new FileReader();
  reader.onload=async e=>{
@@ -2513,13 +2528,13 @@ function handleFile(input) {
  }catch(err){showToast(' Erreur lecture PDF');}
  };
  reader.readAsDataURL(file);
- } else if(file.type.startsWith('image/')) {
+ } else if(file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/.test(name)) {
  showToast(' Lecture de l\'image...');
  const reader=new FileReader();
  reader.onload=async e=>{
  try {
  const base64=e.target.result.split(',')[1];
- const mime=file.type;
+ const mime=file.type || 'image/jpeg';
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
@@ -2536,7 +2551,7 @@ function handleFile(input) {
  };
  reader.readAsDataURL(file);
  } else {
- showToast(' Fichier détecté : '+file.name+' — colle le texte manuellement si besoin.');
+ showToast(' Format non pris en charge pour "'+file.name+'" — colle le texte manuellement.');
  }
 }
 
@@ -3809,13 +3824,13 @@ function plotGraph() {
  .replace(/([Xx])\^(\d+)/g,'Math.pow(x,$2)') // x^n → Math.pow(x,n)
  .replace(/\^(\d+)/g,'**$1') // ^n → **n
  .replace(/\b([Xx])\b/g,'x') // X → x (casse)
- .replace(/\bln\(/g,'Math.log(') // ln( → Math.log(
- .replace(/\blog\(/g,'Math.log10(') // log( → Math.log10(
- .replace(/\bsqrt\(/g,'Math.sqrt(') // sqrt( → Math.sqrt(
- .replace(/\babs\(/g,'Math.abs(') // abs( → Math.abs(
- .replace(/\bsin\(/g,'Math.sin(')
- .replace(/\bcos\(/g,'Math.cos(')
- .replace(/\btan\(/g,'Math.tan(')
+ .replace(/(?<!Math\.)\bln\(/g,'Math.log(') // ln( → Math.log(
+ .replace(/(?<!Math\.)\blog\(/g,'Math.log10(') // log( → Math.log10(
+ .replace(/(?<!Math\.)\bsqrt\(/g,'Math.sqrt(') // sqrt( → Math.sqrt(
+ .replace(/(?<!Math\.)\babs\(/g,'Math.abs(') // abs( → Math.abs(
+ .replace(/(?<!Math\.)\bsin\(/g,'Math.sin(')
+ .replace(/(?<!Math\.)\bcos\(/g,'Math.cos(')
+ .replace(/(?<!Math\.)\btan\(/g,'Math.tan(')
  .replace(/\bpi\b/gi,'Math.PI') // pi → Math.PI
  .replace(/\be\b/g,'Math.E') // e → Math.E (isolé)
  .replace(/(\d)([Xx])/g,'$1*x') // 2x → 2*x
@@ -3894,8 +3909,12 @@ let dictMode = 'define';
 let dictSearchHistory = [];
 function selectDictMode(btn, mode) {
  dictMode = mode;
- document.querySelectorAll('.dict-mode-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
+ document.querySelectorAll('.dict-mode-btn').forEach(b=>{
+ b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';
+ const dot=b.querySelector('.dm-dot'); if(dot) dot.style.background='transparent';
+ });
  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+ const activeDot=btn.querySelector('.dm-dot'); if(activeDot) activeDot.style.background='var(--em)';
 }
 async function searchDict() {
  const word = document.getElementById('dict-word').value.trim();
@@ -3930,7 +3949,7 @@ async function searchDict() {
  }
 }
 function renderDictHistory() {
- const modeLabels = {define:'Définition',translate_en:'EN→FR',translate_fr:'FR→EN'};
+ const modeLabels = {define:'Définition',translate_en:'EN→FR',translate_fr:'FR→EN',translate_es:'FR→ES',translate_ar:'FR→AR',translate_de:'FR→DE',translate_pt:'FR→PT',translate_zh:'FR→ZH'};
  document.getElementById('dict-history').innerHTML = dictSearchHistory.map(h=>`
  <div onclick="document.getElementById('dict-word').value='${escHtml(h.word)}';searchDict()" style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
  <span style="font-size:13px;font-weight:500">${escHtml(h.word)}</span>
