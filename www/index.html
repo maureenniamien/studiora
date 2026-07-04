@@ -1057,7 +1057,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ TERMINAL IA ═══════════════════ -->
 <div id="screen-terminal" class="screen hidden" style="background:#0D0D0D;display:flex;flex-direction:column">
- <div style="padding:max(env(safe-area-inset-top,0px)+12px,44px) 12px 10px;background:#1A1A1A;border-bottom:1px solid #333;display:flex;align-items:center;gap:10px;flex-shrink:0">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 12px, 44px) 12px 10px;background:#1A1A1A;border-bottom:1px solid #333;display:flex;align-items:center;gap:10px;flex-shrink:0">
  <button onclick="goBack()" style="background:#2A2A2A;border:1px solid #444;border-radius:10px;padding:7px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">← Retour</button>
  <span id="terminal-lang-icon" style="flex-shrink:0"></span>
  <span style="font-size:14px;font-weight:700;color:#fff;flex:1" id="terminal-title">Terminal</span>
@@ -1973,13 +1973,20 @@ function selectLevel(btn) { selectedLevel = (btn && btn.dataset && btn.dataset.v
 function extractJsonBlock(raw) {
  // Retirer les blocs markdown ```json ... ```
  raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
- // Trouver le premier { et le } correspondant (en comptant la profondeur)
+ // Trouver le premier { et le } correspondant (en comptant la profondeur,
+ // en ignorant les accolades qui se trouvent à l'intérieur des chaînes —
+ // ex: un exemple de code ou un ensemble mathématique dans une réponse)
  const start = raw.indexOf('{');
  if (start === -1) return '{}';
- let depth = 0, end = -1;
+ let depth = 0, end = -1, inStr = false, esc = false;
  for (let i = start; i < raw.length; i++) {
- if (raw[i] === '{') depth++;
- else if (raw[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+ const c = raw[i];
+ if (esc) { esc = false; continue; }
+ if (c === '\\') { esc = true; continue; }
+ if (c === '"') { inStr = !inStr; continue; }
+ if (inStr) continue;
+ if (c === '{') depth++;
+ else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
  }
  if (end === -1) return raw.slice(start); // JSON tronqué, on essaie quand même
  raw = raw.slice(start, end + 1);
