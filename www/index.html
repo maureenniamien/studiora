@@ -3023,6 +3023,14 @@ function showUpgradeModal(reason) {
 }
 
 // Paiement manuel (Wave / Orange Money) — en attendant la déclaration d'entreprenant
+// Numéros de réception par réseau — modifie ces valeurs avec tes vrais numéros
+const PAYMENT_NUMBERS = {
+ wave: '0594495247',
+ orange: '0594495247',
+ mtn: '0594495247',
+ moov: '0594495247' // Moov laissé tel quel pour l'instant (pas de lancement d'app configuré)
+};
+
 function startPayment(plan) {
  document.getElementById('upgrade-overlay')?.remove();
  const amounts={'premium':1490,'vip':3490};
@@ -3042,23 +3050,40 @@ function startPayment(plan) {
  <p style="font-size:15px;font-weight:800;color:var(--em);letter-spacing:0.5px">${ref}</p>
  </div>
 
- <p style="font-size:12px;color:var(--text3);margin-bottom:14px;text-align:center">Choisis ton mode de paiement — l'app s'ouvre, envoie ${amount.toLocaleString()} FCFA au 07 02 30 68 08, puis reviens ici.</p>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:14px;text-align:center">Choisis ton mode de paiement — l'app s'ouvre, envoie ${amount.toLocaleString()} FCFA, puis reviens ici.</p>
 
  <div style="display:flex;flex-direction:column;gap:10px">
- <button onclick="openPaymentApp('wave','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Payer avec Wave</button>
- <button onclick="openPaymentApp('orange','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Payer avec Orange Money</button>
+ <button onclick="openPaymentApp('orange','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Orange Money</button>
+ <button onclick="openPaymentApp('mtn','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ffcc00;background:#fffdf0;color:#b8860b;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> MTN Mobile Money</button>
+ <button onclick="openPaymentApp('moov','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #0066cc;background:#f0f5ff;color:#0066cc;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Moov Money</button>
+ <button onclick="openPaymentApp('wave','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Wave</button>
  </div>
 
- <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;margin-top:14px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
+ <p style="font-size:11px;color:var(--text3);margin-top:14px;text-align:center">Numéro de réception : <strong>${PAYMENT_NUMBERS.wave}</strong></p>
+
+ <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;margin-top:10px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
  </div>`;
  document.body.appendChild(overlay);
 }
 
-// Ouvre l'app de paiement choisie, puis détecte automatiquement le retour
-// sur Studiora pour proposer la confirmation sans action manuelle en plus
+// Ouvre l'app de paiement choisie via son package Android (plus fiable qu'un schéma
+// d'URL deviné), puis détecte automatiquement le retour sur Studiora pour proposer
+// la confirmation sans action manuelle en plus
 function openPaymentApp(method, plan, ref, amount) {
- const schemes = { wave: 'wave://', orange: 'orangemoney://' };
- const fallbackUrl = method==='wave' ? 'https://www.wave.com/fr/' : 'https://orangemoney.orange.ci/';
+ const packages = {
+ wave: 'com.wave.personal',
+ orange: 'com.orange.myorange.oci',
+ mtn: 'mtnft.momo.consumer',
+ moov: null // package non confirmé — ouverture directe du site en attendant
+ };
+ const fallbackUrls = {
+ wave: 'https://www.wave.com/fr/',
+ orange: 'https://orangemoney.orange.ci/',
+ mtn: 'https://www.mtn.ci/momo/',
+ moov: 'https://moov-africa.ci/'
+ };
+ const pkg = packages[method];
+ const fallbackUrl = fallbackUrls[method];
 
  let returned = false;
  const onReturn = () => {
@@ -3071,10 +3096,17 @@ function openPaymentApp(method, plan, ref, amount) {
  };
  document.addEventListener('visibilitychange', onReturn);
 
- // Tente le scheme natif de l'app ; si rien ne se passe après 1.5s
- // (app non installée), on retombe sur le site web
+ if (!pkg) {
+ // Pas de package confirmé pour ce réseau : on ouvre directement le site
+ window.open(fallbackUrl, '_blank');
+ return;
+ }
+
+ // Lance l'app via son package Android (intent://) ; si elle n'est pas installée,
+ // le navigateur bascule automatiquement sur le fallback web au bout de 1.5s
  const before = Date.now();
- window.location.href = schemes[method];
+ const intentUrl = `intent://#Intent;package=${pkg};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+ window.location.href = intentUrl;
  setTimeout(() => {
  if (Date.now() - before < 2000 && document.visibilityState === 'visible') {
  window.open(fallbackUrl, '_blank');
