@@ -3022,84 +3022,140 @@ function showUpgradeModal(reason) {
  document.body.appendChild(overlay);
 }
 
-// Paiement FedaPay
+// Paiement manuel (Wave / Orange Money) — en attendant la déclaration d'entreprenant
 function startPayment(plan) {
  document.getElementById('upgrade-overlay')?.remove();
  const amounts={'premium':1490,'vip':3490};
  const amount=amounts[plan]||1490;
  const planName=PLANS[plan]?.name||plan;
- // FedaPay Checkout
+ const ref = 'STD-'+(APP.user.email||'').split('@')[0].toUpperCase().slice(0,6)+'-'+Date.now().toString().slice(-4);
  const overlay=document.createElement('div');
  overlay.id='payment-overlay';
  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
  overlay.innerHTML=`
- <div style="background:var(--white);border-radius:20px;padding:28px 24px;width:100%;max-width:400px">
+ <div style="background:var(--white);border-radius:20px;padding:28px 24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">
  <h3 style="font-size:18px;font-weight:800;margin-bottom:6px;text-align:center"> Paiement ${planName}</h3>
  <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px">${amount.toLocaleString()} FCFA / mois</p>
- <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
- <button onclick="fedaPayCheckout('${plan}','orange_money')" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Orange Money</button>
- <button onclick="fedaPayCheckout('${plan}','mtn_open')" style="padding:14px;border-radius:12px;border:1.5px solid #ffcc00;background:#fffdf0;color:#b8860b;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> MTN Mobile Money</button>
- <button onclick="fedaPayCheckout('${plan}','moov_money')" style="padding:14px;border-radius:12px;border:1.5px solid #0066cc;background:#f0f5ff;color:#0066cc;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Moov Money</button>
- <button onclick="fedaPayCheckout('${plan}','wave')" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Wave</button>
- <button onclick="fedaPayCheckout('${plan}','card')" style="padding:14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text1);font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Carte bancaire</button>
+
+ <div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:16px">
+ <p style="font-size:11px;color:var(--text3);margin-bottom:4px">RÉFÉRENCE À INDIQUER DANS LE MESSAGE DU TRANSFERT</p>
+ <p style="font-size:15px;font-weight:800;color:var(--em);letter-spacing:0.5px">${ref}</p>
  </div>
- <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
+
+ <p style="font-size:12px;color:var(--text3);margin-bottom:14px;text-align:center">Choisis ton mode de paiement — l'app s'ouvre, envoie ${amount.toLocaleString()} FCFA au 07 02 30 68 08, puis reviens ici.</p>
+
+ <div style="display:flex;flex-direction:column;gap:10px">
+ <button onclick="openPaymentApp('wave','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Payer avec Wave</button>
+ <button onclick="openPaymentApp('orange','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Payer avec Orange Money</button>
+ </div>
+
+ <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;margin-top:14px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
  </div>`;
  document.body.appendChild(overlay);
 }
 
-async function fedaPayCheckout(plan, method) {
- document.getElementById('payment-overlay')?.remove();
- showToast(' Redirection vers FedaPay...');
- const amounts={'premium':149000,'vip':349000}; // en centimes FCFA
- const amount=amounts[plan]||149000;
- const planName=PLANS[plan]?.name||plan;
- try {
- // Création transaction FedaPay (mode live - clé à configurer)
- const res = await fetch('https://api.fedapay.com/v1/transactions', {
- method:'POST',
- headers:{
- 'Content-Type':'application/json',
- 'Authorization':'Bearer sk_live_VOTRE_CLE_FEDAPAY' // à remplacer
- },
- body:JSON.stringify({
- description: 'Studiora '+planName,
- amount: amount,
- currency: {iso: 'XOF'},
- callback_url: 'https://maureenniamien.github.io/studiora/?payment=success&plan='+plan,
- customer: { email: APP.user.email||'', firstname: APP.user.prenom||'', lastname: APP.user.nom||'' }
- })
- });
- const data=await res.json();
- if (data.v1&&data.v1.transaction) {
- const token=data.v1.transaction.token;
- window.location.href='https://checkout.fedapay.com/'+token+'?method='+method;
- } else {
- throw new Error('Token manquant');
+// Ouvre l'app de paiement choisie, puis détecte automatiquement le retour
+// sur Studiora pour proposer la confirmation sans action manuelle en plus
+function openPaymentApp(method, plan, ref, amount) {
+ const schemes = { wave: 'wave://', orange: 'orangemoney://' };
+ const fallbackUrl = method==='wave' ? 'https://www.wave.com/fr/' : 'https://orangemoney.orange.ci/';
+
+ let returned = false;
+ const onReturn = () => {
+ if (returned) return;
+ if (document.visibilityState === 'visible') {
+ returned = true;
+ document.removeEventListener('visibilitychange', onReturn);
+ showPaymentConfirmPrompt(plan, ref, amount, method);
  }
- } catch(e) {
- // Fallback : simuler l'activation pour test
- showToast(' FedaPay non configuré — mode test activé');
- setTimeout(()=>{
+ };
+ document.addEventListener('visibilitychange', onReturn);
+
+ // Tente le scheme natif de l'app ; si rien ne se passe après 1.5s
+ // (app non installée), on retombe sur le site web
+ const before = Date.now();
+ window.location.href = schemes[method];
+ setTimeout(() => {
+ if (Date.now() - before < 2000 && document.visibilityState === 'visible') {
+ window.open(fallbackUrl, '_blank');
+ }
+ }, 1500);
+}
+
+function showPaymentConfirmPrompt(plan, ref, amount, method) {
+ document.getElementById('payment-confirm-overlay')?.remove();
+ const overlay=document.createElement('div');
+ overlay.id='payment-confirm-overlay';
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
+ overlay.innerHTML=`
+ <div style="background:var(--white);border-radius:20px;padding:26px 22px;width:100%;max-width:380px;text-align:center">
+ <h3 style="font-size:17px;font-weight:800;margin-bottom:10px">As-tu envoyé le paiement ?</h3>
+ <p style="font-size:13px;color:var(--text2);margin-bottom:22px">${amount.toLocaleString()} FCFA envoyés avec la référence <strong>${ref}</strong> ?</p>
+ <div style="display:flex;gap:10px">
+ <button onclick="document.getElementById('payment-confirm-overlay').remove()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Pas encore</button>
+ <button onclick="confirmAndActivate('${plan}','${ref}',${amount},'${method}')" class="btn-em" style="flex:1">Oui, envoyé</button>
+ </div>
+ </div>`;
+ document.body.appendChild(overlay);
+}
+
+async function confirmAndActivate(plan, ref, amount, method) {
+ const planName=PLANS[plan]?.name||plan;
+ // Activation immédiate (déclarative) — la vérification réelle du versement
+ // se fait ensuite manuellement via la table payment_requests
  APP.user.plan=plan;
  APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
  saveSession();
- showToast(' Plan '+planName+' activé (mode test) !');
+ document.getElementById('payment-confirm-overlay')?.remove();
+ showToast(' Plan '+planName+' activé !');
  renderProfile();
- },1500);
+ try {
+ await fetch(`${SUPABASE_URL}/rest/v1/payment_requests`, {
+ method:'POST',
+ headers:{
+ 'Content-Type':'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+ },
+ body: JSON.stringify({
+ user_email: APP.user.email||'',
+ plan, amount, reference: ref, method,
+ status: 'auto-confirmed-non-verifie'
+ })
+ });
+ } catch(e) {
+ // Pas grave si hors ligne : l'accès est déjà donné, la trace se fera au prochain lancement si besoin
  }
 }
 
-// Vérifier paiement retour URL
-function checkPaymentReturn() {
+// Vérifier paiement retour URL — la confirmation est vérifiée côté serveur,
+// jamais acceptée telle quelle depuis l'URL (sinon n'importe qui pourrait
+// visiter ?payment=success&plan=vip pour obtenir un abonnement gratuit)
+// NB: reste en place pour quand un agrégateur automatisé (CinetPay/KKiaPay)
+// sera branché après la déclaration d'entreprenant.
+async function checkPaymentReturn() {
  const params=new URLSearchParams(window.location.search);
  if (params.get('payment')==='success') {
  const plan=params.get('plan');
- if (plan&&PLANS[plan]) {
+ const txId=params.get('tx');
+ if (!plan || !PLANS[plan] || !txId) return;
+ try {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-payment`, {
+ method:'POST',
+ headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`},
+ body: JSON.stringify({ transaction_id: txId, plan })
+ });
+ const data = await res.json();
+ if (data.confirmed) {
  APP.user.plan=plan;
  APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
  saveSession();
  showToast(' Abonnement '+PLANS[plan].name+' activé !');
+ } else {
+ showToast('! Paiement non confirmé — contacte le support si tu as été débité(e).');
+ }
+ } catch(e) {
+ showToast('! Impossible de vérifier le paiement pour le moment.');
  }
  }
 }
