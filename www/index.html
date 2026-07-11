@@ -440,7 +440,15 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <!-- Input zone -->
  <div style="padding:8px 14px calc(env(safe-area-inset-bottom,0px) + 12px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0">
+ <div id="chat-attachment-preview" style="display:none;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 10px;margin-bottom:8px">
+ <span id="chat-attachment-name" style="flex:1;font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+ <button onclick="removeChatAttachment()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;flex-shrink:0"></button>
+ </div>
  <div style="display:flex;gap:9px;align-items:flex-end">
+ <input type="file" id="chat-file-input" accept="image/*,.pdf,.docx" style="display:none" onchange="handleChatAttachment(this)">
+ <button onclick="document.getElementById('chat-file-input').click()" title="Joindre un fichier" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center"></button>
+ <button onclick="generateImageFromChat()" title="Générer une image" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center"></button>
+ <button id="mic-btn" onclick="toggleVoiceInput()" title="Parler" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center"></button>
  <textarea id="chat-input" class="input" placeholder="Pose ta question..." rows="1" style="flex:1;resize:none;padding:12px 14px;border-radius:14px;min-height:46px;max-height:120px;overflow-y:auto" oninput="autoResize(this)"></textarea>
  <button id="send-btn" onclick="sendMessage()" class="btn-em" style="width:46px;height:46px;padding:0;border-radius:13px;flex-shrink:0;font-size:20px">→</button>
  </div>
@@ -628,7 +636,12 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="selectAnalysis(this,'flashcards')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left"> Crée des flashcards</button>
  </div>
  </div>
+ <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer">
+ <input type="checkbox" id="course-share-checkbox" checked style="width:16px;height:16px;accent-color:var(--em)">
+ <span style="font-size:12px;color:var(--text2)">Partager avec les étudiants de mon niveau et ma filière</span>
+ </label>
  <button class="btn-em" id="analyze-btn" onclick="analyzeCourse()"> Analyser avec l'IA</button>
+ <button onclick="saveDocWithoutAnalyzing()" style="width:100%;margin-top:8px;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Enregistrer sans analyser</button>
  </div>
 
  <div id="upload-result" class="scroll-body" style="display:none;flex-direction:column;padding:0 20px 100px">
@@ -1001,6 +1014,15 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="showScreen('screen-upload')" style="font-size:11px;color:var(--em);font-weight:600;background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Importer</button>
  </div>
  <div id="courses-list-travaux"></div>
+ </div>
+
+ <!-- Bibliothèque partagée (VIP) -->
+ <div style="margin-bottom:20px">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+ <label class="field-label" style="margin-bottom:0"> Bibliothèque de ma promotion</label>
+ <span class="badge" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:10px">VIP</span>
+ </div>
+ <div id="shared-docs-list"></div>
  </div>
 
  <!-- Éditeur Média -->
@@ -1630,7 +1652,7 @@ function onScreenEnter(id) {
  if(id==='screen-flashcards') renderFCConfig();
  if(id==='screen-progress') renderProgress();
  if(id==='screen-profile') renderProfile();
- if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); }
+ if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); renderSharedDocs(); }
  if(id==='screen-diagrams') renderSavedDiagrams();
 }
 
@@ -1784,10 +1806,14 @@ function renderMsgHTML(m) {
  if (m.role === 'user') {
  return `<div class="msg-row user"><div class="msg-bubble user">${escHtml(m.content)}</div></div>`;
  } else {
+ const b64 = btoa(unescape(encodeURIComponent(m.content||'')));
  return `<div class="msg-row">
  <div>
  <div class="msg-bubble ai">${formatAiMsg(m.content)}</div>
- <div class="msg-time">${m.time || ''}</div>
+ <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+ <div class="msg-time" style="margin-top:0">${m.time || ''}</div>
+ <button onclick="speakMessage('${b64}')" title="Écouter" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px"></button>
+ </div>
  </div>
  </div>`;
  }
@@ -1808,10 +1834,173 @@ function scrollChat() {
  setTimeout(()=>{ el.scrollTop = el.scrollHeight; }, 50);
 }
 
+// ── PIÈCES JOINTES DANS LE CHAT ──
+let chatAttachment = null; // { type:'image'|'document', mediaType, data, name } ou { type:'text', text, name } pour docx
+
+async function handleChatAttachment(input) {
+ const file = input.files[0];
+ if (!file) return;
+ const name = file.name.toLowerCase();
+
+ if (file.type.startsWith('image/')) {
+ const reader = new FileReader();
+ reader.onload = e => {
+ chatAttachment = { type:'image', mediaType: file.type, data: e.target.result.split(',')[1], name: file.name };
+ showChatAttachmentPreview(file.name);
+ };
+ reader.readAsDataURL(file);
+ } else if (file.type==='application/pdf' || name.endsWith('.pdf')) {
+ const reader = new FileReader();
+ reader.onload = e => {
+ chatAttachment = { type:'document', mediaType:'application/pdf', data: e.target.result.split(',')[1], name: file.name };
+ showChatAttachmentPreview(file.name);
+ };
+ reader.readAsDataURL(file);
+ } else if (name.endsWith('.docx')) {
+ showToast(' Lecture du document Word...');
+ const reader = new FileReader();
+ reader.onload = async e => {
+ try {
+ if (typeof mammoth === 'undefined') { showToast(' Librairie Word indisponible hors-ligne.'); return; }
+ const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+ const text = (result && result.value) ? result.value.trim() : '';
+ if (text) {
+ chatAttachment = { type:'text', text, name: file.name };
+ showChatAttachmentPreview(file.name);
+ } else showToast('! Document Word vide ou illisible');
+ } catch(err) { showToast(' Erreur lecture du document Word'); }
+ };
+ reader.readAsArrayBuffer(file);
+ } else {
+ showToast(' Format non pris en charge. Utilise une image, un PDF ou un .docx');
+ }
+ input.value = '';
+}
+
+function showChatAttachmentPreview(name) {
+ const el = document.getElementById('chat-attachment-preview');
+ document.getElementById('chat-attachment-name').textContent = ' ' + name;
+ el.style.display = 'flex';
+}
+
+function removeChatAttachment() {
+ chatAttachment = null;
+ document.getElementById('chat-attachment-preview').style.display = 'none';
+}
+
+// ── VOIX : reconnaissance (parler) et synthèse (écouter) ──
+let voiceRecognition = null;
+let isListening = false;
+
+function toggleVoiceInput() {
+ const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+ if (!SpeechRecognitionAPI) {
+ showToast('! Reconnaissance vocale indisponible sur cet appareil');
+ return;
+ }
+ const micBtn = document.getElementById('mic-btn');
+
+ if (isListening) {
+ if (voiceRecognition) voiceRecognition.stop();
+ return;
+ }
+
+ voiceRecognition = new SpeechRecognitionAPI();
+ voiceRecognition.lang = 'fr-FR';
+ voiceRecognition.interimResults = false;
+ voiceRecognition.maxAlternatives = 1;
+
+ voiceRecognition.onstart = () => {
+ isListening = true;
+ micBtn.style.background = 'var(--em)';
+ micBtn.style.color = '#fff';
+ micBtn.style.borderColor = 'var(--em)';
+ };
+ voiceRecognition.onresult = (event) => {
+ const transcript = event.results[0][0].transcript;
+ const input = document.getElementById('chat-input');
+ input.value = (input.value ? input.value + ' ' : '') + transcript;
+ autoResize(input);
+ };
+ voiceRecognition.onerror = (event) => {
+ if (event.error === 'not-allowed') showToast('! Autorise le micro dans les paramètres de l\'app');
+ else if (event.error === 'no-speech') showToast('! Rien entendu, réessaie');
+ else showToast('! Reconnaissance vocale indisponible (' + event.error + ')');
+ };
+ voiceRecognition.onend = () => {
+ isListening = false;
+ micBtn.style.background = 'var(--white)';
+ micBtn.style.color = 'var(--text2)';
+ micBtn.style.borderColor = 'var(--border)';
+ };
+
+ try { voiceRecognition.start(); }
+ catch(e) { showToast('! Impossible de démarrer le micro'); }
+}
+
+function speakMessage(b64text) {
+ if (!('speechSynthesis' in window)) { showToast('! Synthèse vocale indisponible sur cet appareil'); return; }
+ const text = decodeURIComponent(escape(atob(b64text)));
+ // Nettoie le markdown basique avant de lire à voix haute
+ const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
+ window.speechSynthesis.cancel(); // stoppe une lecture en cours avant d'en lancer une nouvelle
+ const utter = new SpeechSynthesisUtterance(clean);
+ utter.lang = 'fr-FR';
+ utter.rate = 1;
+ window.speechSynthesis.speak(utter);
+}
+
+
+async function generateImageFromChat() {
+ const input = document.getElementById('chat-input');
+ const prompt = input.value.trim();
+ if (!prompt) { showToast('! Décris l\'image que tu veux dans le champ de texte'); return; }
+ if (!canUseIA()) {
+ showUpgradeModal("Tu as utilisé tes " + getPlanLimits().ia_per_4h + " questions IA. Reset dans " + iaTimeLeft() + ".");
+ return;
+ }
+ incUsage('ia');
+ input.value = ''; autoResize(input);
+
+ const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+ const displayText = ' Génère une image : ' + prompt;
+ APP.chatHistory.push({ role:'user', content:displayText, time });
+
+ const el = document.getElementById('chat-messages');
+ if(el.querySelector('.display')) el.innerHTML = '';
+ el.innerHTML += renderMsgHTML({ role:'user', content:displayText });
+
+ const genId = 'imggen-' + Date.now();
+ el.innerHTML += `<div id="${genId}" class="msg-row">
+ <div class="msg-bubble ai" style="padding:12px 16px">
+ <div style="display:flex;gap:5px;align-items:center">
+ <div class="typing-dot"></div><div class="typing-dot"></div> Génération de l'image...
+ </div>
+ </div>
+ </div>`;
+ scrollChat();
+
+ // Pollinations.ai : simple URL, pas de clé API, modèle Flux gratuit
+ const seed = Math.floor(Math.random()*100000);
+ const imgUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true`;
+
+ const container = document.getElementById(genId);
+ container.innerHTML = `<div>
+ <div class="msg-bubble ai" style="padding:8px">
+ <img src="${imgUrl}" alt="${escHtml(prompt)}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;> Erreur de génération — réessaie</div>'">
+ </div>
+ <div class="msg-time">${time}</div>
+ </div>`;
+ APP.chatHistory.push({ role:'assistant', content:'[Image générée : '+prompt+']', time });
+ saveChatHistory(APP.currentSubject);
+ scrollChat();
+}
+
+
 async function sendMessage() {
  const input = document.getElementById('chat-input');
  const text = input.value.trim();
- if (!text) return;
+ if (!text && !chatAttachment) return;
  // Check limite IA
  if (!canUseIA()) {
  showUpgradeModal("Tu as utilisé tes " + getPlanLimits().ia_per_4h + " questions IA. Reset dans " + iaTimeLeft() + ".");
@@ -1821,14 +2010,36 @@ async function sendMessage() {
  input.value = ''; autoResize(input);
 
  const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
- APP.chatHistory.push({ role:'user', content:text, time });
+
+ // Construire le contenu du message (texte simple, ou bloc multimodal si pièce jointe)
+ let userContent = text || 'Analyse ce document.';
+ let displayText = text || 'Analyse ce document.';
+ const attachedName = chatAttachment ? chatAttachment.name : null;
+ if (chatAttachment) {
+ if (chatAttachment.type === 'text') {
+ // docx déjà extrait en texte brut : on l'intègre directement au message
+ userContent = `[Document joint : ${chatAttachment.name}]\n\n${chatAttachment.text}\n\n${text || 'Analyse ce document.'}`;
+ displayText = ` ${chatAttachment.name}\n${text || 'Analyse ce document.'}`;
+ } else {
+ userContent = [
+ { type: chatAttachment.type, source: { type:'base64', media_type: chatAttachment.mediaType, data: chatAttachment.data } },
+ { type:'text', text: text || 'Analyse ce document/cette image.' }
+ ];
+ displayText = ` ${chatAttachment.name}\n${text || 'Analyse ce document/cette image.'}`;
+ }
+ }
+ removeChatAttachment();
+
+ // On garde l'historique local léger (texte seulement) pour ne pas re-envoyer
+ // la pièce jointe à chaque futur message de la conversation
+ APP.chatHistory.push({ role:'user', content:displayText, time });
  const btn = document.getElementById('send-btn');
  btn.disabled = true; btn.textContent = '...';
 
  // Ajouter msg user dans le DOM
  const el = document.getElementById('chat-messages');
  if(el.querySelector('.display')) el.innerHTML = ''; // retirer écran accueil
- el.innerHTML += renderMsgHTML({ role:'user', content:text });
+ el.innerHTML += renderMsgHTML({ role:'user', content:displayText });
 
  // Typing indicator
  const typingId = 'typing-' + Date.now();
@@ -1842,7 +2053,7 @@ async function sendMessage() {
 
  try {
  const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
- messages.push({role:'user',content:text});
+ messages.push({role:'user',content:userContent});
 
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
@@ -2588,6 +2799,7 @@ async function analyzeCourse() {
  const titleEl = document.getElementById('course-title-input');
  const title = (titleEl && titleEl.value.trim()) || ('Cours du ' + new Date().toLocaleDateString('fr-FR'));
  const snippet = text.slice(0, 200);
+ const shared = document.getElementById('course-share-checkbox')?.checked !== false;
  try {
  const saved = getCoursesStorage();
  saved.unshift({
@@ -2603,13 +2815,42 @@ async function analyzeCourse() {
  if (saved.length > 10) saved.pop();
  setCoursesStorage(saved);
  renderCoursesInTravaux();
- saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), result, selectedAnalysis);
+ saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), result, selectedAnalysis, shared);
  showToast(' Cours "'+title+'" sauvegardé !');
  } catch(e2) { showToast('! Cours analysé mais non sauvegardé (stockage plein ?).'); }
  } catch(e) {
  showToast((e && e.name)==='AbortError' ? ' Délai dépassé. Réessaie.' : ' Erreur : '+((e && e.message)||'Connexion impossible'));
  }
  btn.disabled=false; btn.textContent=" Analyser avec l'IA";
+}
+
+// Enregistre le document tel quel (texte brut), sans passer par l'IA —
+// utile pour juste déposer un cours à disposition (soi-même ou sa promotion)
+async function saveDocWithoutAnalyzing() {
+ const text=document.getElementById('course-text').value.trim();
+ if(!text||text.length<10){ showToast('! Colle ou importe un document d\'abord'); return; }
+ const titleEl = document.getElementById('course-title-input');
+ const title = (titleEl && titleEl.value.trim()) || ('Document du ' + new Date().toLocaleDateString('fr-FR'));
+ const snippet = text.slice(0, 200);
+ const shared = document.getElementById('course-share-checkbox')?.checked !== false;
+ try {
+ const saved = getCoursesStorage();
+ saved.unshift({
+ id: Date.now(),
+ title,
+ subject: APP.currentSubject || '',
+ snippet,
+ fullText: text.slice(0, 3000),
+ result: '',
+ analysis: 'non-analysé',
+ date: new Date().toLocaleDateString('fr-FR')
+ });
+ if (saved.length > 10) saved.pop();
+ setCoursesStorage(saved);
+ renderCoursesInTravaux();
+ saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), '', 'non-analysé', shared);
+ showToast(' Document "'+title+'" enregistré !');
+ } catch(e2) { showToast('! Erreur d\'enregistrement (stockage plein ?).'); }
 }
 
 
@@ -2817,7 +3058,7 @@ function setCoursesStorage(data) {
 }
 
 // Enregistre le cours importé dans Supabase, lié au compte qui l'a importé
-async function saveCourseToDatabase(title, subject, snippet, fullText, result, analysis) {
+async function saveCourseToDatabase(title, subject, snippet, fullText, result, analysis, shared) {
  if (!APP.user || !APP.user.email) return;
  try {
  await fetch(`${SUPABASE_URL}/rest/v1/courses`, {
@@ -2832,11 +3073,30 @@ async function saveCourseToDatabase(title, subject, snippet, fullText, result, a
  user_email: APP.user.email,
  title, subject, snippet,
  full_text: fullText,
- result, analysis
+ result, analysis,
+ level: APP.user.level || null,
+ filiere: APP.user.filiere || null,
+ shared: shared !== false
  })
  });
  } catch(e) {
  // Pas de connexion : le cache local (déjà sauvegardé) prend le relais
+ }
+}
+
+// Récupère les documents partagés par d'autres étudiants du même niveau/filière — VIP uniquement
+async function fetchSharedDocuments() {
+ if (!APP.user || APP.user.plan !== 'vip') return [];
+ const level = APP.user.level || '';
+ const filiere = APP.user.filiere || '';
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/courses?level=eq.${encodeURIComponent(level)}&filiere=eq.${encodeURIComponent(filiere)}&shared=eq.true&user_email=neq.${encodeURIComponent(APP.user.email)}&order=created_at.desc&limit=30`, {
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return [];
+ return await res.json();
+ } catch(e) {
+ return [];
  }
 }
 
@@ -2885,6 +3145,44 @@ function renderCoursesInTravaux() {
  </div>
  </div>`).join('');
  } catch(e) {}
+}
+
+async function renderSharedDocs() {
+ const el = document.getElementById('shared-docs-list');
+ if (!el) return;
+ if (APP.user.plan !== 'vip') {
+ el.innerHTML = `<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;border-radius:12px;padding:16px;text-align:center">
+ <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px"> Réservé aux membres VIP</div>
+ <div style="font-size:11px;color:#92400e;margin-bottom:10px">Accède aux cours partagés par les étudiants de ton niveau et ta filière</div>
+ <button onclick="showScreen('screen-profile')" style="background:#f59e0b;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer VIP</button>
+ </div>`;
+ return;
+ }
+ el.innerHTML = `<div style="text-align:center;padding:14px;color:var(--text3);font-size:12px">Chargement...</div>`;
+ const docs = await fetchSharedDocuments();
+ if (!docs.length) {
+ el.innerHTML = `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;color:var(--text3);font-size:13px">
+ Aucun document partagé pour l'instant dans ${escHtml(APP.user.filiere||'ta filière')} · ${escHtml(APP.user.level||'')}
+ </div>`;
+ return;
+ }
+ el.innerHTML = docs.map(d => `
+ <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="openSharedDoc('${d.id}')">
+ <div style="font-size:13px;font-weight:700;margin-bottom:2px">${escHtml(d.title||'Sans titre')}</div>
+ <div style="font-size:11px;color:var(--text3)">Partagé par un(e) camarade · ${new Date(d.created_at).toLocaleDateString('fr-FR')}</div>
+ <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.4">${escHtml((d.snippet||'').slice(0,80))}...</div>
+ </div>`).join('');
+ window._sharedDocsCache = docs;
+}
+
+function openSharedDoc(id) {
+ const d = (window._sharedDocsCache||[]).find(x => String(x.id)===String(id));
+ if (!d) return;
+ document.getElementById('course-text').value = d.full_text || '';
+ document.getElementById('analysis-result').textContent = d.result || '';
+ document.getElementById('upload-form').style.display = 'none';
+ document.getElementById('upload-result').style.display = 'flex';
+ showScreen('screen-upload');
 }
 
 function openSavedCourse(i) {
@@ -3078,57 +3376,23 @@ function openPaymentApp(method, plan, ref, amount) {
  };
  const fallbackUrls = {
  wave: 'https://www.wave.com/fr/',
- orange: 'https://orangemoney.orange.ci/',
+ orange: 'https://www.orange.ci/fr/n-orange-money.html',
  mtn: 'https://www.mtn.ci/momo/',
  moov: 'https://moov-africa.ci/'
  };
  const pkg = packages[method];
  const fallbackUrl = fallbackUrls[method];
 
- let returned = false;
- const onReturn = () => {
- if (returned) return;
- if (document.visibilityState === 'visible') {
- returned = true;
- document.removeEventListener('visibilitychange', onReturn);
- showPaymentConfirmPrompt(plan, ref, amount, method);
- }
- };
- document.addEventListener('visibilitychange', onReturn);
+ // Activation immédiate dès le choix du réseau — la vérification réelle
+ // se fait ensuite manuellement via la table payment_requests
+ confirmAndActivate(plan, ref, amount, method);
 
  if (!pkg) {
- // Pas de package confirmé pour ce réseau : on ouvre directement le site
  window.open(fallbackUrl, '_blank');
  return;
  }
-
- // Lance l'app via son package Android (intent://) ; si elle n'est pas installée,
- // le navigateur bascule automatiquement sur le fallback web au bout de 1.5s
- const before = Date.now();
  const intentUrl = `intent://#Intent;package=${pkg};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
  window.location.href = intentUrl;
- setTimeout(() => {
- if (Date.now() - before < 2000 && document.visibilityState === 'visible') {
- window.open(fallbackUrl, '_blank');
- }
- }, 1500);
-}
-
-function showPaymentConfirmPrompt(plan, ref, amount, method) {
- document.getElementById('payment-confirm-overlay')?.remove();
- const overlay=document.createElement('div');
- overlay.id='payment-confirm-overlay';
- overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
- overlay.innerHTML=`
- <div style="background:var(--white);border-radius:20px;padding:26px 22px;width:100%;max-width:380px;text-align:center">
- <h3 style="font-size:17px;font-weight:800;margin-bottom:10px">As-tu envoyé le paiement ?</h3>
- <p style="font-size:13px;color:var(--text2);margin-bottom:22px">${amount.toLocaleString()} FCFA envoyés avec la référence <strong>${ref}</strong> ?</p>
- <div style="display:flex;gap:10px">
- <button onclick="document.getElementById('payment-confirm-overlay').remove()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Pas encore</button>
- <button onclick="confirmAndActivate('${plan}','${ref}',${amount},'${method}')" class="btn-em" style="flex:1">Oui, envoyé</button>
- </div>
- </div>`;
- document.body.appendChild(overlay);
 }
 
 async function confirmAndActivate(plan, ref, amount, method) {
@@ -3138,8 +3402,8 @@ async function confirmAndActivate(plan, ref, amount, method) {
  APP.user.plan=plan;
  APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
  saveSession();
- document.getElementById('payment-confirm-overlay')?.remove();
- showToast(' Plan '+planName+' activé !');
+ document.getElementById('payment-overlay')?.remove();
+ showToast(' Plan '+planName+' activé ! N\'oublie pas d\'envoyer '+amount.toLocaleString()+' FCFA avec la référence '+ref);
  renderProfile();
  try {
  await fetch(`${SUPABASE_URL}/rest/v1/payment_requests`, {
