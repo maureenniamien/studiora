@@ -1,5 +1,8 @@
 www/config.js
 node_modules/
-android/
 *.apk
 .gradle/
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties

@@ -2044,7 +2044,7 @@ async function generateImageFromChat() {
 
  // Pollinations.ai : simple URL, pas de clé API, modèle Flux gratuit
  const seed = Math.floor(Math.random()*100000);
- const imgUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true`;
+ const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
 
  const container = document.getElementById(genId);
  container.innerHTML = `<div>

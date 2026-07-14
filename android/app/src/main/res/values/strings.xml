@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Studiora</string>
+    <string name="title_activity_main">Studiora</string>
+    <string name="package_name">com.studiora.app</string>
+    <string name="custom_url_scheme">com.studiora.app</string>
+</resources>

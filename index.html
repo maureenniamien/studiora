@@ -3,13 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Studiora — Coach IA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.2/mammoth.browser.min.js"></script>
 <style>
 :root {
  --bg: #F7F6F2;
@@ -62,6 +66,13 @@ html,body{height:100%;max-height:100%;width:100%;max-width:100%;background:var(-
 
 /* ── SCROLL ── */
 .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+
+/* ── SLIDERS (range) — rendu fiable sur WebView Android ── */
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:var(--border);outline:none;margin:10px 0}
+input[type="range"]::-webkit-slider-runnable-track{-webkit-appearance:none;height:6px;border-radius:3px;background:var(--border)}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--em);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);margin-top:-7px;cursor:pointer}
+input[type="range"]::-moz-range-track{height:6px;border-radius:3px;background:var(--border)}
+input[type="range"]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--em);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer}
 .scroll-body::-webkit-scrollbar{display:none}
 
 /* ── TYPOGRAPHY ── */
@@ -343,9 +354,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="display:flex;align-items:center;gap:10px">
  <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:12px;padding:7px 12px;display:flex;align-items:center;gap:5px;cursor:pointer" onclick="showToast(' ' + APP.user.streak + ' jour' + (APP.user.streak > 1 ? 's' : '') + ' de suite ! Continue !')">
- 
- <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" style="flex-shrink:0"><path d="M13.5 0.67c0 0 .74 2.65.74 4.8 0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8c0-5.39-2.59-10.2-6.5-13.33z"/></svg>
-    <span style="font-size:13px;font-weight:700;color:var(--amber)" id="streak-count">7</span>
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--amber)" stroke="none"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c2 2 3 5 3 7a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 1.5 1.5 2 2 2 0-3-1-5-1-7 0 0 1 0 1 0z"/></svg>
+ <span style="font-size:13px;font-weight:700;color:var(--amber)" id="streak-count">7</span>
  </div>
  <div onclick="showScreen('screen-profile')" style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;cursor:pointer" id="home-avatar">M</div>
  </div>
@@ -387,11 +397,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <h3 style="font-size:16px;font-weight:700" id="subjects-title">Mes matières</h3>
  <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" id="subjects-see-all">Tout voir</span>
  </div>
+ <div id="subjects-list" style="display:flex;flex-direction:column;gap:10px"></div>
  </div>
  
- <div id="subjects-list" style="padding:0 20px;display:flex;flex-direction:column;gap:10px;margin-bottom:4px"></div>
-
-    <!-- Conseil du jour -->
+ <!-- Conseil du jour -->
  <div style="padding:16px 20px 0" class="a5">
  <div style="background:linear-gradient(135deg,var(--em-soft),#fff);border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px">
  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -421,17 +430,31 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <!-- Sélecteur matière -->
  <div style="padding:10px 16px;background:var(--white);border-bottom:1px solid var(--border)">
+ <div id="subject-chips-chat" class="suggestion-scroll"></div>
  </div>
 
  <!-- Messages -->
- 
+ <div id="chat-messages" class="scroll-body" style="flex:1;min-height:0;padding:14px;display:flex;flex-direction:column;gap:12px"></div>
+
  <!-- Suggestions -->
  <div style="padding:6px 14px 4px;background:var(--bg)">
+ <div id="chat-suggestions" class="suggestion-scroll"></div>
  </div>
 
  <!-- Input zone -->
  <div style="padding:8px 14px calc(env(safe-area-inset-bottom,0px) + 12px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0">
+ <div id="chat-attachment-preview" style="display:none;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 10px;margin-bottom:8px"></div>
  <div style="display:flex;gap:9px;align-items:flex-end">
+ <input type="file" id="chat-file-input" accept="image/*,.pdf,.docx" style="display:none" onchange="handleChatAttachment(this)">
+ <button onclick="document.getElementById('chat-file-input').click()" title="Joindre un fichier" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
+ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+ </button>
+ <button onclick="generateImageFromChat()" title="Générer une image" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
+ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+ </button>
+ <button id="mic-btn" onclick="toggleVoiceInput()" title="Parler" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
+ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+ </button>
  <textarea id="chat-input" class="input" placeholder="Pose ta question..." rows="1" style="flex:1;resize:none;padding:12px 14px;border-radius:14px;min-height:46px;max-height:120px;overflow-y:auto" oninput="autoResize(this)"></textarea>
  <button id="send-btn" onclick="sendMessage()" class="btn-em" style="width:46px;height:46px;padding:0;border-radius:13px;flex-shrink:0;font-size:20px">→</button>
  </div>
@@ -453,6 +476,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-bottom:16px">
  <label class="field-label">Matière</label>
+ <div id="quiz-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
  <div style="margin-bottom:16px">
  <label class="field-label">Niveau de difficulté</label>
@@ -498,6 +522,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div class="scroll-body" style="padding:20px;flex:1;min-height:0">
  <p style="font-size:16px;font-weight:600;line-height:1.55;margin-bottom:20px" id="quiz-question">Chargement...</p>
+ <div id="quiz-options" style="display:flex;flex-direction:column;gap:10px"></div>
  <div id="quiz-explanation" style="display:none;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px;margin-top:4px">
  <p style="font-size:12px;font-weight:700;color:var(--em);margin-bottom:4px"> Explication</p>
  <p style="font-size:13px;color:var(--text2);line-height:1.6" id="quiz-expl-text"></p>
@@ -511,9 +536,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <!-- Résultats quiz -->
  <div id="quiz-results" style="display:none;flex:1;overflow-y:auto;padding:32px 20px;text-align:center">
+ <div style="font-size:56px;margin-bottom:6px" id="result-emoji"></div>
  <h3 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px" id="result-title">Excellent !</h3>
  <p style="color:var(--text2);font-size:14px;margin-bottom:6px" id="result-score"></p>
  <p style="color:var(--text3);font-size:12px;margin-bottom:28px" id="result-msg"></p>
+ <div id="result-details" style="text-align:left;margin-bottom:24px"></div>
  <div style="display:flex;gap:10px">
  <button class="btn-outline" onclick="restartQuiz()" style="flex:1">Recommencer</button>
  <button class="btn-em" onclick="showScreen('screen-home')" style="flex:1">Accueil</button>
@@ -539,6 +566,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-bottom:24px">
  <label class="field-label">Matière</label>
+ <div id="fc-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
  <button class="btn-em" id="gen-fc-btn" onclick="generateFlashcards()" style="background:linear-gradient(135deg,var(--amber),#E8920A);box-shadow:0 4px 18px rgba(196,122,11,.3)">
  <span id="fc-btn-text"> Générer les flashcards</span>
@@ -585,7 +613,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div class="upload-zone" onclick="document.getElementById('file-input').click()" id="drop-zone" style="margin-bottom:16px">
  <div style="font-size:14px;font-weight:700;margin-bottom:4px">Importer ton cours</div>
  <div style="font-size:12px;color:var(--text3)">Clique ou glisse un fichier PDF · TXT · Image</div>
- <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.png,.jpg,.jpeg" onchange="handleFile(this)">
+ <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.md,.csv,.docx,.png,.jpg,.jpeg,.webp" onchange="handleFile(this)">
  </div>
  <div style="text-align:center;margin-bottom:16px">
  <span style="font-size:12px;color:var(--text3)">— ou colle ton texte directement —</span>
@@ -614,10 +642,15 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="selectAnalysis(this,'flashcards')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left"> Crée des flashcards</button>
  </div>
  </div>
+ <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer">
+ <input type="checkbox" id="course-share-checkbox" checked style="width:16px;height:16px;accent-color:var(--em)">
+ <span style="font-size:12px;color:var(--text2)">Partager avec les étudiants de mon niveau et ma filière</span>
+ </label>
  <button class="btn-em" id="analyze-btn" onclick="analyzeCourse()"> Analyser avec l'IA</button>
+ <button onclick="saveDocWithoutAnalyzing()" style="width:100%;margin-top:8px;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Enregistrer sans analyser</button>
  </div>
 
- <div id="upload-result" style="display:none;flex-direction:column;padding:0 20px 30px">
+ <div id="upload-result" class="scroll-body" style="display:none;flex-direction:column;padding:0 20px 100px">
  <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:14px;padding:14px 16px">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
  <span style="font-size:13px;font-weight:700;color:var(--em)"> Analyse terminée — cours sauvegardé</span>
@@ -626,6 +659,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="resetUpload()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text2);font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Nouveau</button>
  </div>
  </div>
+ <div id="analysis-result" style="font-size:13px;color:var(--text2);line-height:1.65;margin-top:10px"></div>
  <button class="btn-em" onclick="continueInChat()" style="margin-top:10px;width:100%"> Continuer avec le coach IA →</button>
  </div>
  </div>
@@ -653,29 +687,31 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- Graphe semaine -->
  <div class="card" style="margin-bottom:14px">
  <div style="font-size:14px;font-weight:700;margin-bottom:16px">Sessions cette semaine</div>
- <div style="display:flex;gap:6px">
- <div class="week-day" style="flex:1;align-items:center">
- <div style="font-size:10px;color:var(--text3)">L</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">M</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">M</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">J</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">V</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">S</div></div>
- <div class="week-day" style="flex:1;align-items:center"><div style="font-size:10px;color:var(--text3)">D</div></div>
+ <div id="week-chart" style="display:flex;gap:6px;height:80px"></div>
+ <div style="display:flex;gap:6px;margin-top:6px">
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">L</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">M</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">M</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">J</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">V</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">S</div>
+ <div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">D</div>
  </div>
  </div>
 
  <!-- Par matière -->
  <div class="card" style="margin-bottom:14px">
  <div style="font-size:14px;font-weight:700;margin-bottom:14px">Score par matière</div>
+ <div id="subject-scores"></div>
  </div>
 
  <!-- Objectifs -->
  <div class="card">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
  <div style="font-size:14px;font-weight:700">Objectifs de la semaine</div>
- <span class="badge badge-em">3/4</span>
+ <span class="badge badge-em" id="goals-count">3/4</span>
  </div>
+ <div id="goals-list"></div>
  </div>
  </div>
 </div>
@@ -683,13 +719,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <!-- ═══════════════════ PROFIL ═══════════════════ -->
 <div id="screen-profile" class="screen hidden">
  <div style="background:linear-gradient(160deg,var(--em-soft),var(--bg));padding:max(env(safe-area-inset-top,0px) + 20px, 52px) 20px 28px;text-align:center">
- <div style="position:relative;width:80px;height:80px;margin:0 auto 14px">
-    <div id="profile-avatar" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;box-shadow:0 0 0 4px var(--em-mid), 0 8px 24px rgba(11,110,79,.2);overflow:hidden;cursor:pointer" onclick="document.getElementById('profile-photo-input').click()">M</div>
-    <div style="position:absolute;bottom:0;right:0;width:24px;height:24px;border-radius:50%;background:var(--em);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--white)" onclick="document.getElementById('profile-photo-input').click()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-    </div>
-    <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="handleProfilePhoto(this)">
-  </div>
+ <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:32px;color:#fff;margin:0 auto 14px;box-shadow:0 0 0 4px var(--em-mid), 0 8px 24px rgba(11,110,79,.2)" id="profile-avatar">M</div>
  <h2 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px" id="profile-name">Maureen Koné</h2>
  <p style="color:var(--text2);font-size:13px;margin-bottom:12px" id="profile-level">Licence 2 · MIAGE</p>
  <span class="badge badge-em"> Compte actif</span>
@@ -712,8 +742,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  </div>
 
+ <div id="profile-usage" style="margin-bottom:20px"></div>
+
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Préférences</h3>
+ <div id="prefs-list"></div>
  </div>
 
  <!-- ── Changer de niveau ── -->
@@ -744,6 +777,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Mes matières actives</h3>
+ <div id="profile-subjects"></div>
  </div>
 
  <!-- Langue -->
@@ -985,13 +1019,25 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <label class="field-label" style="margin-bottom:0"> Mes Cours importés</label>
  <button onclick="showScreen('screen-upload')" style="font-size:11px;color:var(--em);font-weight:600;background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Importer</button>
  </div>
+ <div id="courses-list-travaux"></div>
+ </div>
+
+ <!-- Bibliothèque partagée (VIP) -->
+ <div style="margin-bottom:20px">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+ <label class="field-label" style="margin-bottom:0"> Bibliothèque de ma promotion</label>
+ <span class="badge" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:10px">VIP</span>
+ </div>
+ <div id="shared-docs-list"></div>
  </div>
 
  <!-- Éditeur Média -->
  <div style="margin-bottom:20px">
  <div class="section-label"> ÉDITEUR MÉDIA</div>
  <div onclick="showScreen('screen-media')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer">
- <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="26" height="26" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg></div>
+ <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#7C3AED,#A855F7);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+ </div>
  <div style="flex:1">
  <div style="font-size:14px;font-weight:700">Éditeur Audio & Vidéo</div>
  <div style="font-size:12px;color:var(--text3)">Couper, fusionner, convertir, extraire</div>
@@ -1040,8 +1086,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ TERMINAL IA ═══════════════════ -->
 <div id="screen-terminal" class="screen hidden" style="background:#0D0D0D;display:flex;flex-direction:column">
- <div style="padding:max(env(safe-area-inset-top,0px)+12px,44px) 12px 10px;background:#1A1A1A;border-bottom:1px solid #333;display:flex;align-items:center;gap:10px;flex-shrink:0">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 12px, 44px) 12px 10px;background:#1A1A1A;border-bottom:1px solid #333;display:flex;align-items:center;gap:10px;flex-shrink:0">
  <button onclick="goBack()" style="background:#2A2A2A;border:1px solid #444;border-radius:10px;padding:7px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">← Retour</button>
+ <span id="terminal-lang-icon" style="flex-shrink:0"></span>
  <span style="font-size:14px;font-weight:700;color:#fff;flex:1" id="terminal-title">Terminal</span>
  <button onclick="clearTerminal()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:5px 10px;color:#aaa;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap"> Clear</button>
  </div>
@@ -1054,9 +1101,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <!-- PANEL SORTIE -->
  <div id="term-panel-output" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+ <div id="terminal-output" class="scroll-body" style="flex:1;padding:12px;font-family:'Courier New',monospace;font-size:12px;color:#e0e0e0"></div>
  <!-- Autocomplétion -->
+ <div id="term-autocomplete" style="display:none;gap:6px;overflow-x:auto;padding:6px 10px;background:#111;border-top:1px solid #222;flex-shrink:0"></div>
  <!-- Input ligne -->
- <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
+ <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
  <span style="color:#00ff41;font-family:monospace;font-size:14px;flex-shrink:0" id="terminal-prompt">$</span>
  <input id="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
  style="flex:1;background:transparent;border:none;color:#00ff41;font-family:'Courier New',monospace;font-size:14px;outline:none;caret-color:#00ff41"
@@ -1068,13 +1117,14 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- PANEL ÉDITEUR -->
  <div id="term-panel-editor" style="flex:1;display:none;flex-direction:column;overflow:hidden">
  <!-- Autocomplétion éditeur -->
+ <div id="editor-autocomplete" style="display:flex;gap:6px;overflow-x:auto;padding:6px 10px;background:#111;border-bottom:1px solid #222;flex-shrink:0"></div>
  <!-- Zone de code -->
  <textarea id="terminal-editor" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
  style="flex:1;background:#0D0D0D;border:none;color:#e0e0e0;font-family:'Courier New',monospace;font-size:13px;line-height:1.7;padding:12px;outline:none;resize:none;-webkit-overflow-scrolling:touch;tab-size:2"
  placeholder="// Écris ton code ici...
 // Appuie sur Exécuter pour voir le résultat"></textarea>
  <!-- Barre inférieure éditeur -->
- <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px)+8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
+ <div style="padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:#111;border-top:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0">
  <button onclick="insertTab()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:8px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:monospace">⇥ Tab</button>
  <button onclick="clearEditor()" style="background:#2A2A2A;border:1px solid #444;border-radius:8px;padding:8px 12px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"></button>
  <button onclick="runEditorCode()" style="background:linear-gradient(135deg,#00b894,#00cec9);border:none;border-radius:10px;padding:10px 20px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:6px">
@@ -1099,8 +1149,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- TAB STANDARD -->
  <div id="calc-panel-std" class="scroll-body" style="padding:12px 14px 100px;flex:1">
  <div style="background:#1a1a2e;border-radius:14px;padding:16px;margin-bottom:12px;text-align:right">
+ <div id="calc-history" style="font-size:12px;color:#888;min-height:16px"></div>
  <div style="font-size:30px;font-weight:700;color:#fff;min-height:42px;word-break:break-all" id="calc-display">0</div>
  </div>
+ <div id="calc-log" style="font-size:11px;color:var(--text3);margin-bottom:10px;max-height:80px;overflow-y:auto"></div>
  <!-- Fonctions scientifiques row 1 -->
  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px">
  <button onclick="calcInput('Math.sin(')" class="calc-btn calc-fn">sin</button>
@@ -1188,20 +1240,22 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="margin-bottom:12px">
  <input class="input" id="dict-word" placeholder="Entrer un mot ou une phrase à définir..." style="margin-bottom:8px">
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
- <button onclick="selectDictMode(this,'define')" class="dict-mode-btn" style="padding:8px 10px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Définir</button>
- <button onclick="selectDictMode(this,'translate_en')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">EN→FR</button>
- <button onclick="selectDictMode(this,'translate_fr')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">FR→EN</button>
+ <button onclick="selectDictMode(this,'define')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Définir<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--em)"></span></button>
+ <button onclick="selectDictMode(this,'translate_en')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 20 14" style="flex-shrink:0;border-radius:2px"><rect width="20" height="14" fill="#00247d"/><path d="M0 0L20 14M20 0L0 14" stroke="#fff" stroke-width="2.4"/><path d="M0 0L20 14M20 0L0 14" stroke="#cf142b" stroke-width="1.2"/><path d="M10 0V14M0 7H20" stroke="#fff" stroke-width="4"/><path d="M10 0V14M0 7H20" stroke="#cf142b" stroke-width="2.2"/></svg>EN→FR<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_fr')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="1" height="2" fill="#0055A4"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#EF4135"/></svg>FR→EN<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
 
- <button onclick="selectDictMode(this,'translate_es')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">ES→ES</button>
- <button onclick="selectDictMode(this,'translate_ar')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">AR→AR</button>
- <button onclick="selectDictMode(this,'translate_de')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">DE→DE</button>
- <button onclick="selectDictMode(this,'translate_pt')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">PT→PT</button>
- <button onclick="selectDictMode(this,'translate_zh')" class="dict-mode-btn" style="padding:8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">→ZH</button>
+ <button onclick="selectDictMode(this,'translate_es')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="2" fill="#AA151B"/><rect width="3" height="1" y="0.5" fill="#F1BF00"/></svg>FR→ES<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_ar')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="0.667" fill="#007A3D"/><rect width="3" height="0.667" y="0.667" fill="#fff"/><rect width="3" height="0.667" y="1.333" fill="#000"/><polygon points="0,0 1,1 0,2" fill="#CE1126"/></svg>FR→AR<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_de')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 3" style="flex-shrink:0;border-radius:2px"><rect width="3" height="1" fill="#000"/><rect width="3" height="1" y="1" fill="#DD0000"/><rect width="3" height="1" y="2" fill="#FFCE00"/></svg>FR→DE<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_pt')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 5 3" style="flex-shrink:0;border-radius:2px"><rect width="2" height="3" fill="#046A38"/><rect width="3" height="3" x="2" fill="#DA291C"/></svg>FR→PT<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <button onclick="selectDictMode(this,'translate_zh')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="2" fill="#DE2910"/><polygon points="0.5,0.4 0.6,0.7 0.9,0.7 0.65,0.9 0.75,1.2 0.5,1.0 0.25,1.2 0.35,0.9 0.1,0.7 0.4,0.7" fill="#FFDE00"/></svg>FR→ZH<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
  </div>
  <button class="btn-em" onclick="searchDict()"> Rechercher</button>
  </div>
+ <div id="dict-result" style="display:none;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.6;color:var(--text2);white-space:pre-wrap"></div>
  <div style="margin-top:16px">
  <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">HISTORIQUE</div>
+ <div id="dict-history" style="display:flex;flex-direction:column;gap:8px"></div>
  </div>
  </div>
 </div>
@@ -1243,6 +1297,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-top:16px">
  <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">MES DIAGRAMMES SAUVEGARDÉS</div>
+ <div id="saved-diagrams"></div>
  </div>
  </div>
 </div>
@@ -1336,39 +1391,52 @@ function getWeekData() {
 }
 
 // ── DATA ──
+// Initiales d'une matière (ex: "Bases de données" -> "BD", "Java" -> "Jav", "SVT" -> "SVT")
+function subjInitials(name) {
+ if (!name) return '';
+ const words = name.replace(/[()]/g,'').trim().split(/[\s-]+/).filter(Boolean);
+ if (words.length === 1) {
+ const w = words[0];
+ // Déjà un acronyme court en majuscules (SVT, UML...) : on le garde tel quel
+ if (w.length <= 4 && w === w.toUpperCase()) return w;
+ return w.charAt(0).toUpperCase() + w.slice(1,3).toLowerCase();
+ }
+ return (words[0][0] + words[1][0]).toUpperCase();
+}
+
 const ALL_SUBJECTS = [
- { id:'math', icon:'Σ', name:'Mathématiques', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
- { id:'physique',icon:'Ph', name:'Physique-Chimie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
- { id:'svt', icon:'Bio', name:'SVT', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
- { id:'fr', icon:'Fr', name:'Français', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
- { id:'info', icon:'</>', name:'Informatique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
- { id:'eco', icon:'Éco', name:'Économie', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'math', icon:'', name:'Mathématiques', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'physique',icon:'', name:'Physique-Chimie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'svt', icon:'', name:'SVT', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'fr', icon:'', name:'Français', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'info', icon:'', name:'Informatique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'eco', icon:'', name:'Économie', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
  { id:'ang', icon:'EN', name:'Anglais', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
- { id:'hg', icon:'HG', name:'Histoire-Géo', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
- { id:'philo', icon:'φ', name:'Philosophie', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
- { id:'stats', icon:'St', name:'Statistiques', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
- { id:'algo', icon:'Alg', name:'Algorithmique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
- { id:'bdd', icon:'BD', name:'Bases de données', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
- { id:'gestion', icon:'Ges', name:'Gestion', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
- { id:'compta', icon:'Cpt', name:'Comptabilité', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
- { id:'droit', icon:'Drt', name:'Droit', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
- { id:'si', icon:'SI', name:'Systemes info', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
- { id:'java', icon:'Jav', name:'Java', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
- { id:'uml', icon:'UML', name:'UML', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
- { id:'mobile', icon:'Mob', name:'Prog. Mobile', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
- { id:'ia', icon:'IA', name:'Intelligence Artif',color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
- { id:'reseau', icon:'Net', name:'Reseaux', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
- { id:'poo', icon:'OOP', name:'POO', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
- { id:'marketing',icon:'Mkt', name:'Marketing', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
- { id:'comm', icon:'Com', name:'Communication', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
- { id:'politiq', icon:'Pol', name:'Science Politique', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
- { id:'droitpub',icon:'DPb', name:'Droit Public', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
- { id:'droitpriv',icon:'DPv',name:'Droit Privé', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
- { id:'rh', icon:'RH', name:'Ressources Humaines',color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
- { id:'finance', icon:'Fin', name:'Finance', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
- { id:'audit', icon:'Aud', name:'Audit & Contrôle', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
- { id:'seg', icon:'SEG', name:'SEG', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
- { id:'sjap', icon:'SJP', name:'Sciences Juridiques',color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'hg', icon:'', name:'Histoire-Géo', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'philo', icon:'', name:'Philosophie', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'stats', icon:'', name:'Statistiques', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'algo', icon:'', name:'Algorithmique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'bdd', icon:'', name:'Bases de données', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'gestion', icon:'', name:'Gestion', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'compta', icon:'', name:'Comptabilité', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'droit', icon:'', name:'Droit', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'si', icon:'', name:'Systemes info', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'java', icon:'', name:'Java', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'uml', icon:'', name:'UML', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'mobile', icon:'', name:'Prog. Mobile', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'ia', icon:'', name:'Intelligence Artif',color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'reseau', icon:'', name:'Reseaux', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'poo', icon:'', name:'POO', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'marketing',icon:'', name:'Marketing', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'comm', icon:'', name:'Communication', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'politiq', icon:'', name:'Science Politique', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'droitpub',icon:'', name:'Droit Public', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'droitpriv',icon:'',name:'Droit Privé', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'rh', icon:'', name:'Ressources Humaines',color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'finance', icon:'', name:'Finance', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'audit', icon:'', name:'Audit & Contrôle', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'seg', icon:'', name:'SEG', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'sjap', icon:'', name:'Sciences Juridiques',color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
 ];
 
 // Matières par niveau et filière
@@ -1590,7 +1658,7 @@ function onScreenEnter(id) {
  if(id==='screen-flashcards') renderFCConfig();
  if(id==='screen-progress') renderProgress();
  if(id==='screen-profile') renderProfile();
- if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); }
+ if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); renderSharedDocs(); }
  if(id==='screen-diagrams') renderSavedDiagrams();
 }
 
@@ -1620,10 +1688,9 @@ function renderHome() {
  safeSet('tip-text', TIPS[Math.floor(Math.random()*TIPS.length)]);
 
  const el = document.getElementById('subjects-list');
- if (!el) return;
-  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
+ el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
  <div class="subject-chip" onclick="openSubjectChat('${s.id}')">
- <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${s.icon}</div>
+ <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</div>
  <div style="flex:1">
  <div style="font-size:13px;font-weight:700">${s.name}</div>
  <div style="font-size:11px;color:var(--text3);margin-top:2px">Appuie pour réviser avec l'IA</div>
@@ -1668,7 +1735,7 @@ function renderChat() {
  background:${APP.currentSubject===s.id ? s.color : 'var(--bg2)'};
  color:${APP.currentSubject===s.id ? '#fff' : 'var(--text2)'};
  border:1.5px solid ${APP.currentSubject===s.id ? s.color : 'var(--border)'}"
- >${s.icon} ${s.name}</button>`).join('');
+ >${s.name}</button>`).join('');
 
  renderSuggestions();
 
@@ -1743,12 +1810,24 @@ function reRenderMessages() {
 
 function renderMsgHTML(m) {
  if (m.role === 'user') {
+ if (m.content && typeof m.content === 'object' && m.content.imagePreview) {
+ return `<div class="msg-row user"><div class="msg-bubble user" style="padding:6px">
+ <img src="${m.content.imagePreview}" style="width:100%;max-width:220px;border-radius:10px;display:block;margin-bottom:${m.content.caption ? '6px':'0'}">
+ ${m.content.caption ? `<div style="padding:0 6px 4px">${escHtml(m.content.caption)}</div>` : ''}
+ </div></div>`;
+ }
  return `<div class="msg-row user"><div class="msg-bubble user">${escHtml(m.content)}</div></div>`;
  } else {
+ const b64 = btoa(unescape(encodeURIComponent(m.content||'')));
  return `<div class="msg-row">
  <div>
  <div class="msg-bubble ai">${formatAiMsg(m.content)}</div>
- <div class="msg-time">${m.time || ''}</div>
+ <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+ <div class="msg-time" style="margin-top:0">${m.time || ''}</div>
+ <button onclick="speakMessage('${b64}')" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+ </button>
+ </div>
  </div>
  </div>`;
  }
@@ -1769,10 +1848,221 @@ function scrollChat() {
  setTimeout(()=>{ el.scrollTop = el.scrollHeight; }, 50);
 }
 
+// ── PIÈCES JOINTES DANS LE CHAT ──
+let chatAttachment = null; // { type:'image'|'document', mediaType, data, name } ou { type:'text', text, name } pour docx
+
+// Appelée depuis MainActivity.java quand une image est partagée vers l'app
+// (WhatsApp/Galerie -> "Partager vers" -> Studiora)
+window.receiveSharedImage = function(base64, mimeType, name) {
+ chatAttachment = {
+ type: 'image',
+ mediaType: mimeType || 'image/jpeg',
+ data: base64,
+ dataUrl: 'data:' + (mimeType || 'image/jpeg') + ';base64,' + base64,
+ name: name || 'image_partagee.jpg'
+ };
+ showScreen('screen-chat');
+ showChatAttachmentPreview(chatAttachment);
+ showToast('✓ Image reçue, prête à envoyer');
+ const input = document.getElementById('chat-input');
+ if (input) input.focus();
+};
+
+async function handleChatAttachment(input) {
+ const file = input.files[0];
+ if (!file) return;
+ const name = file.name.toLowerCase();
+
+ if (file.type.startsWith('image/')) {
+ const reader = new FileReader();
+ reader.onload = e => {
+ chatAttachment = { type:'image', mediaType: file.type, data: e.target.result.split(',')[1], dataUrl: e.target.result, name: file.name };
+ showChatAttachmentPreview(chatAttachment);
+ };
+ reader.readAsDataURL(file);
+ } else if (file.type==='application/pdf' || name.endsWith('.pdf')) {
+ const reader = new FileReader();
+ reader.onload = e => {
+ chatAttachment = { type:'document', mediaType:'application/pdf', data: e.target.result.split(',')[1], name: file.name };
+ showChatAttachmentPreview(chatAttachment);
+ };
+ reader.readAsDataURL(file);
+ } else if (name.endsWith('.docx')) {
+ showToast('✓ Lecture du document Word...');
+ const reader = new FileReader();
+ reader.onload = async e => {
+ try {
+ if (typeof mammoth === 'undefined') { showToast('✕ Librairie Word indisponible hors-ligne.'); return; }
+ const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+ const text = (result && result.value) ? result.value.trim() : '';
+ if (text) {
+ chatAttachment = { type:'text', text, name: file.name };
+ showChatAttachmentPreview(chatAttachment);
+ } else showToast('✕ Document Word vide ou illisible');
+ } catch(err) { showToast('✕ Erreur lecture du document Word'); }
+ };
+ reader.readAsArrayBuffer(file);
+ } else {
+ showToast('✕ Format non pris en charge. Utilise une image, un PDF ou un .docx');
+ }
+ input.value = '';
+}
+
+function showChatAttachmentPreview(att) {
+ const el = document.getElementById('chat-attachment-preview');
+ if (att.type === 'image') {
+ el.innerHTML = `<img src="${att.dataUrl}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0">
+ <span style="flex:1;font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(att.name)}</span>
+ <button onclick="removeChatAttachment()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;flex-shrink:0">✕</button>`;
+ } else {
+ el.innerHTML = `<span style="flex-shrink:0;color:var(--text2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+ <span style="flex:1;font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(att.name)}</span>
+ <button onclick="removeChatAttachment()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;flex-shrink:0">✕</button>`;
+ }
+ el.style.display = 'flex';
+}
+
+function removeChatAttachment() {
+ chatAttachment = null;
+ document.getElementById('chat-attachment-preview').style.display = 'none';
+}
+
+// ── VOIX : reconnaissance (parler) et synthèse (écouter) ──
+let voiceRecognition = null;
+let isListening = false;
+let micStream = null; // garde le flux micro ouvert le temps de l'écoute
+
+async function toggleVoiceInput() {
+ const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+ if (!SpeechRecognitionAPI) {
+ showToast('⚠ Reconnaissance vocale indisponible sur cet appareil');
+ return;
+ }
+ const micBtn = document.getElementById('mic-btn');
+
+ if (isListening) {
+ if (voiceRecognition) voiceRecognition.stop();
+ return;
+ }
+
+ // 1) Forcer la vraie demande de permission Android via getUserMedia.
+ // C'est ce qui fait apparaître le micro dans les paramètres de l'app —
+ // le SpeechRecognition seul ne déclenche pas ce dialogue système dans une WebView.
+ try {
+ micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+ } catch (permErr) {
+ if (permErr.name === 'NotAllowedError' || permErr.name === 'SecurityError') {
+ showToast('⚠ Micro refusé. Autorise-le dans Paramètres > Apps > Studiora > Autorisations');
+ } else if (permErr.name === 'NotFoundError') {
+ showToast('⚠ Aucun micro détecté sur cet appareil');
+ } else {
+ showToast('⚠ Micro indisponible (' + (permErr.name || permErr.message) + ')');
+ }
+ return;
+ }
+
+ voiceRecognition = new SpeechRecognitionAPI();
+ voiceRecognition.lang = 'fr-FR';
+ voiceRecognition.interimResults = false;
+ voiceRecognition.maxAlternatives = 1;
+
+ voiceRecognition.onstart = () => {
+ isListening = true;
+ micBtn.style.background = 'var(--em)';
+ micBtn.style.color = '#fff';
+ micBtn.style.borderColor = 'var(--em)';
+ };
+ voiceRecognition.onresult = (event) => {
+ const transcript = event.results[0][0].transcript;
+ const input = document.getElementById('chat-input');
+ input.value = (input.value ? input.value + ' ' : '') + transcript;
+ autoResize(input);
+ };
+ voiceRecognition.onerror = (event) => {
+ if (event.error === 'not-allowed') showToast('⚠ Autorise le micro dans les paramètres de l\'app');
+ else if (event.error === 'no-speech') showToast('⚠ Rien entendu, réessaie');
+ else if (event.error === 'service-not-allowed' || event.error === 'network') showToast('⚠ Reconnaissance vocale non disponible hors-ligne sur ce téléphone');
+ else showToast('⚠ Reconnaissance vocale indisponible (' + event.error + ')');
+ };
+ voiceRecognition.onend = () => {
+ isListening = false;
+ micBtn.style.background = 'var(--white)';
+ micBtn.style.color = 'var(--text2)';
+ micBtn.style.borderColor = 'var(--border)';
+ if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+ };
+
+ try { voiceRecognition.start(); }
+ catch(e) {
+ showToast('⚠ Impossible de démarrer le micro');
+ if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+ }
+}
+
+
+function speakMessage(b64text) {
+ if (!('speechSynthesis' in window)) { showToast('! Synthèse vocale indisponible sur cet appareil'); return; }
+ const text = decodeURIComponent(escape(atob(b64text)));
+ // Nettoie le markdown basique avant de lire à voix haute
+ const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
+ window.speechSynthesis.cancel(); // stoppe une lecture en cours avant d'en lancer une nouvelle
+ const utter = new SpeechSynthesisUtterance(clean);
+ utter.lang = 'fr-FR';
+ utter.rate = 1;
+ window.speechSynthesis.speak(utter);
+}
+
+
+async function generateImageFromChat() {
+ const input = document.getElementById('chat-input');
+ const prompt = input.value.trim();
+ if (!prompt) { showToast('! Décris l\'image que tu veux dans le champ de texte'); return; }
+ if (!canUseIA()) {
+ showUpgradeModal("Tu as utilisé tes " + getPlanLimits().ia_per_4h + " questions IA. Reset dans " + iaTimeLeft() + ".");
+ return;
+ }
+ incUsage('ia');
+ input.value = ''; autoResize(input);
+
+ const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+ const displayText = '◆ Génère une image : ' + prompt;
+ APP.chatHistory.push({ role:'user', content:displayText, time });
+
+ const el = document.getElementById('chat-messages');
+ if(el.querySelector('.display')) el.innerHTML = '';
+ el.innerHTML += renderMsgHTML({ role:'user', content:displayText });
+
+ const genId = 'imggen-' + Date.now();
+ el.innerHTML += `<div id="${genId}" class="msg-row">
+ <div class="msg-bubble ai" style="padding:12px 16px">
+ <div style="display:flex;gap:5px;align-items:center">
+ <div class="typing-dot"></div><div class="typing-dot"></div> ◆ Génération de l'image...
+ </div>
+ </div>
+ </div>`;
+ scrollChat();
+
+ // Pollinations.ai : simple URL, pas de clé API, modèle Flux gratuit
+ const seed = Math.floor(Math.random()*100000);
+ const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
+
+ const container = document.getElementById(genId);
+ container.innerHTML = `<div>
+ <div class="msg-bubble ai" style="padding:8px">
+ <img src="${imgUrl}" alt="${escHtml(prompt)}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Erreur de génération — réessaie</div>'">
+ </div>
+ <div class="msg-time">${time}</div>
+ </div>`;
+ APP.chatHistory.push({ role:'assistant', content:'[Image générée : '+prompt+']', time });
+ saveChatHistory(APP.currentSubject);
+ scrollChat();
+}
+
+
 async function sendMessage() {
  const input = document.getElementById('chat-input');
  const text = input.value.trim();
- if (!text) return;
+ if (!text && !chatAttachment) return;
  // Check limite IA
  if (!canUseIA()) {
  showUpgradeModal("Tu as utilisé tes " + getPlanLimits().ia_per_4h + " questions IA. Reset dans " + iaTimeLeft() + ".");
@@ -1782,14 +2072,44 @@ async function sendMessage() {
  input.value = ''; autoResize(input);
 
  const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
- APP.chatHistory.push({ role:'user', content:text, time });
+
+ // Construire le contenu du message (texte simple, ou bloc multimodal si pièce jointe)
+ let userContent = text || 'Analyse ce document.';
+ let displayContent = text || 'Analyse ce document.';
+ if (chatAttachment) {
+ if (chatAttachment.type === 'text') {
+ // docx déjà extrait en texte brut : on l'intègre directement au message
+ userContent = `[Document joint : ${chatAttachment.name}]\n\n${chatAttachment.text}\n\n${text || 'Analyse ce document.'}`;
+ displayContent = `▤ ${chatAttachment.name}\n${text || 'Analyse ce document.'}`;
+ } else if (chatAttachment.type === 'image') {
+ userContent = [
+ { type:'image', source: { type:'base64', media_type: chatAttachment.mediaType, data: chatAttachment.data } },
+ { type:'text', text: text || 'Analyse cette image.' }
+ ];
+ // On garde l'aperçu de l'image dans l'historique pour qu'elle reste visible,
+ // comme dans cette conversation-ci
+ displayContent = { imagePreview: chatAttachment.dataUrl, caption: text || 'Analyse cette image.' };
+ } else {
+ userContent = [
+ { type:'document', source: { type:'base64', media_type: chatAttachment.mediaType, data: chatAttachment.data } },
+ { type:'text', text: text || 'Analyse ce document.' }
+ ];
+ displayContent = `▤ ${chatAttachment.name}\n${text || 'Analyse ce document.'}`;
+ }
+ }
+ removeChatAttachment();
+
+ // Pour les images, on garde l'aperçu dans l'historique (comme ici) ; pour les
+ // autres pièces jointes on garde une version texte légère pour ne pas
+ // re-envoyer tout le fichier à chaque futur message
+ APP.chatHistory.push({ role:'user', content:displayContent, time });
  const btn = document.getElementById('send-btn');
  btn.disabled = true; btn.textContent = '...';
 
  // Ajouter msg user dans le DOM
  const el = document.getElementById('chat-messages');
  if(el.querySelector('.display')) el.innerHTML = ''; // retirer écran accueil
- el.innerHTML += renderMsgHTML({ role:'user', content:text });
+ el.innerHTML += renderMsgHTML({ role:'user', content:displayContent });
 
  // Typing indicator
  const typingId = 'typing-' + Date.now();
@@ -1802,8 +2122,11 @@ async function sendMessage() {
  scrollChat();
 
  try {
- const messages = APP.chatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content}));
- messages.push({role:'user',content:text});
+ const messages = APP.chatHistory.slice(0,-1).map(m=>({
+ role:m.role,
+ content: (m.content && typeof m.content==='object' && m.content.imagePreview) ? m.content.caption : m.content
+ }));
+ messages.push({role:'user',content:userContent});
 
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
@@ -1934,14 +2257,21 @@ function selectLevel(btn) { selectedLevel = (btn && btn.dataset && btn.dataset.v
 // ── EXTRACTION ET SANITIZE JSON IA ──
 function extractJsonBlock(raw) {
  // Retirer les blocs markdown ```json ... ```
- raw = raw.replace(/```json[\s\S]*?```/g, '').replace(/```[\s\S]*?```/g, '').trim();
- // Trouver le premier { et le } correspondant (en comptant la profondeur)
+ raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+ // Trouver le premier { et le } correspondant (en comptant la profondeur,
+ // en ignorant les accolades qui se trouvent à l'intérieur des chaînes —
+ // ex: un exemple de code ou un ensemble mathématique dans une réponse)
  const start = raw.indexOf('{');
  if (start === -1) return '{}';
- let depth = 0, end = -1;
+ let depth = 0, end = -1, inStr = false, esc = false;
  for (let i = start; i < raw.length; i++) {
- if (raw[i] === '{') depth++;
- else if (raw[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+ const c = raw[i];
+ if (esc) { esc = false; continue; }
+ if (c === '\\') { esc = true; continue; }
+ if (c === '"') { inStr = !inStr; continue; }
+ if (inStr) continue;
+ if (c === '{') depth++;
+ else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
  }
  if (end === -1) return raw.slice(start); // JSON tronqué, on essaie quand même
  raw = raw.slice(start, end + 1);
@@ -1975,6 +2305,30 @@ function sanitizeJsonStr(raw) {
  out += c;
  }
  return out;
+}
+
+// Répare un JSON tronqué (réponse IA coupée en plein milieu d'un tableau d'objets)
+// en retirant le dernier élément incomplet et en refermant proprement les structures.
+function repairTruncatedJson(raw, arrayKey) {
+ try { return JSON.parse(raw); } catch(e) {}
+ // Coupe au dernier objet complet "}" du tableau, puis referme
+ const lastComplete = raw.lastIndexOf('},');
+ if (lastComplete === -1) throw new Error('JSON invalide — Réessaie.');
+ let trimmed = raw.slice(0, lastComplete + 1);
+ // Compte les crochets/accolades ouverts restants et les referme
+ let openBraces = 0, openBrackets = 0, inStr = false, esc = false;
+ for (const c of trimmed) {
+ if (esc) { esc = false; continue; }
+ if (c === '\\') { esc = true; continue; }
+ if (c === '"') { inStr = !inStr; continue; }
+ if (inStr) continue;
+ if (c === '{') openBraces++;
+ else if (c === '}') openBraces--;
+ else if (c === '[') openBrackets++;
+ else if (c === ']') openBrackets--;
+ }
+ trimmed += ']'.repeat(Math.max(0,openBrackets)) + '}'.repeat(Math.max(0,openBraces));
+ return JSON.parse(trimmed);
 }
 
 // ── UTILITAIRES MOT DE PASSE ──
@@ -2080,7 +2434,7 @@ function renderQuizConfig() {
  <button onclick="selectQuizSubject(this,'${s.id}')" class="qsub-btn" data-id="${s.id}" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectQuiz===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
  background:${selectedSubjectQuiz===s.id?s.soft:'var(--bg2)'};
  border:1.5px solid ${selectedSubjectQuiz===s.id?s.color:'var(--border)'};
- color:${selectedSubjectQuiz===s.id?s.color:'var(--text2)'}">${s.icon} ${s.name}</button>`).join('');
+ color:${selectedSubjectQuiz===s.id?s.color:'var(--text2)'}">${s.name}</button>`).join('');
 }
 
 function selectQuizSubject(btn, id) {
@@ -2289,11 +2643,11 @@ let selectedSubjectFC = 'math';
 function renderFCConfig() {
  document.getElementById('fc-config').style.display='block';
  document.getElementById('fc-play').style.display='none';
- (document.getElementById('fc-subject-btns')||{innerHTML:''}).innerHTML = SUBJECTS.map(s=>`
+ document.getElementById('fc-subject-btns').innerHTML = SUBJECTS.map(s=>`
  <button onclick="selectFCSubject(this,'${s.id}')" class="fcsub-btn" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectFC===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
  background:${selectedSubjectFC===s.id?s.soft:'var(--bg2)'};
  border:1.5px solid ${selectedSubjectFC===s.id?s.color:'var(--border)'};
- color:${selectedSubjectFC===s.id?s.color:'var(--text2)'}">${s.icon} ${s.name}</button>`).join('');
+ color:${selectedSubjectFC===s.id?s.color:'var(--text2)'}">${s.name}</button>`).join('');
 }
 function selectFCSubject(btn,id){ selectedSubjectFC=id; renderFCConfig(); }
 
@@ -2320,7 +2674,7 @@ async function generateFlashcards() {
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
  headers:{'Content-Type':'application/json',},
- body:JSON.stringify({model:MODEL,max_tokens:1200,system:'Tu es un generateur de flashcards JSON. Reponds UNIQUEMENT avec du JSON valide, format exact: {"cards":[{"front":"...","back":"..."}]}. Aucun texte avant ou apres. Aucun markdown. Aucune apostrophe ou guillemet dans les valeurs JSON, utilise des synonymes si necessaire.',messages:[{role:'user',content:prompt}]})
+ body:JSON.stringify({model:MODEL,max_tokens:2200,system:'Tu es un generateur de flashcards JSON. Reponds UNIQUEMENT avec du JSON valide, format exact: {"cards":[{"front":"...","back":"..."}]}. Aucun texte avant ou apres. Aucun markdown. Aucune apostrophe ou guillemet dans les valeurs JSON, utilise des synonymes si necessaire.',messages:[{role:'user',content:prompt}]})
  });
  if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
  const data=await res.json();
@@ -2331,11 +2685,15 @@ async function generateFlashcards() {
  let parsed;
  try { parsed=JSON.parse(raw); }
  catch(je) {
- // Tentative de réparation basique
+ // Tentative de réparation basique (apostrophes mal échappées)
  try {
  const fixedRaw = raw.replace(/([{,]\s*")([^"]+)(":\s*")([^"]*?)(")/g, (m,a,b,c,d,e)=>a+b+c+d.replace(/"/g,"'")+e);
  parsed=JSON.parse(fixedRaw);
- } catch(je2) { throw new Error('JSON invalide — Réessaie.'); }
+ } catch(je2) {
+ // Dernier recours : réponse tronquée par l'IA, on repare en coupant proprement
+ try { parsed=repairTruncatedJson(raw); }
+ catch(je3) { throw new Error('JSON invalide — Réessaie.'); }
+ }
  }
  APP.flashcards=parsed.cards||[];
  APP.fcIndex=0; APP.fcFlipped=false;
@@ -2415,11 +2773,25 @@ function clearFileInput() {
 function handleFile(input) {
  const file=input.files[0];
  if(!file) return;
- if(file.type==='text/plain') {
+ const name=file.name.toLowerCase();
+ if(file.type==='text/plain' || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.csv')) {
  const reader=new FileReader();
  reader.onload=e=>{ document.getElementById('course-text').value=e.target.result; showFileLoaded(file.name,'Texte extrait — prêt pour analyse'); };
  reader.readAsText(file);
- } else if(file.type==='application/pdf') {
+ } else if(name.endsWith('.docx')) {
+ showToast(' Lecture du document Word...');
+ const reader=new FileReader();
+ reader.onload=async e=>{
+ try {
+ if (typeof mammoth === 'undefined') { showToast(' Librairie Word indisponible hors-ligne.'); return; }
+ const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+ const text = (result && result.value) ? result.value.trim() : '';
+ if(text){ document.getElementById('course-text').value=text; showFileLoaded(file.name,'Document Word extrait — prêt pour analyse'); }
+ else showToast('! Document Word vide ou illisible');
+ } catch(err){ showToast(' Erreur lecture du document Word'); }
+ };
+ reader.readAsArrayBuffer(file);
+ } else if(file.type==='application/pdf' || name.endsWith('.pdf')) {
  showToast(' Lecture du PDF...');
  const reader=new FileReader();
  reader.onload=async e=>{
@@ -2440,13 +2812,13 @@ function handleFile(input) {
  }catch(err){showToast(' Erreur lecture PDF');}
  };
  reader.readAsDataURL(file);
- } else if(file.type.startsWith('image/')) {
+ } else if(file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/.test(name)) {
  showToast(' Lecture de l\'image...');
  const reader=new FileReader();
  reader.onload=async e=>{
  try {
  const base64=e.target.result.split(',')[1];
- const mime=file.type;
+ const mime=file.type || 'image/jpeg';
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
@@ -2463,7 +2835,7 @@ function handleFile(input) {
  };
  reader.readAsDataURL(file);
  } else {
- showToast(' Fichier détecté : '+file.name+' — colle le texte manuellement si besoin.');
+ showToast(' Format non pris en charge pour "'+file.name+'" — colle le texte manuellement.');
  }
 }
 
@@ -2500,6 +2872,7 @@ async function analyzeCourse() {
  const titleEl = document.getElementById('course-title-input');
  const title = (titleEl && titleEl.value.trim()) || ('Cours du ' + new Date().toLocaleDateString('fr-FR'));
  const snippet = text.slice(0, 200);
+ const shared = document.getElementById('course-share-checkbox')?.checked !== false;
  try {
  const saved = getCoursesStorage();
  saved.unshift({
@@ -2515,12 +2888,42 @@ async function analyzeCourse() {
  if (saved.length > 10) saved.pop();
  setCoursesStorage(saved);
  renderCoursesInTravaux();
+ saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), result, selectedAnalysis, shared);
  showToast(' Cours "'+title+'" sauvegardé !');
  } catch(e2) { showToast('! Cours analysé mais non sauvegardé (stockage plein ?).'); }
  } catch(e) {
  showToast((e && e.name)==='AbortError' ? ' Délai dépassé. Réessaie.' : ' Erreur : '+((e && e.message)||'Connexion impossible'));
  }
  btn.disabled=false; btn.textContent=" Analyser avec l'IA";
+}
+
+// Enregistre le document tel quel (texte brut), sans passer par l'IA —
+// utile pour juste déposer un cours à disposition (soi-même ou sa promotion)
+async function saveDocWithoutAnalyzing() {
+ const text=document.getElementById('course-text').value.trim();
+ if(!text||text.length<10){ showToast('! Colle ou importe un document d\'abord'); return; }
+ const titleEl = document.getElementById('course-title-input');
+ const title = (titleEl && titleEl.value.trim()) || ('Document du ' + new Date().toLocaleDateString('fr-FR'));
+ const snippet = text.slice(0, 200);
+ const shared = document.getElementById('course-share-checkbox')?.checked !== false;
+ try {
+ const saved = getCoursesStorage();
+ saved.unshift({
+ id: Date.now(),
+ title,
+ subject: APP.currentSubject || '',
+ snippet,
+ fullText: text.slice(0, 3000),
+ result: '',
+ analysis: 'non-analysé',
+ date: new Date().toLocaleDateString('fr-FR')
+ });
+ if (saved.length > 10) saved.pop();
+ setCoursesStorage(saved);
+ renderCoursesInTravaux();
+ saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), '', 'non-analysé', shared);
+ showToast(' Document "'+title+'" enregistré !');
+ } catch(e2) { showToast('! Erreur d\'enregistrement (stockage plein ?).'); }
 }
 
 
@@ -2564,7 +2967,7 @@ function renderProgress() {
  // Graphe semaine
  const wData = getWeekData();
  const max=Math.max(...wData,1);
- const _wc=document.getElementById('week-chart'); if(_wc) _wc.innerHTML = wData.map((v,i)=>`
+ document.getElementById('week-chart').innerHTML = wData.map((v,i)=>`
  <div style="flex:1;display:flex;align-items:flex-end;justify-content:center">
  <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)||4}px;background:${v>0?(i===new Date().getDay()-1?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
  </div>`).join('');
@@ -2576,11 +2979,11 @@ function renderProgress() {
  const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
  return {s: subj.id, pct: avg};
  }).filter(x => x.pct > 0);
- const _ss=document.getElementById('subject-scores'); if(_ss) _ss.innerHTML=scores.map(({s,pct})=>{
+ document.getElementById('subject-scores').innerHTML=scores.map(({s,pct})=>{
  const subj=SUBJECTS.find(x=>x.id===s);
  return `<div style="margin-bottom:12px">
  <div style="display:flex;justify-content:space-between;margin-bottom:5px">
- <span style="font-size:13px;font-weight:500">${subj.icon} ${subj.name}</span>
+ <span style="font-size:13px;font-weight:500">${subj.name}</span>
  <span style="font-size:13px;font-weight:700;color:${subj.color}">${pct}%</span>
  </div>
  <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${subj.color}"></div></div>
@@ -2602,7 +3005,7 @@ function renderProgress() {
  const doneCount = goals.filter(g=>g.done).length;
  const goalsEl = document.getElementById('goals-count');
  if(goalsEl) goalsEl.textContent = doneCount + '/' + goals.length;
- const _gl=document.getElementById('goals-list'); if(_gl) _gl.innerHTML=goals.map(g=>`
+ document.getElementById('goals-list').innerHTML=goals.map(g=>`
  <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
  <div style="width:22px;height:22px;border-radius:50%;background:${g.done?'var(--em)':'var(--bg2)'};border:2px solid ${g.done?'var(--em)':'var(--border2)'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${g.done?'':''}</div>
  <span style="font-size:13px;color:${g.done?'var(--text)':'var(--text2)'};${g.done?'text-decoration:line-through;opacity:.6':''}">${g.text}</span>
@@ -2639,9 +3042,9 @@ function renderProfile() {
  const badgeEl=document.getElementById('profile-plan-badge');
  if(badgeEl){
  const icons={free:'FREE',premium:'PRO',vip:'VIP',admin:'ADMIN'};
- badgeEl.textContent = planKey === 'admin' ? 'Admin' : (icons[planKey] + ' - ' + planInfo.name);
+ badgeEl.textContent=(icons[planKey]||'')+ ' ' + planInfo.name;
  badgeEl.style.background=planKey==='vip'?'linear-gradient(135deg,#b45309,#f59e0b)':
- planKey==='admin'?'linear-gradient(135deg,var(--em),var(--em2))':
+ planKey==='admin'?'linear-gradient(135deg,#5b21b6,#7c3aed)':
  planKey==='premium'?'linear-gradient(135deg,var(--em),var(--em2))':'var(--bg2)';
  badgeEl.style.color=planKey==='free'?'var(--text2)':'#fff';
  }
@@ -2672,12 +3075,12 @@ function renderProfile() {
 
  const savedPrefs = getPrefs();
  const prefs=[
- {key:'notif', icon:'🔔',label:'Notifications de rappel',sub:'Chaque jour à 18h',toggled: savedPrefs.notif !== false},
- {key:'dark', icon:'◐',label:'Mode sombre',sub:'Thème sombre activé',toggled: savedPrefs.dark === true},
- {key:'sound', icon:'♪',label:'Sons & vibrations',sub:'Retour haptique',toggled: savedPrefs.sound !== false},
- {key:'stats', icon:'↗',label:'Statistiques partagées',sub:'Visible sur mon profil',toggled: savedPrefs.stats === true},
+ {key:'notif', icon:'',label:'Notifications de rappel',sub:'Chaque jour à 18h',toggled: savedPrefs.notif !== false},
+ {key:'dark', icon:'',label:'Mode sombre',sub:'Thème sombre activé',toggled: savedPrefs.dark === true},
+ {key:'sound', icon:'',label:'Sons & vibrations',sub:'Retour haptique',toggled: savedPrefs.sound !== false},
+ {key:'stats', icon:'',label:'Statistiques partagées',sub:'Visible sur mon profil',toggled: savedPrefs.stats === true},
  ];
- const _pl=document.getElementById('prefs-list'); if(_pl) _pl.innerHTML=prefs.map((p,i)=>`
+ document.getElementById('prefs-list').innerHTML=prefs.map((p,i)=>`
  <div class="pref-row" ${i===prefs.length-1?'style="border:none"':''}>
  <div style="display:flex;align-items:center;gap:12px">
  <span style="font-size:20px">${p.icon}</span>
@@ -2687,10 +3090,10 @@ function renderProfile() {
  </div>
  </div>`).join('');
 
- const _ps=document.getElementById('profile-subjects'); if(_ps) _ps.innerHTML=SUBJECTS.slice(0,5).map(s=>`
+ document.getElementById('profile-subjects').innerHTML=SUBJECTS.slice(0,5).map(s=>`
  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
  <div style="display:flex;align-items:center;gap:10px">
- <span style="font-size:18px">${s.icon}</span>
+ <span style="width:28px;height:28px;border-radius:9px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</span>
  <span style="font-size:13px;font-weight:500">${s.name}</span>
  </div>
  <span class="badge" style="background:${s.soft};color:${s.color};border:1px solid ${s.border}">Active</span>
@@ -2727,6 +3130,71 @@ function setCoursesStorage(data) {
  try { sessionStorage.setItem('studiora_courses', json); } catch(e) {}
 }
 
+// Enregistre le cours importé dans Supabase, lié au compte qui l'a importé
+async function saveCourseToDatabase(title, subject, snippet, fullText, result, analysis, shared) {
+ if (!APP.user || !APP.user.email) return;
+ try {
+ await fetch(`${SUPABASE_URL}/rest/v1/courses`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+ 'Prefer': 'return=minimal'
+ },
+ body: JSON.stringify({
+ user_email: APP.user.email,
+ title, subject, snippet,
+ full_text: fullText,
+ result, analysis,
+ level: APP.user.level || null,
+ filiere: APP.user.filiere || null,
+ shared: shared !== false
+ })
+ });
+ } catch(e) {
+ // Pas de connexion : le cache local (déjà sauvegardé) prend le relais
+ }
+}
+
+// Récupère les documents partagés par d'autres étudiants du même niveau/filière — VIP uniquement
+async function fetchSharedDocuments() {
+ if (!APP.user || APP.user.plan !== 'vip') return [];
+ const level = APP.user.level || '';
+ const filiere = APP.user.filiere || '';
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/courses?level=eq.${encodeURIComponent(level)}&filiere=eq.${encodeURIComponent(filiere)}&shared=eq.true&user_email=neq.${encodeURIComponent(APP.user.email)}&order=created_at.desc&limit=30`, {
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return [];
+ return await res.json();
+ } catch(e) {
+ return [];
+ }
+}
+
+// Récupère les cours du compte connecté depuis Supabase, et complète le cache local
+async function syncCoursesFromDatabase() {
+ if (!APP.user || !APP.user.email) return;
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/courses?user_email=eq.${encodeURIComponent(APP.user.email)}&order=created_at.desc&limit=10`, {
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return;
+ const rows = await res.json();
+ if (!Array.isArray(rows) || !rows.length) return;
+ const mapped = rows.map(r => ({
+ id: r.id, title: r.title, subject: r.subject, snippet: r.snippet,
+ fullText: r.full_text, result: r.result, analysis: r.analysis,
+ date: new Date(r.created_at).toLocaleDateString('fr-FR')
+ }));
+ setCoursesStorage(mapped);
+ renderCoursesInTravaux();
+ } catch(e) {
+ // Hors ligne : on garde ce qui est déjà en cache local
+ }
+}
+
 function renderCoursesInTravaux() {
  const el = document.getElementById('courses-list-travaux');
  if (!el) return;
@@ -2750,6 +3218,44 @@ function renderCoursesInTravaux() {
  </div>
  </div>`).join('');
  } catch(e) {}
+}
+
+async function renderSharedDocs() {
+ const el = document.getElementById('shared-docs-list');
+ if (!el) return;
+ if (APP.user.plan !== 'vip') {
+ el.innerHTML = `<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;border-radius:12px;padding:16px;text-align:center">
+ <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px"> Réservé aux membres VIP</div>
+ <div style="font-size:11px;color:#92400e;margin-bottom:10px">Accède aux cours partagés par les étudiants de ton niveau et ta filière</div>
+ <button onclick="showScreen('screen-profile')" style="background:#f59e0b;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer VIP</button>
+ </div>`;
+ return;
+ }
+ el.innerHTML = `<div style="text-align:center;padding:14px;color:var(--text3);font-size:12px">Chargement...</div>`;
+ const docs = await fetchSharedDocuments();
+ if (!docs.length) {
+ el.innerHTML = `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;color:var(--text3);font-size:13px">
+ Aucun document partagé pour l'instant dans ${escHtml(APP.user.filiere||'ta filière')} · ${escHtml(APP.user.level||'')}
+ </div>`;
+ return;
+ }
+ el.innerHTML = docs.map(d => `
+ <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="openSharedDoc('${d.id}')">
+ <div style="font-size:13px;font-weight:700;margin-bottom:2px">${escHtml(d.title||'Sans titre')}</div>
+ <div style="font-size:11px;color:var(--text3)">Partagé par un(e) camarade · ${new Date(d.created_at).toLocaleDateString('fr-FR')}</div>
+ <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.4">${escHtml((d.snippet||'').slice(0,80))}...</div>
+ </div>`).join('');
+ window._sharedDocsCache = docs;
+}
+
+function openSharedDoc(id) {
+ const d = (window._sharedDocsCache||[]).find(x => String(x.id)===String(id));
+ if (!d) return;
+ document.getElementById('course-text').value = d.full_text || '';
+ document.getElementById('analysis-result').textContent = d.result || '';
+ document.getElementById('upload-form').style.display = 'none';
+ document.getElementById('upload-result').style.display = 'flex';
+ showScreen('screen-upload');
 }
 
 function openSavedCourse(i) {
@@ -2778,6 +3284,8 @@ function deleteSavedCourse(i) {
 
 // ── SESSION & AUTH ──
 const SESSION_KEY = 'studiora_session';
+const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkeGR2bXhtZXR6eXpmbnB1b2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjc1OTIsImV4cCI6MjA5Njc0MzU5Mn0.mQv6K-GM9ErbGsR8N1usYdS0o8PWeAOOqdwuHxl8I6s';
 
 // ══════════════════════════════════════════════
 // ── SYSTÈME PREMIUM / FREEMIUM ──
@@ -2885,84 +3393,138 @@ function showUpgradeModal(reason) {
  document.body.appendChild(overlay);
 }
 
-// Paiement FedaPay
+// Paiement manuel (Wave / Orange Money) — en attendant la déclaration d'entreprenant
+// Numéros de réception par réseau — modifie ces valeurs avec tes vrais numéros
+const PAYMENT_NUMBERS = {
+ wave: '0594495247',
+ orange: '0594495247',
+ mtn: '0594495247',
+ moov: '0594495247' // Moov laissé tel quel pour l'instant (pas de lancement d'app configuré)
+};
+
 function startPayment(plan) {
  document.getElementById('upgrade-overlay')?.remove();
  const amounts={'premium':1490,'vip':3490};
  const amount=amounts[plan]||1490;
  const planName=PLANS[plan]?.name||plan;
- // FedaPay Checkout
+ const ref = 'STD-'+(APP.user.email||'').split('@')[0].toUpperCase().slice(0,6)+'-'+Date.now().toString().slice(-4);
  const overlay=document.createElement('div');
  overlay.id='payment-overlay';
  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
  overlay.innerHTML=`
- <div style="background:var(--white);border-radius:20px;padding:28px 24px;width:100%;max-width:400px">
+ <div style="background:var(--white);border-radius:20px;padding:28px 24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">
  <h3 style="font-size:18px;font-weight:800;margin-bottom:6px;text-align:center"> Paiement ${planName}</h3>
  <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px">${amount.toLocaleString()} FCFA / mois</p>
- <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
- <button onclick="fedaPayCheckout('${plan}','orange_money')" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Orange Money</button>
- <button onclick="fedaPayCheckout('${plan}','mtn_open')" style="padding:14px;border-radius:12px;border:1.5px solid #ffcc00;background:#fffdf0;color:#b8860b;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> MTN Mobile Money</button>
- <button onclick="fedaPayCheckout('${plan}','moov_money')" style="padding:14px;border-radius:12px;border:1.5px solid #0066cc;background:#f0f5ff;color:#0066cc;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Moov Money</button>
- <button onclick="fedaPayCheckout('${plan}','wave')" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Wave</button>
- <button onclick="fedaPayCheckout('${plan}','card')" style="padding:14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text1);font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"> Carte bancaire</button>
+
+ <div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:16px">
+ <p style="font-size:11px;color:var(--text3);margin-bottom:4px">RÉFÉRENCE À INDIQUER DANS LE MESSAGE DU TRANSFERT</p>
+ <p style="font-size:15px;font-weight:800;color:var(--em);letter-spacing:0.5px">${ref}</p>
  </div>
- <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
+
+ <p style="font-size:12px;color:var(--text3);margin-bottom:14px;text-align:center">Choisis ton mode de paiement — l'app s'ouvre, envoie ${amount.toLocaleString()} FCFA, puis reviens ici.</p>
+
+ <div style="display:flex;flex-direction:column;gap:10px">
+ <button onclick="openPaymentApp('orange','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Orange Money</button>
+ <button onclick="openPaymentApp('mtn','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ffcc00;background:#fffdf0;color:#b8860b;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> MTN Mobile Money</button>
+ <button onclick="openPaymentApp('moov','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #0066cc;background:#f0f5ff;color:#0066cc;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Moov Money</button>
+ <button onclick="openPaymentApp('wave','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Wave</button>
+ </div>
+
+ <p style="font-size:11px;color:var(--text3);margin-top:14px;text-align:center">Numéro de réception : <strong>${PAYMENT_NUMBERS.wave}</strong></p>
+
+ <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;margin-top:10px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
  </div>`;
  document.body.appendChild(overlay);
 }
 
-async function fedaPayCheckout(plan, method) {
- document.getElementById('payment-overlay')?.remove();
- showToast(' Redirection vers FedaPay...');
- const amounts={'premium':149000,'vip':349000}; // en centimes FCFA
- const amount=amounts[plan]||149000;
- const planName=PLANS[plan]?.name||plan;
- try {
- // Création transaction FedaPay (mode live - clé à configurer)
- const res = await fetch('https://api.fedapay.com/v1/transactions', {
- method:'POST',
- headers:{
- 'Content-Type':'application/json',
- 'Authorization':'Bearer sk_live_VOTRE_CLE_FEDAPAY' // à remplacer
- },
- body:JSON.stringify({
- description: 'Studiora '+planName,
- amount: amount,
- currency: {iso: 'XOF'},
- callback_url: 'https://maureenniamien.github.io/studiora/?payment=success&plan='+plan,
- customer: { email: APP.user.email||'', firstname: APP.user.prenom||'', lastname: APP.user.nom||'' }
- })
- });
- const data=await res.json();
- if (data.v1&&data.v1.transaction) {
- const token=data.v1.transaction.token;
- window.location.href='https://checkout.fedapay.com/'+token+'?method='+method;
- } else {
- throw new Error('Token manquant');
+// Ouvre l'app de paiement choisie via son package Android (plus fiable qu'un schéma
+// d'URL deviné), puis détecte automatiquement le retour sur Studiora pour proposer
+// la confirmation sans action manuelle en plus
+function openPaymentApp(method, plan, ref, amount) {
+ const packages = {
+ wave: 'com.wave.personal',
+ orange: 'com.orange.myorange.oci',
+ mtn: 'mtnft.momo.consumer',
+ moov: null // package non confirmé — ouverture directe du site en attendant
+ };
+ const fallbackUrls = {
+ wave: 'https://www.wave.com/fr/',
+ orange: 'https://www.orange.ci/fr/n-orange-money.html',
+ mtn: 'https://www.mtn.ci/momo/',
+ moov: 'https://moov-africa.ci/'
+ };
+ const pkg = packages[method];
+ const fallbackUrl = fallbackUrls[method];
+
+ // Activation immédiate dès le choix du réseau — la vérification réelle
+ // se fait ensuite manuellement via la table payment_requests
+ confirmAndActivate(plan, ref, amount, method);
+
+ if (!pkg) {
+ window.open(fallbackUrl, '_blank');
+ return;
  }
- } catch(e) {
- // Fallback : simuler l'activation pour test
- showToast(' FedaPay non configuré — mode test activé');
- setTimeout(()=>{
+ const intentUrl = `intent://#Intent;package=${pkg};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+ window.location.href = intentUrl;
+}
+
+async function confirmAndActivate(plan, ref, amount, method) {
+ const planName=PLANS[plan]?.name||plan;
+ // Activation immédiate (déclarative) — la vérification réelle du versement
+ // se fait ensuite manuellement via la table payment_requests
  APP.user.plan=plan;
  APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
  saveSession();
- showToast(' Plan '+planName+' activé (mode test) !');
+ document.getElementById('payment-overlay')?.remove();
+ showToast(' Plan '+planName+' activé ! N\'oublie pas d\'envoyer '+amount.toLocaleString()+' FCFA avec la référence '+ref);
  renderProfile();
- },1500);
+ try {
+ await fetch(`${SUPABASE_URL}/rest/v1/payment_requests`, {
+ method:'POST',
+ headers:{
+ 'Content-Type':'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+ },
+ body: JSON.stringify({
+ user_email: APP.user.email||'',
+ plan, amount, reference: ref, method,
+ status: 'auto-confirmed-non-verifie'
+ })
+ });
+ } catch(e) {
+ // Pas grave si hors ligne : l'accès est déjà donné, la trace se fera au prochain lancement si besoin
  }
 }
 
-// Vérifier paiement retour URL
-function checkPaymentReturn() {
+// Vérifier paiement retour URL — la confirmation est vérifiée côté serveur,
+// jamais acceptée telle quelle depuis l'URL (sinon n'importe qui pourrait
+// visiter ?payment=success&plan=vip pour obtenir un abonnement gratuit)
+// NB: reste en place pour quand un agrégateur automatisé (CinetPay/KKiaPay)
+// sera branché après la déclaration d'entreprenant.
+async function checkPaymentReturn() {
  const params=new URLSearchParams(window.location.search);
  if (params.get('payment')==='success') {
  const plan=params.get('plan');
- if (plan&&PLANS[plan]) {
+ const txId=params.get('tx');
+ if (!plan || !PLANS[plan] || !txId) return;
+ try {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-payment`, {
+ method:'POST',
+ headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`},
+ body: JSON.stringify({ transaction_id: txId, plan })
+ });
+ const data = await res.json();
+ if (data.confirmed) {
  APP.user.plan=plan;
  APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
  saveSession();
  showToast(' Abonnement '+PLANS[plan].name+' activé !');
+ } else {
+ showToast('! Paiement non confirmé — contacte le support si tu as été débité(e).');
+ }
+ } catch(e) {
+ showToast('! Impossible de vérifier le paiement pour le moment.');
  }
  }
 }
@@ -2980,6 +3542,7 @@ function getGlobalStats() {
  } catch(e){return{total:0,free:0,premium:0,vip:0};}
 }
 function registerUserGlobally() {
+ // Cache local (ne supprime jamais d'entrée existante)
  try {
  const users=JSON.parse(localStorage.getItem('studiora_all_users')||'[]');
  const exists=users.find(u=>u.email===APP.user.email);
@@ -2988,6 +3551,51 @@ function registerUserGlobally() {
  localStorage.setItem('studiora_all_users',JSON.stringify(users));
  }
  } catch(e){}
+
+ // Enregistrement direct dans Supabase (upsert = jamais de suppression, ni de doublon)
+ registerUserInDatabase();
+}
+
+async function registerUserInDatabase() {
+ if (!APP.user || !APP.user.email) return;
+ try {
+ await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+ 'Prefer': 'resolution=merge-duplicates'
+ },
+ body: JSON.stringify({
+ email: APP.user.email,
+ plan: APP.user.plan || 'free',
+ prenom: APP.user.prenom || null,
+ level: APP.user.level || null,
+ filiere: APP.user.filiere || null,
+ pwd_hash: APP.user.pwdHash || null
+ })
+ });
+ } catch(e) {
+ // Pas de connexion : le cache local prend le relais, on retentera à la prochaine session
+ }
+}
+
+// Cherche un compte dans Supabase par email (utilisé quand aucune session locale n'existe,
+// par ex. après réinstallation de l'app)
+async function findUserInDatabase(email) {
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=*&limit=1`, {
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return null;
+ const rows = await res.json();
+ if (!Array.isArray(rows) || !rows.length) return null;
+ const r = rows[0];
+ return { email: r.email, plan: r.plan, prenom: r.prenom, level: r.level, filiere: r.filiere, pwdHash: r.pwd_hash };
+ } catch(e) {
+ return null; // hors ligne ou erreur réseau
+ }
 }
 
 
@@ -3017,13 +3625,18 @@ function getExistingSession(email) {
  return null;
 }
 
-function doLogin() {
+async function doLogin() {
  const email = document.getElementById('login-email').value.trim();
  const prenom = (document.getElementById('login-prenom')||{}).value.trim() || '';
  const pwd = (document.getElementById('login-pwd')||{}).value || '';
  if (!email) { showToast('! Entre ton email'); return; }
  if (!pwd) { showToast('! Entre ton mot de passe'); return; }
- const existing = getExistingSession(email);
+ let existing = getExistingSession(email);
+ if (!existing) {
+ // Pas de session locale (ex: app réinstallée) → on cherche le compte dans la base
+ showToast(' Vérification du compte...');
+ existing = await findUserInDatabase(email);
+ }
  if (existing) {
  // Compte existant : le mot de passe DOIT correspondre
  if (existing.pwdHash && existing.pwdHash !== simpleHash(pwd)) {
@@ -3065,50 +3678,6 @@ function changePassword() {
  document.getElementById('pwd-confirm').value = '';
  showToast(' Mot de passe changé avec succès !');
 }
-
-// ── PHOTO DE PROFIL ──
-function handleProfilePhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 2 * 1024 * 1024) { showToast('Image trop grande (max 2Mo)'); return; }
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const dataUrl = e.target.result;
-    APP.user.photo = dataUrl;
-    saveSession();
-    updateProfileAvatar();
-    showToast('Photo mise à jour !');
-  };
-  reader.readAsDataURL(file);
-}
-
-function updateProfileAvatar() {
-  const el = document.getElementById('profile-avatar');
-  if (!el) return;
-  if (APP.user.photo) {
-    el.style.backgroundImage = 'url(' + APP.user.photo + ')';
-    el.style.backgroundSize = 'cover';
-    el.style.backgroundPosition = 'center';
-    el.textContent = '';
-  } else {
-    el.style.backgroundImage = '';
-    el.textContent = (APP.user.prenom || '?')[0].toUpperCase();
-  }
-  // Aussi mettre à jour le mini avatar home
-  const homeAvatar = document.getElementById('home-avatar');
-  if (homeAvatar) {
-    if (APP.user.photo) {
-      homeAvatar.style.backgroundImage = 'url(' + APP.user.photo + ')';
-      homeAvatar.style.backgroundSize = 'cover';
-      homeAvatar.style.backgroundPosition = 'center';
-      homeAvatar.textContent = '';
-    } else {
-      homeAvatar.style.backgroundImage = '';
-      homeAvatar.textContent = (APP.user.prenom || '?')[0].toUpperCase();
-    }
-  }
-}
-
 function doLogout() {
  localStorage.removeItem(SESSION_KEY);
  APP.chatHistory = [];
@@ -3125,6 +3694,7 @@ function doLogout() {
 function _runInit() {
  try {
  checkPaymentReturn();
+ try { initAppLang(); } catch(e) { console.warn('initAppLang error:', e.message); }
  if (loadSession()) {
  SUBJECTS = getSubjects();
  try { const prefs = getPrefs(); if (prefs.dark) applyDark(true); } catch(e) {}
@@ -3309,7 +3879,7 @@ function renderTermSuggestions() {
  ac.style.display = 'flex';
  ac.innerHTML = suggestions.slice(0, 10).map(s => {
  const label = s.split('\n')[0].trim();
- const safe = s.replace(/\\/g,'\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
+ const safe = s.replace(/\\/g,'\\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
  return `<button onclick="insertSuggestion('${safe}')" style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:6px;padding:5px 10px;color:#888;font-size:11px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;transition:all .15s" onmousedown="this.style.background='#2a2a2a';this.style.color='#0f0'" onmouseup="this.style.background='#1e1e1e';this.style.color='#888'">${escHtml(label)}</button>`;
  }).join('');
 }
@@ -3321,7 +3891,7 @@ function renderEditorSuggestions() {
  if (!ac) return;
  ac.innerHTML = suggestions.slice(0, 12).map(s => {
  const label = s.split('\n')[0].trim();
- const safe = s.replace(/\\/g,'\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
+ const safe = s.replace(/\\/g,'\\\\').replace(/'/g,'&apos;').replace(/\n/g,'\\n');
  return `<button onclick="insertEditorSnippet('${safe}')" style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:6px;padding:5px 10px;color:#888;font-size:11px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;transition:all .15s">${escHtml(label)}</button>`;
  }).join('');
 }
@@ -3703,13 +4273,13 @@ function plotGraph() {
  .replace(/([Xx])\^(\d+)/g,'Math.pow(x,$2)') // x^n → Math.pow(x,n)
  .replace(/\^(\d+)/g,'**$1') // ^n → **n
  .replace(/\b([Xx])\b/g,'x') // X → x (casse)
- .replace(/\bln\(/g,'Math.log(') // ln( → Math.log(
- .replace(/\blog\(/g,'Math.log10(') // log( → Math.log10(
- .replace(/\bsqrt\(/g,'Math.sqrt(') // sqrt( → Math.sqrt(
- .replace(/\babs\(/g,'Math.abs(') // abs( → Math.abs(
- .replace(/\bsin\(/g,'Math.sin(')
- .replace(/\bcos\(/g,'Math.cos(')
- .replace(/\btan\(/g,'Math.tan(')
+ .replace(/(?<!Math\.)\bln\(/g,'Math.log(') // ln( → Math.log(
+ .replace(/(?<!Math\.)\blog\(/g,'Math.log10(') // log( → Math.log10(
+ .replace(/(?<!Math\.)\bsqrt\(/g,'Math.sqrt(') // sqrt( → Math.sqrt(
+ .replace(/(?<!Math\.)\babs\(/g,'Math.abs(') // abs( → Math.abs(
+ .replace(/(?<!Math\.)\bsin\(/g,'Math.sin(')
+ .replace(/(?<!Math\.)\bcos\(/g,'Math.cos(')
+ .replace(/(?<!Math\.)\btan\(/g,'Math.tan(')
  .replace(/\bpi\b/gi,'Math.PI') // pi → Math.PI
  .replace(/\be\b/g,'Math.E') // e → Math.E (isolé)
  .replace(/(\d)([Xx])/g,'$1*x') // 2x → 2*x
@@ -3788,8 +4358,12 @@ let dictMode = 'define';
 let dictSearchHistory = [];
 function selectDictMode(btn, mode) {
  dictMode = mode;
- document.querySelectorAll('.dict-mode-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
+ document.querySelectorAll('.dict-mode-btn').forEach(b=>{
+ b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';
+ const dot=b.querySelector('.dm-dot'); if(dot) dot.style.background='transparent';
+ });
  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+ const activeDot=btn.querySelector('.dm-dot'); if(activeDot) activeDot.style.background='var(--em)';
 }
 async function searchDict() {
  const word = document.getElementById('dict-word').value.trim();
@@ -3824,7 +4398,7 @@ async function searchDict() {
  }
 }
 function renderDictHistory() {
- const modeLabels = {define:'Définition',translate_en:'EN→FR',translate_fr:'FR→EN'};
+ const modeLabels = {define:'Définition',translate_en:'EN→FR',translate_fr:'FR→EN',translate_es:'FR→ES',translate_ar:'FR→AR',translate_de:'FR→DE',translate_pt:'FR→PT',translate_zh:'FR→ZH'};
  document.getElementById('dict-history').innerHTML = dictSearchHistory.map(h=>`
  <div onclick="document.getElementById('dict-word').value='${escHtml(h.word)}';searchDict()" style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
  <span style="font-size:13px;font-weight:500">${escHtml(h.word)}</span>
@@ -3877,7 +4451,7 @@ async function generateDiagram() {
 Fournis le code PlantUML complet (commence par @startuml, termine par @enduml) et explique brièvement les choix de conception. Adapté au contexte académique africain et à la filière concernée.`;
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',headers:{'Content-Type':'application/json',},
- body:JSON.stringify({model:MODEL,max_tokens:1200,system:'Tu es un professeur expert qui génère des flashcards éducatives en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
+ body:JSON.stringify({model:MODEL,max_tokens:2200,system:'Tu es un professeur expert en modélisation UML qui génère des diagrammes PlantUML clairs et pédagogiques.',messages:[{role:'user',content:prompt}]})
  });
  const data = await res.json();
  currentDiagCode = (data.content && data.content[0] ? data.content[0].text : '') || 'Erreur';
@@ -4096,7 +4670,7 @@ function setAppLang(lang, btn) {
  if (info) info.style.display = 'none';
 }
 
-function applyAppLang(lang) {
+function applyAppLang(lang, silent) {
   if (typeof APP_TRANSLATIONS === 'undefined') return;
   const t = APP_TRANSLATIONS[lang] || APP_TRANSLATIONS['fr'];
   APP_LANG = lang;
@@ -4185,14 +4759,14 @@ function applyAppLang(lang) {
 
   const info = document.getElementById('app-lang-info');
   if (info) info.style.display = 'none';
-  try { showToast('✓ Langue changee !'); } catch(e) {}
+  if (!silent) { try { showToast('✓ Langue changée !'); } catch(e) {} }
 }
 
 
 function initAppLang() {
  const lang = APP_LANG;
  // Au demarrage, appliquer seulement les traductions statiques (pas de re-render des ecrans)
- try { applyAppLang(lang); } catch(e) { console.warn('initAppLang error:', e.message); }
+ try { applyAppLang(lang, true); } catch(e) { console.warn('initAppLang error:', e.message); }
  // Highlight le bouton actif dans le profil
  const btns = document.querySelectorAll('.app-lang-btn');
  const langMap = ['fr','en','es','ar','pt','de'];
@@ -4386,6 +4960,9 @@ function mediaExtractAudio() {
 }
 
 </script>
+
+<!-- ── TOAST ── -->
+<div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- ── BOTTOM NAV GLOBALE ── -->
 <nav id="global-nav" class="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200">

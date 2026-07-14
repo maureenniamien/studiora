@@ -10,7 +10,7 @@ workflows:
         script: npm install
       - name: Sync Capacitor
         script: |
-          npx cap add android || true
+          test -d android || npx cap add android
           npx cap sync android
       - name: Patch AndroidManifest
         script: |
