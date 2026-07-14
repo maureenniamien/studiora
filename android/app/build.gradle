@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.maureen.studiora.app"
+    namespace = "com.maureen.studiora"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.studiora.app"
+        applicationId "com.maureen.studiora"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
