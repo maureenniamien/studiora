@@ -3061,6 +3061,7 @@ function renderProfile() {
  safeSet('admin-free', stats.free);
  safeSet('admin-premium', stats.premium);
  safeSet('admin-vip', stats.vip);
+ refreshGlobalStatsFromDB(); // corrige avec les vrais chiffres Supabase dès que possible
  }
  }
  // Compteurs usage
@@ -3534,6 +3535,7 @@ async function checkPaymentReturn() {
 
 // Stats globales (admin)
 function getGlobalStats() {
+ // Repli local immédiat (pendant que la vraie requête Supabase arrive)
  try {
  const users=JSON.parse(localStorage.getItem('studiora_all_users')||'[]');
  return {
@@ -3544,6 +3546,35 @@ function getGlobalStats() {
  };
  } catch(e){return{total:0,free:0,premium:0,vip:0};}
 }
+
+// Vraie source de vérité : interroge directement la base Supabase.
+// Mis à jour de façon asynchrone dans le DOM une fois la réponse reçue.
+async function refreshGlobalStatsFromDB() {
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=plan`, {
+ headers: {
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+ }
+ });
+ if (!res.ok) return;
+ const rows = await res.json();
+ const stats = {
+ total: rows.length,
+ free: rows.filter(u=>!u.plan||u.plan==='free').length,
+ premium: rows.filter(u=>u.plan==='premium').length,
+ vip: rows.filter(u=>u.plan==='vip').length,
+ };
+ const setIfPresent = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+ setIfPresent('admin-total', stats.total);
+ setIfPresent('admin-free', stats.free);
+ setIfPresent('admin-premium', stats.premium);
+ setIfPresent('admin-vip', stats.vip);
+ } catch(e) {
+ // Pas de connexion : les chiffres locaux (affichés en premier) restent visibles
+ }
+}
+
 function registerUserGlobally() {
  // Cache local (ne supprime jamais d'entrée existante)
  try {

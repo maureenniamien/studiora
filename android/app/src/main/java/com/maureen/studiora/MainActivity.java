@@ -1,14 +1,16 @@
 package com.maureen.studiora;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.util.Log;
-import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -16,6 +18,7 @@ import java.io.InputStream;
 public class MainActivity extends BridgeActivity {
 
     private static final String TAG = "StudioraMain";
+    private static final int MIC_PERMISSION_CODE = 2001;
     private Intent pendingIntent = null;
 
     @Override
@@ -23,20 +26,18 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         try {
             pendingIntent = getIntent();
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.RECORD_AUDIO}, MIC_PERMISSION_CODE);
+            }
+
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().postDelayed(() -> {
                     try { handleShareIntent(pendingIntent); }
                     catch (Exception e) { Log.e(TAG, "share intent error", e); }
                 }, 1200);
-
-                getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
-                    @Override
-                    public void onPermissionRequest(final PermissionRequest request) {
-                        try {
-                            runOnUiThread(() -> request.grant(request.getResources()));
-                        } catch (Exception e) { Log.e(TAG, "permission grant error", e); }
-                    }
-                });
             }
         } catch (Exception e) {
             Log.e(TAG, "onCreate error", e);
