@@ -1948,8 +1948,11 @@ async function toggleVoiceInput() {
  // 1) Forcer la vraie demande de permission Android via getUserMedia.
  // C'est ce qui fait apparaître le micro dans les paramètres de l'app —
  // le SpeechRecognition seul ne déclenche pas ce dialogue système dans une WebView.
+ // On libère IMMÉDIATEMENT le flux ensuite : SpeechRecognition gère son propre accès
+ // au micro, et le garder ouvert ici crée un conflit de ressource (NotReadableError).
  try {
- micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+ const permStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+ permStream.getTracks().forEach(t => t.stop());
  } catch (permErr) {
  if (permErr.name === 'NotAllowedError' || permErr.name === 'SecurityError') {
  showToast('⚠ Micro refusé. Autorise-le dans Paramètres > Apps > Studiora > Autorisations');
