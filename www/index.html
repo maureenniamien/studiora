@@ -1571,6 +1571,18 @@ let APP = {
 
 // ── NAVIGATION ──
 let screenHistory = [];
+
+// Appelée par MainActivity.java quand l'utilisateur appuie sur le bouton retour physique.
+// Renvoie true si géré en interne (retour à l'écran précédent), false pour laisser Android fermer l'app.
+window.onAndroidBackPressed = function() {
+ const curr = document.querySelector('.screen:not(.hidden)');
+ if (!curr) return false;
+ const exitScreens = ['screen-home', 'screen-onboarding', 'screen-login'];
+ if (exitScreens.includes(curr.id)) return false;
+ goBack();
+ return true;
+};
+
 // Screens qui affichent la nav globale
 const NAV_SCREENS = new Set(['screen-home',
  'screen-progress','screen-profile','screen-travaux','screen-upload',
@@ -1932,7 +1944,42 @@ let voiceRecognition = null;
 let isListening = false;
 let micStream = null; // garde le flux micro ouvert le temps de l'écoute
 
+// Callbacks appelés par MainActivity.java (reconnaissance vocale native Android,
+// utilisée en priorité car l'API web SpeechRecognition échoue en WebView sur cet appareil)
+window.onAndroidSTTStart = function() {
+ isListening = true;
+ const micBtn = document.getElementById('mic-btn');
+ if (micBtn) { micBtn.style.background = 'var(--em)'; micBtn.style.color = '#fff'; micBtn.style.borderColor = 'var(--em)'; }
+};
+window.onAndroidSTTResult = function(text) {
+ isListening = false;
+ const micBtn = document.getElementById('mic-btn');
+ if (micBtn) { micBtn.style.background = 'var(--white)'; micBtn.style.color = 'var(--text2)'; micBtn.style.borderColor = 'var(--border)'; }
+ if (text) {
+ const input = document.getElementById('chat-input');
+ input.value = (input.value ? input.value + ' ' : '') + text;
+ autoResize(input);
+ } else {
+ showToast('⚠ Rien entendu, réessaie');
+ }
+};
+window.onAndroidSTTError = function(code) {
+ isListening = false;
+ const micBtn = document.getElementById('mic-btn');
+ if (micBtn) { micBtn.style.background = 'var(--white)'; micBtn.style.color = 'var(--text2)'; micBtn.style.borderColor = 'var(--border)'; }
+ if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
+ else showToast('⚠ Micro : erreur (' + code + '), réessaie');
+};
+
 async function toggleVoiceInput() {
+ // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
+ if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
+ if (isListening) { window.AndroidSTT.stopListening(); return; }
+ window.AndroidSTT.startListening();
+ return;
+ }
+
+ // 2) Repli : API Web Speech (fonctionne dans un vrai navigateur, ex. Chrome)
  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
  if (!SpeechRecognitionAPI) {
  showToast('⚠ Reconnaissance vocale indisponible sur cet appareil');
@@ -1945,11 +1992,6 @@ async function toggleVoiceInput() {
  return;
  }
 
- // 1) Forcer la vraie demande de permission Android via getUserMedia.
- // C'est ce qui fait apparaître le micro dans les paramètres de l'app —
- // le SpeechRecognition seul ne déclenche pas ce dialogue système dans une WebView.
- // On libère IMMÉDIATEMENT le flux ensuite : SpeechRecognition gère son propre accès
- // au micro, et le garder ouvert ici crée un conflit de ressource (NotReadableError).
  try {
  const permStream = await navigator.mediaDevices.getUserMedia({ audio: true });
  permStream.getTracks().forEach(t => t.stop());
@@ -2003,12 +2045,17 @@ async function toggleVoiceInput() {
 }
 
 
+
 function speakMessage(b64text) {
- if (!('speechSynthesis' in window)) { showToast('! Synthèse vocale indisponible sur cet appareil'); return; }
  const text = decodeURIComponent(escape(atob(b64text)));
- // Nettoie le markdown basique avant de lire à voix haute
  const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
- window.speechSynthesis.cancel(); // stoppe une lecture en cours avant d'en lancer une nouvelle
+ // 1) Priorité au TTS natif Android (plus fiable dans une WebView que l'API Web Speech)
+ if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
+ try { window.AndroidTTS.speak(clean); return; } catch(e) { /* on retente en JS pur */ }
+ }
+ // 2) Repli : API Web Speech du navigateur
+ if (!('speechSynthesis' in window)) { showToast('⚠ Synthèse vocale indisponible sur cet appareil'); return; }
+ window.speechSynthesis.cancel();
  const utter = new SpeechSynthesisUtterance(clean);
  utter.lang = 'fr-FR';
  utter.rate = 1;

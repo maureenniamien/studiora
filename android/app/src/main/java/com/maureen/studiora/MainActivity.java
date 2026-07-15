@@ -6,7 +6,12 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.OpenableColumns;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.util.Base64;
 import android.util.Log;
@@ -16,6 +21,7 @@ import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Locale;
 
 public class MainActivity extends BridgeActivity {
@@ -24,6 +30,7 @@ public class MainActivity extends BridgeActivity {
     private static final int MIC_PERMISSION_CODE = 2001;
     private Intent pendingIntent = null;
     private TextToSpeech tts;
+    private SpeechRecognizer speechRecognizer;
 
     private class WebAppInterface {
         @JavascriptInterface
@@ -31,6 +38,18 @@ public class MainActivity extends BridgeActivity {
             if (tts != null && text != null && !text.isEmpty()) {
                 tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "studiora_tts");
             }
+        }
+
+        @JavascriptInterface
+        public void startListening() {
+            new Handler(Looper.getMainLooper()).post(() -> startNativeListening());
+        }
+
+        @JavascriptInterface
+        public void stopListening() {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (speechRecognizer != null) speechRecognizer.stopListening();
+            });
         }
     }
 
@@ -54,6 +73,7 @@ public class MainActivity extends BridgeActivity {
 
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidTTS");
+                getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidSTT");
                 getBridge().getWebView().postDelayed(() -> {
                     try { handleShareIntent(pendingIntent); }
                     catch (Exception e) { Log.e(TAG, "share intent error", e); }
@@ -61,6 +81,51 @@ public class MainActivity extends BridgeActivity {
             }
         } catch (Exception e) {
             Log.e(TAG, "onCreate error", e);
+        }
+    }
+
+    private void runJs(String js) {
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
+        }
+    }
+
+    private void startNativeListening() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            runJs("window.onAndroidSTTError && window.onAndroidSTTError('unavailable');");
+            return;
+        }
+        if (speechRecognizer == null) {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            speechRecognizer.setRecognitionListener(new RecognitionListener() {
+                @Override public void onReadyForSpeech(Bundle params) {
+                    runJs("window.onAndroidSTTStart && window.onAndroidSTTStart();");
+                }
+                @Override public void onResults(Bundle results) {
+                    ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    String text = (matches != null && !matches.isEmpty()) ? matches.get(0) : "";
+                    runJs("window.onAndroidSTTResult && window.onAndroidSTTResult('"
+                            + text.replace("\\", "\\\\").replace("'", "\\'") + "');");
+                }
+                @Override public void onError(int error) {
+                    runJs("window.onAndroidSTTError && window.onAndroidSTTError('" + error + "');");
+                }
+                @Override public void onEndOfSpeech() {}
+                @Override public void onBeginningOfSpeech() {}
+                @Override public void onRmsChanged(float rmsdB) {}
+                @Override public void onBufferReceived(byte[] buffer) {}
+                @Override public void onPartialResults(Bundle partialResults) {}
+                @Override public void onEvent(int eventType, Bundle params) {}
+            });
+        }
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR");
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+        try {
+            speechRecognizer.startListening(intent);
+        } catch (Exception e) {
+            runJs("window.onAndroidSTTError && window.onAndroidSTTError('start_failed');");
         }
     }
 
@@ -92,6 +157,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onDestroy() {
         if (tts != null) { tts.stop(); tts.shutdown(); }
+        if (speechRecognizer != null) { speechRecognizer.destroy(); }
         super.onDestroy();
     }
 
@@ -117,9 +183,7 @@ public class MainActivity extends BridgeActivity {
             String fileName = getFileName(uri);
             String js = "window.receiveSharedImage && window.receiveSharedImage('"
                     + base64 + "', '" + mimeType + "', '" + fileName.replace("'", "") + "');";
-            if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(js, null));
-            }
+            runJs(js);
         } catch (Exception e) { Log.e(TAG, "sendImageToWebView error", e); }
     }
 
