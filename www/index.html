@@ -1940,6 +1940,38 @@ function copyMessageText(b64text) {
 }
 
 // Génère et télécharge un vrai fichier Word/Excel/PowerPoint/LaTeX à partir d'une directive IA
+// Convertit un Blob en base64 pur (sans le préfixe data:...;base64,)
+function blobToBase64(blob) {
+ return new Promise((resolve, reject) => {
+ const reader = new FileReader();
+ reader.onloadend = () => resolve(reader.result.split(',')[1]);
+ reader.onerror = reject;
+ reader.readAsDataURL(blob);
+ });
+}
+
+// Callback appelé par MainActivity.java après écriture réelle dans le stockage Android
+window.onAndroidDownloadResult = function(success, info) {
+ if (success) showToast('✓ Enregistré dans Téléchargements');
+ else showToast('⚠ Échec de l\'enregistrement (' + info + ')');
+};
+
+// Enregistre un fichier de façon fiable : côté natif Android si possible (vrai fichier
+// dans le stockage du téléphone), sinon via le téléchargement navigateur standard.
+async function saveFileEverywhere(blob, filename, mimeType) {
+ if (window.AndroidDownload && typeof window.AndroidDownload.saveFile === 'function') {
+ const base64 = await blobToBase64(blob);
+ window.AndroidDownload.saveFile(base64, filename, mimeType || blob.type || 'application/octet-stream');
+ } else {
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url; a.download = filename;
+ document.body.appendChild(a); a.click(); document.body.removeChild(a);
+ setTimeout(()=>URL.revokeObjectURL(url), 3000);
+ showToast('✓ Téléchargé');
+ }
+}
+
 async function downloadGeneratedImage(imgElId) {
  const img = document.getElementById(imgElId);
  if (!img || !img.src) { showToast('⚠ Image introuvable'); return; }
@@ -1947,19 +1979,13 @@ async function downloadGeneratedImage(imgElId) {
  const res = await fetch(img.src);
  const blob = await res.blob();
  const filename = 'studiora_image_' + Date.now() + '.jpg';
- const url = URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url; a.download = filename;
- document.body.appendChild(a); a.click(); document.body.removeChild(a);
- setTimeout(()=>URL.revokeObjectURL(url), 3000);
+ await saveFileEverywhere(blob, filename, 'image/jpeg');
 
  try {
  const list = JSON.parse(localStorage.getItem('studiora_travaux_docs')||'[]');
  list.unshift({ title: img.alt || 'Image générée', type:'image', filename, date: new Date().toISOString() });
  localStorage.setItem('studiora_travaux_docs', JSON.stringify(list.slice(0,100)));
  } catch(e) {}
-
- showToast('✓ Image téléchargée');
  } catch(e) {
  showToast('⚠ Impossible de télécharger l\'image');
  }
@@ -1969,7 +1995,7 @@ async function downloadGeneratedDoc(idx) {
  const doc = window.APP_GENERATED_DOCS[idx];
  if (!doc) { showToast('⚠ Document introuvable'); return; }
  try {
- let blob, filename;
+ let blob, filename, mimeType;
  const safeTitle = (doc.title||'document').replace(/[^\w\- àâäéèêëïîôöùûüçÀÂÄÉÈÊËÏÎÔÖÙÛÜÇ]/g,'').trim() || 'document';
 
  if (doc.type === 'word') {
@@ -1982,6 +2008,7 @@ async function downloadGeneratedDoc(idx) {
  const docxDoc = new Document({ sections:[{ properties:{}, children }] });
  blob = await Packer.toBlob(docxDoc);
  filename = safeTitle + '.docx';
+ mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
  } else if (doc.type === 'excel') {
  const wb = XLSX.utils.book_new();
@@ -1992,6 +2019,7 @@ async function downloadGeneratedDoc(idx) {
  const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
  blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
  filename = safeTitle + '.xlsx';
+ mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
  } else if (doc.type === 'pptx') {
  const pres = new PptxGenJS();
@@ -2004,29 +2032,25 @@ async function downloadGeneratedDoc(idx) {
  });
  blob = await pres.write({ outputType:'blob' });
  filename = safeTitle + '.pptx';
+ mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
  } else if (doc.type === 'latex') {
  blob = new Blob([doc.content.source||''], { type:'text/plain' });
  filename = safeTitle + '.tex';
+ mimeType = 'text/plain';
 
  } else {
  showToast('⚠ Type de document non reconnu'); return;
  }
 
- const url = URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url; a.download = filename;
- document.body.appendChild(a); a.click(); document.body.removeChild(a);
- setTimeout(()=>URL.revokeObjectURL(url), 3000);
+ await saveFileEverywhere(blob, filename, mimeType);
 
- // Trace dans Travaux (utilisé par la future bibliothèque unifiée)
+ // Trace dans Travaux (utilisé par la bibliothèque unifiée)
  try {
  const list = JSON.parse(localStorage.getItem('studiora_travaux_docs')||'[]');
  list.unshift({ title: doc.title||filename, type: doc.type, filename, date: new Date().toISOString() });
  localStorage.setItem('studiora_travaux_docs', JSON.stringify(list.slice(0,100)));
  } catch(e) {}
-
- showToast('✓ Document téléchargé');
  } catch(e) {
  showToast('⚠ Erreur de génération (' + (e.message||e) + ')');
  }

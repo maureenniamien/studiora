@@ -1,13 +1,17 @@
 package com.maureen.studiora;
 
 import android.Manifest;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -21,7 +25,10 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -55,6 +62,51 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // Pont JS -> natif pour enregistrer un vrai fichier dans le stockage Android (Telechargements)
+    private class DownloadInterface {
+        @JavascriptInterface
+        public void saveFile(String base64Data, String filename, String mimeType) {
+            new Handler(Looper.getMainLooper()).post(() -> writeFileToDownloads(base64Data, filename, mimeType));
+        }
+    }
+
+    private void writeFileToDownloads(String base64Data, String filename, String mimeType) {
+        try {
+            byte[] bytes = Base64.decode(base64Data, Base64.NO_WRAP);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Downloads.DISPLAY_NAME, filename);
+                values.put(MediaStore.Downloads.MIME_TYPE, mimeType);
+                values.put(MediaStore.Downloads.IS_PENDING, 1);
+                Uri collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI;
+                Uri item = getContentResolver().insert(collection, values);
+                if (item == null) {
+                    runJs("window.onAndroidDownloadResult && window.onAndroidDownloadResult(false, 'insert_failed');");
+                    return;
+                }
+                OutputStream out = getContentResolver().openOutputStream(item);
+                if (out != null) { out.write(bytes); out.close(); }
+                values.clear();
+                values.put(MediaStore.Downloads.IS_PENDING, 0);
+                getContentResolver().update(item, values, null, null);
+            } else {
+                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                if (!dir.exists()) dir.mkdirs();
+                File file = new File(dir, filename);
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(bytes);
+                fos.close();
+            }
+            runJs("window.onAndroidDownloadResult && window.onAndroidDownloadResult(true, '"
+                    + filename.replace("'", "\\'") + "');");
+        } catch (Exception e) {
+            Log.e(TAG, "writeFileToDownloads error", e);
+            String msg = e.getMessage() != null ? e.getMessage().replace("'", "\\'") : "error";
+            runJs("window.onAndroidDownloadResult && window.onAndroidDownloadResult(false, '" + msg + "');");
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,14 +128,13 @@ public class MainActivity extends BridgeActivity {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidTTS");
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidSTT");
+                getBridge().getWebView().addJavascriptInterface(new DownloadInterface(), "AndroidDownload");
                 getBridge().getWebView().postDelayed(() -> {
                     try { handleShareIntent(pendingIntent); }
                     catch (Exception e) { Log.e(TAG, "share intent error", e); }
                 }, 1200);
             }
 
-            // API moderne : remplace l'ancien override onBackPressed(), plus fiable
-            // sur Android 13+ (predictive back) et avec les activites AndroidX/Capacitor.
             backCallback = new OnBackPressedCallback(true) {
                 @Override
                 public void handleOnBackPressed() {
@@ -93,8 +144,6 @@ public class MainActivity extends BridgeActivity {
                             value -> {
                                 boolean handledByJs = "\"true\"".equals(value);
                                 if (!handledByJs) {
-                                    // Pas gere par le JS (on est a l'accueil) : on desactive
-                                    // temporairement ce callback pour laisser le systeme fermer l'app.
                                     setEnabled(false);
                                     getOnBackPressedDispatcher().onBackPressed();
                                     setEnabled(true);
