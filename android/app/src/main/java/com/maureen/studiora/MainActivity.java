@@ -135,7 +135,7 @@ public class MainActivity extends BridgeActivity {
             getBridge().getWebView().evaluateJavascript(
                 "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
                 value -> {
-                    if (!"true".equals(value)) {
+                    if (!"\"true\"".equals(value)) {
                         runOnUiThread(MainActivity.super::onBackPressed);
                     }
                 }
