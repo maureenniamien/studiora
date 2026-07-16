@@ -20,7 +20,6 @@ import android.speech.tts.TextToSpeech;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
-import androidx.activity.OnBackPressedCallback;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
@@ -39,7 +38,6 @@ public class MainActivity extends BridgeActivity {
     private Intent pendingIntent = null;
     private TextToSpeech tts;
     private SpeechRecognizer speechRecognizer;
-    private OnBackPressedCallback backCallback;
 
     private class WebAppInterface {
         @JavascriptInterface
@@ -62,11 +60,57 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Pont JS -> natif pour enregistrer un vrai fichier dans le stockage Android (Telechargements)
     private class DownloadInterface {
         @JavascriptInterface
         public void saveFile(String base64Data, String filename, String mimeType) {
             new Handler(Looper.getMainLooper()).post(() -> writeFileToDownloads(base64Data, filename, mimeType));
+        }
+
+        @JavascriptInterface
+        public void downloadAndInstallApk(String url) {
+            new Handler(Looper.getMainLooper()).post(() -> startApkDownload(url));
+        }
+    }
+
+    private long updateDownloadId = -1;
+    private final android.content.BroadcastReceiver downloadReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, Intent intent) {
+            long id = intent.getLongExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+            if (id == updateDownloadId) {
+                installDownloadedApk();
+            }
+        }
+    };
+
+    private void startApkDownload(String url) {
+        try {
+            android.app.DownloadManager dm = (android.app.DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(Uri.parse(url));
+            request.setTitle("Mise a jour Studiora");
+            request.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "studiora_update.apk");
+            request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            updateDownloadId = dm.enqueue(request);
+            runJs("window.onApkUpdateStatus && window.onApkUpdateStatus('downloading');");
+        } catch (Exception e) {
+            Log.e(TAG, "startApkDownload error", e);
+            runJs("window.onApkUpdateStatus && window.onApkUpdateStatus('error');");
+        }
+    }
+
+    private void installDownloadedApk() {
+        try {
+            File file = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "studiora_update.apk");
+            Uri apkUri = androidx.core.content.FileProvider.getUriForFile(
+                    this, getPackageName() + ".fileprovider", file);
+            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+            installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(installIntent);
+            runJs("window.onApkUpdateStatus && window.onApkUpdateStatus('ready');");
+        } catch (Exception e) {
+            Log.e(TAG, "installDownloadedApk error", e);
+            runJs("window.onApkUpdateStatus && window.onApkUpdateStatus('error');");
         }
     }
 
@@ -129,35 +173,16 @@ public class MainActivity extends BridgeActivity {
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidTTS");
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidSTT");
                 getBridge().getWebView().addJavascriptInterface(new DownloadInterface(), "AndroidDownload");
+                androidx.core.content.ContextCompat.registerReceiver(
+                    this, downloadReceiver,
+                    new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                    androidx.core.content.ContextCompat.RECEIVER_EXPORTED
+                );
                 getBridge().getWebView().postDelayed(() -> {
                     try { handleShareIntent(pendingIntent); }
                     catch (Exception e) { Log.e(TAG, "share intent error", e); }
                 }, 1200);
             }
-
-            backCallback = new OnBackPressedCallback(true) {
-                @Override
-                public void handleOnBackPressed() {
-                    if (getBridge() != null && getBridge().getWebView() != null) {
-                        getBridge().getWebView().evaluateJavascript(
-                            "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
-                            value -> {
-                                boolean handledByJs = "\"true\"".equals(value);
-                                if (!handledByJs) {
-                                    setEnabled(false);
-                                    getOnBackPressedDispatcher().onBackPressed();
-                                    setEnabled(true);
-                                }
-                            }
-                        );
-                    } else {
-                        setEnabled(false);
-                        getOnBackPressedDispatcher().onBackPressed();
-                        setEnabled(true);
-                    }
-                }
-            };
-            getOnBackPressedDispatcher().addCallback(this, backCallback);
 
         } catch (Exception e) {
             Log.e(TAG, "onCreate error", e);
@@ -209,6 +234,31 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // Interception au plus bas niveau possible de la touche retour physique —
+    // passe avant tout traitement interne de Capacitor/AndroidX, garantissant
+    // qu'elle est toujours geree ici en premier.
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        if (event.getKeyCode() == android.view.KeyEvent.KEYCODE_BACK
+                && event.getAction() == android.view.KeyEvent.ACTION_UP) {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().evaluateJavascript(
+                    "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
+                    value -> {
+                        boolean handledByJs = "\"true\"".equals(value);
+                        if (!handledByJs) {
+                            finish();
+                        }
+                    }
+                );
+            } else {
+                finish();
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
     @Override
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -222,6 +272,7 @@ public class MainActivity extends BridgeActivity {
     public void onDestroy() {
         if (tts != null) { tts.stop(); tts.shutdown(); }
         if (speechRecognizer != null) { speechRecognizer.destroy(); }
+        try { unregisterReceiver(downloadReceiver); } catch (Exception e) { /* deja desenregistre */ }
         super.onDestroy();
     }
 

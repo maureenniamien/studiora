@@ -859,7 +859,12 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <span class="display" style="font-size:17px;font-weight:700"> Éditeur Média</span>
  </div>
+ <div style="display:flex;gap:8px;padding:12px 20px 0;background:var(--white);border-bottom:1px solid var(--border)">
+ <button id="media-tab-av" onclick="switchMediaTab('av')" style="flex:1;padding:10px;border-radius:10px 10px 0 0;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--em);border-bottom:2px solid var(--em)">Audio / Vidéo</button>
+ <button id="media-tab-canvas" onclick="switchMediaTab('canvas')" style="flex:1;padding:10px;border-radius:10px 10px 0 0;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text3);border-bottom:2px solid transparent">Créer une image</button>
+ </div>
  <div class="scroll-body" style="padding:16px 20px 100px;flex:1">
+ <div id="media-panel-av">
 
  <!-- Zone d'import -->
  <div id="media-drop" onclick="document.getElementById('media-file-input').click()"
@@ -937,6 +942,40 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div id="media-output" style="display:none;margin-top:16px;background:var(--em-soft);border:1px solid var(--em);border-radius:12px;padding:14px">
  <div style="font-size:13px;font-weight:700;color:var(--em);margin-bottom:8px"> Résultat</div>
  <a id="media-download-link" download style="display:block;text-align:center;padding:10px;background:var(--em);color:#fff;border-radius:10px;font-weight:700;font-size:13px;text-decoration:none"> Télécharger</a>
+ </div>
+
+ </div>
+
+ <!-- Panel création d'image (canvas vierge : formes, texte, symboles) -->
+ <div id="media-panel-canvas" style="display:none">
+ <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+ <button onclick="canvasAddShape('rect')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">▭ Rectangle</button>
+ <button onclick="canvasAddShape('circle')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">○ Cercle</button>
+ <button onclick="canvasAddShape('line')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">╱ Ligne</button>
+ <button onclick="canvasAddText()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">T Texte</button>
+ <button onclick="document.getElementById('canvas-image-input').click()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🖼 Image</button>
+ <input type="file" id="canvas-image-input" accept="image/*" style="display:none" onchange="canvasAddImage(this)">
+ </div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+ <button onclick="canvasAddSymbol('★')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">★</button>
+ <button onclick="canvasAddSymbol('✓')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">✓</button>
+ <button onclick="canvasAddSymbol('✕')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">✕</button>
+ <button onclick="canvasAddSymbol('→')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">→</button>
+ <button onclick="canvasAddSymbol('←')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">←</button>
+ <button onclick="canvasAddSymbol('☐')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">☐</button>
+ <button onclick="canvasAddSymbol('♥')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">♥</button>
+ <button onclick="canvasAddSymbol('⚑')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">⚑</button>
+ <button onclick="canvasAddSymbol('☀')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">☀</button>
+ <button onclick="canvasAddSymbol('☁')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">☁</button>
+ </div>
+ <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;touch-action:none">
+ <canvas id="media-canvas" width="600" height="600" style="width:100%;display:block;touch-action:none"></canvas>
+ </div>
+ <div style="display:flex;gap:8px;margin-top:10px">
+ <button onclick="canvasDeleteSelected()" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Supprimer la sélection</button>
+ <button onclick="canvasClearAll()" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Tout effacer</button>
+ </div>
+ <button onclick="canvasSaveImage()" style="width:100%;margin-top:10px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Enregistrer l'image</button>
  </div>
 
  </div>
@@ -1146,9 +1185,19 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div class="scroll-body" style="padding:16px 20px 100px">
  <div id="doceditor-empty">
  <input type="file" id="doceditor-file-input" accept=".docx,.xlsx,.xls,.txt,.tex,.md" style="display:none" onchange="handleDocEditorOpen(this)">
- <div onclick="document.getElementById('doceditor-file-input').click()" style="background:var(--white);border:2px dashed var(--border);border-radius:14px;padding:28px 16px;text-align:center;cursor:pointer">
+ <div onclick="document.getElementById('doceditor-file-input').click()" style="background:var(--white);border:2px dashed var(--border);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;margin-bottom:12px">
  <div style="font-size:14px;font-weight:700;margin-bottom:4px">Ouvrir un fichier</div>
  <div style="font-size:12px;color:var(--text3)">Word (.docx), Excel (.xlsx), texte ou LaTeX (.txt/.tex)</div>
+ </div>
+ <div style="display:flex;gap:10px">
+ <button onclick="newBlankDoc('word')" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-size:13px;font-weight:700">+ Nouveau Word</div>
+ <div style="font-size:11px;color:var(--text3)">Feuille vierge</div>
+ </button>
+ <button onclick="newBlankDoc('excel')" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-size:13px;font-weight:700">+ Nouveau Excel</div>
+ <div style="font-size:11px;color:var(--text3)">Tableau vierge</div>
+ </button>
  </div>
  <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">PowerPoint et PDF : aperçu non disponible pour l'instant, seul le téléchargement fonctionne.</div>
  </div>
@@ -1980,6 +2029,49 @@ function copyMessageText(b64text) {
 // ── ÉDITEUR DE DOCUMENTS (Word / Excel / texte-LaTeX) ──
 let docEditorState = { type: null, filename: null };
 
+const DOC_SYMBOLS = ['°','±','÷','×','≤','≥','≠','≈','½','¼','∞','√','π','Σ','Δ','→','←','↔','★','✓','✕','☐','§','€','©'];
+
+function symbolToolbarHTML() {
+ return `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;background:var(--bg2);border-radius:10px;padding:8px">
+ ${DOC_SYMBOLS.map(s => `<button onclick="insertDocSymbol('${s}')" style="width:30px;height:30px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">${s}</button>`).join('')}
+ </div>`;
+}
+
+function insertDocSymbol(sym) {
+ const el = document.getElementById('doceditor-editable');
+ if (!el) return;
+ if (el.tagName === 'TEXTAREA') {
+ const start = el.selectionStart, end = el.selectionEnd;
+ el.value = el.value.slice(0,start) + sym + el.value.slice(end);
+ el.selectionStart = el.selectionEnd = start + sym.length;
+ el.focus();
+ } else {
+ el.focus();
+ document.execCommand('insertText', false, sym);
+ }
+}
+
+function newBlankDoc(type) {
+ docEditorState = { type, filename: type==='word' ? 'nouveau_document.docx' : 'nouveau_classeur.xlsx' };
+ if (type === 'word') {
+ document.getElementById('doceditor-content').innerHTML =
+ symbolToolbarHTML() +
+ `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6" data-placeholder="Commence à écrire..."></div>`;
+ } else {
+ const blankRows = Array.from({length:8}, () => Array.from({length:5}, () => ''));
+ document.getElementById('doceditor-content').innerHTML =
+ `<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
+ <table data-sheet="Feuille1" style="border-collapse:collapse;width:100%;font-size:12px">
+ ${blankRows.map(row => `<tr>${row.map(() =>
+ `<td contenteditable="true" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px"></td>`
+ ).join('')}</tr>`).join('')}
+ </table></div>`;
+ }
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+}
+
 async function handleDocEditorOpen(input) {
  const file = input.files[0];
  if (!file) return;
@@ -1993,6 +2085,7 @@ async function handleDocEditorOpen(input) {
  const result = await mammoth.convertToHtml({ arrayBuffer });
  docEditorState.type = 'word';
  document.getElementById('doceditor-content').innerHTML =
+ symbolToolbarHTML() +
  `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6">${result.value}</div>`;
 
  } else if (ext === 'xlsx' || ext === 'xls') {
@@ -4217,7 +4310,48 @@ function _runInit() {
 }
 // On attend que tout le HTML (dont la nav) soit parsé
 if (document.readyState === 'loading') {
- document.addEventListener('DOMContentLoaded', _runInit);
+ // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
+const APP_VERSION = '1.0.0'; // à incrémenter à chaque nouvel APK publié (voir version.json)
+
+async function checkForAppUpdate() {
+ try {
+ const res = await fetch('https://maureenniamien.github.io/studiora/version.json?t=' + Date.now());
+ const data = await res.json();
+ if (data.version && data.version !== APP_VERSION && data.apkUrl) {
+ showUpdateBanner(data.version, data.apkUrl);
+ }
+ } catch(e) { /* pas de connexion ou version.json absent : silencieux */ }
+}
+
+function showUpdateBanner(newVersion, apkUrl) {
+ if (document.getElementById('update-banner')) return;
+ const el = document.createElement('div');
+ el.id = 'update-banner';
+ el.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--em);color:#fff;padding:10px 16px;padding-top:max(10px, env(safe-area-inset-top));font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:9999';
+ el.innerHTML = `<span>Nouvelle version ${escHtml(newVersion)} disponible</span>
+ <div style="display:flex;gap:6px;flex-shrink:0">
+ <button onclick="startAppUpdate('${apkUrl}')" style="background:#fff;color:var(--em);border:none;border-radius:6px;padding:6px 10px;font-weight:700;font-size:11px;cursor:pointer">Mettre à jour</button>
+ <button onclick="document.getElementById('update-banner').remove()" style="background:none;color:#fff;border:none;font-size:16px;cursor:pointer;padding:0 4px">✕</button>
+ </div>`;
+ document.body.prepend(el);
+}
+
+window.onApkUpdateStatus = function(status) {
+ if (status === 'downloading') showToast('✓ Téléchargement de la mise à jour...');
+ else if (status === 'ready') showToast('✓ Suis les instructions Android pour terminer l\'installation');
+ else showToast('⚠ Erreur lors de la mise à jour, réessaie');
+};
+
+function startAppUpdate(apkUrl) {
+ if (window.AndroidDownload && typeof window.AndroidDownload.downloadAndInstallApk === 'function') {
+ window.AndroidDownload.downloadAndInstallApk(apkUrl);
+ } else {
+ window.open(apkUrl, '_blank');
+ }
+}
+
+document.addEventListener('DOMContentLoaded', _runInit);
+setTimeout(checkForAppUpdate, 2500);
 } else {
  setTimeout(_runInit, 0);
 }
@@ -5338,6 +5472,176 @@ function initLevelBtns() {
 // ── ÉDITEUR MÉDIA ──
 let _mediaFile = null;
 let _mediaEl = null;
+
+// ── Onglets Éditeur Média ──
+function switchMediaTab(tab) {
+ const avBtn = document.getElementById('media-tab-av');
+ const cvBtn = document.getElementById('media-tab-canvas');
+ const avPanel = document.getElementById('media-panel-av');
+ const cvPanel = document.getElementById('media-panel-canvas');
+ if (tab === 'av') {
+ avBtn.style.color = 'var(--em)'; avBtn.style.borderBottomColor = 'var(--em)';
+ cvBtn.style.color = 'var(--text3)'; cvBtn.style.borderBottomColor = 'transparent';
+ avPanel.style.display = 'block'; cvPanel.style.display = 'none';
+ } else {
+ cvBtn.style.color = 'var(--em)'; cvBtn.style.borderBottomColor = 'var(--em)';
+ avBtn.style.color = 'var(--text3)'; avBtn.style.borderBottomColor = 'transparent';
+ cvPanel.style.display = 'block'; avPanel.style.display = 'none';
+ initMediaCanvas();
+ }
+}
+
+// ── Moteur de canvas : formes, texte, symboles, images, déplacement au doigt ──
+let _canvasEl = null, _canvasCtx = null, _canvasObjects = [], _canvasSelected = null;
+let _canvasDrag = null, _canvasInit = false;
+
+function initMediaCanvas() {
+ if (_canvasInit) return;
+ _canvasEl = document.getElementById('media-canvas');
+ _canvasCtx = _canvasEl.getContext('2d');
+ _canvasInit = true;
+
+ const getPos = (e) => {
+ const rect = _canvasEl.getBoundingClientRect();
+ const scaleX = _canvasEl.width / rect.width, scaleY = _canvasEl.height / rect.height;
+ const pt = e.touches ? e.touches[0] : e;
+ return { x: (pt.clientX - rect.left) * scaleX, y: (pt.clientY - rect.top) * scaleY };
+ };
+ const hitTest = (x,y) => {
+ for (let i = _canvasObjects.length-1; i >= 0; i--) {
+ const o = _canvasObjects[i];
+ if (x >= o.x-40 && x <= o.x+40 && y >= o.y-40 && y <= o.y+40) return o;
+ }
+ return null;
+ };
+ const onDown = (e) => {
+ const p = getPos(e);
+ const hit = hitTest(p.x, p.y);
+ _canvasSelected = hit;
+ if (hit) { _canvasDrag = { obj:hit, offX:p.x-hit.x, offY:p.y-hit.y }; e.preventDefault(); }
+ redrawCanvas();
+ };
+ const onMove = (e) => {
+ if (!_canvasDrag) return;
+ const p = getPos(e);
+ _canvasDrag.obj.x = p.x - _canvasDrag.offX;
+ _canvasDrag.obj.y = p.y - _canvasDrag.offY;
+ redrawCanvas();
+ e.preventDefault();
+ };
+ const onUp = () => { _canvasDrag = null; };
+
+ _canvasEl.addEventListener('mousedown', onDown);
+ _canvasEl.addEventListener('mousemove', onMove);
+ _canvasEl.addEventListener('mouseup', onUp);
+ _canvasEl.addEventListener('touchstart', onDown, {passive:false});
+ _canvasEl.addEventListener('touchmove', onMove, {passive:false});
+ _canvasEl.addEventListener('touchend', onUp);
+
+ redrawCanvas();
+}
+
+function redrawCanvas() {
+ const ctx = _canvasCtx;
+ ctx.clearRect(0,0,_canvasEl.width,_canvasEl.height);
+ ctx.fillStyle = '#fff';
+ ctx.fillRect(0,0,_canvasEl.width,_canvasEl.height);
+
+ _canvasObjects.forEach(o => {
+ ctx.save();
+ if (o.type === 'rect') {
+ ctx.strokeStyle = '#1B5E42'; ctx.lineWidth = 3;
+ ctx.strokeRect(o.x-40, o.y-30, 80, 60);
+ } else if (o.type === 'circle') {
+ ctx.strokeStyle = '#1B5E42'; ctx.lineWidth = 3;
+ ctx.beginPath(); ctx.arc(o.x, o.y, 35, 0, Math.PI*2); ctx.stroke();
+ } else if (o.type === 'line') {
+ ctx.strokeStyle = '#1B5E42'; ctx.lineWidth = 3;
+ ctx.beginPath(); ctx.moveTo(o.x-40,o.y); ctx.lineTo(o.x+40,o.y); ctx.stroke();
+ } else if (o.type === 'text' || o.type === 'symbol') {
+ ctx.fillStyle = '#111';
+ ctx.font = (o.type==='symbol' ? '32px' : '18px') + " 'Plus Jakarta Sans', sans-serif";
+ ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ ctx.fillText(o.text, o.x, o.y);
+ } else if (o.type === 'image' && o.img) {
+ const w = 100, h = 100 * (o.img.height/o.img.width);
+ ctx.drawImage(o.img, o.x-w/2, o.y-h/2, w, h);
+ }
+ if (o === _canvasSelected) {
+ ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
+ ctx.strokeRect(o.x-45, o.y-45, 90, 90);
+ }
+ ctx.restore();
+ });
+}
+
+function canvasAddShape(type) {
+ initMediaCanvas();
+ _canvasObjects.push({ type, x: _canvasEl.width/2, y: _canvasEl.height/2 });
+ _canvasSelected = _canvasObjects[_canvasObjects.length-1];
+ redrawCanvas();
+}
+
+function canvasAddText() {
+ initMediaCanvas();
+ const text = prompt('Texte à ajouter :');
+ if (!text) return;
+ _canvasObjects.push({ type:'text', text, x: _canvasEl.width/2, y: _canvasEl.height/2 });
+ _canvasSelected = _canvasObjects[_canvasObjects.length-1];
+ redrawCanvas();
+}
+
+function canvasAddSymbol(sym) {
+ initMediaCanvas();
+ _canvasObjects.push({ type:'symbol', text: sym, x: _canvasEl.width/2, y: _canvasEl.height/2 });
+ _canvasSelected = _canvasObjects[_canvasObjects.length-1];
+ redrawCanvas();
+}
+
+function canvasAddImage(input) {
+ const file = input.files[0];
+ if (!file) return;
+ initMediaCanvas();
+ const reader = new FileReader();
+ reader.onload = (e) => {
+ const img = new Image();
+ img.onload = () => {
+ const obj = { type:'image', img, x:_canvasEl.width/2, y:_canvasEl.height/2 };
+ _canvasObjects.push(obj);
+ _canvasSelected = obj;
+ redrawCanvas();
+ };
+ img.src = e.target.result;
+ };
+ reader.readAsDataURL(file);
+}
+
+function canvasDeleteSelected() {
+ if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasObjects = _canvasObjects.filter(o => o !== _canvasSelected);
+ _canvasSelected = null;
+ redrawCanvas();
+}
+
+function canvasClearAll() {
+ _canvasObjects = []; _canvasSelected = null;
+ redrawCanvas();
+}
+
+async function canvasSaveImage() {
+ _canvasSelected = null; redrawCanvas(); // retire le cadre de sélection avant export
+ _canvasEl.toBlob(async (blob) => {
+ if (!blob) { showToast('⚠ Erreur d\'export'); return; }
+ const filename = 'studiora_creation_' + Date.now() + '.png';
+ await saveFileEverywhere(blob, filename, 'image/png');
+ try {
+ const list = JSON.parse(localStorage.getItem('studiora_travaux_docs')||'[]');
+ list.unshift({ title:'Création image', type:'image', filename, date:new Date().toISOString() });
+ localStorage.setItem('studiora_travaux_docs', JSON.stringify(list.slice(0,100)));
+ } catch(e) {}
+ }, 'image/png');
+}
+
 
 function loadMediaFile(input) {
  const file = input.files[0];
