@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,6 +14,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.2/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
  --bg: #F7F6F2;
@@ -1734,7 +1737,20 @@ Tes principes :
 - Encourage toujours à la fin d'une explication
 - Tu connais les programmes ivoiriens : BEPC, BAC (séries A,B,C,D,E), et les filières universitaires de toutes disciplines (Informatique, MIAGE, Géographie, Droit, Médecine, Économie, Génie Civil, Géomatique, etc.)
 - Adapte TON discours à la filière réelle de l'étudiant. Un étudiant en Géographie n'a rien à voir avec MIAGE/ASSRI. Ne mentionne MIAGE/ASSRI que si l'étudiant est explicitement dans cette filière
-- Utilise le profil utilisateur (niveau, filière) pour personnaliser chaque réponse`;
+- Utilise le profil utilisateur (niveau, filière) pour personnaliser chaque réponse
+
+GÉNÉRATION DE DOCUMENTS : si l'utilisateur demande explicitement de créer/générer un document Word, Excel, PowerPoint ou LaTeX (ex. "crée-moi un document Word sur...", "fais-moi un tableau Excel de...", "génère une présentation PowerPoint sur..."), réponds avec une courte phrase d'introduction PUIS un bloc structuré exactement dans ce format (rien d'autre après) :
+[DOC_START]
+{"type":"word"|"excel"|"pptx"|"latex","title":"Titre du document","content":{...}}
+[DOC_END]
+
+Format de "content" selon le type :
+- word : {"paragraphs":[{"text":"...","heading":1|2|3|null,"bold":false}]}
+- excel : {"sheets":[{"name":"Feuille1","rows":[["En-tête1","En-tête2"],["val1","val2"]]}]}
+- pptx : {"slides":[{"title":"...","bullets":["point 1","point 2"]}]}
+- latex : {"source":"\\\\documentclass{article}...code LaTeX complet et compilable..."}
+
+N'utilise ce format QUE si un document est explicitement demandé. Pour toute autre question, réponds normalement en texte.`;
 
 function renderChat() {
  const subj = SUBJECTS.find(s=>s.id===APP.currentSubject) || SUBJECTS[0];
@@ -1820,6 +1836,20 @@ function reRenderMessages() {
  scrollChat();
 }
 
+// Stocke les documents générés par l'IA (référencés par index dans les boutons de téléchargement)
+window.APP_GENERATED_DOCS = window.APP_GENERATED_DOCS || [];
+
+// Extrait un bloc [DOC_START]{...}[DOC_END] du texte de réponse IA, s'il y en a un
+function extractDocDirective(text) {
+ if (!text) return { cleanText: text, doc: null };
+ const m = text.match(/\[DOC_START\]([\s\S]*?)\[DOC_END\]/);
+ if (!m) return { cleanText: text, doc: null };
+ let doc = null;
+ try { doc = JSON.parse(m[1].trim()); } catch(e) { doc = null; }
+ const cleanText = text.replace(m[0], '').trim();
+ return { cleanText, doc };
+}
+
 function renderMsgHTML(m) {
  if (m.role === 'user') {
  if (m.content && typeof m.content === 'object' && m.content.imagePreview) {
@@ -1830,18 +1860,141 @@ function renderMsgHTML(m) {
  }
  return `<div class="msg-row user"><div class="msg-bubble user">${escHtml(m.content)}</div></div>`;
  } else {
- const b64 = btoa(unescape(encodeURIComponent(m.content||'')));
+ const { cleanText, doc } = extractDocDirective(m.content);
+ const b64 = btoa(unescape(encodeURIComponent(cleanText||'')));
+ let docCard = '';
+ if (doc) {
+ const idx = window.APP_GENERATED_DOCS.push(doc) - 1;
+ const labels = { word:'DOC', excel:'XLS', pptx:'PPT', latex:'TEX' };
+ const typeNames = { word:'Document Word', excel:'Classeur Excel', pptx:'Présentation PowerPoint', latex:'Document LaTeX' };
+ docCard = `<div style="margin-top:8px;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;background:var(--bg2)">
+ <div style="width:38px;height:38px;border-radius:9px;background:var(--em);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${labels[doc.type]||'DOC'}</div>
+ <div style="flex:1;min-width:0">
+ <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(doc.title||'Document')}</div>
+ <div style="font-size:11px;color:var(--text2)">${typeNames[doc.type]||''}</div>
+ </div>
+ <button onclick="downloadGeneratedDoc(${idx})" title="Télécharger" style="background:var(--em);border:none;color:#fff;border-radius:8px;padding:9px 12px;cursor:pointer;font-size:12px;font-weight:600;flex-shrink:0">↓</button>
+ </div>`;
+ }
  return `<div class="msg-row">
  <div>
- <div class="msg-bubble ai">${formatAiMsg(m.content)}</div>
+ <div class="msg-bubble ai">${formatAiMsg(cleanText)}${docCard}</div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${m.time || ''}</div>
  <button onclick="speakMessage('${b64}')" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
  </button>
+ <button onclick="copyMessageText('${b64}')" title="Copier" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+ </button>
  </div>
  </div>
  </div>`;
+ }
+}
+
+function copyMessageText(b64text) {
+ const text = decodeURIComponent(escape(atob(b64text)));
+ if (navigator.clipboard && navigator.clipboard.writeText) {
+ navigator.clipboard.writeText(text).then(
+ () => showToast('✓ Texte copié'),
+ () => showToast('⚠ Impossible de copier')
+ );
+ } else {
+ showToast('⚠ Copie non supportée sur cet appareil');
+ }
+}
+
+// Génère et télécharge un vrai fichier Word/Excel/PowerPoint/LaTeX à partir d'une directive IA
+async function downloadGeneratedImage(imgElId) {
+ const img = document.getElementById(imgElId);
+ if (!img || !img.src) { showToast('⚠ Image introuvable'); return; }
+ try {
+ const res = await fetch(img.src);
+ const blob = await res.blob();
+ const filename = 'studiora_image_' + Date.now() + '.jpg';
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url; a.download = filename;
+ document.body.appendChild(a); a.click(); document.body.removeChild(a);
+ setTimeout(()=>URL.revokeObjectURL(url), 3000);
+
+ try {
+ const list = JSON.parse(localStorage.getItem('studiora_travaux_docs')||'[]');
+ list.unshift({ title: img.alt || 'Image générée', type:'image', filename, date: new Date().toISOString() });
+ localStorage.setItem('studiora_travaux_docs', JSON.stringify(list.slice(0,100)));
+ } catch(e) {}
+
+ showToast('✓ Image téléchargée');
+ } catch(e) {
+ showToast('⚠ Impossible de télécharger l\'image');
+ }
+}
+
+async function downloadGeneratedDoc(idx) {
+ const doc = window.APP_GENERATED_DOCS[idx];
+ if (!doc) { showToast('⚠ Document introuvable'); return; }
+ try {
+ let blob, filename;
+ const safeTitle = (doc.title||'document').replace(/[^\w\- àâäéèêëïîôöùûüçÀÂÄÉÈÊËÏÎÔÖÙÛÜÇ]/g,'').trim() || 'document';
+
+ if (doc.type === 'word') {
+ const { Document, Packer, Paragraph, HeadingLevel, TextRun } = docx;
+ const levels = {1:HeadingLevel.HEADING_1, 2:HeadingLevel.HEADING_2, 3:HeadingLevel.HEADING_3};
+ const children = (doc.content.paragraphs||[]).map(p => {
+ if (p.heading) return new Paragraph({ text: p.text||'', heading: levels[p.heading]||HeadingLevel.HEADING_1 });
+ return new Paragraph({ children:[ new TextRun({ text:p.text||'', bold: !!p.bold }) ] });
+ });
+ const docxDoc = new Document({ sections:[{ properties:{}, children }] });
+ blob = await Packer.toBlob(docxDoc);
+ filename = safeTitle + '.docx';
+
+ } else if (doc.type === 'excel') {
+ const wb = XLSX.utils.book_new();
+ (doc.content.sheets||[]).forEach(sheet => {
+ const ws = XLSX.utils.aoa_to_sheet(sheet.rows||[]);
+ XLSX.utils.book_append_sheet(wb, ws, (sheet.name||'Feuille1').substring(0,31));
+ });
+ const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+ blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+ filename = safeTitle + '.xlsx';
+
+ } else if (doc.type === 'pptx') {
+ const pres = new PptxGenJS();
+ (doc.content.slides||[]).forEach(s => {
+ const slide = pres.addSlide();
+ if (s.title) slide.addText(s.title, { x:0.5, y:0.3, w:9, fontSize:24, bold:true });
+ if (s.bullets && s.bullets.length) {
+ slide.addText(s.bullets.map(b=>({ text:b, options:{ bullet:true, breakLine:true } })), { x:0.5, y:1.3, w:9, fontSize:16 });
+ }
+ });
+ blob = await pres.write({ outputType:'blob' });
+ filename = safeTitle + '.pptx';
+
+ } else if (doc.type === 'latex') {
+ blob = new Blob([doc.content.source||''], { type:'text/plain' });
+ filename = safeTitle + '.tex';
+
+ } else {
+ showToast('⚠ Type de document non reconnu'); return;
+ }
+
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url; a.download = filename;
+ document.body.appendChild(a); a.click(); document.body.removeChild(a);
+ setTimeout(()=>URL.revokeObjectURL(url), 3000);
+
+ // Trace dans Travaux (utilisé par la future bibliothèque unifiée)
+ try {
+ const list = JSON.parse(localStorage.getItem('studiora_travaux_docs')||'[]');
+ list.unshift({ title: doc.title||filename, type: doc.type, filename, date: new Date().toISOString() });
+ localStorage.setItem('studiora_travaux_docs', JSON.stringify(list.slice(0,100)));
+ } catch(e) {}
+
+ showToast('✓ Document téléchargé');
+ } catch(e) {
+ showToast('⚠ Erreur de génération (' + (e.message||e) + ')');
  }
 }
 
@@ -2099,9 +2252,14 @@ async function generateImageFromChat() {
  const container = document.getElementById(genId);
  container.innerHTML = `<div>
  <div class="msg-bubble ai" style="padding:8px">
- <img src="${imgUrl}" alt="${escHtml(prompt)}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Erreur de génération — réessaie</div>'">
+ <img id="genimg-${genId}" src="${imgUrl}" alt="${escHtml(prompt)}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Erreur de génération — réessaie</div>'">
  </div>
- <div class="msg-time">${time}</div>
+ <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+ <div class="msg-time" style="margin-top:0">${time}</div>
+ <button onclick="downloadGeneratedImage('genimg-${genId}')" title="Télécharger" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+ </button>
+ </div>
  </div>`;
  APP.chatHistory.push({ role:'assistant', content:'[Image générée : '+prompt+']', time });
  saveChatHistory(APP.currentSubject);
