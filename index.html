@@ -1056,6 +1056,21 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  </div>
 
+ <!-- Éditeur de documents -->
+ <div style="margin-bottom:20px">
+ <div class="section-label"> ÉDITEUR DE DOCUMENTS</div>
+ <div onclick="showScreen('screen-doceditor')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer">
+ <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#3B82F6);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+ </div>
+ <div style="flex:1">
+ <div style="font-size:14px;font-weight:700">Ouvrir & modifier un document</div>
+ <div style="font-size:12px;color:var(--text3)">Word, Excel, texte/LaTeX</div>
+ </div>
+ <div style="color:var(--text3)">›</div>
+ </div>
+ </div>
+
  <!-- Calculatrice -->
  <div style="margin-bottom:20px">
  <label class="field-label" style="margin-bottom:10px"> Calculatrice</label>
@@ -1116,6 +1131,28 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div id="lib-panel-downloads" style="display:none">
  <div id="lib-downloads-list"></div>
  </div>
+ </div>
+</div>
+
+<!-- ═══════════════════ ÉDITEUR DE DOCUMENTS ═══════════════════ -->
+<div id="screen-doceditor" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 44px) 20px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;justify-content:space-between">
+ <div style="display:flex;align-items:center;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <h2 class="display" style="font-size:20px;font-weight:700">Éditeur de documents</h2>
+ </div>
+ <button id="doceditor-save-btn" onclick="saveDocEditorFile()" style="display:none;background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Enregistrer</button>
+ </div>
+ <div class="scroll-body" style="padding:16px 20px 100px">
+ <div id="doceditor-empty">
+ <input type="file" id="doceditor-file-input" accept=".docx,.xlsx,.xls,.txt,.tex,.md" style="display:none" onchange="handleDocEditorOpen(this)">
+ <div onclick="document.getElementById('doceditor-file-input').click()" style="background:var(--white);border:2px dashed var(--border);border-radius:14px;padding:28px 16px;text-align:center;cursor:pointer">
+ <div style="font-size:14px;font-weight:700;margin-bottom:4px">Ouvrir un fichier</div>
+ <div style="font-size:12px;color:var(--text3)">Word (.docx), Excel (.xlsx), texte ou LaTeX (.txt/.tex)</div>
+ </div>
+ <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">PowerPoint et PDF : aperçu non disponible pour l'instant, seul le téléchargement fonctionne.</div>
+ </div>
+ <div id="doceditor-content" style="display:none"></div>
  </div>
 </div>
 
@@ -1621,13 +1658,13 @@ window.onAndroidBackPressed = function() {
 // Screens qui affichent la nav globale
 const NAV_SCREENS = new Set(['screen-home',
  'screen-progress','screen-profile','screen-travaux','screen-upload',
- 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library']);
+ 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor']);
 const NAV_ACTIVE_MAP = {
  'screen-home':'nav-home',
  'screen-progress':'nav-home','screen-upload':'nav-travaux',
  'screen-calc':'nav-travaux','screen-dict':'nav-travaux','screen-diagrams':'nav-travaux',
  'screen-travaux':'nav-travaux','screen-media':'nav-travaux','screen-profile':'nav-profile',
- 'screen-library':'nav-travaux',
+ 'screen-library':'nav-travaux','screen-doceditor':'nav-travaux',
 };
 
 function updateGlobalNav(id) {
@@ -1940,6 +1977,113 @@ function copyMessageText(b64text) {
 }
 
 // Génère et télécharge un vrai fichier Word/Excel/PowerPoint/LaTeX à partir d'une directive IA
+// ── ÉDITEUR DE DOCUMENTS (Word / Excel / texte-LaTeX) ──
+let docEditorState = { type: null, filename: null };
+
+async function handleDocEditorOpen(input) {
+ const file = input.files[0];
+ if (!file) return;
+ const name = file.name;
+ const ext = name.toLowerCase().split('.').pop();
+ docEditorState = { type: null, filename: name };
+
+ try {
+ if (ext === 'docx') {
+ const arrayBuffer = await file.arrayBuffer();
+ const result = await mammoth.convertToHtml({ arrayBuffer });
+ docEditorState.type = 'word';
+ document.getElementById('doceditor-content').innerHTML =
+ `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6">${result.value}</div>`;
+
+ } else if (ext === 'xlsx' || ext === 'xls') {
+ const arrayBuffer = await file.arrayBuffer();
+ const wb = XLSX.read(arrayBuffer, { type: 'array' });
+ docEditorState.type = 'excel';
+ let html = '';
+ wb.SheetNames.forEach((sheetName, si) => {
+ const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
+ html += `<div style="font-size:12px;font-weight:700;color:var(--text2);margin:${si?'16px':'0'} 0 6px">${escHtml(sheetName)}</div>
+ <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
+ <table data-sheet="${escHtml(sheetName)}" style="border-collapse:collapse;width:100%;font-size:12px">
+ ${rows.map(row => `<tr>${(row.length?row:['']).map(cell =>
+ `<td contenteditable="true" style="border:1px solid var(--border);padding:6px 8px;min-width:70px">${escHtml(String(cell ?? ''))}</td>`
+ ).join('')}</tr>`).join('')}
+ </table></div>`;
+ });
+ document.getElementById('doceditor-content').innerHTML = html;
+
+ } else if (['txt','tex','md'].includes(ext)) {
+ const text = await file.text();
+ docEditorState.type = 'text';
+ document.getElementById('doceditor-content').innerHTML =
+ `<textarea id="doceditor-editable" style="width:100%;min-height:400px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-family:monospace;line-height:1.5">${escHtml(text)}</textarea>`;
+
+ } else {
+ showToast('⚠ Format non pris en charge par l\'éditeur');
+ return;
+ }
+
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ } catch(e) {
+ showToast('⚠ Impossible d\'ouvrir ce fichier (' + (e.message||e) + ')');
+ }
+}
+
+async function saveDocEditorFile() {
+ try {
+ let blob, mimeType;
+ const filename = docEditorState.filename || 'document';
+
+ if (docEditorState.type === 'word') {
+ const { Document, Packer, Paragraph, HeadingLevel, TextRun } = docx;
+ const container = document.getElementById('doceditor-editable');
+ const levels = { H1:HeadingLevel.HEADING_1, H2:HeadingLevel.HEADING_2, H3:HeadingLevel.HEADING_3 };
+ const children = [];
+ container.childNodes.forEach(node => {
+ if (node.nodeType !== 1) return; // ignore texte flottant hors balise
+ const tag = node.tagName;
+ if (levels[tag]) {
+ children.push(new Paragraph({ text: node.textContent, heading: levels[tag] }));
+ } else {
+ const bold = !!node.querySelector('strong,b') || node.tagName === 'STRONG' || node.tagName === 'B';
+ children.push(new Paragraph({ children:[ new TextRun({ text: node.textContent, bold }) ] }));
+ }
+ });
+ const docxDoc = new Document({ sections:[{ properties:{}, children: children.length?children:[new Paragraph('')] }] });
+ blob = await Packer.toBlob(docxDoc);
+ mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+ } else if (docEditorState.type === 'excel') {
+ const wb = XLSX.utils.book_new();
+ document.querySelectorAll('#doceditor-content table[data-sheet]').forEach(table => {
+ const rows = [...table.querySelectorAll('tr')].map(tr =>
+ [...tr.querySelectorAll('td')].map(td => td.textContent)
+ );
+ const ws = XLSX.utils.aoa_to_sheet(rows);
+ XLSX.utils.book_append_sheet(wb, ws, table.getAttribute('data-sheet').substring(0,31));
+ });
+ const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+ blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+ mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+ } else if (docEditorState.type === 'text') {
+ const text = document.getElementById('doceditor-editable').value;
+ blob = new Blob([text], { type:'text/plain' });
+ mimeType = 'text/plain';
+
+ } else {
+ showToast('⚠ Rien à enregistrer'); return;
+ }
+
+ await saveFileEverywhere(blob, filename, mimeType);
+ } catch(e) {
+ showToast('⚠ Erreur d\'enregistrement (' + (e.message||e) + ')');
+ }
+}
+
+
 // Convertit un Blob en base64 pur (sans le préfixe data:...;base64,)
 function blobToBase64(blob) {
  return new Promise((resolve, reject) => {
