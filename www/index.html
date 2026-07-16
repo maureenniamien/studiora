@@ -1630,10 +1630,10 @@ function updateGlobalNav(id) {
  }
 }
 
-function showScreen(id) {
+function showScreen(id, skipHistory) {
  const curr = document.querySelector('.screen:not(.hidden):not(.slide-left)');
  if (curr && curr.id !== id) {
- screenHistory.push(curr.id);
+ if (!skipHistory) screenHistory.push(curr.id);
  curr.classList.add('slide-left');
  setTimeout(()=>{ curr.classList.add('hidden'); curr.classList.remove('slide-left'); }, 350);
  }
@@ -1662,7 +1662,7 @@ function goBack() {
  if(fcBtn){ fcBtn.disabled=false; }
  if(fcTxt){ fcTxt.textContent=' Générer les flashcards'; }
  const prev = screenHistory.pop();
- showScreen(prev || 'screen-home');
+ showScreen(prev || 'screen-home', true);
 }
 function onScreenEnter(id) {
  if(id==='screen-home') renderHome();

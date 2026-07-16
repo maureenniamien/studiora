@@ -16,6 +16,7 @@ import android.speech.tts.TextToSpeech;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
+import androidx.activity.OnBackPressedCallback;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
@@ -31,6 +32,7 @@ public class MainActivity extends BridgeActivity {
     private Intent pendingIntent = null;
     private TextToSpeech tts;
     private SpeechRecognizer speechRecognizer;
+    private OnBackPressedCallback backCallback;
 
     private class WebAppInterface {
         @JavascriptInterface
@@ -79,6 +81,35 @@ public class MainActivity extends BridgeActivity {
                     catch (Exception e) { Log.e(TAG, "share intent error", e); }
                 }, 1200);
             }
+
+            // API moderne : remplace l'ancien override onBackPressed(), plus fiable
+            // sur Android 13+ (predictive back) et avec les activites AndroidX/Capacitor.
+            backCallback = new OnBackPressedCallback(true) {
+                @Override
+                public void handleOnBackPressed() {
+                    if (getBridge() != null && getBridge().getWebView() != null) {
+                        getBridge().getWebView().evaluateJavascript(
+                            "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
+                            value -> {
+                                boolean handledByJs = "\"true\"".equals(value);
+                                if (!handledByJs) {
+                                    // Pas gere par le JS (on est a l'accueil) : on desactive
+                                    // temporairement ce callback pour laisser le systeme fermer l'app.
+                                    setEnabled(false);
+                                    getOnBackPressedDispatcher().onBackPressed();
+                                    setEnabled(true);
+                                }
+                            }
+                        );
+                    } else {
+                        setEnabled(false);
+                        getOnBackPressedDispatcher().onBackPressed();
+                        setEnabled(true);
+                    }
+                }
+            };
+            getOnBackPressedDispatcher().addCallback(this, backCallback);
+
         } catch (Exception e) {
             Log.e(TAG, "onCreate error", e);
         }
@@ -126,22 +157,6 @@ public class MainActivity extends BridgeActivity {
             speechRecognizer.startListening(intent);
         } catch (Exception e) {
             runJs("window.onAndroidSTTError && window.onAndroidSTTError('start_failed');");
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().evaluateJavascript(
-                "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
-                value -> {
-                    if (!"\"true\"".equals(value)) {
-                        runOnUiThread(MainActivity.super::onBackPressed);
-                    }
-                }
-            );
-        } else {
-            super.onBackPressed();
         }
     }
 
