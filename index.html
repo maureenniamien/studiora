@@ -1273,10 +1273,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- TAB STANDARD -->
  <div id="calc-panel-std" class="scroll-body" style="padding:12px 14px 100px;flex:1">
  <div style="background:#1a1a2e;border-radius:14px;padding:16px;margin-bottom:12px;text-align:right">
- <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
- <button onclick="toggleCalcFraction()" id="calc-frac-toggle" style="background:none;border:1px solid #444;color:#888;border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">a/b affiché</button>
- <button onclick="calcInsertFraction()" style="background:none;border:1px solid #444;color:#888;border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Insérer a/b</button>
- <div id="calc-history" style="font-size:12px;color:#888;min-height:16px;flex:1;text-align:right">​</div>
+ <div style="display:flex;justify-content:flex-end">
+ <div id="calc-history" style="font-size:12px;color:#888;min-height:16px">​</div>
  </div>
  <div style="font-size:30px;font-weight:700;color:#fff;min-height:42px;word-break:break-all" id="calc-display">0</div>
  <div id="calc-fraction" style="font-size:16px;color:#7dd3a8;min-height:20px"></div>
@@ -1297,11 +1295,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="calcInput('Math.cbrt(')" class="calc-btn calc-fn">∛</button>
  </div>
  <!-- Fonctions scientifiques row 3 -->
- <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px">
  <button onclick="calcInput('Math.PI')" class="calc-btn calc-fn">π</button>
  <button onclick="calcInput('Math.E')" class="calc-btn calc-fn">e</button>
  <button onclick="calcInput('**')" class="calc-btn calc-fn">xʸ</button>
  <button onclick="calcInput('%')" class="calc-btn calc-fn">mod</button>
+ </div>
+ <!-- Fonctions scientifiques row 4 -->
+ <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+ <button onclick="calcInsertFraction()" class="calc-btn calc-fn">a/b</button>
+ <button onclick="toggleCalcFraction()" id="calc-frac-toggle" class="calc-btn calc-fn" style="font-size:11px">Affich. a/b</button>
  </div>
  <!-- Chiffres + opérations -->
  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
@@ -2438,7 +2441,10 @@ function formatAiMsg(text) {
  .replace(/^\$\$|\$\$$/g,'').replace(/^\$|\$$/g,'');
  try {
  if (typeof katex !== 'undefined') {
- return katex.renderToString(inner, { displayMode, throwOnError:false });
+ const rendered = katex.renderToString(inner, { displayMode, throwOnError:false });
+ return displayMode
+ ? `<div style="overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch">${rendered}</div>`
+ : rendered;
  }
  } catch(e) { /* si la formule est mal formée, on retombe sur le texte brut ci-dessous */ }
  return escHtml(raw);
@@ -5015,9 +5021,8 @@ let calcFractionMode = false;
 function toggleCalcFraction() {
  calcFractionMode = !calcFractionMode;
  const btn = document.getElementById('calc-frac-toggle');
- btn.style.background = calcFractionMode ? 'var(--em)' : 'none';
- btn.style.color = calcFractionMode ? '#fff' : '#888';
- btn.style.borderColor = calcFractionMode ? 'var(--em)' : '#444';
+ if (calcFractionMode) { btn.style.background = 'var(--em)'; btn.style.color = '#fff'; }
+ else { btn.style.background = ''; btn.style.color = ''; }
  if (!calcFractionMode) document.getElementById('calc-fraction').textContent = '';
  else if (typeof lastCalcResult === 'number') showCalcFraction(lastCalcResult);
 }
