@@ -39,6 +39,7 @@ public class MainActivity extends BridgeActivity {
 
     private static final String TAG = "StudioraMain";
     private static final int MIC_PERMISSION_CODE = 2001;
+    private static final int STORAGE_PERMISSION_CODE = 2002;
     private Intent pendingIntent = null;
     private TextToSpeech tts;
     private SpeechRecognizer speechRecognizer;
@@ -67,16 +68,22 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // Bridge de telechargement. Chaque methode recoit desormais un reqId (genere
+    // cote JS) qui est renvoye tel quel dans onAndroidDownloadResult(reqId,
+    // success, info). Avant, un seul callback global sans identifiant faisait que
+    // le JS ne pouvait jamais savoir avec certitude si UN téléchargement precis
+    // avait reussi (fire-and-forget), et deux telechargements simultanes se
+    // marchaient dessus.
     private class DownloadInterface {
         @JavascriptInterface
-        public void saveFile(String base64Data, String filename, String mimeType) {
+        public void saveFile(String reqId, String base64Data, String filename, String mimeType) {
             new Handler(Looper.getMainLooper()).post(() -> {
                 try {
                     byte[] bytes = Base64.decode(base64Data, Base64.NO_WRAP);
-                    writeBytesToDownloads(bytes, filename, mimeType);
+                    writeBytesToDownloads(reqId, bytes, filename, mimeType);
                 } catch (Exception e) {
                     Log.e(TAG, "saveFile error", e);
-                    notifyDownloadResult(false, safeMsg(e));
+                    notifyDownloadResult(reqId, false, safeMsg(e));
                 }
             });
         }
@@ -87,7 +94,7 @@ public class MainActivity extends BridgeActivity {
         // cote WebView (le CORS ne s'applique qu'aux requetes JS, pas a un
         // telechargement natif Java).
         @JavascriptInterface
-        public void saveFileFromUrl(String url, String filename, String mimeType) {
+        public void saveFileFromUrl(String reqId, String url, String filename, String mimeType) {
             downloadExecutor.execute(() -> {
                 HttpURLConnection conn = null;
                 try {
@@ -113,16 +120,16 @@ public class MainActivity extends BridgeActivity {
 
                     new Handler(Looper.getMainLooper()).post(() -> {
                         try {
-                            writeBytesToDownloads(bytes, filename, mimeType);
+                            writeBytesToDownloads(reqId, bytes, filename, mimeType);
                         } catch (Exception e) {
                             Log.e(TAG, "saveFileFromUrl write error", e);
-                            notifyDownloadResult(false, safeMsg(e));
+                            notifyDownloadResult(reqId, false, safeMsg(e));
                         }
                     });
                 } catch (Exception e) {
                     Log.e(TAG, "saveFileFromUrl download error", e);
                     final String msg = safeMsg(e);
-                    new Handler(Looper.getMainLooper()).post(() -> notifyDownloadResult(false, msg));
+                    new Handler(Looper.getMainLooper()).post(() -> notifyDownloadResult(reqId, false, msg));
                 } finally {
                     if (conn != null) conn.disconnect();
                 }
@@ -181,7 +188,7 @@ public class MainActivity extends BridgeActivity {
     // fichier direct avant). Appelee UNIQUEMENT depuis le thread principal.
     // Partagee par saveFile() (base64 deja en memoire) et saveFileFromUrl()
     // (bytes telecharges en arriere-plan) pour ne pas dupliquer cette logique.
-    private void writeBytesToDownloads(byte[] bytes, String filename, String mimeType) {
+    private void writeBytesToDownloads(String reqId, byte[] bytes, String filename, String mimeType) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 ContentValues values = new ContentValues();
@@ -191,7 +198,7 @@ public class MainActivity extends BridgeActivity {
                 Uri collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI;
                 Uri item = getContentResolver().insert(collection, values);
                 if (item == null) {
-                    notifyDownloadResult(false, "insert_failed");
+                    notifyDownloadResult(reqId, false, "insert_failed");
                     return;
                 }
                 OutputStream out = getContentResolver().openOutputStream(item);
@@ -200,6 +207,15 @@ public class MainActivity extends BridgeActivity {
                 values.put(MediaStore.Downloads.IS_PENDING, 0);
                 getContentResolver().update(item, values, null, null);
             } else {
+                // Android 9 et moins : le stockage public "Downloads" exige la
+                // permission WRITE_EXTERNAL_STORAGE accordee a l'execution (elle
+                // est demandee au demarrage dans onCreate). Sans elle, l'ecriture
+                // leve une SecurityException, capturee ci-dessous et remontee au JS.
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    notifyDownloadResult(reqId, false, "permission_stockage_refusee");
+                    return;
+                }
                 File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
                 if (!dir.exists()) dir.mkdirs();
                 File file = new File(dir, filename);
@@ -207,16 +223,18 @@ public class MainActivity extends BridgeActivity {
                 fos.write(bytes);
                 fos.close();
             }
-            notifyDownloadResult(true, filename);
+            notifyDownloadResult(reqId, true, filename);
         } catch (Exception e) {
             Log.e(TAG, "writeBytesToDownloads error", e);
-            notifyDownloadResult(false, safeMsg(e));
+            notifyDownloadResult(reqId, false, safeMsg(e));
         }
     }
 
-    private void notifyDownloadResult(boolean success, String info) {
+    private void notifyDownloadResult(String reqId, boolean success, String info) {
+        String safeReqId = reqId != null ? reqId.replace("'", "\\'") : "";
         String safeInfo = info != null ? info.replace("'", "\\'") : "";
-        runJs("window.onAndroidDownloadResult && window.onAndroidDownloadResult(" + success + ", '" + safeInfo + "');");
+        runJs("window.onAndroidDownloadResult && window.onAndroidDownloadResult('"
+                + safeReqId + "', " + success + ", '" + safeInfo + "');");
     }
 
     private String safeMsg(Exception e) {
@@ -233,6 +251,15 @@ public class MainActivity extends BridgeActivity {
                     != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.RECORD_AUDIO}, MIC_PERMISSION_CODE);
+            }
+
+            // Necessaire uniquement sur Android 9 et moins (API < 29) : au-dela,
+            // MediaStore.Downloads ne demande aucune permission d'execution.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                    && ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
             }
 
             tts = new TextToSpeech(this, status -> {
