@@ -166,7 +166,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 /* ── CHAT ── */
 .msg-row{display:flex;align-items:flex-end;gap:8px;margin-bottom:10px;animation:fadeUp .25s ease both}
 .msg-row.user{justify-content:flex-end}
-.msg-bubble{max-width:82%;padding:11px 15px;font-size:13.5px;line-height:1.65;border-radius:18px;position:relative}
+.msg-row>div{min-width:0;max-width:82%}
+.msg-bubble{max-width:100%;min-width:0;padding:11px 15px;font-size:13.5px;line-height:1.65;border-radius:18px;position:relative;overflow-x:auto;word-wrap:break-word;overflow-wrap:break-word;box-sizing:border-box}
 .msg-bubble.ai{background:var(--white);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
 .msg-bubble.user{background:linear-gradient(135deg,var(--em),var(--em2));color:#fff;border-bottom-right-radius:4px}
 .msg-time{font-size:10px;color:var(--text3);margin-top:3px;text-align:right}
@@ -849,6 +850,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:11px;opacity:.8">Gratuit</div>
  </div>
  </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+ <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px;text-align:center">
+ <div id="admin-connected-today" style="font-size:26px;font-weight:800;color:#38bdf8">0</div>
+ <div style="font-size:11px;opacity:.8">Connectés (24h)</div>
+ </div>
+ <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px;text-align:center">
+ <div id="admin-connected-7d" style="font-size:26px;font-weight:800;color:#38bdf8">0</div>
+ <div style="font-size:11px;opacity:.8">Connectés (7j)</div>
+ </div>
+ </div>
  </div>
  </div>
 
@@ -1204,6 +1215,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">PowerPoint et PDF : aperçu non disponible pour l'instant, seul le téléchargement fonctionne.</div>
  </div>
+ <div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px"></div>
  <div id="doceditor-content" style="display:none"></div>
  </div>
 </div>
@@ -2117,11 +2129,124 @@ function evalSheetFormula(table, formula) {
  const vals = refs.map(r=>getSheetCellValue(table,r));
  return vals.reduce((a,b)=>a+b,0) / (vals.length||1);
  });
+ expr = expr.replace(/MAX\(([^)]+)\)/gi, (_, range) => {
+ const vals = parseCellRange(range.trim()).map(r=>getSheetCellValue(table,r));
+ return vals.length ? Math.max(...vals) : 0;
+ });
+ expr = expr.replace(/MIN\(([^)]+)\)/gi, (_, range) => {
+ const vals = parseCellRange(range.trim()).map(r=>getSheetCellValue(table,r));
+ return vals.length ? Math.min(...vals) : 0;
+ });
+ expr = expr.replace(/(NB\.SI|COUNTIF)\(([^;]+);\s*"?([^")]+)"?\)/gi, (_, fn, range, crit) => {
+ const refs = parseCellRange(range.trim());
+ crit = crit.trim();
+ const opMatch = crit.match(/^(>=|<=|<>|>|<|=)?(.+)$/);
+ const op = (opMatch && opMatch[1]) || '=';
+ const critVal = (opMatch && opMatch[2]) || crit;
+ const critNum = parseFloat(critVal.replace(',','.'));
+ return refs.filter(r => {
+ const v = getSheetCellValue(table, r);
+ if (!isNaN(critNum)) {
+ if (op==='>') return v>critNum; if (op==='<') return v<critNum;
+ if (op==='>=') return v>=critNum; if (op==='<=') return v<=critNum;
+ if (op==='<>') return v!==critNum; return v===critNum;
+ }
+ return String(v) === critVal;
+ }).length;
+ });
+ expr = expr.replace(/(NB|COUNT)\(([^)]+)\)/gi, (_, fn, range) => {
+ return parseCellRange(range.trim()).filter(r=>{
+ const td = table.querySelector(`td[data-cell="${r}"]`);
+ const v = td ? td.textContent.trim() : '';
+ return v !== '' && !isNaN(parseFloat(v.replace(',','.')));
+ }).length;
+ });
  expr = expr.replace(/\b([A-Z]+\d+)\b/g, (m) => getSheetCellValue(table, m.toUpperCase()));
  if (!/^[0-9+\-*/().\s]*$/.test(expr)) return '#ERREUR';
  const result = Function('"use strict"; return (' + expr + ')')();
  return Math.round(result * 10000) / 10000;
  } catch(e) { return '#ERREUR'; }
+}
+
+const SHEET_FORMULAS = [
+ {name:'SOMME', syntax:'SOMME(A1:A5)', desc:'Additionne les valeurs'},
+ {name:'MOYENNE', syntax:'MOYENNE(A1:A5)', desc:'Calcule la moyenne'},
+ {name:'MAX', syntax:'MAX(A1:A5)', desc:'Valeur maximale'},
+ {name:'MIN', syntax:'MIN(A1:A5)', desc:'Valeur minimale'},
+ {name:'NB', syntax:'NB(A1:A5)', desc:'Compte les cellules numériques'},
+ {name:'NB.SI', syntax:'NB.SI(A1:A5;">5")', desc:'Compte selon un critère'},
+];
+let _activeSheetCell = null;
+
+function onSheetCellInput(td) {
+ _activeSheetCell = td;
+ const box = document.getElementById('sheet-formula-suggest');
+ if (!box) return;
+ const text = td.textContent.trim();
+ const query = text.startsWith('=') ? text.slice(1).toUpperCase() : '';
+ const matches = query ? SHEET_FORMULAS.filter(f => f.name.startsWith(query.replace(/\(.*/,''))) : [];
+ if (!text.startsWith('=') || !matches.length) { box.style.display='none'; return; }
+ box.style.display = 'flex';
+ box.innerHTML = matches.map(f =>
+ `<button onmousedown="event.preventDefault();insertSheetFormulaName('${f.name}')" style="background:var(--em-soft);color:var(--em);border:none;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;flex-shrink:0">${f.syntax}</button>`
+ ).join('');
+}
+
+function insertSheetFormulaName(name) {
+ if (!_activeSheetCell) return;
+ _activeSheetCell.textContent = '=' + name + '(';
+ _activeSheetCell.focus();
+ const range = document.createRange();
+ range.selectNodeContents(_activeSheetCell);
+ range.collapse(false);
+ const sel = window.getSelection();
+ sel.removeAllRanges(); sel.addRange(range);
+ document.getElementById('sheet-formula-suggest').style.display = 'none';
+}
+
+function sheetAddRow(table) {
+ const nCols = table.querySelector('tr').children.length - 1;
+ const nRows = table.querySelectorAll('tr').length - 1;
+ const tr = document.createElement('tr');
+ const th = document.createElement('th');
+ th.style.cssText = 'border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3)';
+ th.textContent = nRows + 1;
+ tr.appendChild(th);
+ for (let c=0; c<nCols; c++) {
+ const td = document.createElement('td');
+ const ref = sheetColLetter(c) + (nRows+1);
+ td.setAttribute('contenteditable','true');
+ td.setAttribute('data-cell', ref);
+ td.setAttribute('onfocus','onSheetCellFocus(this)');
+ td.setAttribute('onblur','onSheetCellBlur(this)');
+ td.setAttribute('oninput','onSheetCellInput(this)');
+ td.style.cssText = 'border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px';
+ tr.appendChild(td);
+ }
+ table.appendChild(tr);
+}
+
+function sheetAddCol(table) {
+ const rows = table.querySelectorAll('tr');
+ const nCols = rows[0].children.length - 1;
+ rows.forEach((tr, r) => {
+ if (r === 0) {
+ const th = document.createElement('th');
+ th.style.cssText = 'border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3)';
+ th.textContent = sheetColLetter(nCols);
+ tr.appendChild(th);
+ } else {
+ const td = document.createElement('td');
+ const ref = sheetColLetter(nCols) + r;
+ td.setAttribute('contenteditable','true');
+ td.setAttribute('data-cell', ref);
+ td.setAttribute('onfocus','onSheetCellFocus(this)');
+ td.setAttribute('onblur','onSheetCellBlur(this)');
+ td.setAttribute('oninput','onSheetCellInput(this)');
+ td.style.cssText = 'border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px';
+ tr.appendChild(td);
+ }
+ });
 }
 
 function recalcSheet(table) {
@@ -2160,11 +2285,15 @@ function buildSheetHTML(sheetName, nRows, nCols, values) {
  for (let c=0; c<nCols; c++) {
  const ref = sheetColLetter(c)+(r+1);
  const val = (values && values[r] && values[r][c] !== undefined) ? values[r][c] : '';
- html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px">${escHtml(String(val))}</td>`;
+ html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" oninput="onSheetCellInput(this)" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px">${escHtml(String(val))}</td>`;
  }
  html += `</tr>`;
  }
- html += `</table></div>`;
+ html += `</table></div>
+ <div style="display:flex;gap:8px;margin-top:6px">
+ <button onclick="sheetAddRow(this.closest('div').previousElementSibling.querySelector('table'))" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Ligne</button>
+ <button onclick="sheetAddCol(this.closest('div').previousElementSibling.querySelector('table'))" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Colonne</button>
+ </div>`;
  return html;
 }
 
@@ -3153,7 +3282,8 @@ async function startQuiz() {
  if (isVipOrAdmin() && libreTopic) {
  return startQuizLibre(libreTopic);
  }
- const subj = SUBJECTS.find(s=>s.id===selectedSubjectQuiz);
+ const subj = SUBJECTS.find(s=>s.id===selectedSubjectQuiz) || SUBJECTS[0];
+ if (!subj) { showToast('⚠ Choisis d\'abord une matière'); return; }
  const topic = document.getElementById('quiz-topic').value;
  const btn = document.getElementById('start-quiz-btn');
  const btnTxt = document.getElementById('quiz-btn-text');
@@ -3316,7 +3446,8 @@ async function generateFlashcards() {
  }
  incUsage('fc');
  const topic = document.getElementById('fc-topic').value;
- const subj = SUBJECTS.find(s=>s.id===selectedSubjectFC);
+ const subj = SUBJECTS.find(s=>s.id===selectedSubjectFC) || SUBJECTS[0];
+ if (!subj) { showToast('⚠ Choisis d\'abord une matière'); return; }
  const btn=document.getElementById('gen-fc-btn'), txt=document.getElementById('fc-btn-text');
  btn.disabled=true; txt.textContent=' Génération...';
 
@@ -4271,7 +4402,7 @@ function getGlobalStats() {
 // Mis à jour de façon asynchrone dans le DOM une fois la réponse reçue.
 async function refreshGlobalStatsFromDB() {
  try {
- const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=plan`, {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=plan,last_login`, {
  headers: {
  'apikey': SUPABASE_ANON_KEY,
  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
@@ -4279,17 +4410,23 @@ async function refreshGlobalStatsFromDB() {
  });
  if (!res.ok) return;
  const rows = await res.json();
+ const now = Date.now();
+ const DAY = 24*60*60*1000;
  const stats = {
  total: rows.length,
  free: rows.filter(u=>!u.plan||u.plan==='free').length,
  premium: rows.filter(u=>u.plan==='premium').length,
  vip: rows.filter(u=>u.plan==='vip').length,
+ connectedToday: rows.filter(u=>u.last_login && (now - new Date(u.last_login).getTime()) < DAY).length,
+ connected7d: rows.filter(u=>u.last_login && (now - new Date(u.last_login).getTime()) < 7*DAY).length,
  };
  const setIfPresent = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
  setIfPresent('admin-total', stats.total);
  setIfPresent('admin-free', stats.free);
  setIfPresent('admin-premium', stats.premium);
  setIfPresent('admin-vip', stats.vip);
+ setIfPresent('admin-connected-today', stats.connectedToday);
+ setIfPresent('admin-connected-7d', stats.connected7d);
  } catch(e) {
  // Pas de connexion : les chiffres locaux (affichés en premier) restent visibles
  }
@@ -4327,7 +4464,8 @@ async function registerUserInDatabase() {
  prenom: APP.user.prenom || null,
  level: APP.user.level || null,
  filiere: APP.user.filiere || null,
- pwd_hash: APP.user.pwdHash || null
+ pwd_hash: APP.user.pwdHash || null,
+ last_login: new Date().toISOString()
  })
  });
  } catch(e) {
@@ -4367,8 +4505,27 @@ function loadSession() {
  const data = JSON.parse(s);
  if (!data || !data.prenom) return false;
  APP.user = { ...APP.user, ...data };
+ recordLoginPing();
  return true;
  } catch(e) { return false; }
+}
+
+// Enregistre la date/heure de connexion réelle (ouverture d'app), distincte de la date d'inscription.
+// Nécessite une colonne "last_login" (timestamp, nullable) sur la table Supabase "users".
+function recordLoginPing() {
+ if (!APP.user || !APP.user.email) return;
+ try {
+ fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(APP.user.email)}`, {
+ method: 'PATCH',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+ 'Prefer': 'return=minimal'
+ },
+ body: JSON.stringify({ last_login: new Date().toISOString() })
+ }).catch(()=>{});
+ } catch(e) {}
 }
 
 function getExistingSession(email) {
@@ -5654,6 +5811,16 @@ function saveUserLevel() {
  const levelEl = document.getElementById('profile-level');
  if (levelEl) levelEl.textContent = level + ' · ' + filiere;
  SUBJECTS = getSubjects();
+ // Les sélections de matière pour quiz/flashcards référençaient parfois une matière
+ // de l'ancien niveau qui n'existe plus dans le nouveau -> on les réinitialise ici.
+ if (SUBJECTS.length) {
+ if (typeof selectedSubjectQuiz !== 'undefined' && !SUBJECTS.find(s=>s.id===selectedSubjectQuiz)) {
+ selectedSubjectQuiz = SUBJECTS[0].id;
+ }
+ if (typeof selectedSubjectFC !== 'undefined' && !SUBJECTS.find(s=>s.id===selectedSubjectFC)) {
+ selectedSubjectFC = SUBJECTS[0].id;
+ }
+ }
  renderHome();
  showToast(' Niveau mis à jour : ' + level + ' · ' + filiere);
 }
