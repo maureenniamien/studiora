@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -6091,14 +6091,15 @@ function mediaExtractSegment() {
  const chunks = [];
  const rec = new MediaRecorder(stream, { mimeType: 'video/webm' });
  rec.ondataavailable = e => chunks.push(e.data);
- rec.onstop = () => {
+ rec.onstop = async () => {
  _mediaEl.pause();
  const blob = new Blob(chunks, { type: 'video/webm' });
- const url = URL.createObjectURL(blob);
+ const filename = 'segment_' + start + 's-' + end + 's.webm';
  const link = document.getElementById('media-download-link');
- link.href = url;
- link.download = 'segment_' + start + 's-' + end + 's.webm';
- link.textContent = ' Télécharger le segment (' + (end - start) + 's)';
+ link.href = '#';
+ link.download = '';
+ link.textContent = ' Enregistrer le segment (' + (end - start) + 's)';
+ link.onclick = async (e) => { e.preventDefault(); await saveFileEverywhere(blob, filename, 'video/webm'); };
  document.getElementById('media-output').style.display = 'block';
  showToast(' Segment extrait !');
  };
@@ -6126,13 +6127,14 @@ function mediaExtractAudio() {
  const chunks = [];
  const rec = new MediaRecorder(audioStream);
  rec.ondataavailable = e => chunks.push(e.data);
- rec.onstop = () => {
+ rec.onstop = async () => {
  const blob = new Blob(chunks, { type: 'audio/webm' });
- const url = URL.createObjectURL(blob);
+ const filename = _mediaFile.name.replace(/\.[^.]+$/, '') + '_audio.webm';
  const link = document.getElementById('media-download-link');
- link.href = url;
- link.download = _mediaFile.name.replace(/\.[^.]+$/, '') + '_audio.webm';
- link.textContent = ' Télécharger laudio extrait';
+ link.href = '#';
+ link.download = '';
+ link.textContent = ' Enregistrer l\'audio extrait';
+ link.onclick = async (e) => { e.preventDefault(); await saveFileEverywhere(blob, filename, 'audio/webm'); };
  document.getElementById('media-output').style.display = 'block';
  };
  vid.play();
