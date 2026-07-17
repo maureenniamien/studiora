@@ -6,13 +6,16 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Studiora — Coach IA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.2/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
@@ -1270,8 +1273,12 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <!-- TAB STANDARD -->
  <div id="calc-panel-std" class="scroll-body" style="padding:12px 14px 100px;flex:1">
  <div style="background:#1a1a2e;border-radius:14px;padding:16px;margin-bottom:12px;text-align:right">
- <div id="calc-history" style="font-size:12px;color:#888;min-height:16px"></div>
+ <div style="display:flex;justify-content:space-between;align-items:center">
+ <button onclick="toggleCalcFraction()" id="calc-frac-toggle" style="background:none;border:1px solid #444;color:#888;border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">a/b</button>
+ <div id="calc-history" style="font-size:12px;color:#888;min-height:16px;flex:1;text-align:right">​</div>
+ </div>
  <div style="font-size:30px;font-weight:700;color:#fff;min-height:42px;word-break:break-all" id="calc-display">0</div>
+ <div id="calc-fraction" style="font-size:16px;color:#7dd3a8;min-height:20px"></div>
  </div>
  <div id="calc-log" style="font-size:11px;color:var(--text3);margin-bottom:10px;max-height:80px;overflow-y:auto"></div>
  <!-- Fonctions scientifiques row 1 -->
@@ -1953,7 +1960,25 @@ function useSuggestion(text) {
 function reRenderMessages() {
  const el = document.getElementById('chat-messages');
  el.innerHTML = APP.chatHistory.map(m => renderMsgHTML(m)).join('');
+ renderMathInChat(el);
  scrollChat();
+}
+
+// Rend proprement les formules mathématiques (\(...\), \[...\], $...$, $$...$$)
+// au lieu d'afficher le code LaTeX brut. Utilisé partout où l'IA répond (chat, quiz...).
+function renderMathInChat(container) {
+ if (!container || typeof renderMathInElement !== 'function') return;
+ try {
+ renderMathInElement(container, {
+ delimiters: [
+ {left:'$$', right:'$$', display:true},
+ {left:'\\[', right:'\\]', display:true},
+ {left:'$', right:'$', display:false},
+ {left:'\\(', right:'\\)', display:false}
+ ],
+ throwOnError: false
+ });
+ } catch(e) { /* si une formule est mal formée, on laisse le texte brut plutôt que de casser l'affichage */ }
 }
 
 // Stocke les documents générés par l'IA (référencés par index dans les boutons de téléchargement)
@@ -2051,6 +2076,94 @@ function insertDocSymbol(sym) {
  }
 }
 
+// ── MOTEUR DE FORMULES EXCEL (SOMME/SUM, MOYENNE/AVERAGE, references A1, plages A1:A5) ──
+
+function sheetColLetter(i) { return String.fromCharCode(65+i); }
+
+function parseCellRange(ref) {
+ const m = ref.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
+ if (!m) return [ref.toUpperCase()];
+ const c1 = m[1].toUpperCase().charCodeAt(0)-65, r1 = parseInt(m[2])-1;
+ const c2 = m[3].toUpperCase().charCodeAt(0)-65, r2 = parseInt(m[4])-1;
+ const refs = [];
+ for (let c=Math.min(c1,c2); c<=Math.max(c1,c2); c++)
+ for (let r=Math.min(r1,r2); r<=Math.max(r1,r2); r++)
+ refs.push(sheetColLetter(c)+(r+1));
+ return refs;
+}
+
+function getSheetCellValue(table, ref) {
+ const td = table.querySelector(`td[data-cell="${ref}"]`);
+ if (!td) return 0;
+ const raw = td.hasAttribute('data-formula') ? td.getAttribute('data-formula') : (td.textContent || '');
+ if (raw.trim().startsWith('=')) return evalSheetFormula(table, raw);
+ const num = parseFloat(String(raw).replace(',','.'));
+ return isNaN(num) ? 0 : num;
+}
+
+function evalSheetFormula(table, formula) {
+ try {
+ let expr = formula.slice(1).trim();
+ expr = expr.replace(/(SOMME|SUM)\(([^)]+)\)/gi, (_, fn, range) => {
+ const sum = parseCellRange(range.trim()).reduce((acc,r)=>acc+getSheetCellValue(table,r),0);
+ return sum;
+ });
+ expr = expr.replace(/(MOYENNE|AVERAGE)\(([^)]+)\)/gi, (_, fn, range) => {
+ const refs = parseCellRange(range.trim());
+ const vals = refs.map(r=>getSheetCellValue(table,r));
+ return vals.reduce((a,b)=>a+b,0) / (vals.length||1);
+ });
+ expr = expr.replace(/\b([A-Z]+\d+)\b/g, (m) => getSheetCellValue(table, m.toUpperCase()));
+ if (!/^[0-9+\-*/().\s]*$/.test(expr)) return '#ERREUR';
+ const result = Function('"use strict"; return (' + expr + ')')();
+ return Math.round(result * 10000) / 10000;
+ } catch(e) { return '#ERREUR'; }
+}
+
+function recalcSheet(table) {
+ table.querySelectorAll('td[data-cell]').forEach(td => {
+ if (td.hasAttribute('data-formula') && document.activeElement !== td) {
+ td.textContent = evalSheetFormula(table, td.getAttribute('data-formula'));
+ }
+ });
+}
+
+function onSheetCellFocus(td) {
+ if (td.hasAttribute('data-formula')) td.textContent = td.getAttribute('data-formula');
+}
+
+function onSheetCellBlur(td) {
+ const table = td.closest('table');
+ const text = td.textContent.trim();
+ if (text.startsWith('=')) {
+ td.setAttribute('data-formula', text);
+ td.textContent = evalSheetFormula(table, text);
+ } else {
+ td.removeAttribute('data-formula');
+ }
+ recalcSheet(table);
+}
+
+// Construit le HTML d'une feuille éditable avec en-têtes A,B,C... et 1,2,3...,
+// et des cellules pré-remplies optionnelles (valeurs brutes, ex. depuis un import)
+function buildSheetHTML(sheetName, nRows, nCols, values) {
+ const th = (txt) => `<th style="border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3);position:sticky;top:0">${txt}</th>`;
+ let html = `<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
+ <table data-sheet="${escHtml(sheetName)}" style="border-collapse:collapse;width:100%;font-size:12px">
+ <tr>${th('')}${Array.from({length:nCols},(_,c)=>th(sheetColLetter(c))).join('')}</tr>`;
+ for (let r=0; r<nRows; r++) {
+ html += `<tr>${th(r+1)}`;
+ for (let c=0; c<nCols; c++) {
+ const ref = sheetColLetter(c)+(r+1);
+ const val = (values && values[r] && values[r][c] !== undefined) ? values[r][c] : '';
+ html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px">${escHtml(String(val))}</td>`;
+ }
+ html += `</tr>`;
+ }
+ html += `</table></div>`;
+ return html;
+}
+
 function newBlankDoc(type) {
  docEditorState = { type, filename: type==='word' ? 'nouveau_document.docx' : 'nouveau_classeur.xlsx' };
  if (type === 'word') {
@@ -2058,14 +2171,9 @@ function newBlankDoc(type) {
  symbolToolbarHTML() +
  `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6" data-placeholder="Commence à écrire..."></div>`;
  } else {
- const blankRows = Array.from({length:8}, () => Array.from({length:5}, () => ''));
  document.getElementById('doceditor-content').innerHTML =
- `<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
- <table data-sheet="Feuille1" style="border-collapse:collapse;width:100%;font-size:12px">
- ${blankRows.map(row => `<tr>${row.map(() =>
- `<td contenteditable="true" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px"></td>`
- ).join('')}</tr>`).join('')}
- </table></div>`;
+ `<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Astuce : tape une formule comme <code>=SOMME(A1:A5)</code> ou <code>=MOYENNE(B1:B3)</code> dans une cellule.</div>` +
+ buildSheetHTML('Feuille1', 8, 5, null);
  }
  document.getElementById('doceditor-empty').style.display = 'none';
  document.getElementById('doceditor-content').style.display = 'block';
@@ -2095,13 +2203,11 @@ async function handleDocEditorOpen(input) {
  let html = '';
  wb.SheetNames.forEach((sheetName, si) => {
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
+ const nCols = Math.max(5, ...rows.map(r=>r.length));
+ const nRows = Math.max(8, rows.length);
  html += `<div style="font-size:12px;font-weight:700;color:var(--text2);margin:${si?'16px':'0'} 0 6px">${escHtml(sheetName)}</div>
- <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
- <table data-sheet="${escHtml(sheetName)}" style="border-collapse:collapse;width:100%;font-size:12px">
- ${rows.map(row => `<tr>${(row.length?row:['']).map(cell =>
- `<td contenteditable="true" style="border:1px solid var(--border);padding:6px 8px;min-width:70px">${escHtml(String(cell ?? ''))}</td>`
- ).join('')}</tr>`).join('')}
- </table></div>`;
+ <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Astuce : tape une formule comme <code>=SOMME(A1:A5)</code></div>` +
+ buildSheetHTML(sheetName, nRows, nCols, rows);
  });
  document.getElementById('doceditor-content').innerHTML = html;
 
@@ -2151,8 +2257,14 @@ async function saveDocEditorFile() {
  } else if (docEditorState.type === 'excel') {
  const wb = XLSX.utils.book_new();
  document.querySelectorAll('#doceditor-content table[data-sheet]').forEach(table => {
- const rows = [...table.querySelectorAll('tr')].map(tr =>
- [...tr.querySelectorAll('td')].map(td => td.textContent)
+ recalcSheet(table); // s'assure que toutes les formules sont a jour avant export
+ const dataRows = [...table.querySelectorAll('tr')].slice(1); // ignore la ligne d'en-tetes A,B,C...
+ const rows = dataRows.map(tr =>
+ [...tr.querySelectorAll('td[data-cell]')].map(td => {
+ const v = td.textContent.trim();
+ const num = parseFloat(v.replace(',','.'));
+ return (v !== '' && !isNaN(num)) ? num : v;
+ })
  );
  const ws = XLSX.utils.aoa_to_sheet(rows);
  XLSX.utils.book_append_sheet(wb, ws, table.getAttribute('data-sheet').substring(0,31));
@@ -3061,6 +3173,7 @@ function showQuestion() {
  document.getElementById('quiz-counter').textContent = `Question ${APP.quizIndex+1}/${total}`;
  document.getElementById('quiz-prog').style.width = `${((APP.quizIndex)/total)*100}%`;
  document.getElementById('quiz-question').textContent = q.q;
+ renderMathInChat(document.getElementById('quiz-question'));
  document.getElementById('quiz-explanation').style.display='none';
  document.getElementById('next-q-wrapper').style.display='none';
 
@@ -3069,6 +3182,7 @@ function showQuestion() {
  <div class="option-letter">${String.fromCharCode(65+i)}</div>
  <span>${opt}</span>
  </button>`).join('');
+ renderMathInChat(document.getElementById('quiz-play'));
 
  timeLeft=30;
  document.getElementById('quiz-timer').textContent=timeLeft;
@@ -3092,6 +3206,7 @@ function answerQ(idx) {
  document.getElementById('quiz-explanation').style.display='block';
  document.getElementById('next-q-wrapper').style.display='block';
  document.getElementById('next-q-btn').textContent = APP.quizIndex<APP.quizQuestions.length-1 ? 'Question suivante →' : 'Voir les résultats →';
+ renderMathInChat(document.getElementById('quiz-explanation'));
 }
 
 function nextQuestion() {
@@ -4862,6 +4977,42 @@ function switchCalcTab(tab) {
  }
 }
 
+let calcFractionMode = false;
+function toggleCalcFraction() {
+ calcFractionMode = !calcFractionMode;
+ const btn = document.getElementById('calc-frac-toggle');
+ btn.style.background = calcFractionMode ? 'var(--em)' : 'none';
+ btn.style.color = calcFractionMode ? '#fff' : '#888';
+ btn.style.borderColor = calcFractionMode ? 'var(--em)' : '#444';
+ if (!calcFractionMode) document.getElementById('calc-fraction').textContent = '';
+ else if (typeof lastCalcResult === 'number') showCalcFraction(lastCalcResult);
+}
+
+// Convertit un décimal en fraction simplifiée (algorithme des fractions continues)
+function decimalToFraction(x, tolerance) {
+ tolerance = tolerance || 1e-6;
+ if (x === 0) return { num: 0, den: 1 };
+ const neg = x < 0; x = Math.abs(x);
+ let h1=1, h2=0, k1=0, k2=1, b = x;
+ do {
+ const a = Math.floor(b);
+ let aux = h1; h1 = a*h1+h2; h2 = aux;
+ aux = k1; k1 = a*k1+k2; k2 = aux;
+ b = 1/(b-a);
+ } while (Math.abs(x - h1/k1) > x*tolerance && k1 < 1e6);
+ return { num: neg ? -h1 : h1, den: k1 };
+}
+
+function showCalcFraction(result) {
+ const el = document.getElementById('calc-fraction');
+ if (!Number.isFinite(result) || Number.isInteger(result)) { el.textContent = ''; return; }
+ const f = decimalToFraction(result);
+ if (f.den === 1 || f.den > 9999) { el.textContent = ''; return; }
+ el.textContent = '= ' + f.num + '/' + f.den;
+}
+
+let lastCalcResult = null;
+
 function calcInput(val) {
  if (calcExpr === '0' && /^[0-9]$/.test(val)) calcExpr = '';
  calcExpr += val;
@@ -4872,11 +5023,14 @@ function calcEqual() {
  try {
  const result = Function('"use strict"; const {sin,cos,tan,sqrt,log,log10,abs,cbrt,pow,PI,E,floor,ceil,round,exp,sign}=Math; return (' + calcExpr + ')')();
  const rounded = (typeof result === 'number' && isFinite(result)) ? (Math.round(result * 1e10) / 1e10) : result;
+ lastCalcResult = (typeof rounded === 'number') ? rounded : null;
  calcLog.unshift(calcExpr + ' = ' + rounded);
  if(calcLog.length > 15) calcLog.pop();
  document.getElementById('calc-history').textContent = calcExpr + ' =';
  document.getElementById('calc-display').textContent = rounded;
  document.getElementById('calc-log').innerHTML = calcLog.map(l=>`<div>${escHtml(String(l))}</div>`).join('');
+ if (calcFractionMode && lastCalcResult !== null) showCalcFraction(lastCalcResult);
+ else document.getElementById('calc-fraction').textContent = '';
  calcExpr = String(rounded);
  } catch(e) {
  document.getElementById('calc-display').textContent = 'Erreur';
