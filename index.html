@@ -2011,7 +2011,27 @@ function extractDocDirective(text) {
  return { cleanText, doc };
 }
 
+// Bulle d'image générée par IA : réutilisée à la génération ET au rechargement de
+// l'historique (pour que l'image reste visible après avoir quitté/rouvert la conversation).
+function renderImageMsgHTML(url, prompt, time) {
+ const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
+ return `<div>
+ <div class="msg-bubble ai" style="padding:8px">
+ <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible</div>'">
+ </div>
+ <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+ <div class="msg-time" style="margin-top:0">${time || ''}</div>
+ <button onclick="downloadGeneratedImage('${url}','${promptB64}')" title="Télécharger" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+ </button>
+ </div>
+ </div>`;
+}
+
 function renderMsgHTML(m) {
+ if (m.role === 'assistant' && m.content && typeof m.content === 'object' && m.content.type === 'image') {
+ return `<div class="msg-row">${renderImageMsgHTML(m.content.url, m.content.prompt, m.time)}</div>`;
+ }
  if (m.role === 'user') {
  if (m.content && typeof m.content === 'object' && m.content.imagePreview) {
  return `<div class="msg-row user"><div class="msg-bubble user" style="padding:6px">
@@ -2454,18 +2474,25 @@ async function saveFileEverywhere(blob, filename, mimeType) {
  }
 }
 
-async function downloadGeneratedImage(imgElId) {
- const img = document.getElementById(imgElId);
- if (!img || !img.src) { showToast('⚠ Image introuvable'); return; }
- try {
- const res = await fetch(img.src);
- const blob = await res.blob();
+async function downloadGeneratedImage(url, promptB64) {
+ if (!url) { showToast('⚠ Image introuvable'); return; }
+ const prompt = promptB64 ? decodeURIComponent(escape(atob(promptB64))) : 'Image générée';
  const filename = 'studiora_image_' + Date.now() + '.jpg';
+ try {
+ // Priorité au téléchargement natif Android : il n'est pas soumis au CORS du
+ // navigateur (contrairement à fetch()), donc il fonctionne même quand le serveur
+ // distant (ex: Pollinations) ne renvoie pas d'en-têtes Access-Control-Allow-Origin.
+ if (window.AndroidDownload && typeof window.AndroidDownload.saveFileFromUrl === 'function') {
+ window.AndroidDownload.saveFileFromUrl(url, filename, 'image/jpeg');
+ } else {
+ const res = await fetch(url);
+ if (!res.ok) throw new Error('HTTP ' + res.status);
+ const blob = await res.blob();
  await saveFileEverywhere(blob, filename, 'image/jpeg');
-
+ }
  try {
  const list = JSON.parse(localStorage.getItem('studiora_travaux_docs')||'[]');
- list.unshift({ title: img.alt || 'Image générée', type:'image', filename, date: new Date().toISOString() });
+ list.unshift({ title: prompt, type:'image', filename, date: new Date().toISOString() });
  localStorage.setItem('studiora_travaux_docs', JSON.stringify(list.slice(0,100)));
  } catch(e) {}
  } catch(e) {
@@ -2538,7 +2565,18 @@ async function downloadGeneratedDoc(idx) {
  }
 }
 
+// Retire le raisonnement interne du modèle (balises <think>...</think>) que certains
+// modèles renvoient avant leur vraie réponse. Gère aussi le cas d'une balise non refermée
+// (réponse coupée) en supprimant tout à partir de <think>.
+function stripThinkTags(text) {
+ if (!text) return text;
+ let out = String(text).replace(/<think>[\s\S]*?<\/think>/gi, '');
+ out = out.replace(/<think>[\s\S]*$/i, '');
+ return out.trim();
+}
+
 function formatAiMsg(text) {
+ text = stripThinkTags(text);
  // 1) Extrait les blocs LaTeX AVANT toute autre transformation (surtout avant \n -> <br>,
  // qui coupait les formules multi-lignes en morceaux et empêchait KaTeX de les reconnaître).
  const mathBlocks = [];
@@ -2826,18 +2864,8 @@ async function generateImageFromChat() {
  const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
 
  const container = document.getElementById(genId);
- container.innerHTML = `<div>
- <div class="msg-bubble ai" style="padding:8px">
- <img id="genimg-${genId}" src="${imgUrl}" alt="${escHtml(prompt)}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Erreur de génération — réessaie</div>'">
- </div>
- <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
- <div class="msg-time" style="margin-top:0">${time}</div>
- <button onclick="downloadGeneratedImage('genimg-${genId}')" title="Télécharger" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
- </button>
- </div>
- </div>`;
- APP.chatHistory.push({ role:'assistant', content:'[Image générée : '+prompt+']', time });
+ container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time);
+ APP.chatHistory.push({ role:'assistant', content:{ type:'image', url:imgUrl, prompt }, time });
  saveChatHistory(APP.currentSubject);
  scrollChat();
 }
@@ -2906,10 +2934,14 @@ async function sendMessage() {
  scrollChat();
 
  try {
- const messages = APP.chatHistory.slice(0,-1).map(m=>({
- role:m.role,
- content: (m.content && typeof m.content==='object' && m.content.imagePreview) ? m.content.caption : m.content
- }));
+ const messages = APP.chatHistory.slice(0,-1).map(m=>{
+ let content = m.content;
+ if (content && typeof content === 'object') {
+ if (content.imagePreview) content = content.caption || '';
+ else if (content.type === 'image') content = '[Image générée : ' + (content.prompt||'') + ']';
+ }
+ return { role:m.role, content };
+ });
  messages.push({role:'user',content:userContent});
 
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
@@ -2929,7 +2961,7 @@ async function sendMessage() {
  return;
  }
 
- const aiText = (data.content && data.content[0] ? data.content[0].text : '') || 'Je n\'ai pas pu répondre, réessaie !';
+ const aiText = stripThinkTags((data.content && data.content[0] ? data.content[0].text : '')) || 'Je n\'ai pas pu répondre, réessaie !';
  const aiTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
  APP.chatHistory.push({role:'assistant',content:aiText,time:aiTime});
  saveChatHistory(APP.currentSubject);
