@@ -378,17 +378,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div onclick="showScreen('screen-profile')" style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;cursor:pointer" id="home-avatar">M</div>
  </div>
  </div>
-
- <!-- Bannière "Passer à l'app" — visible uniquement en navigateur web, jamais dans l'app Android installée -->
- <div id="web-to-app-banner" style="display:none;margin:0 20px 16px;background:linear-gradient(135deg,var(--em),var(--em2));border-radius:16px;padding:14px 16px;align-items:center;gap:12px;box-shadow:var(--shadow)">
- <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">📲</div>
- <div style="flex:1;min-width:0">
- <p style="font-size:13px;font-weight:700;color:#fff;margin-bottom:1px">Passe à l'app Android</p>
- <p style="font-size:11px;color:rgba(255,255,255,.85)">Plus rapide, notifications, hors-ligne</p>
- </div>
- <button onclick="downloadStudioraApk()" style="background:#fff;color:var(--em);border:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif">Installer</button>
- <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>
- </div>
  <div style="padding:0 20px 18px" class="a1">
  <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);cursor:text" onclick="focusChatFromHome()">
  <span style="flex:1;font-size:14px;color:var(--text3)">Pose ta question au coach IA...</span>
@@ -4728,8 +4717,8 @@ function initWebToAppBanner() {
  try {
  if (isRunningInNativeApp()) return; // jamais dans l'app installée
  if (localStorage.getItem('studiora_hide_apk_banner') === '1') return; // déjà fermée par l'utilisateur
- const banner = document.getElementById('web-to-app-banner');
- if (banner) banner.style.display = 'flex';
+ const fab = document.getElementById('web-to-app-fab');
+ if (fab) fab.style.display = 'block';
  } catch(e) {}
 }
 
@@ -4739,8 +4728,8 @@ function downloadStudioraApk() {
 
 function dismissWebToAppBanner() {
  localStorage.setItem('studiora_hide_apk_banner', '1');
- const banner = document.getElementById('web-to-app-banner');
- if (banner) banner.style.display = 'none';
+ const fab = document.getElementById('web-to-app-fab');
+ if (fab) fab.style.display = 'none';
 }
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkeGR2bXhtZXR6eXpmbnB1b2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjc1OTIsImV4cCI6MjA5Njc0MzU5Mn0.mQv6K-GM9ErbGsR8N1usYdS0o8PWeAOOqdwuHxl8I6s';
 
@@ -5268,6 +5257,7 @@ function doLogout() {
 function _runInit() {
  try {
  checkPaymentReturn();
+ initWebToAppBanner();
  try { initAppLang(); } catch(e) { console.warn('initAppLang error:', e.message); }
  if (loadSession()) {
  SUBJECTS = getSubjects();
@@ -6822,6 +6812,13 @@ function mediaExtractAudio() {
 
 <!-- ── TOAST ── -->
 <div id="toast" class="toast"><span id="toast-msg"></span></div>
+
+<!-- Bulle flottante "Passer à l'app" — visible uniquement en navigateur web (jamais dans l'app
+ Android installée), persiste sur tous les écrans, style bulle façon icône flottante -->
+<div id="web-to-app-fab" style="display:none;position:fixed;right:16px;bottom:96px;z-index:9999">
+ <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer">📲</button>
+ <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--text3);color:#fff;border:2px solid var(--white,#fff);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
+</div>
 
 <!-- ── BOTTOM NAV GLOBALE ── -->
 <nav id="global-nav" class="bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200">
