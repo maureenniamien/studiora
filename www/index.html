@@ -181,6 +181,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .quiz-option:active{transform:scale(.98)}
 .quiz-option.correct{background:var(--em-soft);border-color:var(--em);color:var(--em)}
 .quiz-option.wrong{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.quiz-option.selected{background:var(--bg2);border-color:var(--text2);opacity:.85}
 .quiz-option.selected{background:var(--bg2);border-color:var(--em)}
 .option-letter{width:30px;height:30px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 
@@ -290,6 +291,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <option value="Licence 2">Licence 2 (L2)</option>
  <option value="Licence 3">Licence 3 (L3)</option>
  </optgroup>
+ <optgroup label="Licence technique">
+ <option value="BT">BT (Brevet de Technicien)</option>
+ </optgroup>
  <optgroup label="Université — Master">
  <option value="Master 1">Master 1 (M1)</option>
  <option value="Master 2">Master 2 (M2)</option>
@@ -328,9 +332,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div id="reg-filiere-block" style="display:none;margin-bottom:8px">
  <label class="field-label" id="reg-filiere-label">Filière / Spécialité</label>
- <select id="reg-filiere" class="input">
+ <select id="reg-filiere" class="input" onchange="onFiliereChange()">
  <option value="">-- Choisir la filière --</option>
  </select>
+ <input id="reg-filiere-autre" class="input" placeholder="Précise ta filière" style="display:none;margin-top:8px" oninput="onFiliereAutreInput()">
  </div>
  </div>
  <div style="margin-bottom:14px">
@@ -374,7 +379,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  </div>
 
- <!-- Search / Ask -->
+ <!-- Bannière "Passer à l'app" — visible uniquement en navigateur web, jamais dans l'app Android installée -->
+ <div id="web-to-app-banner" style="display:none;margin:0 20px 16px;background:linear-gradient(135deg,var(--em),var(--em2));border-radius:16px;padding:14px 16px;align-items:center;gap:12px;box-shadow:var(--shadow)">
+ <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">📲</div>
+ <div style="flex:1;min-width:0">
+ <p style="font-size:13px;font-weight:700;color:#fff;margin-bottom:1px">Passe à l'app Android</p>
+ <p style="font-size:11px;color:rgba(255,255,255,.85)">Plus rapide, notifications, hors-ligne</p>
+ </div>
+ <button onclick="downloadStudioraApk()" style="background:#fff;color:var(--em);border:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif">Installer</button>
+ <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>
+ </div>
  <div style="padding:0 20px 18px" class="a1">
  <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);cursor:text" onclick="focusChatFromHome()">
  <span style="flex:1;font-size:14px;color:var(--text3)">Pose ta question au coach IA...</span>
@@ -557,6 +571,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <p style="color:var(--text2);font-size:14px;margin-bottom:6px" id="result-score"></p>
  <p style="color:var(--text3);font-size:12px;margin-bottom:28px" id="result-msg"></p>
  <div id="result-details" style="text-align:left;margin-bottom:24px"></div>
+ <div id="result-correction" style="text-align:left;margin-bottom:24px"></div>
  <div style="display:flex;gap:10px">
  <button class="btn-outline" onclick="restartQuiz()" style="flex:1">Recommencer</button>
  <button class="btn-em" onclick="showScreen('screen-home')" style="flex:1">Accueil</button>
@@ -763,6 +778,23 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Préférences</h3>
  <div id="prefs-list"></div>
+ </div>
+
+ <!-- ── Changer mon nom ── -->
+ <div class="card" style="margin-bottom:14px">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:4px"> Mon nom</h3>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Corrige ton prénom ou ton nom de famille si besoin.</p>
+ <div style="display:flex;flex-direction:column;gap:8px">
+ <div>
+ <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">PRÉNOM</div>
+ <input id="profile-prenom-input" class="input" style="font-size:13px;padding:10px 14px" placeholder="Prénom">
+ </div>
+ <div>
+ <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NOM DE FAMILLE</div>
+ <input id="profile-nom-input" class="input" style="font-size:13px;padding:10px 14px" placeholder="Nom de famille">
+ </div>
+ </div>
+ <button onclick="saveUserName()" style="width:100%;padding:11px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:10px"> Enregistrer le nom</button>
  </div>
 
  <!-- ── Changer de niveau ── -->
@@ -1787,6 +1819,14 @@ const ALL_SUBJECTS = [
  { id:'audit', icon:'', name:'Audit & Contrôle', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
  { id:'seg', icon:'', name:'SEG', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
  { id:'sjap', icon:'', name:'Sciences Juridiques',color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'resto', icon:'', name:'Restauration', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'hotel', icon:'', name:'Hôtellerie', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'nutrition', icon:'', name:'Nutrition & Diététique', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'electrotec', icon:'', name:'Électrotechnique', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'electron', icon:'', name:'Électronique', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'mecaauto', icon:'', name:'Mécanique Auto', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'batiment', icon:'', name:'Bâtiment', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'secretariat', icon:'', name:'Secrétariat Bureautique', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
 ];
 
 // Matières par niveau et filière
@@ -1847,6 +1887,22 @@ const SUBJECTS_BY_LEVEL = {
  'Économie':['eco','stats','compta','gestion','droit'],
  'Droit': ['droit','eco','gestion','ang','fr'],
  'Gestion': ['gestion','compta','eco','droit','ang'],
+ },
+ 'BT': {
+ 'default': ['fr','ang','math','info'],
+ 'Hôtellerie-Restauration': ['resto','hotel','nutrition','fr','ang','gestion'],
+ 'Électrotechnique': ['electrotec','math','physique','info','fr'],
+ 'Électronique': ['electron','math','physique','info','fr'],
+ 'Mécanique Auto': ['mecaauto','math','physique','fr'],
+ 'Bâtiment': ['batiment','math','physique','fr'],
+ 'Comptabilité': ['compta','gestion','math','fr','ang'],
+ 'Secrétariat Bureautique': ['secretariat','fr','ang','info'],
+ 'Structures Métalliques': ['batiment','math','physique','fr'],
+ 'Froid & Climatisation': ['electrotec','physique','math','fr'],
+ 'Fabrication Mécanique': ['mecaauto','math','physique','fr'],
+ 'Génie Civil': ['batiment','math','physique','fr'],
+ 'Industrie de l\'Habillement': ['fr','ang','gestion','math'],
+ 'Agriculture': ['svt','physique','fr','math'],
  },
 };
 
@@ -2041,6 +2097,7 @@ function showToast(msg) {
 // ── HOME ──
 function renderHome() {
  if (!APP.user || !APP.user.prenom) return;
+ initWebToAppBanner();
  APP.user.streak = computeStreak();
  function safeSet(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
  safeSet('home-greeting', APP.user.prenom);
@@ -3295,6 +3352,7 @@ const FILIERES_BY_NIVEAU = {
  'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
  'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
  'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
+ 'BT': ['Hôtellerie-Restauration','Électrotechnique','Électronique','Mécanique Auto','Bâtiment','Comptabilité','Secrétariat Bureautique','Structures Métalliques','Froid & Climatisation','Fabrication Mécanique','Génie Civil','Industrie de l\'Habillement','Agriculture'],
  'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
  'BTS 2':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
  'DUT':['Informatique','Génie Électrique','Génie Civil','Gestion des Entreprises','Techniques de Commercialisation','Mesures Physiques'],
@@ -3369,6 +3427,8 @@ function onNiveauChange() {
  const filiereEl = document.getElementById('reg-filiere');
  serieEl.innerHTML = '<option value="">-- Choisir --</option>';
  filiereEl.innerHTML = '<option value="">-- Choisir --</option>';
+ document.getElementById('reg-filiere-autre').style.display = 'none';
+ document.getElementById('reg-filiere-autre').value = '';
 
  const series = SERIES_BY_NIVEAU[niv];
  const filieres = FILIERES_BY_NIVEAU[niv];
@@ -3394,6 +3454,8 @@ function onNiveauChange() {
  filiereLabel.textContent = 'Filière / Spécialité';
  filiereBlock.style.display = 'block';
  filieres.forEach(f => { const o=document.createElement('option'); o.value=f; o.textContent=f; filiereEl.appendChild(o); });
+ addAutreFiliereOption(filiereEl);
+ loadCustomFilieres(niv, filiereEl); // ajoute celles déjà proposées par d'autres utilisateurs
  serieBlock.style.display = 'none';
  masterOrigineBlock.style.display = 'none';
  } else {
@@ -3413,6 +3475,40 @@ function onMasterOrigineChange() {
  if (!origine) return;
  const specs = MASTER_SPECS_BY_LICENCE[origine] || MASTER_SPECS_GENERIQUE;
  specs.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; filiereEl.appendChild(o); });
+ addAutreFiliereOption(filiereEl); // au cas où la spécialisation voulue n'est pas dans la liste non plus
+}
+function addAutreFiliereOption(selectEl) {
+ if (selectEl.querySelector('option[value="__autre__"]')) return;
+ const o = document.createElement('option');
+ o.value = '__autre__'; o.textContent = 'Autre (préciser)';
+ selectEl.appendChild(o);
+}
+function onFiliereChange() {
+ const val = document.getElementById('reg-filiere').value;
+ const autreInput = document.getElementById('reg-filiere-autre');
+ autreInput.style.display = (val === '__autre__') ? 'block' : 'none';
+}
+function onFiliereAutreInput() {} // la valeur est simplement lue dans doRegister()
+
+// Va chercher les filières personnalisées déjà ajoutées par d'autres
+// utilisateurs pour ce niveau (table Supabase custom_filieres), pour que la
+// liste s'enrichisse au fil du temps sans jamais avoir besoin d'un rebuild.
+async function loadCustomFilieres(niveau, selectEl) {
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/custom_filieres?niveau=eq.${encodeURIComponent(niveau)}&select=filiere&order=filiere.asc`, {
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return;
+ const rows = await res.json();
+ const autreOpt = selectEl.querySelector('option[value="__autre__"]');
+ rows.forEach(r => {
+ if (!r.filiere || selectEl.querySelector(`option[value="${CSS.escape(r.filiere)}"]`)) return;
+ const o = document.createElement('option');
+ o.value = r.filiere; o.textContent = r.filiere + ' ✨';
+ selectEl.insertBefore(o, autreOpt || null);
+ if (!FILIERES_BY_NIVEAU[niveau].includes(r.filiere)) FILIERES_BY_NIVEAU[niveau].push(r.filiere);
+ });
+ } catch(e) { /* pas grave si ça échoue, la liste de base reste utilisable */ }
 }
 function selectLevel(btn) { selectedLevel = (btn && btn.dataset && btn.dataset.v) || btn; }
 
@@ -3559,7 +3655,11 @@ function doRegister() {
  const pwd = (document.getElementById('reg-pwd')||{}).value || '';
  const niv = (document.getElementById('reg-niveau')||{}).value || selectedLevel;
  const serie = (document.getElementById('reg-serie')||{}).value || '';
- const filiere = (document.getElementById('reg-filiere')||{}).value || '';
+ let filiere = (document.getElementById('reg-filiere')||{}).value || '';
+ if (filiere === '__autre__') {
+ filiere = (document.getElementById('reg-filiere-autre')||{}).value.trim();
+ if (!filiere) { showToast('! Précise le nom de ta filière'); return; }
+ }
  if (!p||!n) { showToast('! Remplis Prénom et Nom'); return; }
  if (!niv) { showToast('! Choisis ton niveau'); return; }
  if (!pwd) { showToast('! Le mot de passe est obligatoire'); return; }
@@ -3567,6 +3667,7 @@ function doRegister() {
  if (!/[A-Za-z]/.test(pwd) || !/[0-9]/.test(pwd)) { showToast('! Mot de passe : mélange lettres et chiffres'); return; }
  const pwd2 = (document.getElementById('reg-pwd2')||{}).value || '';
  if (pwd !== pwd2) { showToast('! Les mots de passe ne correspondent pas'); return; }
+ const isCustomFiliere = !!filiere && FILIERES_BY_NIVEAU[niv] && !FILIERES_BY_NIVEAU[niv].includes(filiere);
  APP.user.prenom = p.charAt(0).toUpperCase()+p.slice(1);
  APP.user.nom = n;
  APP.user.level = niv;
@@ -3581,9 +3682,34 @@ function doRegister() {
  APP.user.retro_trial_granted = true;
  APP.user.treePlantedAt = new Date().toISOString();
  saveSession();
+ if (isCustomFiliere) registerCustomFiliere(niv, filiere); // partagée avec les futurs inscrits + adapte l'app tout de suite
  SUBJECTS = getSubjects();
  showScreen('screen-home');
  setTimeout(()=>{ renderHome(); showWelcomeModal(); }, 300);
+}
+
+// Enregistre une filière (ou spécialisation) inédite : disponible pour les
+// prochains inscrits du même niveau (table Supabase custom_filieres), et
+// adaptée immédiatement pour CET utilisateur (matières génériques du niveau
+// tant qu'aucune matière dédiée n'a été définie pour cette filière précise).
+async function registerCustomFiliere(niveau, filiere) {
+ if (!FILIERES_BY_NIVEAU[niveau]) FILIERES_BY_NIVEAU[niveau] = [];
+ if (!FILIERES_BY_NIVEAU[niveau].includes(filiere)) FILIERES_BY_NIVEAU[niveau].push(filiere);
+ if (SUBJECTS_BY_LEVEL[niveau] && !SUBJECTS_BY_LEVEL[niveau][filiere]) {
+ SUBJECTS_BY_LEVEL[niveau][filiere] = SUBJECTS_BY_LEVEL[niveau]['default'] || ['fr','ang','math','info'];
+ }
+ try {
+ await fetch(`${SUPABASE_URL}/rest/v1/custom_filieres`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+ 'Prefer': 'return=minimal,resolution=ignore-duplicates'
+ },
+ body: JSON.stringify({ niveau, filiere })
+ });
+ } catch(e) { /* la filière reste utilisable localement même si l'enregistrement partagé échoue */ }
 }
 
 function showWelcomeModal() {
@@ -3731,7 +3857,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
  catch(je) { throw new Error('JSON invalide: '+je.message+' — Réessaie.'); }
  APP.quizQuestions = parsed.questions || [];
  if(APP.quizQuestions.length===0) throw new Error('empty');
- APP.quizIndex = 0; APP.quizScore = 0;
+ APP.quizIndex = 0; APP.quizScore = 0; APP.quizAnswers = [];
  launchQuiz();
  } catch(e) {
  showToast((e && e.name)==='AbortError' ? ' Délai dépassé. Réessaie.' : ' Erreur : '+((e && e.message)||'Connexion impossible'));
@@ -3774,20 +3900,20 @@ function showQuestion() {
  },1000);
 }
 
+// Le quiz se déroule désormais sans jamais révéler bon/mauvais par question :
+// on enregistre juste le choix (ou -1 si non répondu / temps écoulé), on
+// avance à la question suivante, et TOUTE la correction (bonnes réponses,
+// explications, score détaillé) n'apparaît qu'à la toute fin.
 function answerQ(idx) {
  clearInterval(timerInterval);
- const q = APP.quizQuestions[APP.quizIndex];
+ if (!APP.quizAnswers) APP.quizAnswers = [];
+ APP.quizAnswers[APP.quizIndex] = idx;
  document.querySelectorAll('.quiz-option').forEach((btn,i)=>{
- btn.onclick=null;
- if(i===q.correct){ btn.classList.add('correct'); btn.querySelector('.option-letter').textContent=''; }
- else if(i===idx && i!==q.correct){ btn.classList.add('wrong'); btn.querySelector('.option-letter').textContent=''; }
+ btn.onclick = null;
+ if (i === idx) btn.classList.add('selected');
  });
- if(idx===q.correct) APP.quizScore++;
- document.getElementById('quiz-expl-text').textContent = q.explication || '';
- document.getElementById('quiz-explanation').style.display='block';
  document.getElementById('next-q-wrapper').style.display='block';
- document.getElementById('next-q-btn').textContent = APP.quizIndex<APP.quizQuestions.length-1 ? 'Question suivante →' : 'Voir les résultats →';
- renderMathInChat(document.getElementById('quiz-explanation'));
+ document.getElementById('next-q-btn').textContent = APP.quizIndex<APP.quizQuestions.length-1 ? 'Question suivante →' : 'Voir la correction →';
 }
 
 function nextQuestion() {
@@ -3800,7 +3926,13 @@ function showResults() {
  clearInterval(timerInterval);
  document.getElementById('quiz-play').style.display='none';
  document.getElementById('quiz-results').style.display='block';
- const total=APP.quizQuestions.length, score=APP.quizScore, pct=Math.round(score/total*100);
+ const answers = APP.quizAnswers || [];
+ const total = APP.quizQuestions.length;
+ // Une question non répondue (undefined/-1, ex: temps écoulé) compte comme un échec.
+ let score = 0;
+ APP.quizQuestions.forEach((q,i) => { if (answers[i] === q.correct) score++; });
+ APP.quizScore = score;
+ const pct = Math.round(score/total*100);
  const emojis = pct>=80?'':pct>=60?'':pct>=40?'':'';
  const titles = pct>=80?'Excellent !':pct>=60?'Très bien !':pct>=40?'Pas mal !':'Continue !';
  const msgs = pct>=80?'Tu maîtrises ce sujet !':pct>=60?'Encore un peu de révision.':pct>=40?'Continue, tu progresses !':'La pratique mène à la perfection.';
@@ -3821,6 +3953,29 @@ function showResults() {
  <span style="color:var(--text2);font-size:13px">Score</span>
  <span style="font-weight:700;font-size:13px;color:${pct>=60?'var(--em)':'var(--red)'}">${pct}%</span>
  </div>`;
+
+ // Correction générale détaillée, question par question
+ document.getElementById('result-correction').innerHTML = `
+ <h4 style="font-size:14px;font-weight:700;margin-bottom:10px">📋 Correction détaillée</h4>
+ ${APP.quizQuestions.map((q,i)=>{
+ const given = answers[i];
+ const isCorrect = given === q.correct;
+ const wasAnswered = given !== undefined && given !== -1 && given !== null;
+ return `
+ <div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:3px solid ${isCorrect?'var(--em)':'var(--red)'}">
+ <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px">
+ <span style="flex-shrink:0">${isCorrect?'✅':'❌'}</span>
+ <span style="font-size:13px;font-weight:600">${i+1}. ${q.q}</span>
+ </div>
+ <div style="font-size:12px;color:var(--text2);margin-bottom:4px">
+ ${wasAnswered ? 'Ta réponse : <strong>'+(q.options[given]||'—')+'</strong>' : '<strong>Non répondu</strong> (considéré comme un échec)'}
+ </div>
+ ${!isCorrect ? `<div style="font-size:12px;color:var(--em);margin-bottom:6px">Bonne réponse : <strong>${q.options[q.correct]||'—'}</strong></div>` : ''}
+ <div style="font-size:12px;color:var(--text3);line-height:1.5">${q.explication || ''}</div>
+ </div>`;
+ }).join('')}`;
+ renderMathInChat(document.getElementById('result-correction'));
+
  APP.user.streak++;
  incrementSessions();
  incrementQuestions(APP.quizQuestions.length);
@@ -3828,7 +3983,7 @@ function showResults() {
 }
 
 function restartQuiz() {
- APP.quizQuestions=[]; APP.quizIndex=0; APP.quizScore=0;
+ APP.quizQuestions=[]; APP.quizIndex=0; APP.quizScore=0; APP.quizAnswers=[];
  clearInterval(timerInterval);
  const btn = document.getElementById('start-quiz-btn');
  const btnTxt = document.getElementById('quiz-btn-text');
@@ -4236,6 +4391,10 @@ function renderProfile() {
  safeSet('profile-avatar', APP.user.prenom[0]);
  safeSet('profile-name', APP.user.prenom+' '+APP.user.nom);
  safeSet('profile-level', APP.user.level+' · '+(APP.user.filiere||''));
+ const prenomInput = document.getElementById('profile-prenom-input');
+ const nomInput = document.getElementById('profile-nom-input');
+ if (prenomInput && document.activeElement !== prenomInput) prenomInput.value = APP.user.prenom || '';
+ if (nomInput && document.activeElement !== nomInput) nomInput.value = APP.user.nom || '';
  // Badge plan
  const planKey=getPlan();
  const planInfo=PLANS[planKey];
@@ -4551,6 +4710,38 @@ function deleteSavedCourse(i) {
 // ── SESSION & AUTH ──
 const SESSION_KEY = 'studiora_session';
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
+
+// ── Bouton "Passer à l'app" (affiché uniquement en navigateur web/PWA) ──
+// IMPORTANT : remplace cette URL par le vrai lien de téléchargement de ton
+// dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
+// Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
+// "Installer" ouvrira un lien invalide.
+const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora_git/releases/download/v1.0.0/app-debug-51.apk';
+
+function isRunningInNativeApp() {
+ // Capacitor injecte automatiquement window.Capacitor dans l'app native —
+ // absent, on est forcément dans un navigateur (web/PWA)
+ return typeof window.Capacitor !== 'undefined';
+}
+
+function initWebToAppBanner() {
+ try {
+ if (isRunningInNativeApp()) return; // jamais dans l'app installée
+ if (localStorage.getItem('studiora_hide_apk_banner') === '1') return; // déjà fermée par l'utilisateur
+ const banner = document.getElementById('web-to-app-banner');
+ if (banner) banner.style.display = 'flex';
+ } catch(e) {}
+}
+
+function downloadStudioraApk() {
+ window.open(STUDIORA_APK_URL, '_blank');
+}
+
+function dismissWebToAppBanner() {
+ localStorage.setItem('studiora_hide_apk_banner', '1');
+ const banner = document.getElementById('web-to-app-banner');
+ if (banner) banner.style.display = 'none';
+}
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkeGR2bXhtZXR6eXpmbnB1b2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjc1OTIsImV4cCI6MjA5Njc0MzU5Mn0.mQv6K-GM9ErbGsR8N1usYdS0o8PWeAOOqdwuHxl8I6s';
 
 // ══════════════════════════════════════════════
@@ -6256,6 +6447,18 @@ function initAppLang() {
 
 
 // ── CHANGEMENT DE NIVEAU ──
+function saveUserName() {
+ const prenom = ((document.getElementById('profile-prenom-input')||{}).value || '').trim();
+ const nom = ((document.getElementById('profile-nom-input')||{}).value || '').trim();
+ if (!prenom || !nom) { showToast('! Renseigne prénom et nom'); return; }
+ APP.user.prenom = prenom.charAt(0).toUpperCase()+prenom.slice(1);
+ APP.user.nom = nom;
+ saveSession();
+ renderProfile();
+ renderHome();
+ showToast(' Nom mis à jour : ' + APP.user.prenom + ' ' + APP.user.nom);
+}
+
 function setUserLevel(level, btn) {
  document.querySelectorAll('.level-btn').forEach(b => {
  b.style.background = 'var(--bg2)';
