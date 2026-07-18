@@ -344,7 +344,7 @@ public class MainActivity extends BridgeActivity {
                 getBridge().getWebView().evaluateJavascript(
                     "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
                     value -> {
-                        boolean handledByJs = "\"true\"".equals(value);
+                        boolean handledByJs = "true".equals(value);
                         if (!handledByJs) {
                             finish();
                         }
