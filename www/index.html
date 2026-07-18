@@ -324,8 +324,14 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <option value="G">Série G — Techniques de Gestion</option>
  </select>
  </div>
+ <div id="reg-master-origine-block" style="display:none;margin-bottom:8px">
+ <label class="field-label">Filière de Licence d'origine</label>
+ <select id="reg-master-origine" class="input" onchange="onMasterOrigineChange()">
+ <option value="">-- Choisir ta filière de Licence --</option>
+ </select>
+ </div>
  <div id="reg-filiere-block" style="display:none;margin-bottom:8px">
- <label class="field-label">Filière / Spécialité</label>
+ <label class="field-label" id="reg-filiere-label">Filière / Spécialité</label>
  <select id="reg-filiere" class="input" onchange="onFiliereChange()">
  <option value="">-- Choisir la filière --</option>
  </select>
@@ -3318,8 +3324,6 @@ const FILIERES_BY_NIVEAU = {
  'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
  'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
  'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
- 'Master 1':['Agronomie', 'ASSRI', 'Cybersécurité', 'Data Science', 'Droit des Affaires', 'Droit privé', 'Droit public', 'Environnement', 'Finance', 'Génie Civil', 'Génie Logiciel', 'Géographie', 'Géomatique & SIG', 'Gestion de Projet', 'Informatique', 'Intelligence Artificielle', 'Marketing Digital', 'MIAGE', 'Réseaux & Télécoms', 'RIT', 'SEA', 'SEG'],
- 'Master 2':['Agronomie', 'ASSRI', 'Cybersécurité', 'Data Science', 'Droit des Affaires', 'Droit privé', 'Droit public', 'Environnement', 'Finance', 'Génie Civil', 'Génie Logiciel', 'Géographie', 'Géomatique & SIG', 'Gestion de Projet', 'Informatique', 'Intelligence Artificielle', 'Marketing Digital', 'MIAGE', 'Réseaux & Télécoms', 'RIT', 'SEA', 'SEG'],
  'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
  'BT': ['Hôtellerie-Restauration','Électrotechnique','Électronique','Mécanique Auto','Bâtiment','Comptabilité','Secrétariat Bureautique','Structures Métalliques','Froid & Climatisation','Fabrication Mécanique','Génie Civil','Industrie de l\'Habillement','Agriculture'],
  'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
@@ -3328,6 +3332,55 @@ const FILIERES_BY_NIVEAU = {
  'CPGE 1':['MP — Maths-Physique','PC — Physique-Chimie','PSI — Physique-SI','BCPST — Bio-Chimie','ECG — Éco-Commercial','Littéraire B/L'],
  'CPGE 2':['MP — Maths-Physique','PC — Physique-Chimie','PSI — Physique-SI','BCPST — Bio-Chimie','ECG — Éco-Commercial','Littéraire B/L'],
 };
+
+// Spécialisations de Master accessibles selon la filière de Licence d'origine.
+// Utilisé quand le niveau choisi est Master 1 ou Master 2 : on demande d'abord
+// la filière de Licence, puis on propose les spécialisations qui en découlent.
+const MASTER_SPECS_BY_LICENCE = {
+ '3EA': ['Actuariat', 'Économétrie', 'Économie Appliquée', 'Finance Quantitative', 'Statistique Appliquée'],
+ 'AES': ['Administration Publique', 'Gestion des Ressources Humaines', 'Politiques Publiques', 'Économie Sociale et Solidaire', 'Management des Organisations'],
+ 'Agronomie': ['Agroéconomie', 'Agronomie Tropicale', 'Sciences du Sol', 'Protection des Cultures', 'Développement Rural'],
+ 'Anthropologie': ['Anthropologie du Développement', 'Anthropologie Sociale et Culturelle', 'Ethnologie', 'Patrimoine et Muséologie'],
+ 'Archéologie': ['Archéologie Préventive', 'Patrimoine Culturel', 'Muséologie', 'Histoire de l\'Art'],
+ 'ASSRI': ['Cybersécurité', 'Administration Systèmes & Réseaux', 'Cloud Computing', 'Sécurité des Systèmes d\'Information', 'DevOps & Infrastructure'],
+ 'Biologie': ['Biologie Moléculaire et Cellulaire', 'Biotechnologies', 'Microbiologie', 'Écologie et Environnement', 'Biologie Médicale'],
+ 'Chimie': ['Chimie Analytique', 'Chimie Organique', 'Chimie des Matériaux', 'Génie des Procédés', 'Chimie Environnementale'],
+ 'Communication': ['Communication Digitale', 'Communication des Organisations', 'Relations Publiques', 'Communication Événementielle', 'Marketing Digital'],
+ 'Comptabilité': ['Comptabilité Contrôle Audit (CCA)', 'Expertise Comptable', 'Fiscalité', 'Audit Financier', 'Contrôle de Gestion'],
+ 'Droit': ['Droit des Affaires', 'Droit Privé', 'Droit Public', 'Droit International', 'Droit du Numérique'],
+ 'Droit privé': ['Droit des Affaires', 'Droit Notarial', 'Droit Social', 'Droit Judiciaire Privé', 'Propriété Intellectuelle'],
+ 'Droit public': ['Droit Administratif', 'Droit Constitutionnel', 'Finances Publiques', 'Droit International Public', 'Administration Publique'],
+ 'Électronique': ['Électronique Embarquée', 'Systèmes Embarqués', 'Instrumentation', 'Automatique et Robotique', 'Réseaux & Télécoms'],
+ 'Finance': ['Finance d\'Entreprise', 'Ingénierie Financière', 'Finance de Marché', 'Banque et Finance', 'Gestion des Risques Financiers'],
+ 'Génie Civil': ['Structures et Ouvrages d\'Art', 'Bâtiment et Travaux Publics', 'Génie Urbain', 'Hydraulique et Environnement', 'Géotechnique'],
+ 'Génie Électrique': ['Énergies Renouvelables', 'Réseaux Électriques', 'Électrotechnique Industrielle', 'Automatismes', 'Systèmes Embarqués'],
+ 'Génie Mécanique': ['Conception Mécanique', 'Maintenance Industrielle', 'Énergétique', 'Production Industrielle', 'Mécatronique'],
+ 'Géographie': ['Géomatique & SIG', 'Aménagement du Territoire', 'Géographie Urbaine', 'Environnement et Développement Durable', 'Cartographie'],
+ 'Géologie': ['Géologie Appliquée', 'Hydrogéologie', 'Ressources Minières', 'Géotechnique', 'Sciences de la Terre'],
+ 'Géomatique': ['Géomatique & SIG', 'Télédétection', 'Cartographie Numérique', 'Aménagement du Territoire', 'Topographie Avancée'],
+ 'Gestion': ['Management des Entreprises', 'Gestion de Projet', 'Gestion des Ressources Humaines', 'Contrôle de Gestion', 'Entrepreneuriat'],
+ 'Histoire': ['Histoire Contemporaine', 'Patrimoine et Archives', 'Relations Internationales', 'Muséologie'],
+ 'Informatique': ['Génie Logiciel', 'Intelligence Artificielle', 'Cybersécurité', 'Data Science', 'Réseaux & Télécoms'],
+ 'Journalisme': ['Journalisme Numérique', 'Communication de Crise', 'Production Audiovisuelle', 'Médias et Réseaux Sociaux'],
+ 'Langues Étrangères': ['Traduction Spécialisée', 'Interprétariat', 'Didactique des Langues', 'Langues Appliquées au Commerce International'],
+ 'LEA': ['Commerce International', 'Traduction Professionnelle', 'Affaires Internationales', 'Communication Interculturelle'],
+ 'Marketing': ['Marketing Digital', 'Marketing Stratégique', 'Études et Recherche Marketing', 'Marque et Communication', 'E-commerce'],
+ 'Mathématiques': ['Mathématiques Appliquées', 'Statistique et Probabilités', 'Data Science', 'Cryptographie', 'Modélisation Mathématique'],
+ 'Médecine': ['Spécialités Médicales (internat/résidanat)', 'Santé Publique', 'Épidémiologie', 'Recherche Biomédicale'],
+ 'MIAGE': ['Génie Logiciel', 'Data Science', 'Systèmes d\'Information', 'Intelligence Artificielle', 'Gestion de Projet Informatique'],
+ 'Pharmacie': ['Pharmacie Industrielle', 'Pharmacologie', 'Officine et Santé Publique', 'Biotechnologies Pharmaceutiques'],
+ 'Physique': ['Physique des Matériaux', 'Physique Appliquée', 'Énergies Renouvelables', 'Instrumentation Scientifique', 'Astrophysique'],
+ 'Psychologie': ['Psychologie Clinique', 'Psychologie du Travail', 'Neuropsychologie', 'Psychologie de l\'Éducation'],
+ 'RIT': ['Réseaux & Télécoms', 'Cybersécurité', 'Cloud & Virtualisation', 'Administration Réseaux', 'IoT & Objets Connectés'],
+ 'Sciences de l\'Éducation': ['Ingénierie Pédagogique', 'Formation des Formateurs', 'Éducation et Numérique', 'Psychopédagogie'],
+ 'SEA': ['Économie Appliquée', 'Économétrie', 'Politique Économique', 'Économie du Développement'],
+ 'SEG': ['Économie de Gestion', 'Management', 'Finance et Comptabilité', 'Entrepreneuriat'],
+ 'SES': ['Sociologie Économique', 'Économie du Développement', 'Politiques Sociales', 'Économie Appliquée'],
+ 'Sociologie': ['Sociologie du Développement', 'Sociologie des Organisations', 'Sociologie Urbaine', 'Démographie'],
+ 'STAPS': ['Management du Sport', 'Entraînement Sportif', 'Activité Physique Adaptée & Santé', 'Sciences du Sport'],
+};
+// Liste générique proposée quand la filière de Licence n'est pas dans la table ci-dessus
+const MASTER_SPECS_GENERIQUE = ['Cybersécurité', 'Data Science', 'Droit des Affaires', 'Environnement', 'Finance', 'Génie Logiciel', 'Gestion de Projet', 'Intelligence Artificielle', 'Marketing Digital', 'Réseaux & Télécoms'];
 const SERIES_BY_NIVEAU = {
  '2nde':['2nde Générale'],
  '1ère':['1ère A','1ère C','1ère D','1ère E','1ère F (Tech. Ind.)','1ère G (Gestion)'],
@@ -3340,6 +3393,9 @@ function onNiveauChange() {
  selectedLevel = niv;
  const serieBlock = document.getElementById('reg-serie-block');
  const filiereBlock = document.getElementById('reg-filiere-block');
+ const filiereLabel = document.getElementById('reg-filiere-label');
+ const masterOrigineBlock = document.getElementById('reg-master-origine-block');
+ const masterOrigineEl = document.getElementById('reg-master-origine');
  const serieEl = document.getElementById('reg-serie');
  const filiereEl = document.getElementById('reg-filiere');
  serieEl.innerHTML = '<option value="">-- Choisir --</option>';
@@ -3349,21 +3405,50 @@ function onNiveauChange() {
 
  const series = SERIES_BY_NIVEAU[niv];
  const filieres = FILIERES_BY_NIVEAU[niv];
+ const isMaster = (niv === 'Master 1' || niv === 'Master 2');
 
- if (series) {
+ if (isMaster) {
+ // Pour un Master : on demande d'abord la filière de Licence d'origine,
+ // puis onMasterOrigineChange() proposera les spécialisations qui en découlent.
+ serieBlock.style.display = 'none';
+ masterOrigineBlock.style.display = 'block';
+ filiereLabel.textContent = 'Spécialisation de Master';
+ masterOrigineEl.innerHTML = '<option value="">-- Choisir ta filière de Licence --</option>';
+ FILIERES_BY_NIVEAU['Licence 3'].forEach(f => { const o=document.createElement('option'); o.value=f; o.textContent=f; masterOrigineEl.appendChild(o); });
+ const autreOpt = document.createElement('option'); autreOpt.value='Autre'; autreOpt.textContent='Autre / Non listée'; masterOrigineEl.appendChild(autreOpt);
+ filiereBlock.style.display = 'block';
+ filiereEl.innerHTML = '<option value="">-- Choisis d\'abord ta filière de Licence --</option>';
+ } else if (series) {
  serieBlock.style.display = 'block';
  series.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; serieEl.appendChild(o); });
  filiereBlock.style.display = 'none';
+ masterOrigineBlock.style.display = 'none';
  } else if (filieres) {
+ filiereLabel.textContent = 'Filière / Spécialité';
  filiereBlock.style.display = 'block';
  filieres.forEach(f => { const o=document.createElement('option'); o.value=f; o.textContent=f; filiereEl.appendChild(o); });
  addAutreFiliereOption(filiereEl);
  loadCustomFilieres(niv, filiereEl); // ajoute celles déjà proposées par d'autres utilisateurs
  serieBlock.style.display = 'none';
+ masterOrigineBlock.style.display = 'none';
  } else {
  serieBlock.style.display = 'none';
  filiereBlock.style.display = 'none';
+ masterOrigineBlock.style.display = 'none';
  }
+}
+function onSerieChange() { selectedSerie = document.getElementById('reg-serie').value; }
+
+// Remplit la liste des spécialisations de Master en fonction de la filière
+// de Licence d'origine choisie juste au-dessus dans le formulaire.
+function onMasterOrigineChange() {
+ const origine = document.getElementById('reg-master-origine').value;
+ const filiereEl = document.getElementById('reg-filiere');
+ filiereEl.innerHTML = '<option value="">-- Choisir la spécialisation --</option>';
+ if (!origine) return;
+ const specs = MASTER_SPECS_BY_LICENCE[origine] || MASTER_SPECS_GENERIQUE;
+ specs.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; filiereEl.appendChild(o); });
+ addAutreFiliereOption(filiereEl); // au cas où la spécialisation voulue n'est pas dans la liste non plus
 }
 function addAutreFiliereOption(selectEl) {
  if (selectEl.querySelector('option[value="__autre__"]')) return;
@@ -3394,12 +3479,10 @@ async function loadCustomFilieres(niveau, selectEl) {
  const o = document.createElement('option');
  o.value = r.filiere; o.textContent = r.filiere + ' ✨';
  selectEl.insertBefore(o, autreOpt || null);
- // Garde aussi en mémoire pour que getSubjects() sache quoi proposer si choisie
  if (!FILIERES_BY_NIVEAU[niveau].includes(r.filiere)) FILIERES_BY_NIVEAU[niveau].push(r.filiere);
  });
  } catch(e) { /* pas grave si ça échoue, la liste de base reste utilisable */ }
 }
-function onSerieChange() { selectedSerie = document.getElementById('reg-serie').value; }
 function selectLevel(btn) { selectedLevel = (btn && btn.dataset && btn.dataset.v) || btn; }
 
 
@@ -3578,10 +3661,10 @@ function doRegister() {
  setTimeout(()=>{ renderHome(); showWelcomeModal(); }, 300);
 }
 
-// Enregistre une filière inédite : disponible pour les prochains inscrits du
-// même niveau (table Supabase custom_filieres), et adaptée immédiatement pour
-// CET utilisateur (matières génériques du niveau tant qu'aucune matière
-// dédiée n'a été définie pour cette filière précise).
+// Enregistre une filière (ou spécialisation) inédite : disponible pour les
+// prochains inscrits du même niveau (table Supabase custom_filieres), et
+// adaptée immédiatement pour CET utilisateur (matières génériques du niveau
+// tant qu'aucune matière dédiée n'a été définie pour cette filière précise).
 async function registerCustomFiliere(niveau, filiere) {
  if (!FILIERES_BY_NIVEAU[niveau]) FILIERES_BY_NIVEAU[niveau] = [];
  if (!FILIERES_BY_NIVEAU[niveau].includes(filiere)) FILIERES_BY_NIVEAU[niveau].push(filiere);
@@ -4763,13 +4846,17 @@ function showUpgradeModal(reason) {
  document.body.appendChild(overlay);
 }
 
-// Paiement manuel (Wave / Orange Money) — en attendant la déclaration d'entreprenant
-// Numéros de réception par réseau — modifie ces valeurs avec tes vrais numéros
-const PAYMENT_NUMBERS = {
- wave: '0594495247',
- orange: '0594495247',
- mtn: '0594495247',
- moov: '0594495247' // Moov laissé tel quel pour l'instant (pas de lancement d'app configuré)
+// ── Paiement automatisé via GeniusPay (Wave, Orange Money, MTN, Moov, Carte) ──
+// L'initiation ET la vérification du paiement se font côté serveur (fonctions
+// Supabase Edge "create-payment" et "verify-payment") : la clé secrète
+// GeniusPay n'est JAMAIS exposée côté client. Voir les fichiers de fonctions
+// Edge fournis séparément (create-payment, verify-payment, genius-pay-webhook).
+const GENIUSPAY_METHODS = {
+ wave: { label: ' Wave', color: '#1a9af9', bg: '#f0f9ff' },
+ orange_money: { label: ' Orange Money', color: '#ff6600', bg: '#fff8f3' },
+ mtn_money: { label: ' MTN Mobile Money', color: '#b8860b', bg: '#fffdf0' },
+ moov_money: { label: ' Moov Money', color: '#0066cc', bg: '#f0f5ff' },
+ card: { label: ' Carte bancaire', color: '#5B4FCF', bg: '#EDE9FF' },
 };
 
 function startPayment(plan) {
@@ -4777,79 +4864,40 @@ function startPayment(plan) {
  const amounts={'premium':1490,'vip':3490};
  const amount=amounts[plan]||1490;
  const planName=PLANS[plan]?.name||plan;
- const ref = 'STD-'+(APP.user.email||'').split('@')[0].toUpperCase().slice(0,6)+'-'+Date.now().toString().slice(-4);
  const overlay=document.createElement('div');
  overlay.id='payment-overlay';
  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+ const methodButtons = Object.entries(GENIUSPAY_METHODS).map(([key,m]) =>
+ `<button onclick="payWithGeniusPay('${plan}','${key}',this)" style="padding:14px;border-radius:12px;border:1.5px solid ${m.color};background:${m.bg};color:${m.color};font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${m.label}</button>`
+ ).join('');
  overlay.innerHTML=`
  <div style="background:var(--white);border-radius:20px;padding:28px 24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">
  <h3 style="font-size:18px;font-weight:800;margin-bottom:6px;text-align:center"> Paiement ${planName}</h3>
  <p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px">${amount.toLocaleString()} FCFA / mois</p>
 
- <div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:16px">
- <p style="font-size:11px;color:var(--text3);margin-bottom:4px">RÉFÉRENCE À INDIQUER DANS LE MESSAGE DU TRANSFERT</p>
- <p style="font-size:15px;font-weight:800;color:var(--em);letter-spacing:0.5px">${ref}</p>
- </div>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:14px;text-align:center">Choisis ton mode de paiement — tu seras redirigé(e) vers une page de paiement sécurisée, puis ton abonnement sera activé automatiquement dès la confirmation.</p>
 
- <p style="font-size:12px;color:var(--text3);margin-bottom:14px;text-align:center">Choisis ton mode de paiement — l'app s'ouvre, envoie ${amount.toLocaleString()} FCFA, puis reviens ici.</p>
+ <div id="genius-pay-methods" style="display:flex;flex-direction:column;gap:10px">${methodButtons}</div>
 
- <div style="display:flex;flex-direction:column;gap:10px">
- <button onclick="openPaymentApp('orange','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ff6600;background:#fff8f3;color:#ff6600;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Orange Money</button>
- <button onclick="openPaymentApp('mtn','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #ffcc00;background:#fffdf0;color:#b8860b;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> MTN Mobile Money</button>
- <button onclick="openPaymentApp('moov','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #0066cc;background:#f0f5ff;color:#0066cc;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Moov Money</button>
- <button onclick="openPaymentApp('wave','${plan}','${ref}',${amount})" style="padding:14px;border-radius:12px;border:1.5px solid #1a9af9;background:#f0f9ff;color:#1a9af9;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Wave</button>
- </div>
-
- <p style="font-size:11px;color:var(--text3);margin-top:14px;text-align:center">Numéro de réception : <strong>${PAYMENT_NUMBERS.wave}</strong></p>
+ <button onclick="payWithGeniusPay('${plan}','',null)" style="width:100%;padding:12px;margin-top:14px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Autre moyen — choisir sur la page sécurisée</button>
 
  <button onclick="document.getElementById('payment-overlay').remove()" style="width:100%;padding:12px;margin-top:10px;border-radius:12px;border:none;background:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
  </div>`;
  document.body.appendChild(overlay);
 }
 
-// Ouvre l'app de paiement choisie via son package Android (plus fiable qu'un schéma
-// d'URL deviné), puis détecte automatiquement le retour sur Studiora pour proposer
-// la confirmation sans action manuelle en plus
-function openPaymentApp(method, plan, ref, amount) {
- const packages = {
- wave: 'com.wave.personal',
- orange: 'com.orange.myorange.oci',
- mtn: 'mtnft.momo.consumer',
- moov: null // package non confirmé — ouverture directe du site en attendant
- };
- const fallbackUrls = {
- wave: 'https://www.wave.com/fr/',
- orange: 'https://www.orange.ci/fr/n-orange-money.html',
- mtn: 'https://www.mtn.ci/momo/',
- moov: 'https://moov-africa.ci/'
- };
- const pkg = packages[method];
- const fallbackUrl = fallbackUrls[method];
-
- // Activation immédiate dès le choix du réseau — la vérification réelle
- // se fait ensuite manuellement via la table payment_requests
- confirmAndActivate(plan, ref, amount, method);
-
- if (!pkg) {
- window.open(fallbackUrl, '_blank');
- return;
- }
- const intentUrl = `intent://#Intent;package=${pkg};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
- window.location.href = intentUrl;
-}
-
-async function confirmAndActivate(plan, ref, amount, method) {
- const planName=PLANS[plan]?.name||plan;
- // Activation immédiate (déclarative) — la vérification réelle du versement
- // se fait ensuite manuellement via la table payment_requests
- APP.user.plan=plan;
- APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
- saveSession();
- document.getElementById('payment-overlay')?.remove();
- showToast(' Plan '+planName+' activé ! N\'oublie pas d\'envoyer '+amount.toLocaleString()+' FCFA avec la référence '+ref);
- renderProfile();
+// Initie le paiement via la fonction Supabase Edge "create-payment", qui
+// appelle l'API GeniusPay côté serveur (clé secrète jamais exposée côté
+// client), puis redirige l'utilisateur vers la page de paiement retournée.
+async function payWithGeniusPay(plan, method, btn) {
+ const amounts={'premium':1490,'vip':3490};
+ const amount=amounts[plan]||1490;
+ const buttons = document.querySelectorAll('#genius-pay-methods button');
+ buttons.forEach(b=>b.disabled=true);
+ const originalLabel = btn ? btn.textContent : null;
+ if (btn) btn.textContent = '⏳ Redirection...';
  try {
- await fetch(`${SUPABASE_URL}/rest/v1/payment_requests`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/quick-function`, {
  method:'POST',
  headers:{
  'Content-Type':'application/json',
@@ -4857,45 +4905,79 @@ async function confirmAndActivate(plan, ref, amount, method) {
  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
  },
  body: JSON.stringify({
- user_email: APP.user.email||'',
- plan, amount, reference: ref, method,
- status: 'auto-confirmed-non-verifie'
+ plan, amount,
+ method: method || undefined,
+ user_email: APP.user.email || '',
+ user_name: ((APP.user.prenom||'')+' '+(APP.user.nom||'')).trim(),
+ return_url: window.location.href.split('?')[0]
  })
  });
+ const rawText = await res.text();
+ let data;
+ try { data = JSON.parse(rawText); }
+ catch(parseErr) {
+ console.error('Réponse create-payment non-JSON:', res.status, rawText);
+ showToast('! Erreur serveur ('+res.status+') — voir la console pour le détail.');
+ buttons.forEach(b=>b.disabled=false);
+ if (btn && originalLabel) btn.textContent = originalLabel;
+ return;
+ }
+ if (!data.success || !data.data) {
+ console.error('Échec create-payment:', data);
+ const msg = data?.error?.message || data?.message || 'raison inconnue';
+ showToast('! Paiement refusé : '+msg);
+ buttons.forEach(b=>b.disabled=false);
+ if (btn && originalLabel) btn.textContent = originalLabel;
+ return;
+ }
+ // Mémorise la référence pour vérification au retour sur l'app (utile si
+ // le paramètre "reference" ne revient pas intact dans l'URL de retour)
+ localStorage.setItem('studiora_pending_payment', JSON.stringify({ reference: data.data.reference, plan, ts: Date.now() }));
+ const url = data.data.checkout_url || data.data.payment_url;
+ window.location.href = url;
  } catch(e) {
- // Pas grave si hors ligne : l'accès est déjà donné, la trace se fera au prochain lancement si besoin
+ console.error('Erreur payWithGeniusPay:', e);
+ showToast('! Erreur : '+(e?.message||e));
+ buttons.forEach(b=>b.disabled=false);
+ if (btn && originalLabel) btn.textContent = originalLabel;
  }
 }
 
-// Vérifier paiement retour URL — la confirmation est vérifiée côté serveur,
-// jamais acceptée telle quelle depuis l'URL (sinon n'importe qui pourrait
-// visiter ?payment=success&plan=vip pour obtenir un abonnement gratuit)
-// NB: reste en place pour quand un agrégateur automatisé (CinetPay/KKiaPay)
-// sera branché après la déclaration d'entreprenant.
+// Vérifie le paiement au retour sur l'app — via la fonction serveur
+// "verify-payment" qui interroge directement l'API GeniusPay avec la clé
+// secrète. Le statut n'est JAMAIS déduit des seuls paramètres de l'URL
+// (sinon n'importe qui pourrait visiter ?payment=success pour obtenir un
+// abonnement gratuit) : il est toujours revérifié côté serveur.
+// NB : un webhook GeniusPay (fonction "genius-pay-webhook") active aussi
+// l'abonnement en tâche de fond, indépendamment de ce retour utilisateur —
+// utile si l'utilisateur ferme l'app avant d'être redirigé.
 async function checkPaymentReturn() {
  const params=new URLSearchParams(window.location.search);
- if (params.get('payment')==='success') {
- const plan=params.get('plan');
- const txId=params.get('tx');
- if (!plan || !PLANS[plan] || !txId) return;
+ const pending = JSON.parse(localStorage.getItem('studiora_pending_payment')||'null');
+ const reference = params.get('reference') || pending?.reference;
+ if (!reference) return;
  try {
- const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-payment`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/rapid-endpoint`, {
  method:'POST',
  headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`},
- body: JSON.stringify({ transaction_id: txId, plan })
+ body: JSON.stringify({ reference })
  });
  const data = await res.json();
- if (data.confirmed) {
- APP.user.plan=plan;
+ if (data.confirmed && data.plan && PLANS[data.plan]) {
+ APP.user.plan=data.plan;
  APP.user.plan_expiry=new Date(Date.now()+30*24*3600*1000).toISOString();
  saveSession();
- showToast(' Abonnement '+PLANS[plan].name+' activé !');
+ showToast(' Abonnement '+PLANS[data.plan].name+' activé ! Merci pour ton paiement.');
+ renderProfile();
+ localStorage.removeItem('studiora_pending_payment');
+ } else if (data.status==='pending' || data.status==='processing') {
+ showToast('⏳ Paiement en cours de confirmation — réessaie dans un instant.');
  } else {
  showToast('! Paiement non confirmé — contacte le support si tu as été débité(e).');
+ localStorage.removeItem('studiora_pending_payment');
  }
  } catch(e) {
  showToast('! Impossible de vérifier le paiement pour le moment.');
- }
  }
 }
 
