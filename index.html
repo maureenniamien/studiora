@@ -4769,7 +4769,7 @@ async function payWithGeniusPay(plan, method, btn) {
  const originalLabel = btn ? btn.textContent : null;
  if (btn) btn.textContent = '⏳ Redirection...';
  try {
- const res = await fetch(`${SUPABASE_URL}/functions/v1/create-payment`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/quick-function`, {
  method:'POST',
  headers:{
  'Content-Type':'application/json',
@@ -4829,7 +4829,7 @@ async function checkPaymentReturn() {
  const reference = params.get('reference') || pending?.reference;
  if (!reference) return;
  try {
- const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-payment`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/rapid-endpoint`, {
  method:'POST',
  headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`},
  body: JSON.stringify({ reference })
