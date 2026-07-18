@@ -376,6 +376,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  </div>
 
+ <!-- Arbre de connaissance -->
+ <div style="padding:0 20px 18px" class="a2" id="knowledge-tree-widget" onclick="showTreeDetail()"></div>
+
  <!-- Quick actions -->
  <div style="padding:0 20px 18px" class="a2">
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -807,7 +810,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <h3 style="font-size:14px;font-weight:700;margin-bottom:12px"> Mon abonnement</h3>
  <div style="display:flex;flex-direction:column;gap:8px">
  <div onclick="showUpgradeModal('Passe à Premium ou VIP pour débloquer plus de fonctionnalités !')" style="background:linear-gradient(135deg,#0B6E4F,#16a34a);border-radius:14px;padding:14px 18px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;align-items:center">
- <div><div style="font-weight:800;font-size:14px"> Premium — 1 490 FCFA/mois</div><div style="font-size:11px;opacity:.85">45 questions IA · 10 quiz · 30 flashcards</div></div>
+ <div><div style="font-weight:800;font-size:14px"> Premium — 1 490 FCFA/mois</div><div style="font-size:11px;opacity:.85">45 questions IA · 20 quiz/5h · 30 flashcards</div></div>
  <div style="font-size:18px">›</div>
  </div>
  <div onclick="showUpgradeModal('Passe VIP pour un accès illimité !')" style="background:linear-gradient(135deg,#b45309,#f59e0b);border-radius:14px;padding:14px 18px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;align-items:center">
@@ -1534,6 +1537,119 @@ function getWeekData() {
  return [raw[1],raw[2],raw[3],raw[4],raw[5],raw[6],raw[0]];
 }
 
+// ══════════════════════════════════════════════
+// ── ARBRE DE CONNAISSANCE ──
+// Grandit avec la régularité (série de jours), les quiz terminés, les échanges
+// avec le coach et les bons résultats. Purement dérivé des stats déjà stockées
+// (studiora_stats, studiora_days) : aucune nouvelle donnée serveur nécessaire.
+// ══════════════════════════════════════════════
+const TREE_STAGES = [
+ { min:0, key:'seed', label:'Graine', desc:'Ton parcours commence tout juste. Étudie aujourd\'hui pour la faire germer.' },
+ { min:15, key:'sprout', label:'Pousse', desc:'Les premières racines prennent forme. Continue chaque jour !' },
+ { min:40, key:'sapling', label:'Jeune arbre', desc:'Ta régularité porte ses fruits.' },
+ { min:80, key:'tree', label:'Arbre', desc:'Un savoir solide s\'est enraciné en toi.' },
+ { min:150, key:'blossom', label:'Arbre florissant', desc:'Tes efforts fleurissent chaque jour. Impressionnant !' },
+ { min:250, key:'sacred', label:'Arbre de vie', desc:'Maîtrise et constance exceptionnelles. Tu inspires !' }
+];
+
+function getTreeScore() {
+ const s = getStats();
+ const streak = computeStreak();
+ const sessions = s.sessions || 0; // quiz terminés
+ const chatMsgs = s.chatMsgs || 0; // échanges avec le coach
+ const avg = getAvgScore(); // 0-100
+ const subjectsCount = Object.keys(getSubjectScores() || {}).length;
+ return Math.round(streak*4 + sessions*3 + chatMsgs*1 + avg*0.4 + subjectsCount*5);
+}
+
+function getTreeStage() {
+ const score = getTreeScore();
+ let stage = TREE_STAGES[0], idx = 0;
+ for (let i=0;i<TREE_STAGES.length;i++) { if (score >= TREE_STAGES[i].min) { stage = TREE_STAGES[i]; idx = i; } }
+ const next = TREE_STAGES[idx+1];
+ const progressPct = next ? Math.min(100, Math.round(((score - stage.min) / (next.min - stage.min)) * 100)) : 100;
+ return { ...stage, idx, score, next, progressPct };
+}
+
+// Incrémente le compteur d'échanges avec le coach (appelé après chaque réponse IA reçue)
+function incrementChatActivity() {
+ const s = getStats();
+ s.chatMsgs = (s.chatMsgs || 0) + 1;
+ saveStats(s);
+}
+
+function renderKnowledgeTreeSVG(stageIdx) {
+ const idx = Math.min(Math.max(stageIdx,0), 5);
+ const glow = idx >= 4;
+ const sacred = idx >= 5;
+ const foliageSets = [
+ [],
+ [{cx:60,cy:78,r:10}],
+ [{cx:60,cy:66,r:16},{cx:46,cy:78,r:11},{cx:74,cy:78,r:11}],
+ [{cx:60,cy:52,r:20},{cx:38,cy:68,r:14},{cx:82,cy:68,r:14},{cx:60,cy:82,r:13}],
+ [{cx:60,cy:44,r:23},{cx:34,cy:62,r:16},{cx:86,cy:62,r:16},{cx:48,cy:80,r:14},{cx:72,cy:80,r:14}],
+ [{cx:60,cy:38,r:25},{cx:30,cy:56,r:18},{cx:90,cy:56,r:18},{cx:42,cy:78,r:15},{cx:78,cy:78,r:15},{cx:60,cy:66,r:14}]
+ ];
+ const foliage = foliageSets[idx];
+ const trunkH = [0,14,26,38,44,48][idx];
+ const rootsVisible = idx >= 2;
+
+ return `<svg viewBox="0 0 120 130" width="100%" height="130" style="max-width:150px;display:block;margin:0 auto">
+ ${sacred ? `<g opacity=".35" stroke="var(--amber)" stroke-width="0.6" fill="none">
+ <circle cx="60" cy="60" r="52"/><circle cx="60" cy="60" r="44"/>
+ <circle cx="60" cy="30" r="18"/><circle cx="60" cy="90" r="18"/>
+ <circle cx="33" cy="45" r="18"/><circle cx="87" cy="45" r="18"/>
+ <circle cx="33" cy="75" r="18"/><circle cx="87" cy="75" r="18"/>
+ </g>` : ''}
+ ${glow ? `<circle cx="60" cy="55" r="46" fill="var(--amber)" opacity=".12"/>` : ''}
+ ${trunkH > 0 ? `<path d="M60 118 L60 ${118-trunkH}" stroke="#7a5230" stroke-width="${4+idx}" stroke-linecap="round"/>` : ''}
+ ${rootsVisible ? `<path d="M60 118 Q50 122 42 120 M60 118 Q70 122 78 120" stroke="#7a5230" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".7"/>` : ''}
+ ${idx===0 ? `<ellipse cx="60" cy="118" rx="9" ry="5" fill="#8a6a3e"/><path d="M60 118 Q58 108 60 100" stroke="var(--em)" stroke-width="2" fill="none"/>` : ''}
+ ${foliage.map(f=>`<circle cx="${f.cx}" cy="${f.cy}" r="${f.r}" fill="var(--em)" opacity=".85"/>`).join('')}
+ ${foliage.map(f=>`<circle cx="${f.cx-f.r*0.3}" cy="${f.cy-f.r*0.3}" r="${f.r*0.35}" fill="#ffffff" opacity=".18"/>`).join('')}
+ </svg>`;
+}
+
+function renderKnowledgeTreeWidget() {
+ const el = document.getElementById('knowledge-tree-widget');
+ if (!el) return;
+ const stage = getTreeStage();
+ el.innerHTML = `
+ <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;gap:12px">
+ <div style="width:64px;flex-shrink:0">${renderKnowledgeTreeSVG(stage.idx)}</div>
+ <div style="flex:1;min-width:0">
+ <div style="font-size:13px;font-weight:700;margin-bottom:2px">🌳 ${stage.label}</div>
+ <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${stage.next ? 'Encore un peu pour évoluer' : 'Stade maximum atteint'}</div>
+ <div style="height:6px;background:var(--bg2);border-radius:4px;overflow:hidden">
+ <div style="height:100%;width:${stage.progressPct}%;background:linear-gradient(90deg,var(--em),var(--amber));border-radius:4px"></div>
+ </div>
+ </div>
+ </div>`;
+}
+
+function showTreeDetail() {
+ const stage = getTreeStage();
+ const overlay = document.createElement('div');
+ overlay.id = 'tree-detail-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+ overlay.innerHTML = `
+ <div style="background:var(--white);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;text-align:center;animation:slideUp .3s ease">
+ <div style="width:130px;margin:0 auto 12px">${renderKnowledgeTreeSVG(stage.idx)}</div>
+ <h2 style="font-size:20px;font-weight:800;margin-bottom:6px">${stage.label}</h2>
+ <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">${stage.desc}</p>
+ <div style="height:8px;background:var(--bg2);border-radius:5px;overflow:hidden;margin-bottom:6px">
+ <div style="height:100%;width:${stage.progressPct}%;background:linear-gradient(90deg,var(--em),var(--amber));border-radius:5px"></div>
+ </div>
+ <div style="font-size:11px;color:var(--text3);margin-bottom:20px">${stage.next ? stage.progressPct + '% vers "' + stage.next.label + '"' : 'Stade maximum — bravo !'}</div>
+ <div style="font-size:11px;color:var(--text3);text-align:left;background:var(--bg2);border-radius:12px;padding:12px 14px;line-height:1.7">
+ Ton arbre grandit avec : ta série de jours d'affilée (${computeStreak()} 🔥), tes quiz terminés, tes échanges avec le coach, et tes bons scores.
+ </div>
+ <button class="btn-em" onclick="document.getElementById('tree-detail-overlay').remove()" style="width:100%;margin-top:18px">Compris</button>
+ </div>`;
+ document.body.appendChild(overlay);
+}
+
 // ── DATA ──
 // Initiales d'une matière (ex: "Bases de données" -> "BD", "Java" -> "Jav", "SVT" -> "SVT")
 function subjInitials(name) {
@@ -1844,6 +1960,7 @@ function renderHome() {
  const salut = h >= 5 && h < 12 ? 'Bonjour ' : h >= 12 && h < 18 ? 'Bon après-midi ' : h >= 18 && h < 22 ? 'Bonsoir ' : 'Bonne nuit ';
  safeSet('home-salut', salut);
  safeSet('tip-text', TIPS[Math.floor(Math.random()*TIPS.length)]);
+ renderKnowledgeTreeWidget();
 
  const el = document.getElementById('subjects-list');
  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
@@ -2452,10 +2569,47 @@ function blobToBase64(blob) {
  });
 }
 
+// --- Pont de téléchargement natif Android, avec corrélation par requête ---
+// Chaque appel natif reçoit un reqId unique ; MainActivity.java le renvoie tel
+// quel dans onAndroidDownloadResult(reqId, success, info). Ça corrige deux
+// problèmes de l'ancienne version : (1) impossible de savoir si le natif avait
+// vraiment réussi (fire-and-forget, donc "Impossible de télécharger" générique
+// même quand la vraie cause était ailleurs), (2) deux téléchargements simultanés
+// qui se marchaient dessus faute d'identifiant.
+window._androidDownloadCallbacks = window._androidDownloadCallbacks || {};
+let _androidDownloadReqSeq = 0;
+
+function saveFileNative(payload, filename, mimeType, isUrl) {
+ return new Promise((resolve, reject) => {
+ const reqId = 'dl_' + (++_androidDownloadReqSeq) + '_' + Date.now();
+ window._androidDownloadCallbacks[reqId] = { resolve, reject };
+ // Garde-fou : si le natif ne répond jamais (crash, exception silencieuse),
+ // on échoue proprement après 30s au lieu de bloquer l'UI indéfiniment.
+ const timeoutId = setTimeout(() => {
+ if (window._androidDownloadCallbacks[reqId]) {
+ delete window._androidDownloadCallbacks[reqId];
+ reject(new Error('délai dépassé (aucune réponse native)'));
+ }
+ }, 30000);
+ window._androidDownloadCallbacks[reqId].timeoutId = timeoutId;
+ try {
+ if (isUrl) window.AndroidDownload.saveFileFromUrl(reqId, payload, filename, mimeType);
+ else window.AndroidDownload.saveFile(reqId, payload, filename, mimeType);
+ } catch (e) {
+ clearTimeout(timeoutId);
+ delete window._androidDownloadCallbacks[reqId];
+ reject(e);
+ }
+ });
+}
+
 // Callback appelé par MainActivity.java après écriture réelle dans le stockage Android
-window.onAndroidDownloadResult = function(success, info) {
- if (success) showToast('✓ Enregistré dans Téléchargements');
- else showToast('⚠ Échec de l\'enregistrement (' + info + ')');
+window.onAndroidDownloadResult = function(reqId, success, info) {
+ const cb = window._androidDownloadCallbacks[reqId];
+ if (!cb) return; // réponse tardive (déjà expirée) ou reqId inconnu : on ignore
+ clearTimeout(cb.timeoutId);
+ delete window._androidDownloadCallbacks[reqId];
+ if (success) cb.resolve(info); else cb.reject(new Error(info || 'échec inconnu'));
 };
 
 // Enregistre un fichier de façon fiable : côté natif Android si possible (vrai fichier
@@ -2463,7 +2617,13 @@ window.onAndroidDownloadResult = function(success, info) {
 async function saveFileEverywhere(blob, filename, mimeType) {
  if (window.AndroidDownload && typeof window.AndroidDownload.saveFile === 'function') {
  const base64 = await blobToBase64(blob);
- window.AndroidDownload.saveFile(base64, filename, mimeType || blob.type || 'application/octet-stream');
+ try {
+ await saveFileNative(base64, filename, mimeType || blob.type || 'application/octet-stream', false);
+ showToast('✓ Enregistré dans Téléchargements');
+ } catch (e) {
+ showToast('⚠ Échec de l\'enregistrement (' + (e.message||e) + ')');
+ throw e;
+ }
  } else {
  const url = URL.createObjectURL(blob);
  const a = document.createElement('a');
@@ -2483,7 +2643,8 @@ async function downloadGeneratedImage(url, promptB64) {
  // navigateur (contrairement à fetch()), donc il fonctionne même quand le serveur
  // distant (ex: Pollinations) ne renvoie pas d'en-têtes Access-Control-Allow-Origin.
  if (window.AndroidDownload && typeof window.AndroidDownload.saveFileFromUrl === 'function') {
- window.AndroidDownload.saveFileFromUrl(url, filename, 'image/jpeg');
+ await saveFileNative(url, filename, 'image/jpeg', true);
+ showToast('✓ Enregistré dans Téléchargements');
  } else {
  const res = await fetch(url);
  if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -2496,7 +2657,7 @@ async function downloadGeneratedImage(url, promptB64) {
  localStorage.setItem('studiora_travaux_docs', JSON.stringify(list.slice(0,100)));
  } catch(e) {}
  } catch(e) {
- showToast('⚠ Impossible de télécharger l\'image');
+ showToast('⚠ Impossible de télécharger l\'image (' + (e.message||e) + ')');
  }
 }
 
@@ -2934,12 +3095,18 @@ async function sendMessage() {
  scrollChat();
 
  try {
- const messages = APP.chatHistory.slice(0,-1).map(m=>{
+ // Les messages "image générée" sont exclus du contexte envoyé à l'IA (au lieu
+ // d'être remplacés par un texte du type "[Image générée : ...]") : quand ce
+ // texte était inclus, le modèle le recopiait parfois tel quel dans sa réponse
+ // suivante (imitation du tour précédent), ce qui faisait apparaître une bulle
+ // de texte à la place de l'image après un nouvel échange ou une réouverture
+ // de l'app. Comme la génération d'image ne nécessite pas de contexte IA, on
+ // peut simplement l'omettre sans rien perdre.
+ const messages = APP.chatHistory.slice(0,-1)
+ .filter(m => !(m.content && typeof m.content === 'object' && m.content.type === 'image'))
+ .map(m=>{
  let content = m.content;
- if (content && typeof content === 'object') {
- if (content.imagePreview) content = content.caption || '';
- else if (content.type === 'image') content = '[Image générée : ' + (content.prompt||'') + ']';
- }
+ if (content && typeof content === 'object' && content.imagePreview) content = content.caption || '';
  return { role:m.role, content };
  });
  messages.push({role:'user',content:userContent});
@@ -2964,6 +3131,7 @@ async function sendMessage() {
  const aiText = stripThinkTags((data.content && data.content[0] ? data.content[0].text : '')) || 'Je n\'ai pas pu répondre, réessaie !';
  const aiTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
  APP.chatHistory.push({role:'assistant',content:aiText,time:aiTime});
+ incrementChatActivity();
  saveChatHistory(APP.currentSubject);
  el.innerHTML += renderMsgHTML({role:'assistant',content:aiText,time:aiTime});
  scrollChat();
@@ -3225,9 +3393,13 @@ function doRegister() {
  APP.user.filiere = filiere || getFiliere(niv);
  APP.user.email = e;
  APP.user.pwdHash = simpleHash(pwd);
+ // Événement : 2 semaines VIP offertes à toute nouvelle inscription
+ APP.user.plan = 'vip';
+ APP.user.plan_expiry = new Date(Date.now() + 14*24*3600*1000).toISOString();
+ APP.user.trial_type = 'signup_vip_14d';
  saveSession();
  SUBJECTS = getSubjects();
- showToast(' Compte créé ! Bienvenue '+APP.user.prenom+' !');
+ showToast(' Compte créé ! 2 semaines VIP offertes 🎁 Bienvenue '+APP.user.prenom+' !');
  setTimeout(()=>showScreen('screen-home'), 600);
 }
 
@@ -3305,7 +3477,7 @@ async function startQuiz() {
  return;
  }
  if (!canUseQuiz()) {
- showUpgradeModal("Tu as atteint ta limite de " + getPlanLimits().quiz_per_day + " quiz aujourd'hui. Passe Premium !");
+ showUpgradeModal("Tu as atteint ta limite de " + getPlanLimits().quiz_per_5h + " quiz. Reset dans " + quizTimeLeft() + ". Passe Premium !");
  return;
  }
  incUsage('quiz');
@@ -3890,7 +4062,7 @@ function renderProfile() {
  usageEl.innerHTML=
  '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
  '<span style="font-size:11px;padding:4px 8px;background:var(--bg2);border-radius:8px;color:var(--text2)"> IA: '+(d.ia||0)+'/'+lim.ia_per_4h+' /4h</span>'+
- '<span style="font-size:11px;padding:4px 8px;background:var(--bg2);border-radius:8px;color:var(--text2)"> Quiz: '+(d.quiz||0)+'/'+lim.quiz_per_day+' /j</span>'+
+ '<span style="font-size:11px;padding:4px 8px;background:var(--bg2);border-radius:8px;color:var(--text2)"> Quiz: '+(d.quiz||0)+'/'+lim.quiz_per_5h+' /5h</span>'+
  '<span style="font-size:11px;padding:4px 8px;background:var(--bg2);border-radius:8px;color:var(--text2)"> FC: '+(d.fc||0)+'/'+lim.fc_per_day+' /j</span>'+
  '</div>';
  }
@@ -4180,10 +4352,10 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const ADMIN_EMAIL = 'm16reen@gmail.com';
 
 const PLANS = {
- free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_day:3, fc_per_day:10 },
- premium: { name:'Premium', color:'#0B6E4F', ia_per_4h:45, quiz_per_day:10, fc_per_day:30 },
- vip: { name:'VIP', color:'#f59e0b', ia_per_4h:999,quiz_per_day:999,fc_per_day:999 },
- admin: { name:'Admin', color:'#7c3aed', ia_per_4h:999,quiz_per_day:999,fc_per_day:999 }
+ free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10 },
+ premium: { name:'Premium', color:'#0B6E4F', ia_per_4h:45, quiz_per_5h:20, fc_per_day:30 },
+ vip: { name:'VIP', color:'#f59e0b', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999 },
+ admin: { name:'Admin', color:'#7c3aed', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999 }
 };
 
 function getPlan() {
@@ -4194,6 +4366,23 @@ function getPlanLimits() { return PLANS[getPlan()]; }
 function isAdmin() { return APP.user.email === ADMIN_EMAIL; }
 function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'; }
 
+// Repasse l'utilisateur en Gratuit si son plan (essai VIP, Premium, VIP payant)
+// a dépassé sa date d'expiration. À appeler à chaque chargement de session.
+function checkPlanExpiry() {
+ try {
+ if (!APP.user || !APP.user.plan_expiry) return;
+ if (APP.user.plan === 'free' || APP.user.plan === 'admin') return;
+ if (new Date(APP.user.plan_expiry).getTime() < Date.now()) {
+ const wasTrial = APP.user.trial_type === 'signup_vip_14d';
+ APP.user.plan = 'free';
+ delete APP.user.plan_expiry;
+ delete APP.user.trial_type;
+ saveSession();
+ showToast(wasTrial ? 'ℹ Ton essai VIP de 2 semaines est terminé' : 'ℹ Ton abonnement est arrivé à expiration');
+ }
+ } catch(e) {}
+}
+
 // Compteurs journaliers
 function getTodayKey() { return new Date().toISOString().slice(0,10); }
 function getUsage() {
@@ -4203,12 +4392,13 @@ function saveUsage(u) { localStorage.setItem('studiora_usage', JSON.stringify(u)
 
 function getUsageToday() {
  const u=getUsage(), today=getTodayKey();
- if (!u[today]) u[today]={ia:0,quiz:0,fc:0,ia_reset:Date.now()};
+ if (!u[today]) u[today]={ia:0,quiz:0,fc:0,ia_reset:Date.now(),quiz_reset:Date.now()};
+ if (u[today].quiz_reset === undefined) u[today].quiz_reset = Date.now(); // migration d'anciennes données
  return u[today];
 }
 function incUsage(type) {
  const u=getUsage(), today=getTodayKey();
- if (!u[today]) u[today]={ia:0,quiz:0,fc:0,ia_reset:Date.now()};
+ if (!u[today]) u[today]={ia:0,quiz:0,fc:0,ia_reset:Date.now(),quiz_reset:Date.now()};
  u[today][type]=(u[today][type]||0)+1;
  saveUsage(u);
 }
@@ -4234,8 +4424,18 @@ function iaTimeLeft() {
 }
 function canUseQuiz() {
  if (isAdmin()||getPlan()==='vip') return true;
+ const u=getUsage(), today=getTodayKey();
  const d=getUsageToday();
- return (d.quiz||0) < getPlanLimits().quiz_per_day;
+ const elapsed=(Date.now()-(d.quiz_reset||0))/(1000*3600);
+ if (elapsed>=5) { d.quiz=0; d.quiz_reset=Date.now(); u[today]=d; saveUsage(u); return true; }
+ return (d.quiz||0) < getPlanLimits().quiz_per_5h;
+}
+function quizTimeLeft() {
+ const d=getUsageToday();
+ const elapsed=(Date.now()-(d.quiz_reset||0))/(1000*3600);
+ const left=Math.max(0,5-elapsed);
+ const h=Math.floor(left), m=Math.floor((left-h)*60);
+ return h+'h'+String(m).padStart(2,'0');
 }
 function canUseFC() {
  if (isAdmin()||getPlan()==='vip') return true;
@@ -4260,7 +4460,7 @@ function showUpgradeModal(reason) {
  <div style="display:flex;justify-content:space-between;align-items:center">
  <div>
  <div style="font-size:16px;font-weight:800"> Premium</div>
- <div style="font-size:12px;opacity:.85">45 questions IA/4h · 10 quiz/jour · 30 flashcards/jour</div>
+ <div style="font-size:12px;opacity:.85">45 questions IA/4h · 20 quiz/5h · 30 flashcards/jour</div>
  </div>
  <div style="font-size:18px;font-weight:800">1 490<br><span style="font-size:11px;font-weight:400">FCFA/mois</span></div>
  </div>
@@ -4537,6 +4737,7 @@ function loadSession() {
  const data = JSON.parse(s);
  if (!data || !data.prenom) return false;
  APP.user = { ...APP.user, ...data };
+ checkPlanExpiry();
  recordLoginPing();
  return true;
  } catch(e) { return false; }
@@ -4594,6 +4795,7 @@ async function doLogin() {
  // Nouveau compte via login (pas via register) → refuser, demander de s'inscrire
  showToast("! Aucun compte trouvé. Crée un compte d'abord."); return;
  }
+ checkPlanExpiry();
  saveSession();
  SUBJECTS = getSubjects();
  const prefs = getPrefs();
