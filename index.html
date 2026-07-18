@@ -4766,6 +4766,7 @@ async function payWithGeniusPay(plan, method, btn) {
  const amount=amounts[plan]||1490;
  const buttons = document.querySelectorAll('#genius-pay-methods button');
  buttons.forEach(b=>b.disabled=true);
+ const originalLabel = btn ? btn.textContent : null;
  if (btn) btn.textContent = '⏳ Redirection...';
  try {
  const res = await fetch(`${SUPABASE_URL}/functions/v1/create-payment`, {
@@ -4783,10 +4784,22 @@ async function payWithGeniusPay(plan, method, btn) {
  return_url: window.location.href.split('?')[0]
  })
  });
- const data = await res.json();
- if (!data.success || !data.data) {
- showToast('! Impossible d\'initier le paiement pour le moment.');
+ const rawText = await res.text();
+ let data;
+ try { data = JSON.parse(rawText); }
+ catch(parseErr) {
+ console.error('Réponse create-payment non-JSON:', res.status, rawText);
+ showToast('! Erreur serveur ('+res.status+') — voir la console pour le détail.');
  buttons.forEach(b=>b.disabled=false);
+ if (btn && originalLabel) btn.textContent = originalLabel;
+ return;
+ }
+ if (!data.success || !data.data) {
+ console.error('Échec create-payment:', data);
+ const msg = data?.error?.message || data?.message || 'raison inconnue';
+ showToast('! Paiement refusé : '+msg);
+ buttons.forEach(b=>b.disabled=false);
+ if (btn && originalLabel) btn.textContent = originalLabel;
  return;
  }
  // Mémorise la référence pour vérification au retour sur l'app (utile si
@@ -4795,8 +4808,10 @@ async function payWithGeniusPay(plan, method, btn) {
  const url = data.data.checkout_url || data.data.payment_url;
  window.location.href = url;
  } catch(e) {
- showToast('! Erreur réseau — vérifie ta connexion et réessaie.');
+ console.error('Erreur payWithGeniusPay:', e);
+ showToast('! Erreur : '+(e?.message||e));
  buttons.forEach(b=>b.disabled=false);
+ if (btn && originalLabel) btn.textContent = originalLabel;
  }
 }
 
