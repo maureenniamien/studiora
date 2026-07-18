@@ -1,6 +1,7 @@
 package com.maureen.studiora;
 
 import android.Manifest;
+import androidx.activity.OnBackPressedCallback;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -268,6 +269,16 @@ public class MainActivity extends BridgeActivity {
                 }
             });
 
+            // OnBackPressedCallback : mecanisme officiel AndroidX, le seul qui
+            // capte a la fois le bouton retour classique ET le geste de
+            // navigation par glissement (majoritaire sur les telephones recents).
+            getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+                @Override
+                public void handleOnBackPressed() {
+                    handleBack();
+                }
+            });
+
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidTTS");
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidSTT");
@@ -333,30 +344,23 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Interception au plus bas niveau possible de la touche retour physique —
-    // passe avant tout traitement interne de Capacitor/AndroidX, garantissant
-    // qu'elle est toujours geree ici en premier.
-    @Override
-    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
-        if (event.getKeyCode() == android.view.KeyEvent.KEYCODE_BACK
-                && event.getAction() == android.view.KeyEvent.ACTION_UP) {
-            if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().evaluateJavascript(
-                    "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
-                    value -> {
-                        boolean handledByJs = "true".equals(value);
-                        if (!handledByJs) {
-                            finish();
-                        }
-                    }
-                );
-            } else {
-                finish();
-            }
-            return true;
-        }
-        return super.dispatchKeyEvent(event);
-    }
+ // Gere le retour (bouton physique ET geste de navigation par glissement).
+ // handleBack() est appelee par l'OnBackPressedCallback enregistre dans onCreate.
+ private void handleBack() {
+ if (getBridge() != null && getBridge().getWebView() != null) {
+ getBridge().getWebView().evaluateJavascript(
+ "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
+ value -> {
+ boolean handledByJs = "true".equals(value);
+ if (!handledByJs) {
+ finish();
+ }
+ }
+ );
+ } else {
+ finish();
+ }
+ }
 
     @Override
     public void onNewIntent(Intent intent) {
