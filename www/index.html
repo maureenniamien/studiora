@@ -267,10 +267,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Inscription gratuite</p>
  <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:26px">Crée ton profil</h2>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
- <div><label class="field-label">Prénom</label><input class="input" id="reg-prenom" placeholder="Aminata"></div>
- <div><label class="field-label">Nom</label><input class="input" id="reg-nom" placeholder="Koné"></div>
+ <div><label class="field-label">Prénom</label><input class="input" id="reg-prenom" placeholder="Koffi"></div>
+ <div><label class="field-label">Nom</label><input class="input" id="reg-nom" placeholder="Konan"></div>
  </div>
- <div style="margin-bottom:14px"><label class="field-label">Email</label><input class="input" id="reg-email" type="email" placeholder="aminata@gmail.com"></div>
+ <div style="margin-bottom:14px"><label class="field-label">Email</label><input class="input" id="reg-email" type="email" placeholder="koffi@gmail.com"></div>
  <div style="margin-bottom:14px">
  <label class="field-label">Niveau scolaire</label>
  <select id="reg-niveau" class="input" onchange="onNiveauChange()" style="margin-bottom:8px">
@@ -286,13 +286,18 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <option value="1ère">1ère</option>
  <option value="Terminale" selected>Terminale (BAC)</option>
  </optgroup>
+ <optgroup label="Lycée technique">
+ <option value="BT">BT (Brevet de Technicien)</option>
+ </optgroup>
+ <optgroup label="BTS / DUT">
+ <option value="BTS 1">BTS 1ère année</option>
+ <option value="BTS 2">BTS 2ème année</option>
+ <option value="DUT">DUT / BUT</option>
+ </optgroup>
  <optgroup label="Université — Licence">
  <option value="Licence 1">Licence 1 (L1)</option>
  <option value="Licence 2">Licence 2 (L2)</option>
  <option value="Licence 3">Licence 3 (L3)</option>
- </optgroup>
- <optgroup label="Licence technique">
- <option value="BT">BT (Brevet de Technicien)</option>
  </optgroup>
  <optgroup label="Université — Master">
  <option value="Master 1">Master 1 (M1)</option>
@@ -304,11 +309,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <optgroup label="Classes préparatoires">
  <option value="CPGE 1">CPGE 1ère année</option>
  <option value="CPGE 2">CPGE 2ème année</option>
- </optgroup>
- <optgroup label="BTS / DUT">
- <option value="BTS 1">BTS 1ère année</option>
- <option value="BTS 2">BTS 2ème année</option>
- <option value="DUT">DUT / BUT</option>
  </optgroup>
  </select>
  <div id="reg-serie-block" style="display:block;margin-bottom:8px">
