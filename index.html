@@ -306,10 +306,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <optgroup label="Université — Doctorat">
  <option value="Doctorat">Doctorat (PhD)</option>
  </optgroup>
- <optgroup label="Classes préparatoires">
- <option value="CPGE 1">CPGE 1ère année</option>
- <option value="CPGE 2">CPGE 2ème année</option>
- </optgroup>
  </select>
  <div id="reg-serie-block" style="display:block;margin-bottom:8px">
  <label class="field-label">Série / Option</label>
@@ -484,33 +480,33 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <div id="screen-quiz" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
  <button onclick="goBack()" class="back-btn">← Retour</button>
- <span class="display" style="font-size:17px;font-weight:700">Quiz express</span>
+ <span class="display" style="font-size:17px;font-weight:700" data-i18n="quiz_header">Quiz express</span>
  </div>
 
  <!-- Config quiz -->
  <div id="quiz-config" class="scroll-body" style="padding:0 20px 20px">
  <div style="background:linear-gradient(135deg,var(--purple),#4338CA);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
- <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Génère ton quiz</h3>
- <p style="font-size:13px;opacity:.8">L'IA crée des questions sur mesure selon ta matière</p>
+ <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px" data-i18n="quiz_hero_title">Génère ton quiz</h3>
+ <p style="font-size:13px;opacity:.8" data-i18n="quiz_hero_sub">L'IA crée des questions sur mesure selon ta matière</p>
  </div>
  <div style="margin-bottom:16px">
- <label class="field-label">Matière</label>
+ <label class="field-label" data-i18n="quiz_label_subject">Matière</label>
  <div id="quiz-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
  <div style="margin-bottom:16px">
- <label class="field-label">Niveau de difficulté</label>
+ <label class="field-label" data-i18n="quiz_label_difficulty">Niveau de difficulté</label>
  <div style="display:flex;gap:8px">
- <button onclick="selectDiff(this,'Facile')" class="diff-btn" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Facile</button>
- <button onclick="selectDiff(this,'Moyen')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Moyen</button>
- <button onclick="selectDiff(this,'Difficile')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Difficile</button>
+ <button onclick="selectDiff(this,'Facile')" class="diff-btn" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" data-i18n="diff_easy"> Facile</button>
+ <button onclick="selectDiff(this,'Moyen')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" data-i18n="diff_medium"> Moyen</button>
+ <button onclick="selectDiff(this,'Difficile')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" data-i18n="diff_hard"> Difficile</button>
  </div>
  </div>
  <div style="margin-bottom:16px">
- <label class="field-label">Sujet précis (optionnel)</label>
- <input class="input" id="quiz-topic" placeholder="Ex: Théorème de Pythagore, Photosynthèse...">
+ <label class="field-label" data-i18n="quiz_label_topic">Sujet précis (optionnel)</label>
+ <input class="input" id="quiz-topic" placeholder="Ex: Théorème de Pythagore, Photosynthèse..." data-i18n-placeholder="quiz_topic_placeholder">
  </div>
  <div style="margin-bottom:24px">
- <label class="field-label">Nombre de questions</label>
+ <label class="field-label" data-i18n="quiz_label_nq">Nombre de questions</label>
  <div style="display:flex;gap:8px">
  <button onclick="selectNQ(this,5)" class="nq-btn active-nq" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">5</button>
  <button onclick="selectNQ(this,10)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">10</button>
@@ -3345,8 +3341,6 @@ const FILIERES_BY_NIVEAU = {
  'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
  'BTS 2':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
  'DUT':['Informatique','Génie Électrique','Génie Civil','Gestion des Entreprises','Techniques de Commercialisation','Mesures Physiques'],
- 'CPGE 1':['MP — Maths-Physique','PC — Physique-Chimie','PSI — Physique-SI','BCPST — Bio-Chimie','ECG — Éco-Commercial','Littéraire B/L'],
- 'CPGE 2':['MP — Maths-Physique','PC — Physique-Chimie','PSI — Physique-SI','BCPST — Bio-Chimie','ECG — Éco-Commercial','Littéraire B/L'],
 };
 
 // Spécialisations de Master accessibles selon la filière de Licence d'origine.
@@ -4184,10 +4178,10 @@ function handleFile(input) {
 }
 
 const ANALYSIS_PROMPTS = {
- summary: (t)=>`Voici un cours :\n\n${t}\n\nFais une fiche de révision structurée avec : titre, points clés numérotés, définitions importantes, et une astuce mémo. En français, clair et concis pour un lycéen africain.`,
- quiz: (t)=>`Voici un cours :\n\n${t}\n\nGénère 5 questions d'examen avec leurs réponses complètes, adaptées au programme africain. Format : numéroté, question en gras, réponse développée.`,
- explain: (t)=>`Voici un cours :\n\n${t}\n\nIdentifie les 3 points les plus difficiles à comprendre et explique-les simplement avec des exemples concrets adaptés au contexte africain.`,
- flashcards:(t)=>`Voici un cours :\n\n${t}\n\nCrée 8 paires question/réponse pour mémoriser ce cours, format lisible : Q: ... / R: ...`,
+ summary: (t)=>`Voici un cours :\n\n${t}\n\nFais une fiche de révision structurée avec : titre, points clés numérotés, définitions importantes, et une astuce mémo. En français, clair et concis pour un lycéen africain.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues comme Khan Academy, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
+ quiz: (t)=>`Voici un cours :\n\n${t}\n\nGénère 5 questions d'examen avec leurs réponses complètes, adaptées au programme africain. Format : numéroté, question en gras, réponse développée.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
+ explain: (t)=>`Voici un cours :\n\n${t}\n\nIdentifie les 3 points les plus difficiles à comprendre et explique-les simplement avec des exemples concrets adaptés au contexte africain.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
+ flashcards:(t)=>`Voici un cours :\n\n${t}\n\nCrée 8 paires question/réponse pour mémoriser ce cours, format lisible : Q: ... / R: ...\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
 };
 
 async function analyzeCourse() {
@@ -6195,6 +6189,11 @@ const APP_TRANSLATIONS = {
  dict_search: ' Rechercher',
  logout: 'Se déconnecter',
  lang_label: " Langue de l'application",
+ quiz_header: 'Quiz express', quiz_hero_title: 'Génère ton quiz', quiz_hero_sub: "L'IA crée des questions sur mesure selon ta matière",
+ quiz_label_subject: 'Matière', quiz_label_difficulty: 'Niveau de difficulté',
+ diff_easy: ' Facile', diff_medium: ' Moyen', diff_hard: ' Difficile',
+ quiz_label_topic: 'Sujet précis (optionnel)', quiz_topic_placeholder: 'Ex: Théorème de Pythagore, Photosynthèse...',
+ quiz_label_nq: 'Nombre de questions',
  },
  en: {
     quiz_title: 'Quick Quiz', fc_title: 'Flashcards',
@@ -6223,6 +6222,11 @@ const APP_TRANSLATIONS = {
  dict_search: ' Search',
  logout: 'Log out',
  lang_label: ' App Language',
+ quiz_header: 'Quick Quiz', quiz_hero_title: 'Generate your quiz', quiz_hero_sub: 'AI creates custom questions for your subject',
+ quiz_label_subject: 'Subject', quiz_label_difficulty: 'Difficulty level',
+ diff_easy: ' Easy', diff_medium: ' Medium', diff_hard: ' Hard',
+ quiz_label_topic: 'Specific topic (optional)', quiz_topic_placeholder: 'E.g: Pythagorean theorem, Photosynthesis...',
+ quiz_label_nq: 'Number of questions',
  },
  es: {
     quiz_title: 'Quiz rapido', fc_title: 'Tarjetas',
