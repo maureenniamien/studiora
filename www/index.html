@@ -1670,6 +1670,7 @@ function getStats() {
 }
 function saveStats(s) {
  localStorage.setItem('studiora_stats', JSON.stringify(s));
+ pushCloudSync();
 }
 function incrementSessions() {
  const s = getStats();
@@ -2075,6 +2076,28 @@ const SUBJECTS_BY_LEVEL = {
 
 function slugifyId(s) { return 'f_'+(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,24); }
 
+// ── Cache local des matières trouvées par l'IA pour une filière (niveau::filiere) ──
+// Sans ça, SUBJECTS_BY_LEVEL n'étant modifié qu'en mémoire par registerCustomFiliere(),
+// tout rechargement de page perdait la vraie liste de matières et retombait sur le
+// repli générique : les scores de quiz déjà enregistrés devenaient orphelins (d'où
+// le "--" affiché en permanence dans le profil même après plusieurs quiz réussis).
+function getCurriculumCache() {
+ try { return JSON.parse(localStorage.getItem('studiora_curriculum_cache')||'{}'); } catch(e) { return {}; }
+}
+function saveCurriculumCache(cache) {
+ try { localStorage.setItem('studiora_curriculum_cache', JSON.stringify(cache)); } catch(e) {}
+ pushCloudSync();
+}
+function hydrateCurriculumFromCache(niveau, filiere) {
+ if (!niveau || !filiere) return false;
+ const entry = getCurriculumCache()[niveau+'::'+filiere];
+ if (!entry || !entry.subjectIds || !entry.subjectIds.length) return false;
+ (entry.customSubjects||[]).forEach(cs => { if (cs && cs.id && !ALL_SUBJECTS.find(s=>s.id===cs.id)) ALL_SUBJECTS.push(cs); });
+ if (!SUBJECTS_BY_LEVEL[niveau]) SUBJECTS_BY_LEVEL[niveau] = {};
+ SUBJECTS_BY_LEVEL[niveau][filiere] = entry.subjectIds;
+ return true;
+}
+
 // Matière "virtuelle" représentant la filière/spécialisation elle-même,
 // utilisée quand on n'a pas de liste de matières précise pour elle (Master,
 // filière ajoutée via "Autre", etc.) — pour que les quiz/flashcards portent
@@ -2086,6 +2109,7 @@ function synthesizeFiliereSubject(filiere) {
 function getSubjects() {
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
+ hydrateCurriculumFromCache(level, filiere);
  const byLevel = SUBJECTS_BY_LEVEL[level];
  let ids, hasSpecificMapping = true;
  if (!byLevel) {
@@ -2113,7 +2137,7 @@ function getSubjectCustomizations() {
  return (d && typeof d==='object') ? { added: d.added||[], removed: d.removed||[], customNames: d.customNames||{} } : { added:[], removed:[], customNames:{} };
  } catch(e) { return { added:[], removed:[], customNames:{} }; }
 }
-function saveSubjectCustomizations(c) { localStorage.setItem('studiora_subject_custom', JSON.stringify(c)); }
+function saveSubjectCustomizations(c) { localStorage.setItem('studiora_subject_custom', JSON.stringify(c)); pushCloudSync(); }
 function applySubjectCustomizations(subjects) {
  const c = getSubjectCustomizations();
  let result = subjects.filter(s => !c.removed.includes(s.id));
@@ -2540,7 +2564,12 @@ function renderSuggestions() {
  gestion: ['Comptabilité analytique','Gestion de trésorerie','Management des organisations','Analyse financière'],
  compta: ['Bilan et compte de résultat','Amortissements','Provisions et charges','TVA et fiscalité'],
  };
- const list = suggestions[APP.currentSubject] || suggestions[Object.keys(suggestions)[0]] || [];
+ const list = suggestions[APP.currentSubject] || [
+ `Notions clés de ${subj.name}`,
+ `Explique-moi ${subj.name} simplement`,
+ `Exercices sur ${subj.name}`,
+ `Résumé de ${subj.name}`,
+ ];
  document.getElementById('chat-suggestions').innerHTML = list.map((s,i)=>`
  <button onclick="useSuggestion(document.querySelectorAll('.chat-sug')[${i}].dataset.v)" data-v="${s}" class="btn-pill chat-sug" style="flex-shrink:0">${s}</button>`).join('');
 }
@@ -4125,6 +4154,13 @@ async function registerCustomFiliere(niveau, filiere) {
  return id;
  });
  if (SUBJECTS_BY_LEVEL[niveau]) SUBJECTS_BY_LEVEL[niveau][filiere] = subjectIds;
+ const cache = getCurriculumCache();
+ cache[niveau+'::'+filiere] = {
+ subjectIds,
+ customSubjects: subjectIds.map(id => ALL_SUBJECTS.find(s=>s.id===id)).filter(Boolean),
+ updatedAt: Date.now(),
+ };
+ saveCurriculumCache(cache);
  if (APP.user.filiere === filiere) {
  SUBJECTS = getSubjects();
  renderHome();
@@ -5398,6 +5434,55 @@ function deleteSavedCourse(i) {
 
 // ── SESSION & AUTH ──
 const SESSION_KEY = 'studiora_session';
+
+// ── Synchronisation cloud (multi-appareils / multi-domaines) ──
+// localStorage est isolé par origine (netlify.app ≠ github.io ≠ un autre
+// domaine) : deux déploiements de la même app ne partagent donc RIEN par
+// défaut, ce qui donnait des profils "différents" pour le même compte.
+// On centralise stats + matières perso + cache de matières IA dans une
+// colonne JSONB "app_state" sur la table Supabase "users" (par email), en
+// plus du localStorage qui reste utilisé comme cache rapide/hors-ligne.
+// Nécessite : ALTER TABLE users ADD COLUMN app_state jsonb; (silencieux si absent)
+function getLocalStateBlob() {
+ return { stats: getStats(), curriculum: getCurriculumCache(), subjectCustom: getSubjectCustomizations(), updatedAt: Date.now() };
+}
+let _cloudSyncTimer = null;
+function pushCloudSync() {
+ if (!APP.user || !APP.user.email) return;
+ clearTimeout(_cloudSyncTimer);
+ // debounce : évite une rafale de requêtes si plusieurs écritures locales arrivent d'affilée
+ _cloudSyncTimer = setTimeout(() => {
+ fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(APP.user.email)}`, {
+ method: 'PATCH',
+ headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY, 'Authorization':`Bearer ${SUPABASE_ANON_KEY}`, 'Prefer':'return=minimal' },
+ body: JSON.stringify({ app_state: getLocalStateBlob() })
+ }).catch(()=>{}); // colonne absente / hors-ligne : on continue avec le localStorage seul
+ }, 800);
+}
+// Au login/chargement, on va chercher l'état cloud et on l'adopte s'il est
+// plus récent que ce qu'on a en local (par device/domaine) — sinon on
+// pousse l'état local pour rattraper le cloud.
+async function pullCloudSync() {
+ if (!APP.user || !APP.user.email) return;
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(APP.user.email)}&select=app_state`, {
+ headers: { 'apikey':SUPABASE_ANON_KEY, 'Authorization':`Bearer ${SUPABASE_ANON_KEY}` }
+ });
+ if (!res.ok) return;
+ const rows = await res.json();
+ const cloud = rows && rows[0] && rows[0].app_state;
+ if (!cloud) { pushCloudSync(); return; }
+ const local = getLocalStateBlob();
+ if ((cloud.updatedAt||0) > (local.updatedAt||0)) {
+ if (cloud.stats) saveStats(cloud.stats);
+ if (cloud.curriculum) localStorage.setItem('studiora_curriculum_cache', JSON.stringify(cloud.curriculum));
+ if (cloud.subjectCustom) saveSubjectCustomizations(cloud.subjectCustom);
+ SUBJECTS = getSubjects();
+ } else {
+ pushCloudSync();
+ }
+ } catch(e) { /* colonne absente ou hors-ligne : silencieux, le localStorage reste la source */ }
+}
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 
 // ── Bouton "Passer à l'app" (affiché uniquement en navigateur web/PWA) ──
@@ -5858,6 +5943,7 @@ function loadSession() {
  checkPlanExpiry();
  grantRetroactiveTrialIfNeeded();
  recordLoginPing();
+ pullCloudSync().then(()=>{ try { renderHome(); if (document.getElementById('screen-profile') && !document.getElementById('screen-profile').classList.contains('hidden')) renderProfile(); } catch(e){} });
  return true;
  } catch(e) { return false; }
 }
@@ -5921,6 +6007,8 @@ async function doLogin() {
  SUBJECTS = getSubjects();
  const prefs = getPrefs();
  if (prefs.dark) applyDark(true);
+ await pullCloudSync();
+ SUBJECTS = getSubjects();
  showToast(' Bienvenue ' + APP.user.prenom + ' !');
  setTimeout(() => showScreen('screen-home'), 500);
  } catch(err) {
