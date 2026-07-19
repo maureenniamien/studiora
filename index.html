@@ -412,7 +412,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <h3 style="font-size:16px;font-weight:700" id="subjects-title">Mes matières</h3>
  <div style="display:flex;gap:14px;align-items:center">
  <span style="font-size:12px;color:var(--text3);font-weight:600;cursor:pointer" onclick="showManageSubjects()"> Gérer</span>
- <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" id="subjects-see-all" onclick="showManageSubjects()">Tout voir</span>
+ <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" id="subjects-see-all" onclick="showAllSubjects()">Tout voir</span>
  </div>
  </div>
  <div id="subjects-list" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -534,7 +534,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="selectFormat(this,'classique')" class="format-btn active-format" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Classique</button>
  <button onclick="selectFormat(this,'marathon')" class="format-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Marathon</button>
  </div>
- <p style="font-size:11px;color:var(--text3);margin-top:6px">Marathon : toutes les questions défilent en liste, un seul minuteur global, mix QCM + Vrai/Faux.</p>
  </div>
  <!-- Quiz Libre VIP -->
  <div id="quiz-libre-section" style="display:none;margin-bottom:14px">
@@ -720,9 +719,12 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ PROGRESSION ═══════════════════ -->
 <div id="screen-progress" class="screen hidden">
- <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px">
- <h2 class="display" style="font-size:24px;font-weight:700;margin-bottom:4px">Ma progression</h2>
- <p style="color:var(--text3);font-size:13px">Cette semaine · <span style="color:var(--em);font-weight:600" id="week-sessions-count">0 sessions</span></p>
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:center;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px">Ma progression</h2>
+ <p style="color:var(--text3);font-size:12px">Cette semaine · <span style="color:var(--em);font-weight:600" id="week-sessions-count">0 sessions</span></p>
+ </div>
  </div>
  <div class="scroll-body" style="padding:0 20px 100px">
  <!-- Streak + score semaine -->
@@ -1070,6 +1072,21 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div class="scroll-body" style="padding:16px 20px 100px">
 
+ <!-- Espace Sujet -->
+ <div style="margin-bottom:20px">
+ <label class="field-label" style="margin-bottom:10px"> Espace Sujet</label>
+ <div onclick="showScreen('screen-sujet')" style="background:linear-gradient(135deg,#1E293B,#334155);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:var(--shadow)">
+ <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="10" y2="15"/><line x1="9" y1="18" x2="15" y2="18"/><polyline points="9 11 10.5 12.5 9 14"/><line x1="12" y1="14" x2="14" y2="14"/></svg>
+ </div>
+ <div style="flex:1">
+ <div style="font-size:14px;font-weight:700;color:#fff">Travaille un sujet d'examen ou devoir</div>
+ <div style="font-size:12px;color:rgba(255,255,255,.7)">Calcul, code, chrono, outils — tout selon l'énoncé</div>
+ </div>
+ <div style="color:#fff">›</div>
+ </div>
+ </div>
+
  <!-- Terminaux -->
  <div style="margin-bottom:20px">
  <label class="field-label" style="margin-bottom:10px" data-i18n="travaux_terminaux"> Terminaux</label>
@@ -1221,6 +1238,48 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="color:var(--text3);margin-left:auto">›</div>
  </div>
+ </div>
+ </div>
+</div>
+
+<!-- ═══════════════════ ESPACE SUJET ═══════════════════ -->
+<div id="screen-sujet" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 44px) 20px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <h2 class="display" style="font-size:17px;font-weight:700">Espace Sujet</h2>
+ </div>
+
+ <!-- Phase 1 : dépôt de l'énoncé -->
+ <div id="sujet-config" class="scroll-body" style="padding:20px">
+ <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Colle l'énoncé de ton sujet (examen ou devoir), ou joins une photo/PDF. L'IA le découpe en parties (calcul, code, rédaction) avec un espace pour répondre à chacune.</p>
+ <textarea id="sujet-text" class="input" style="min-height:160px;resize:vertical" placeholder="Colle ici le texte de l'énoncé..."></textarea>
+ <input type="file" id="sujet-file-input" accept="image/*,.pdf" style="display:none" onchange="handleSujetAttachment(this)">
+ <div style="display:flex;gap:8px;margin-top:10px">
+ <button onclick="document.getElementById('sujet-file-input').click()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)"> Joindre une pièce jointe</button>
+ </div>
+ <div id="sujet-attachment-preview" style="margin-top:10px"></div>
+ <button class="btn-em" id="sujet-analyze-btn" onclick="analyzeSujet()" style="margin-top:16px">Analyser le sujet</button>
+ </div>
+
+ <!-- Phase 2 : espace de travail -->
+ <div id="sujet-workspace" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+ <div style="padding:10px 20px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+ <div style="display:flex;align-items:center;gap:8px">
+ <input type="number" id="sujet-timer-minutes" class="input" value="60" min="1" max="300" style="width:64px;padding:8px;font-size:13px;text-align:center">
+ <span style="font-size:11px;color:var(--text3)">min</span>
+ <button onclick="startSujetTimer()" id="sujet-timer-start-btn" style="background:var(--em);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Démarrer</button>
+ </div>
+ <div style="background:var(--pur-soft);border-radius:8px;padding:7px 14px;font-size:16px;font-weight:800;color:var(--purple)" id="sujet-timer-display">--:--</div>
+ </div>
+ <div style="padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;overflow-x:auto">
+ <button onclick="showScreen('screen-calc')" style="flex-shrink:0;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Calculatrice</button>
+ <button onclick="showScreen('screen-travaux')" style="flex-shrink:0;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Terminal / Code</button>
+ <button onclick="showScreen('screen-dict')" style="flex-shrink:0;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Dictionnaire</button>
+ </div>
+ <div class="scroll-body" style="padding:16px 20px;flex:1;min-height:0" id="sujet-parts-list"></div>
+ <div style="flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px">
+ <button onclick="restartSujet()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Nouveau sujet</button>
+ <button onclick="finishSujet()" class="btn-em" style="flex:1">Terminer</button>
  </div>
  </div>
 </div>
@@ -1753,13 +1812,22 @@ function renderKnowledgeTreeWidget() {
  : stage.rewardAvailable ? '🍎 Une récompense t\'attend, appuie ici !'
  : stage.next ? 'Encore un peu pour évoluer' : 'Stade maximum atteint';
  el.innerHTML = `
- <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;gap:12px">
- <div style="width:64px;flex-shrink:0">${renderKnowledgeTreeSVG(stage.idx, stage.sick)}</div>
+ <div style="background:linear-gradient(135deg,var(--em-soft) 0%,#fff 55%,var(--amb-soft) 100%);border:1px solid var(--em-mid);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden">
+ <svg width="100%" height="100%" style="position:absolute;inset:0;opacity:.12;pointer-events:none" viewBox="0 0 300 100" preserveAspectRatio="none">
+ <circle cx="270" cy="20" r="40" fill="none" stroke="var(--amber)" stroke-width="1"/>
+ <circle cx="270" cy="20" r="26" fill="none" stroke="var(--amber)" stroke-width="1"/>
+ <circle cx="20" cy="90" r="30" fill="none" stroke="var(--em)" stroke-width="1"/>
+ </svg>
+ <div style="display:flex;align-items:center;gap:14px;position:relative">
+ <div style="width:84px;flex-shrink:0">${renderKnowledgeTreeSVG(stage.idx, stage.sick)}</div>
  <div style="flex:1;min-width:0">
- <div style="font-size:13px;font-weight:700;margin-bottom:2px">🌳 ${stage.label}${stage.sick?' (affaibli)':''}</div>
- <div style="font-size:11px;color:${stage.rewardAvailable?'var(--amber)':'var(--text3)'};margin-bottom:6px;font-weight:${stage.rewardAvailable?'700':'400'}">${statusLine}</div>
- <div style="height:6px;background:var(--bg2);border-radius:4px;overflow:hidden">
+ <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Arbre de connaissance</div>
+ <div style="font-size:16px;font-weight:800;margin-bottom:4px">🌳 ${stage.label}${stage.sick?' (affaibli)':''}</div>
+ <div style="font-size:12px;color:${stage.rewardAvailable?'var(--amber)':'var(--text2)'};margin-bottom:8px;font-weight:${stage.rewardAvailable?'700':'500'}">${statusLine}</div>
+ <div style="height:7px;background:rgba(255,255,255,.7);border:1px solid var(--em-mid);border-radius:4px;overflow:hidden">
  <div style="height:100%;width:${stage.progressPct}%;background:linear-gradient(90deg,var(--em),var(--amber));border-radius:4px"></div>
+ </div>
+ <div style="font-size:10px;color:var(--text3);margin-top:4px">${stage.score} pts${stage.next ? ' · ' + stage.progressPct + '% vers ' + stage.next.label : ' · stade maximum'}</div>
  </div>
  </div>
  </div>`;
@@ -1786,9 +1854,7 @@ function showTreeDetail() {
  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${stage.reward.label}</div>
  <button class="btn-em" onclick="claimTreeReward()" style="width:100%">Récupérer</button>
  </div>` : ''}
- <div style="font-size:11px;color:var(--text3);text-align:left;background:var(--bg2);border-radius:12px;padding:12px 14px;line-height:1.7">
- Chaque jour, ton arbre peut gagner : <strong>+2 pts</strong> pour ta série (${computeStreak()} 🔥), <strong>+4 pts</strong> pour tes défis du jour (1 échange coach + 1 quiz), <strong>+2 pts</strong> pour un bon score (≥80%). Il grandit donc sur plusieurs semaines, pas en une session.
- </div>
+ <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:4px">🎁 Fais grandir ton arbre chaque jour pour débloquer des bonus.</div>
  <button class="btn-em" onclick="document.getElementById('tree-detail-overlay').remove()" style="width:100%;margin-top:18px;background:var(--bg2);color:var(--text2)">Fermer</button>
  </div>`;
  document.body.appendChild(overlay);
@@ -2262,7 +2328,36 @@ function openSubjectChat(subjectId) {
  saveChatHistory(APP.currentSubject);
  APP.currentSubject = subjectId;
  APP.chatHistory = loadChatHistory(subjectId);
+ const overlay = document.getElementById('all-subjects-overlay');
+ if (overlay) overlay.remove();
  showScreen('screen-chat');
+}
+// "Tout voir" : une simple liste de navigation vers toutes les matières
+// actives (pas de bouton Retirer/Ajouter — ça, c'est le rôle de "Gérer").
+function showAllSubjects() {
+ let overlay = document.getElementById('all-subjects-overlay');
+ if (overlay) overlay.remove();
+ overlay = document.createElement('div');
+ overlay.id = 'all-subjects-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+ overlay.innerHTML = `
+ <div style="background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;animation:slideUp .3s ease">
+ <h2 style="font-size:18px;font-weight:800;margin-bottom:16px">Toutes mes matières</h2>
+ <div style="display:flex;flex-direction:column;gap:10px">
+ ${SUBJECTS.map(s=>`
+ <div class="subject-chip" onclick="openSubjectChat('${s.id}')">
+ <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</div>
+ <div style="flex:1">
+ <div style="font-size:13px;font-weight:700">${s.name}</div>
+ <div style="font-size:11px;color:var(--text3);margin-top:2px">Appuie pour réviser avec l'IA</div>
+ </div>
+ <div style="color:var(--text3);font-size:18px">›</div>
+ </div>`).join('')}
+ </div>
+ <button onclick="document.getElementById('all-subjects-overlay').remove()" style="width:100%;padding:12px;margin-top:16px;background:var(--bg2);border:none;border-radius:12px;color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Fermer</button>
+ </div>`;
+ document.body.appendChild(overlay);
 }
 function focusChatFromHome() {
  showScreen('screen-chat');
@@ -3737,6 +3832,33 @@ function simpleHash(str) {
  return h.toString(36);
 }
 
+// Couche d'authentification supplémentaire : hash cryptographique SHA-256
+// salé (au lieu du simple hash 32-bit ci-dessus, trivialement cassable).
+// Chaque compte reçoit un sel aléatoire unique (pwdSalt), stocké à part du
+// hash, pour empêcher les attaques par table arc-en-ciel même si la base de
+// données venait à fuiter.
+function generateSalt() {
+ const arr = new Uint8Array(16);
+ crypto.getRandomValues(arr);
+ return Array.from(arr).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function hashPasswordSecure(password, salt) {
+ const enc = new TextEncoder();
+ const data = enc.encode(salt + ':' + password);
+ const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+ return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// Vérifie un mot de passe contre un hash existant, en gérant la migration
+// transparente des anciens comptes (simpleHash sans sel) vers SHA-256 salé.
+async function verifyPassword(password, storedHash, storedSalt) {
+ if (storedSalt) {
+ const h = await hashPasswordSecure(password, storedSalt);
+ return h === storedHash;
+ }
+ // Ancien compte : comparaison avec l'ancien hash faible (migration silencieuse au prochain login réussi)
+ return storedHash === simpleHash(password);
+}
+
 function togglePwd(id, icon) {
  const inp = document.getElementById(id);
  if (!inp) return;
@@ -3784,7 +3906,7 @@ function checkPwdMatch() {
  else { lbl.textContent = ' Ne correspond pas'; lbl.style.color = '#E53E3E'; }
 }
 
-function doRegister() {
+async function doRegister() {
  const p = document.getElementById('reg-prenom').value.trim();
  const n = document.getElementById('reg-nom').value.trim();
  const e = (document.getElementById('reg-email')||{}).value.trim() || '';
@@ -3810,7 +3932,9 @@ function doRegister() {
  APP.user.serie = serie;
  APP.user.filiere = filiere || getFiliere(niv);
  APP.user.email = e;
- APP.user.pwdHash = simpleHash(pwd);
+ const salt = generateSalt();
+ APP.user.pwdHash = await hashPasswordSecure(pwd, salt);
+ APP.user.pwdSalt = salt;
  // Événement : 2 semaines VIP offertes à toute nouvelle inscription
  APP.user.plan = 'vip';
  APP.user.plan_expiry = new Date(Date.now() + 14*24*3600*1000).toISOString();
@@ -3818,22 +3942,37 @@ function doRegister() {
  APP.user.retro_trial_granted = true;
  APP.user.treePlantedAt = new Date().toISOString();
  saveSession();
- if (isCustomFiliere) registerCustomFiliere(niv, filiere); // partagée avec les futurs inscrits + adapte l'app tout de suite
+ if (isCustomFiliere) registerCustomFiliere(niv, filiere); // recherche IA des vraies matières + partage aux futurs inscrits
  SUBJECTS = getSubjects();
  showScreen('screen-home');
  setTimeout(()=>{ renderHome(); showWelcomeModal(); }, 300);
 }
 
-// Enregistre une filière (ou spécialisation) inédite : disponible pour les
-// prochains inscrits du même niveau (table Supabase custom_filieres), et
-// adaptée immédiatement pour CET utilisateur (matières génériques du niveau
-// tant qu'aucune matière dédiée n'a été définie pour cette filière précise).
+// Détermine les vraies matières d'une filière via l'IA (recherche approfondie
+// basée sur les cursus francophones réels), plutôt que de transformer la
+// filière en une unique "matière" générique fourre-tout.
+async function researchFiliereSubjects(niveau, filiere) {
+ try {
+ const prompt = `Tu es un conseiller pédagogique expert des cursus universitaires et professionnels francophones (Côte d'Ivoire, Afrique de l'Ouest).
+Pour la filière "${filiere}" au niveau "${niveau}", liste les 5 à 8 matières/UE les PLUS représentatives réellement enseignées dans cette filière précise (les vraies matières de la maquette, pas des matières génériques passe-partout).
+Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après : {"matieres":["Nom matière 1","Nom matière 2","..."]}`;
+ const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
+ method:'POST', headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 400, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
+ });
+ const data = await res.json();
+ const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
+ const jsonMatch = raw.match(/\{[\s\S]*\}/);
+ const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+ const matieres = (parsed.matieres || []).filter(Boolean).slice(0, 8);
+ return matieres.length ? matieres : null;
+ } catch(e) { return null; }
+}
+
 async function registerCustomFiliere(niveau, filiere) {
  if (!FILIERES_BY_NIVEAU[niveau]) FILIERES_BY_NIVEAU[niveau] = [];
  if (!FILIERES_BY_NIVEAU[niveau].includes(filiere)) FILIERES_BY_NIVEAU[niveau].push(filiere);
- if (SUBJECTS_BY_LEVEL[niveau] && !SUBJECTS_BY_LEVEL[niveau][filiere]) {
- SUBJECTS_BY_LEVEL[niveau][filiere] = SUBJECTS_BY_LEVEL[niveau]['default'] || ['fr','ang','math','info'];
- }
+
  try {
  await fetch(`${SUPABASE_URL}/rest/v1/custom_filieres`, {
  method: 'POST',
@@ -3846,6 +3985,27 @@ async function registerCustomFiliere(niveau, filiere) {
  body: JSON.stringify({ niveau, filiere })
  });
  } catch(e) { /* la filière reste utilisable localement même si l'enregistrement partagé échoue */ }
+
+ // Recherche approfondie : peut prendre quelques secondes, ne bloque pas
+ // l'inscription (SUBJECTS utilise déjà un repli générique entre-temps via
+ // getSubjects()). Une fois trouvées, les vraies matières remplacent le repli
+ // et l'accueil se rafraîchit automatiquement.
+ const matieres = await researchFiliereSubjects(niveau, filiere);
+ if (matieres) {
+ const subjectIds = matieres.map(nom => {
+ const id = slugifyId(nom);
+ if (!ALL_SUBJECTS.find(s=>s.id===id)) {
+ ALL_SUBJECTS.push({ id, name: nom, color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' });
+ }
+ return id;
+ });
+ if (SUBJECTS_BY_LEVEL[niveau]) SUBJECTS_BY_LEVEL[niveau][filiere] = subjectIds;
+ if (APP.user.filiere === filiere) {
+ SUBJECTS = getSubjects();
+ renderHome();
+ showToast('✓ Matières de "' + filiere + '" identifiées et ajoutées');
+ }
+ }
 }
 
 function showWelcomeModal() {
@@ -4461,6 +4621,141 @@ const ANALYSIS_PROMPTS = {
  flashcards:(t)=>`${analysisLangLine()}Voici un cours :\n\n${t}\n\nCrée 8 paires question/réponse pour mémoriser ce cours, format lisible : Q: ... / R: ...\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
 };
 
+
+// ══════════════════════════════════════════════
+// ── ESPACE SUJET ── (examen/devoir : calcul, code, chrono, outils, pièce jointe)
+// ══════════════════════════════════════════════
+let sujetAttachment = null; // { type:'image'|'document', mediaType, data, name } comme chatAttachment
+let sujetParts = [];
+let sujetTimerInterval = null, sujetTimeLeft = 0;
+
+async function handleSujetAttachment(input) {
+ const file = input.files[0];
+ if (!file) return;
+ const name = file.name.toLowerCase();
+ const preview = document.getElementById('sujet-attachment-preview');
+ if (file.type.startsWith('image/')) {
+ const reader = new FileReader();
+ reader.onload = e => {
+ sujetAttachment = { type:'image', mediaType: file.type, data: e.target.result.split(',')[1], dataUrl: e.target.result, name: file.name };
+ preview.innerHTML = `<div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 12px"><img src="${e.target.result}" style="width:36px;height:36px;object-fit:cover;border-radius:6px"><span style="font-size:12px;flex:1">${file.name}</span><button onclick="sujetAttachment=null;document.getElementById('sujet-attachment-preview').innerHTML=''" style="background:none;border:none;color:var(--red);font-weight:700;cursor:pointer">✕</button></div>`;
+ };
+ reader.readAsDataURL(file);
+ } else if (file.type==='application/pdf' || name.endsWith('.pdf')) {
+ const reader = new FileReader();
+ reader.onload = e => {
+ sujetAttachment = { type:'document', mediaType:'application/pdf', data: e.target.result.split(',')[1], name: file.name };
+ preview.innerHTML = `<div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 12px"><span style="font-size:12px;flex:1">▤ ${file.name}</span><button onclick="sujetAttachment=null;document.getElementById('sujet-attachment-preview').innerHTML=''" style="background:none;border:none;color:var(--red);font-weight:700;cursor:pointer">✕</button></div>`;
+ };
+ reader.readAsDataURL(file);
+ } else {
+ showToast('✕ Format non pris en charge. Utilise une image ou un PDF');
+ }
+}
+
+async function analyzeSujet() {
+ const text = document.getElementById('sujet-text').value.trim();
+ if (!text && !sujetAttachment) { showToast('! Colle un énoncé ou joins une pièce jointe'); return; }
+ const btn = document.getElementById('sujet-analyze-btn');
+ btn.disabled = true; btn.textContent = ' Analyse en cours...';
+
+ const instructions = `Tu es un professeur qui structure un sujet d'examen ou de devoir en parties distinctes.
+Découpe l'énoncé ci-dessous (texte et/ou image/PDF joint) en parties, une par question/exercice. Pour chaque partie indique :
+- "type" : "calcul" (mathématiques, raisonnement écrit, sciences) ou "code" (programmation) ou "texte" (rédaction/réponse libre)
+- "enonce" : le texte exact de la question (garde les formules mathématiques en LaTeX entre $...$ si présentes)
+- "points" : nombre de points si indiqué, sinon null
+
+Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après :
+{"titre":"Titre court du sujet","parts":[{"type":"calcul","enonce":"...","points":5}]}`;
+
+ let userContent;
+ if (sujetAttachment && sujetAttachment.type === 'image') {
+ userContent = [
+ { type:'image', source: { type:'base64', media_type: sujetAttachment.mediaType, data: sujetAttachment.data } },
+ { type:'text', text: instructions + (text ? '\n\nTexte complémentaire fourni par l\'utilisateur : ' + text : '') }
+ ];
+ } else if (sujetAttachment && sujetAttachment.type === 'document') {
+ userContent = [
+ { type:'document', source: { type:'base64', media_type: sujetAttachment.mediaType, data: sujetAttachment.data } },
+ { type:'text', text: instructions + (text ? '\n\nTexte complémentaire fourni par l\'utilisateur : ' + text : '') }
+ ];
+ } else {
+ userContent = instructions + '\n\nÉnoncé :\n' + text;
+ }
+
+ try {
+ const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
+ method:'POST', headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 2000, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user', content:userContent}] })
+ });
+ const data = await res.json();
+ const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
+ const jsonMatch = raw.match(/\{[\s\S]*\}/);
+ const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+ sujetParts = (parsed.parts || []).map((p,i)=>({ ...p, id: i, reponse: '' }));
+ if (!sujetParts.length) throw new Error('Aucune partie détectée');
+
+ document.getElementById('sujet-config').style.display = 'none';
+ document.getElementById('sujet-workspace').style.display = 'flex';
+ renderSujetParts();
+ showToast('✓ Sujet analysé : ' + sujetParts.length + ' partie(s)');
+ } catch(e) {
+ showToast('✕ Erreur : ' + ((e && e.message) || 'analyse impossible, réessaie'));
+ }
+ btn.disabled = false; btn.textContent = 'Analyser le sujet';
+}
+
+function renderSujetParts() {
+ const list = document.getElementById('sujet-parts-list');
+ const typeLabels = { calcul: ' Calcul', code: ' Code', texte: ' Rédaction' };
+ list.innerHTML = sujetParts.map((p,i)=>`
+ <div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+ <span style="font-size:11px;color:var(--em);font-weight:700;background:var(--em-soft);border-radius:6px;padding:3px 8px">${typeLabels[p.type] || ' Partie'} ${i+1}</span>
+ ${p.points ? `<span style="font-size:11px;color:var(--text3)">${p.points} pts</span>` : ''}
+ </div>
+ <p style="font-size:14px;line-height:1.6;margin-bottom:10px" class="sujet-enonce">${p.enonce}</p>
+ <textarea class="input" style="min-height:${p.type==='code'?'140px':'90px'};resize:vertical;${p.type==='code'?"font-family:'Courier New',monospace;font-size:12px;background:#1A1A1A;color:#e5e5e5;":''}" placeholder="${p.type==='code'?'Ton code ici...':'Ta réponse ici...'}" oninput="sujetParts[${i}].reponse=this.value">${p.reponse||''}</textarea>
+ </div>`).join('');
+ renderMathInChat(list);
+}
+
+function startSujetTimer() {
+ clearInterval(sujetTimerInterval);
+ const minutes = parseInt(document.getElementById('sujet-timer-minutes').value) || 60;
+ sujetTimeLeft = minutes * 60;
+ document.getElementById('sujet-timer-minutes').disabled = true;
+ document.getElementById('sujet-timer-start-btn').textContent = 'En cours...';
+ document.getElementById('sujet-timer-start-btn').disabled = true;
+ updateSujetTimerDisplay();
+ sujetTimerInterval = setInterval(()=>{
+ sujetTimeLeft--;
+ updateSujetTimerDisplay();
+ if (sujetTimeLeft <= 0) { clearInterval(sujetTimerInterval); showToast('⏰ Temps écoulé !'); }
+ }, 1000);
+}
+function updateSujetTimerDisplay() {
+ const h = Math.floor(sujetTimeLeft/3600), m = Math.floor((sujetTimeLeft%3600)/60), s = sujetTimeLeft%60;
+ document.getElementById('sujet-timer-display').textContent = (h>0?h+':':'') + String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function restartSujet() {
+ clearInterval(sujetTimerInterval);
+ sujetParts = []; sujetAttachment = null;
+ document.getElementById('sujet-text').value = '';
+ document.getElementById('sujet-attachment-preview').innerHTML = '';
+ document.getElementById('sujet-timer-minutes').disabled = false;
+ document.getElementById('sujet-timer-minutes').value = 60;
+ document.getElementById('sujet-timer-start-btn').textContent = 'Démarrer';
+ document.getElementById('sujet-timer-start-btn').disabled = false;
+ document.getElementById('sujet-timer-display').textContent = '--:--';
+ document.getElementById('sujet-workspace').style.display = 'none';
+ document.getElementById('sujet-config').style.display = 'flex';
+}
+function finishSujet() {
+ clearInterval(sujetTimerInterval);
+ showToast('✓ Sujet terminé — bon travail !');
+ showScreen('screen-travaux');
+}
 
 async function analyzeCourse() {
  const text=document.getElementById('course-text').value.trim();
@@ -5386,6 +5681,7 @@ async function registerUserInDatabase() {
  level: APP.user.level || null,
  filiere: APP.user.filiere || null,
  pwd_hash: APP.user.pwdHash || null,
+ pwd_salt: APP.user.pwdSalt || null,
  last_login: new Date().toISOString()
  })
  });
@@ -5405,7 +5701,7 @@ async function findUserInDatabase(email) {
  const rows = await res.json();
  if (!Array.isArray(rows) || !rows.length) return null;
  const r = rows[0];
- return { email: r.email, plan: r.plan, prenom: r.prenom, level: r.level, filiere: r.filiere, pwdHash: r.pwd_hash };
+ return { email: r.email, plan: r.plan, prenom: r.prenom, level: r.level, filiere: r.filiere, pwdHash: r.pwd_hash, pwdSalt: r.pwd_salt };
  } catch(e) {
  return null; // hors ligne ou erreur réseau
  }
@@ -5473,12 +5769,13 @@ async function doLogin() {
  }
  if (existing) {
  // Compte existant : le mot de passe DOIT correspondre
- if (existing.pwdHash && existing.pwdHash !== simpleHash(pwd)) {
- showToast(' Mot de passe incorrect'); return;
- }
- if (!existing.pwdHash) {
- // Ancien compte sans hash → on enregistre le mdp maintenant
- existing.pwdHash = simpleHash(pwd);
+ const ok = existing.pwdHash ? await verifyPassword(pwd, existing.pwdHash, existing.pwdSalt) : true;
+ if (!ok) { showToast(' Mot de passe incorrect'); return; }
+ if (!existing.pwdHash || !existing.pwdSalt) {
+ // Ancien compte (pas de hash, ou hash faible sans sel) → migration silencieuse vers SHA-256 salé
+ const salt = generateSalt();
+ existing.pwdHash = await hashPasswordSecure(pwd, salt);
+ existing.pwdSalt = salt;
  }
  APP.user = { ...APP.user, ...existing };
  } else {
@@ -5495,18 +5792,19 @@ async function doLogin() {
 }
 
 
-function changePassword() {
+async function changePassword() {
  const cur = document.getElementById('pwd-current').value;
  const nw = document.getElementById('pwd-new').value;
  const conf = document.getElementById('pwd-confirm').value;
  if (!cur || !nw || !conf) { showToast('! Remplis tous les champs'); return; }
- if (APP.user.pwdHash && APP.user.pwdHash !== simpleHash(cur)) {
- showToast(' Mot de passe actuel incorrect'); return;
- }
+ const ok = APP.user.pwdHash ? await verifyPassword(cur, APP.user.pwdHash, APP.user.pwdSalt) : true;
+ if (!ok) { showToast(' Mot de passe actuel incorrect'); return; }
  if (nw.length < 8) { showToast('! 8 caractères minimum'); return; }
  if (!/[A-Za-z]/.test(nw) || !/[0-9]/.test(nw)) { showToast('! Mélange lettres et chiffres'); return; }
  if (nw !== conf) { showToast(' Les mots de passe ne correspondent pas'); return; }
- APP.user.pwdHash = simpleHash(nw);
+ const salt = generateSalt();
+ APP.user.pwdHash = await hashPasswordSecure(nw, salt);
+ APP.user.pwdSalt = salt;
  saveSession();
  document.getElementById('pwd-current').value = '';
  document.getElementById('pwd-new').value = '';
