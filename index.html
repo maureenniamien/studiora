@@ -443,7 +443,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:11px;color:var(--text3)">Stats & objectifs</div>
  </div>
  </div>
- <div onclick="showScreen('screen-sujet')" style="margin-top:10px;background:linear-gradient(135deg,var(--purple),#4338CA);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+ <div onclick="showScreen('screen-sujet')" style="margin-top:10px;background:linear-gradient(135deg,var(--em),var(--em2));border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
  <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="10" y2="15"/><line x1="9" y1="18" x2="15" y2="18"/><polyline points="9 11 10.5 12.5 9 14"/><line x1="12" y1="14" x2="14" y2="14"/></svg>
  </div>
@@ -1929,6 +1929,14 @@ function subjInitials(name) {
 
 const ALL_SUBJECTS = [
  { id:'math', icon:'', name:'Mathématiques', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'biochimie', icon:'', name:'Biochimie Clinique', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'immuno', icon:'', name:'Immunologie', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'microbio', icon:'', name:'Microbiologie Médicale', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'hemato', icon:'', name:'Hématologie', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'genetiquemed', icon:'', name:'Génétique Médicale', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'anapath', icon:'', name:'Anatomopathologie', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'pharmaco', icon:'', name:'Pharmacologie', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'physiohum', icon:'', name:'Physiologie Humaine', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
  { id:'physique',icon:'', name:'Physique-Chimie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
  { id:'svt', icon:'', name:'SVT', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
  { id:'fr', icon:'', name:'Français', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
@@ -2029,6 +2037,14 @@ const SUBJECTS_BY_LEVEL = {
  'Économie':['eco','stats','compta','gestion','droit'],
  'Droit': ['droit','eco','gestion','ang','fr'],
  'Gestion': ['gestion','compta','eco','droit','ang'],
+ },
+ 'Master 1': {
+ // Programme inspiré des cursus biomédicaux de référence (Harvard Medical
+ // School, Johns Hopkins) adapté au niveau Master 1
+ 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','physiohum','ang'],
+ },
+ 'Master 2': {
+ 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','anapath','pharmaco'],
  },
  'BT': {
  'default': ['fr','ang','math','info'],
@@ -3758,7 +3774,18 @@ function onMasterOrigineChange() {
  const filiereEl = document.getElementById('reg-filiere');
  filiereEl.innerHTML = '<option value="">-- Choisir la spécialisation --</option>';
  if (!origine) return;
- const specs = MASTER_SPECS_BY_LICENCE[origine] || MASTER_SPECS_GENERIQUE;
+ let specs;
+ if (origine === 'Autre' || origine === '__autre__') {
+ // Filière de Licence non spécifiée : on ne peut pas restreindre selon une
+ // licence précise, donc on propose TOUTES les spécialisations Master
+ // connues (toutes filières confondues), dédupliquées et triées.
+ const all = new Set();
+ Object.values(MASTER_SPECS_BY_LICENCE).forEach(list => list.forEach(s => all.add(s)));
+ MASTER_SPECS_GENERIQUE.forEach(s => all.add(s));
+ specs = Array.from(all).sort((a,b)=>a.localeCompare(b,'fr'));
+ } else {
+ specs = MASTER_SPECS_BY_LICENCE[origine] || MASTER_SPECS_GENERIQUE;
+ }
  specs.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; filiereEl.appendChild(o); });
  addAutreFiliereOption(filiereEl); // au cas où la spécialisation voulue n'est pas dans la liste non plus
 }
@@ -4136,7 +4163,7 @@ function renderQuizConfig() {
  if (qlSection) qlSection.style.display = isVipOrAdmin() ? 'block' : 'none';
 
  const el = document.getElementById('quiz-subject-btns');
- el.innerHTML = SUBJECTS.map(s=>`
+ el.innerHTML = [...SUBJECTS].sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>`
  <button onclick="selectQuizSubject(this,'${s.id}')" class="qsub-btn" data-id="${s.id}" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectQuiz===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
  background:${selectedSubjectQuiz===s.id?s.soft:'var(--bg2)'};
  border:1.5px solid ${selectedSubjectQuiz===s.id?s.color:'var(--border)'};
@@ -4465,7 +4492,7 @@ let selectedSubjectFC = 'math';
 function renderFCConfig() {
  document.getElementById('fc-config').style.display='block';
  document.getElementById('fc-play').style.display='none';
- document.getElementById('fc-subject-btns').innerHTML = SUBJECTS.map(s=>`
+ document.getElementById('fc-subject-btns').innerHTML = [...SUBJECTS].sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>`
  <button onclick="selectFCSubject(this,'${s.id}')" class="fcsub-btn" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSubjectFC===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
  background:${selectedSubjectFC===s.id?s.soft:'var(--bg2)'};
  border:1.5px solid ${selectedSubjectFC===s.id?s.color:'var(--border)'};
@@ -4690,7 +4717,7 @@ function renderSujetConfig() {
  document.getElementById('sujet-workspace').style.display = 'none';
  if (!selectedSujetSubject && SUBJECTS.length) selectedSujetSubject = SUBJECTS[0].id;
  const el = document.getElementById('sujet-subject-btns');
- el.innerHTML = SUBJECTS.map(s=>`
+ el.innerHTML = [...SUBJECTS].sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>`
  <button onclick="selectSujetSubject(this,'${s.id}')" class="ssub-btn" data-id="${s.id}" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSujetSubject===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
  background:${selectedSujetSubject===s.id?s.soft:'var(--bg2)'};
  border:1.5px solid ${selectedSujetSubject===s.id?s.color:'var(--border)'};
