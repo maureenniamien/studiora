@@ -352,7 +352,44 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <p id="pwd-match-label" style="font-size:11px;margin-top:3px"></p>
 </div>
  <button class="btn-em" id="register-submit-btn" onclick="doRegister()">Créer mon compte →</button>
- <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em)">CGU</span></p>
+ <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em);text-decoration:underline;cursor:pointer" onclick="showScreen('screen-cgu')">CGU</span></p>
+ </div>
+</div>
+
+<!-- ═══════════════════ CGU ═══════════════════ -->
+<div id="screen-cgu" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 44px) 20px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <h2 class="display" style="font-size:17px;font-weight:700">Conditions Générales d'Utilisation</h2>
+ </div>
+ <div class="scroll-body" style="padding:20px;line-height:1.7;font-size:13px;color:var(--text2)">
+ <p style="color:var(--text3);font-size:11px;margin-bottom:16px">Studiora</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">1. Objet</h4>
+ <p>Studiora est une application d'aide à la révision utilisant l'intelligence artificielle (quiz, cartes mémo, coach IA, génération de sujets).</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">2. Compte</h4>
+ <p>L'utilisateur garantit l'exactitude des informations fournies à l'inscription et est responsable de la confidentialité de son mot de passe.</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">3. Contenu généré par IA</h4>
+ <p>Les réponses, quiz, corrections et sujets sont générés automatiquement et peuvent contenir des erreurs ; ils ne remplacent pas un enseignant et l'utilisateur reste responsable de vérifier les informations importantes (examens, notes).</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">4. Abonnements</h4>
+ <p>Les formules Premium/VIP sont payantes, sans engagement de durée minimale sauf mention contraire ; les paiements sont traités par un prestataire tiers.</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">5. Usage autorisé</h4>
+ <p>L'utilisateur s'engage à ne pas utiliser l'app à des fins de fraude aux examens, de triche, ou pour générer du contenu illégal ou nuisible.</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">6. Données personnelles</h4>
+ <p>Les données sont utilisées uniquement pour le fonctionnement de l'app (voir Politique de confidentialité séparée).</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">7. Responsabilité</h4>
+ <p>Studiora ne garantit pas la réussite scolaire ni l'absence totale d'erreurs dans le contenu généré.</p>
+
+ <h4 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--text)">8. Modification</h4>
+ <p>Ces CGU peuvent évoluer ; l'utilisation continue de l'app vaut acceptation des nouvelles conditions.</p>
+
+ <p style="margin-top:24px;color:var(--text3);font-size:11px">Dernière mise à jour : juillet 2026</p>
  </div>
 </div>
 
