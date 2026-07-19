@@ -257,6 +257,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <p style="text-align:right;font-size:12px;color:var(--em);font-weight:600;margin-bottom:26px;cursor:pointer">Mot de passe oublié ?</p>
  <button class="btn-em" id="login-submit-btn" onclick="doLogin()">Se connecter</button>
  <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--text2)">Pas encore inscrit ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-register')">Créer un compte</span></p>
+ <p style="text-align:center;margin-top:10px;font-size:11px;color:var(--text3)">En te connectant tu acceptes nos <span style="color:var(--em);text-decoration:underline;cursor:pointer" onclick="showScreen('screen-cgu')">CGU</span></p>
  </div>
 </div>
 
@@ -353,6 +354,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 </div>
  <button class="btn-em" id="register-submit-btn" onclick="doRegister()">Créer mon compte →</button>
  <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em);text-decoration:underline;cursor:pointer" onclick="showScreen('screen-cgu')">CGU</span></p>
+ <p style="text-align:center;margin-top:10px;font-size:13px;color:var(--text2)">Déjà un compte ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-login')">Se connecter</span></p>
  </div>
 </div>
 
@@ -441,7 +443,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:11px;color:var(--text3)">Stats & objectifs</div>
  </div>
  </div>
- <div onclick="showScreen('screen-sujet')" style="margin-top:10px;background:linear-gradient(135deg,#1E293B,#334155);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+ <div onclick="showScreen('screen-sujet')" style="margin-top:10px;background:linear-gradient(135deg,var(--purple),#4338CA);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
  <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="10" y2="15"/><line x1="9" y1="18" x2="15" y2="18"/><polyline points="9 11 10.5 12.5 9 14"/><line x1="12" y1="14" x2="14" y2="14"/></svg>
  </div>
@@ -4007,6 +4009,7 @@ async function researchFiliereSubjects(niveau, filiere) {
  try {
  const prompt = `Tu es un conseiller pédagogique expert des cursus universitaires et professionnels francophones (Côte d'Ivoire, Afrique de l'Ouest).
 Pour la filière "${filiere}" au niveau "${niveau}", liste les 5 à 8 matières/UE les PLUS représentatives réellement enseignées dans cette filière précise (les vraies matières de la maquette, pas des matières génériques passe-partout).
+Inspire-toi du programme de référence des meilleures universités mondiales dans ce domaine précis (ex: MIT/Stanford pour l'informatique, Harvard/Johns Hopkins pour la médecine, une grande école de référence pour la spécialité concernée) comme fil conducteur pour identifier les matières fondamentales, tout en gardant des intitulés compréhensibles pour un étudiant africain francophone.
 Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après : {"matieres":["Nom matière 1","Nom matière 2","..."]}`;
  const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
  method:'POST', headers:{'Content-Type':'application/json'},
@@ -4714,14 +4717,23 @@ async function analyzeSujet() {
  const filiereRule = filiere ? `Adapte le périmètre de "${subj.name}" au contexte réel de la filière ${filiere} (si ce n'est pas sa spécialité, reste à un niveau d'usage pratique réaliste pour cette filière, sinon va au niveau technique attendu). ` : '';
  const langRule = `Rédige TOUT le contenu en ${LANG_NAMES_FOR_AI[APP_LANG] || 'français'}. `;
 
+ const CODE_SUBJECTS = ['Java','POO','Algorithmique','Prog. Mobile','Systemes info','Systèmes info','MIAGE','ASSRI','RIT','Informatique','Bases de données'];
+ const isCodeSubject = CODE_SUBJECTS.some(s => subj.name.toLowerCase().includes(s.toLowerCase()));
+ const codeRule = isCodeSubject
+ ? `Le type "code" est autorisé ici (matière de programmation).`
+ : `INTERDICTION ABSOLUE d'utiliser le type "code" : "${subj.name}" n'est PAS une matière de programmation. Même si le sujet pourrait théoriquement s'illustrer avec du code (ex: Python en statistiques), N'EN PROPOSE PAS — utilise uniquement "calcul" ou "texte".`;
+ const prestigeRule = `Inspire-toi, pour le niveau d'exigence et la structure des questions, du programme de référence des meilleures universités mondiales dans ce domaine précis (ex: MIT/Stanford pour l'informatique, Harvard/Johns Hopkins pour la médecine, une grande école pour la spécialité concernée), tout en gardant un énoncé accessible au niveau ${level} d'un étudiant africain francophone.`;
+
  const btn = document.getElementById('sujet-analyze-btn');
  btn.disabled = true; btn.textContent = ' Génération en cours...';
 
  const prompt = `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
 Génère un sujet de type "${selectedSujetType}" en ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}, avec exactement ${selectedSujetNParts} parties/exercices distincts.
-${filiereRule}${langRule}
+${filiereRule}${langRule}${prestigeRule}
+
 RÈGLES ABSOLUES :
-- Pour chaque partie, indique "type" : "calcul" (mathématiques, raisonnement écrit, sciences) ou "code" (programmation) ou "texte" (rédaction/réponse libre) — choisis le type le plus pertinent selon la matière (ex: n'utilise "code" que si ${subj.name} est une matière de programmation).
+- Pour chaque partie, indique "type" : "calcul" (mathématiques, raisonnement écrit, sciences) ou "code" (programmation) ou "texte" (rédaction/réponse libre).
+- ${codeRule}
 - "enonce" : l'énoncé complet et précis de la partie (garde les formules mathématiques en LaTeX entre $...$ si besoin).
 - "points" : nombre de points cohérent (total 20 sur l'ensemble des parties).
 - Le niveau de difficulté doit être adapté à ${level}${filiere?' ('+filiere+')':''}.
