@@ -896,7 +896,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
 
  <div class="card" style="margin-bottom:14px">
- <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Mes matières actives</h3>
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+ <h3 style="font-size:14px;font-weight:700">Mes matières actives</h3>
+ <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" onclick="showScreen('screen-progress')">Voir mes scores →</span>
+ </div>
  <div id="profile-subjects"></div>
  </div>
 
@@ -5046,23 +5049,25 @@ function renderProgress() {
  <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)||4}px;background:${v>0?(i===new Date().getDay()-1?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
  </div>`).join('');
 
- // Scores par matière depuis localStorage
+ // Scores par matière : on part de TOUTES les matières qui ont réellement
+ // un score enregistré (et non des 5 premières de la liste "active"), sinon
+ // une matière quizzée mais pas dans ce sous-ensemble n'apparaissait jamais
+ // — ce qui donnait un "score moyen" non nul mais une carte vide.
  const rawScores = getSubjectScores() || {};
- const scores = SUBJECTS.slice(0,5).map(subj => {
- const arr = rawScores[subj.id] || [];
+ const scores = Object.keys(rawScores).map(id => {
+ const arr = rawScores[id] || [];
  const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
- return {s: subj.id, pct: avg};
- }).filter(x => x.pct > 0);
- document.getElementById('subject-scores').innerHTML=scores.map(({s,pct})=>{
- const subj=SUBJECTS.find(x=>x.id===s);
- return `<div style="margin-bottom:12px">
+ const known = SUBJECTS.find(x=>x.id===id) || ALL_SUBJECTS.find(x=>x.id===id);
+ return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : 'var(--em)' };
+ }).filter(x => x.pct > 0).sort((a,b) => b.pct - a.pct);
+ document.getElementById('subject-scores').innerHTML = scores.length ? scores.map(({name,pct,color})=>`
+ <div style="margin-bottom:12px">
  <div style="display:flex;justify-content:space-between;margin-bottom:5px">
- <span style="font-size:13px;font-weight:500">${subj.name}</span>
- <span style="font-size:13px;font-weight:700;color:${subj.color}">${pct}%</span>
+ <span style="font-size:13px;font-weight:500">${name}</span>
+ <span style="font-size:13px;font-weight:700;color:${color}">${pct}%</span>
  </div>
- <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${subj.color}"></div></div>
- </div>`;
- }).join('');
+ <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${color}"></div></div>
+ </div>`).join('') : '<div style="font-size:12px;color:var(--text3)">Termine un quiz pour voir tes scores apparaître ici.</div>';
 
  // Sessions semaine
  const weekTotal = getWeekData().reduce((a,b)=>a+b,0);
@@ -5169,20 +5174,14 @@ function renderProfile() {
  </div>
  </div>`).join('');
 
- document.getElementById('profile-subjects').innerHTML=SUBJECTS.slice(0,5).map(s=>{
- const arr = (getSubjectScores()||{})[s.id];
- const avg = (arr && arr.length) ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
- const scoreLabel = avg===null ? '— %' : avg+'%';
- const scoreColor = avg===null ? 'var(--text3)' : (avg>=70 ? '#38A169' : avg>=50 ? '#ECC94B' : '#E53E3E');
- return `
- <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
- <div style="display:flex;align-items:center;gap:10px">
+ // Simple liste des matières actives (nom + icône seulement) : les scores
+ // ont été déplacés vers "Score par matière" dans Ma progression, pour ne
+ // plus avoir deux affichages différents du même chiffre.
+ document.getElementById('profile-subjects').innerHTML=SUBJECTS.map(s=>`
+ <div onclick="showScreen('screen-progress')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
  <span style="width:28px;height:28px;border-radius:9px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</span>
  <span style="font-size:13px;font-weight:500">${s.name}</span>
- </div>
- <span class="badge" style="background:var(--bg2);color:${scoreColor};border:1px solid var(--border);font-weight:800">${scoreLabel}</span>
- </div>`;
- }).join('');
+ </div>`).join('') || '<div style="font-size:12px;color:var(--text3)">Aucune matière pour l\'instant.</div>';
  // Init boutons niveau
  setTimeout(initLevelBtns, 0);
 }
@@ -5883,6 +5882,31 @@ function registerUserGlobally() {
 
 async function registerUserInDatabase() {
  if (!APP.user || !APP.user.email) return;
+ const basePayload = {
+ email: APP.user.email,
+ plan: APP.user.plan || 'free',
+ prenom: APP.user.prenom || null,
+ level: APP.user.level || null,
+ filiere: APP.user.filiere || null,
+ pwd_hash: APP.user.pwdHash || null,
+ last_login: new Date().toISOString()
+ };
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+ 'Prefer': 'resolution=merge-duplicates'
+ },
+ body: JSON.stringify({ ...basePayload, pwd_salt: APP.user.pwdSalt || null })
+ });
+ if (!res.ok) throw new Error('colonne manquante ou autre erreur : ' + res.status);
+ } catch(e) {
+ // La colonne pwd_salt (ou une autre) manque peut-être encore côté
+ // Supabase : on retente SANS elle pour ne JAMAIS perdre un compte à
+ // cause d'une colonne absente.
  try {
  await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
  method: 'POST',
@@ -5892,19 +5916,11 @@ async function registerUserInDatabase() {
  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
  'Prefer': 'resolution=merge-duplicates'
  },
- body: JSON.stringify({
- email: APP.user.email,
- plan: APP.user.plan || 'free',
- prenom: APP.user.prenom || null,
- level: APP.user.level || null,
- filiere: APP.user.filiere || null,
- pwd_hash: APP.user.pwdHash || null,
- pwd_salt: APP.user.pwdSalt || null,
- last_login: new Date().toISOString()
- })
+ body: JSON.stringify(basePayload)
  });
- } catch(e) {
- // Pas de connexion : le cache local prend le relais, on retentera à la prochaine session
+ } catch(e2) {
+ // Pas de connexion du tout : le cache local prend le relais, on retentera à la prochaine session
+ }
  }
 }
 
