@@ -404,6 +404,15 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:11px;color:var(--text3)">Stats & objectifs</div>
  </div>
  </div>
+ <div onclick="showScreen('screen-sujet')" style="margin-top:10px;background:linear-gradient(135deg,#1E293B,#334155);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+ <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="10" y2="15"/><line x1="9" y1="18" x2="15" y2="18"/><polyline points="9 11 10.5 12.5 9 14"/><line x1="12" y1="14" x2="14" y2="14"/></svg>
+ </div>
+ <div>
+ <div style="font-size:13px;font-weight:700;color:#fff">Espace Sujet</div>
+ <div style="font-size:11px;color:rgba(255,255,255,.7)">Examen/devoir généré par l'IA · calcul, code, chrono</div>
+ </div>
+ </div>
  </div>
 
  <!-- Matières -->
@@ -1072,21 +1081,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div class="scroll-body" style="padding:16px 20px 100px">
 
- <!-- Espace Sujet -->
- <div style="margin-bottom:20px">
- <label class="field-label" style="margin-bottom:10px"> Espace Sujet</label>
- <div onclick="showScreen('screen-sujet')" style="background:linear-gradient(135deg,#1E293B,#334155);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:var(--shadow)">
- <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
- <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="10" y2="15"/><line x1="9" y1="18" x2="15" y2="18"/><polyline points="9 11 10.5 12.5 9 14"/><line x1="12" y1="14" x2="14" y2="14"/></svg>
- </div>
- <div style="flex:1">
- <div style="font-size:14px;font-weight:700;color:#fff">Travaille un sujet d'examen ou devoir</div>
- <div style="font-size:12px;color:rgba(255,255,255,.7)">Calcul, code, chrono, outils — tout selon l'énoncé</div>
- </div>
- <div style="color:#fff">›</div>
- </div>
- </div>
-
  <!-- Terminaux -->
  <div style="margin-bottom:20px">
  <label class="field-label" style="margin-bottom:10px" data-i18n="travaux_terminaux"> Terminaux</label>
@@ -1249,16 +1243,36 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <h2 class="display" style="font-size:17px;font-weight:700">Espace Sujet</h2>
  </div>
 
- <!-- Phase 1 : dépôt de l'énoncé -->
- <div id="sujet-config" class="scroll-body" style="padding:20px">
- <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Colle l'énoncé de ton sujet (examen ou devoir), ou joins une photo/PDF. L'IA le découpe en parties (calcul, code, rédaction) avec un espace pour répondre à chacune.</p>
- <textarea id="sujet-text" class="input" style="min-height:160px;resize:vertical" placeholder="Colle ici le texte de l'énoncé..."></textarea>
- <input type="file" id="sujet-file-input" accept="image/*,.pdf" style="display:none" onchange="handleSujetAttachment(this)">
- <div style="display:flex;gap:8px;margin-top:10px">
- <button onclick="document.getElementById('sujet-file-input').click()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)"> Joindre une pièce jointe</button>
+ <!-- Phase 1 : configuration du sujet à générer -->
+ <div id="sujet-config" class="scroll-body" style="padding:0 20px 20px">
+ <div style="background:linear-gradient(135deg,#1E293B,#334155);border-radius:var(--r);padding:20px;margin:16px 0 20px;color:#fff;text-align:center">
+ <h3 class="display" style="font-size:20px;font-weight:700;margin-bottom:4px">Génère ton sujet</h3>
+ <p style="font-size:13px;opacity:.8">L'IA crée un sujet d'examen ou de devoir pour t'entraîner</p>
  </div>
- <div id="sujet-attachment-preview" style="margin-top:10px"></div>
- <button class="btn-em" id="sujet-analyze-btn" onclick="analyzeSujet()" style="margin-top:16px">Analyser le sujet</button>
+ <div style="margin-bottom:16px">
+ <label class="field-label">Matière</label>
+ <div id="sujet-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+ </div>
+ <div style="margin-bottom:16px">
+ <label class="field-label">Chapitre / sujet précis (optionnel)</label>
+ <input class="input" id="sujet-topic" placeholder="Ex: Les limites de fonctions, Les boucles en Python...">
+ </div>
+ <div style="margin-bottom:16px">
+ <label class="field-label">Type</label>
+ <div style="display:flex;gap:8px">
+ <button onclick="selectSujetType(this,'devoir')" class="sujet-type-btn" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Devoir</button>
+ <button onclick="selectSujetType(this,'examen')" class="sujet-type-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Examen</button>
+ </div>
+ </div>
+ <div style="margin-bottom:20px">
+ <label class="field-label">Nombre de parties</label>
+ <div style="display:flex;gap:8px">
+ <button onclick="selectSujetNParts(this,3)" class="sujet-np-btn" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">3</button>
+ <button onclick="selectSujetNParts(this,5)" class="sujet-np-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">5</button>
+ <button onclick="selectSujetNParts(this,8)" class="sujet-np-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">8</button>
+ </div>
+ </div>
+ <button class="btn-em" id="sujet-analyze-btn" onclick="analyzeSujet()">Générer le sujet</button>
  </div>
 
  <!-- Phase 2 : espace de travail -->
@@ -2129,11 +2143,11 @@ function showManageSubjects() {
 let SUBJECTS = ALL_SUBJECTS.slice(0, 8); // valeur par défaut
 
 const TIPS = [
- "La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !",
- "Explique un concept comme si tu l'enseignais à quelqu'un d'autre. C'est la méthode Feynman !",
- "Réviser avant de dormir améliore la mémorisation de 20% grâce au sommeil qui consolide l'apprentissage.",
- "Alterne entre plusieurs matières pour éviter la fatigue cognitive et améliorer la rétention globale.",
- "Fais des schémas et mindmaps : le cerveau retient 65% des informations visuelles, contre 10% du texte seul.",
+ "Travaille par tranches de 25 minutes bien concentrées, puis fais une vraie pause de 5 minutes. Ton cerveau retient environ 40% mieux avec ce rythme (c'est la technique Pomodoro).",
+ "Essaie d'expliquer ce que tu viens d'apprendre à voix haute, comme si tu l'apprenais à un ami qui ne connaît rien au sujet. Si tu bloques sur un mot, c'est que tu ne le maîtrises pas encore (méthode Feynman).",
+ "Relis tes notes juste avant de dormir : le sommeil aide le cerveau à ranger et mieux retenir ce que tu as appris (jusqu'à 20% de mémorisation en plus).",
+ "Ne reste pas trop longtemps sur la même matière d'affilée : change de sujet de temps en temps, ton cerveau se fatigue moins et retient mieux sur la durée.",
+ "Dessine des schémas ou des cartes mentales plutôt que de tout écrire en texte : on retient beaucoup mieux ce qu'on voit (jusqu'à 65%) que ce qu'on lit seul (environ 10%).",
 ];
 
 function getGoals() {
@@ -2279,6 +2293,7 @@ function onScreenEnter(id) {
  }
  if(id==='screen-quiz') renderQuizConfig();
  if(id==='screen-flashcards') renderFCConfig();
+ if(id==='screen-sujet') renderSujetConfig();
  if(id==='screen-progress') renderProgress();
  if(id==='screen-profile') renderProfile();
  if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); renderSharedDocs(); }
@@ -4623,86 +4638,80 @@ const ANALYSIS_PROMPTS = {
 
 
 // ══════════════════════════════════════════════
-// ── ESPACE SUJET ── (examen/devoir : calcul, code, chrono, outils, pièce jointe)
+// ── ESPACE SUJET ── (examen/devoir généré par l'IA selon matière/chapitre,
+// avec parties calcul/code/rédaction, chrono général et accès aux outils)
 // ══════════════════════════════════════════════
-let sujetAttachment = null; // { type:'image'|'document', mediaType, data, name } comme chatAttachment
 let sujetParts = [];
 let sujetTimerInterval = null, sujetTimeLeft = 0;
+let selectedSujetSubject = null, selectedSujetType = 'devoir', selectedSujetNParts = 3;
 
-async function handleSujetAttachment(input) {
- const file = input.files[0];
- if (!file) return;
- const name = file.name.toLowerCase();
- const preview = document.getElementById('sujet-attachment-preview');
- if (file.type.startsWith('image/')) {
- const reader = new FileReader();
- reader.onload = e => {
- sujetAttachment = { type:'image', mediaType: file.type, data: e.target.result.split(',')[1], dataUrl: e.target.result, name: file.name };
- preview.innerHTML = `<div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 12px"><img src="${e.target.result}" style="width:36px;height:36px;object-fit:cover;border-radius:6px"><span style="font-size:12px;flex:1">${file.name}</span><button onclick="sujetAttachment=null;document.getElementById('sujet-attachment-preview').innerHTML=''" style="background:none;border:none;color:var(--red);font-weight:700;cursor:pointer">✕</button></div>`;
- };
- reader.readAsDataURL(file);
- } else if (file.type==='application/pdf' || name.endsWith('.pdf')) {
- const reader = new FileReader();
- reader.onload = e => {
- sujetAttachment = { type:'document', mediaType:'application/pdf', data: e.target.result.split(',')[1], name: file.name };
- preview.innerHTML = `<div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 12px"><span style="font-size:12px;flex:1">▤ ${file.name}</span><button onclick="sujetAttachment=null;document.getElementById('sujet-attachment-preview').innerHTML=''" style="background:none;border:none;color:var(--red);font-weight:700;cursor:pointer">✕</button></div>`;
- };
- reader.readAsDataURL(file);
- } else {
- showToast('✕ Format non pris en charge. Utilise une image ou un PDF');
- }
+function renderSujetConfig() {
+ document.getElementById('sujet-config').style.display = 'block';
+ document.getElementById('sujet-workspace').style.display = 'none';
+ if (!selectedSujetSubject && SUBJECTS.length) selectedSujetSubject = SUBJECTS[0].id;
+ const el = document.getElementById('sujet-subject-btns');
+ el.innerHTML = SUBJECTS.map(s=>`
+ <button onclick="selectSujetSubject(this,'${s.id}')" class="ssub-btn" data-id="${s.id}" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:${selectedSujetSubject===s.id?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
+ background:${selectedSujetSubject===s.id?s.soft:'var(--bg2)'};
+ border:1.5px solid ${selectedSujetSubject===s.id?s.color:'var(--border)'};
+ color:${selectedSujetSubject===s.id?s.color:'var(--text2)'}">${s.name}</button>`).join('');
+}
+function selectSujetSubject(btn, id) { selectedSujetSubject = id; renderSujetConfig(); }
+function selectSujetType(btn, t) {
+ selectedSujetType = t;
+ document.querySelectorAll('.sujet-type-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
+ btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+}
+function selectSujetNParts(btn, n) {
+ selectedSujetNParts = n;
+ document.querySelectorAll('.sujet-np-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
+ btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
 }
 
 async function analyzeSujet() {
- const text = document.getElementById('sujet-text').value.trim();
- if (!text && !sujetAttachment) { showToast('! Colle un énoncé ou joins une pièce jointe'); return; }
- const btn = document.getElementById('sujet-analyze-btn');
- btn.disabled = true; btn.textContent = ' Analyse en cours...';
+ const subj = SUBJECTS.find(s=>s.id===selectedSujetSubject);
+ if (!subj) { showToast('! Choisis une matière'); return; }
+ const topic = (document.getElementById('sujet-topic').value || '').trim();
+ const level = APP.user.level || 'Licence 2';
+ const filiere = APP.user.filiere || '';
+ const filiereRule = filiere ? `Adapte le périmètre de "${subj.name}" au contexte réel de la filière ${filiere} (si ce n'est pas sa spécialité, reste à un niveau d'usage pratique réaliste pour cette filière, sinon va au niveau technique attendu). ` : '';
+ const langRule = `Rédige TOUT le contenu en ${LANG_NAMES_FOR_AI[APP_LANG] || 'français'}. `;
 
- const instructions = `Tu es un professeur qui structure un sujet d'examen ou de devoir en parties distinctes.
-Découpe l'énoncé ci-dessous (texte et/ou image/PDF joint) en parties, une par question/exercice. Pour chaque partie indique :
-- "type" : "calcul" (mathématiques, raisonnement écrit, sciences) ou "code" (programmation) ou "texte" (rédaction/réponse libre)
-- "enonce" : le texte exact de la question (garde les formules mathématiques en LaTeX entre $...$ si présentes)
-- "points" : nombre de points si indiqué, sinon null
+ const btn = document.getElementById('sujet-analyze-btn');
+ btn.disabled = true; btn.textContent = ' Génération en cours...';
+
+ const prompt = `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
+Génère un sujet de type "${selectedSujetType}" en ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}, avec exactement ${selectedSujetNParts} parties/exercices distincts.
+${filiereRule}${langRule}
+RÈGLES ABSOLUES :
+- Pour chaque partie, indique "type" : "calcul" (mathématiques, raisonnement écrit, sciences) ou "code" (programmation) ou "texte" (rédaction/réponse libre) — choisis le type le plus pertinent selon la matière (ex: n'utilise "code" que si ${subj.name} est une matière de programmation).
+- "enonce" : l'énoncé complet et précis de la partie (garde les formules mathématiques en LaTeX entre $...$ si besoin).
+- "points" : nombre de points cohérent (total 20 sur l'ensemble des parties).
+- Le niveau de difficulté doit être adapté à ${level}${filiere?' ('+filiere+')':''}.
 
 Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après :
 {"titre":"Titre court du sujet","parts":[{"type":"calcul","enonce":"...","points":5}]}`;
 
- let userContent;
- if (sujetAttachment && sujetAttachment.type === 'image') {
- userContent = [
- { type:'image', source: { type:'base64', media_type: sujetAttachment.mediaType, data: sujetAttachment.data } },
- { type:'text', text: instructions + (text ? '\n\nTexte complémentaire fourni par l\'utilisateur : ' + text : '') }
- ];
- } else if (sujetAttachment && sujetAttachment.type === 'document') {
- userContent = [
- { type:'document', source: { type:'base64', media_type: sujetAttachment.mediaType, data: sujetAttachment.data } },
- { type:'text', text: instructions + (text ? '\n\nTexte complémentaire fourni par l\'utilisateur : ' + text : '') }
- ];
- } else {
- userContent = instructions + '\n\nÉnoncé :\n' + text;
- }
-
  try {
  const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
  method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 2000, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user', content:userContent}] })
+ body: JSON.stringify({ model: MODEL, max_tokens: 2000, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user', content:prompt}] })
  });
  const data = await res.json();
  const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
  const jsonMatch = raw.match(/\{[\s\S]*\}/);
  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
  sujetParts = (parsed.parts || []).map((p,i)=>({ ...p, id: i, reponse: '' }));
- if (!sujetParts.length) throw new Error('Aucune partie détectée');
+ if (!sujetParts.length) throw new Error('Génération vide, réessaie');
 
  document.getElementById('sujet-config').style.display = 'none';
  document.getElementById('sujet-workspace').style.display = 'flex';
  renderSujetParts();
- showToast('✓ Sujet analysé : ' + sujetParts.length + ' partie(s)');
+ showToast('✓ Sujet généré : ' + sujetParts.length + ' partie(s)');
  } catch(e) {
- showToast('✕ Erreur : ' + ((e && e.message) || 'analyse impossible, réessaie'));
+ showToast('✕ Erreur : ' + ((e && e.message) || 'génération impossible, réessaie'));
  }
- btn.disabled = false; btn.textContent = 'Analyser le sujet';
+ btn.disabled = false; btn.textContent = 'Générer le sujet';
 }
 
 function renderSujetParts() {
@@ -4740,21 +4749,20 @@ function updateSujetTimerDisplay() {
 }
 function restartSujet() {
  clearInterval(sujetTimerInterval);
- sujetParts = []; sujetAttachment = null;
- document.getElementById('sujet-text').value = '';
- document.getElementById('sujet-attachment-preview').innerHTML = '';
+ sujetParts = [];
+ document.getElementById('sujet-topic').value = '';
  document.getElementById('sujet-timer-minutes').disabled = false;
  document.getElementById('sujet-timer-minutes').value = 60;
  document.getElementById('sujet-timer-start-btn').textContent = 'Démarrer';
  document.getElementById('sujet-timer-start-btn').disabled = false;
  document.getElementById('sujet-timer-display').textContent = '--:--';
  document.getElementById('sujet-workspace').style.display = 'none';
- document.getElementById('sujet-config').style.display = 'flex';
+ renderSujetConfig();
 }
 function finishSujet() {
  clearInterval(sujetTimerInterval);
  showToast('✓ Sujet terminé — bon travail !');
- showScreen('screen-travaux');
+ showScreen('screen-home');
 }
 
 async function analyzeCourse() {
@@ -6891,6 +6899,7 @@ const APP_TRANSLATIONS = {
 };
 
 let APP_LANG = localStorage.getItem('studiora_lang') || 'fr';
+const LANG_NAMES_FOR_AI = { fr:'français', en:'anglais (English)', es:'espagnol (Español)', ar:'arabe (العربية)', pt:'portugais (Português)', de:'allemand (Deutsch)' };
 
 function setAppLang(lang, btn) {
  APP_LANG = lang;
