@@ -222,6 +222,18 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .calc-btn:active{transform:scale(.93);opacity:.8}
 .calc-fn{background:var(--em-soft);color:var(--em);font-size:12px;font-weight:700}
 .calc-op{background:var(--pur-soft);color:var(--purple);font-size:18px}
+
+/* ── ÉDITEUR DOC/SHEET TOOLBAR ── */
+.doc-tb-btn{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);min-width:34px;text-align:center;flex-shrink:0}
+.doc-tb-btn:active{opacity:.7;transform:scale(.95)}
+.doc-tb-btn.active{background:var(--em-soft);color:var(--em);border-color:var(--em-mid)}
+.doc-tb-select{border:1px solid var(--border);border-radius:8px;padding:7px 8px;font-size:12px;background:var(--white);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0}
+.doc-tb-tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px}
+.doc-tb-tabs::-webkit-scrollbar{display:none}
+.doc-tb-tab{background:transparent;border:none;padding:6px 10px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0}
+.doc-tb-tab.active{color:var(--em);border-bottom-color:var(--em)}
+.doc-tb-panel{display:none;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg2);border-radius:10px;padding:8px;margin-bottom:8px}
+.doc-tb-panel.active{display:flex}
 </style>
 </head>
 <body style="touch-action:manipulation">
@@ -847,6 +859,28 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <div id="profile-usage" style="margin-bottom:20px"></div>
 
+ <!-- ── Ma progression (intégrée depuis l'écran dédié) ── -->
+ <div class="card" style="margin-bottom:14px">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+ <h3 style="font-size:14px;font-weight:700"> Ma progression</h3>
+ <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" onclick="showScreen('screen-progress')">Détails →</span>
+ </div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+ <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.2);border-radius:var(--r2);padding:12px;text-align:center">
+ <div class="display" style="font-size:22px;font-weight:700;color:var(--amber)" id="profile-progress-streak">0</div>
+ <div style="font-size:11px;color:var(--text3)">jours de suite</div>
+ </div>
+ <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:var(--r2);padding:12px;text-align:center">
+ <div class="display" style="font-size:22px;font-weight:700;color:var(--em)" id="profile-progress-avg">--</div>
+ <div style="font-size:11px;color:var(--text3)">score moyen</div>
+ </div>
+ </div>
+ <div style="font-size:12px;font-weight:700;margin-bottom:8px">Sessions cette semaine</div>
+ <div id="profile-week-chart" style="display:flex;gap:6px;height:56px;margin-bottom:14px"></div>
+ <div style="font-size:12px;font-weight:700;margin-bottom:8px">Score par matière</div>
+ <div id="profile-subject-scores"><div style="font-size:12px;color:var(--text3)">Termine un quiz pour voir tes scores apparaître ici.</div></div>
+ </div>
+
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Préférences</h3>
  <div id="prefs-list"></div>
@@ -896,7 +930,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
 
  <div class="card" style="margin-bottom:14px">
- <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Mes matières actives</h3>
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+ <h3 style="font-size:14px;font-weight:700">Mes matières actives</h3>
+ <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" onclick="showScreen('screen-progress')">Voir mes scores →</span>
+ </div>
  <div id="profile-subjects"></div>
  </div>
 
@@ -2897,6 +2934,7 @@ function recalcSheet(table) {
 }
 
 function onSheetCellFocus(td) {
+ _activeSheetCell = td;
  if (td.hasAttribute('data-formula')) td.textContent = td.getAttribute('data-formula');
 }
 
@@ -2936,14 +2974,216 @@ function buildSheetHTML(sheetName, nRows, nCols, values) {
  return html;
 }
 
+// ── BARRE D'OUTILS WORD (Accueil / Insertion) ──
+function docToolbarHTML() {
+ return `<div id="doceditor-toolbar" style="margin-bottom:8px">
+ <div class="doc-tb-tabs">
+ <button class="doc-tb-tab active" onclick="docSwitchTab('accueil',this)">Accueil</button>
+ <button class="doc-tb-tab" onclick="docSwitchTab('insertion',this)">Insertion</button>
+ </div>
+ <div class="doc-tb-panel active" data-tab="accueil">
+ <select class="doc-tb-select" onchange="if(this.value){docExec('formatBlock',this.value)}this.selectedIndex=0">
+ <option value="" selected disabled>Style</option>
+ <option value="P">Normal</option>
+ <option value="H1">Titre 1</option>
+ <option value="H2">Titre 2</option>
+ <option value="H3">Titre 3</option>
+ </select>
+ <select class="doc-tb-select" onchange="docSetFontSize(this.value)">
+ <option value="" selected disabled>Taille</option>
+ <option value="1">10</option><option value="2">12</option><option value="3">14</option>
+ <option value="4">16</option><option value="5">20</option><option value="6">28</option><option value="7">36</option>
+ </select>
+ <button class="doc-tb-btn" style="font-weight:800" onclick="docExec('bold')" title="Gras">G</button>
+ <button class="doc-tb-btn" style="font-style:italic" onclick="docExec('italic')" title="Italique">I</button>
+ <button class="doc-tb-btn" style="text-decoration:underline" onclick="docExec('underline')" title="Souligné">S</button>
+ <button class="doc-tb-btn" style="text-decoration:line-through" onclick="docExec('strikeThrough')" title="Barré">ab</button>
+ <button class="doc-tb-btn" onclick="docExec('superscript')" title="Exposant">x²</button>
+ <button class="doc-tb-btn" onclick="docExec('subscript')" title="Indice">x₂</button>
+ <button class="doc-tb-btn" onclick="docExec('removeFormat')" title="Effacer la mise en forme">⌫A</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de police</span>
+ ${['#000000','#dc2626','#0b6e4f','#1d4ed8','#c47a0b','#7c3aed'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px" onclick="docExec('foreColor','${c}')"></button>`).join('')}
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Surligner</span>
+ ${['#fff59d','#a7f3d0','#bfdbfe','#fbcfe8'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="docExec('hiliteColor','${c}')"></button>`).join('')}
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Paragraphe</span>
+ <button class="doc-tb-btn" onclick="docExec('justifyLeft')" title="Aligner à gauche">≡</button>
+ <button class="doc-tb-btn" onclick="docExec('justifyCenter')" title="Centrer">≣</button>
+ <button class="doc-tb-btn" onclick="docExec('justifyRight')" title="Aligner à droite">≡→</button>
+ <button class="doc-tb-btn" onclick="docExec('justifyFull')" title="Justifier">☰</button>
+ <button class="doc-tb-btn" onclick="docExec('insertUnorderedList')">• Liste</button>
+ <button class="doc-tb-btn" onclick="docExec('insertOrderedList')">1. Liste</button>
+ <button class="doc-tb-btn" onclick="docExec('indent')" title="Augmenter le retrait">→|</button>
+ <button class="doc-tb-btn" onclick="docExec('outdent')" title="Diminuer le retrait">|←</button>
+ </div>
+ <div class="doc-tb-panel" data-tab="insertion">
+ <button class="doc-tb-btn" onclick="docInsertTable()"> Tableau</button>
+ <button class="doc-tb-btn" onclick="docExec('insertHorizontalRule')"> Ligne</button>
+ <button class="doc-tb-btn" onclick="docInsertDate()"> Date</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Symboles</span>
+ ${DOC_SYMBOLS.map(s => `<button onclick="insertDocSymbol('${s}')" class="doc-tb-btn" style="width:30px;padding:0;height:30px">${s}</button>`).join('')}
+ </div>
+ </div>`;
+}
+function docSwitchTab(tab, btn) {
+ const container = btn.closest('#doceditor-toolbar');
+ if (!container) return;
+ container.querySelectorAll('.doc-tb-tab').forEach(b=>b.classList.remove('active'));
+ btn.classList.add('active');
+ container.querySelectorAll('.doc-tb-panel').forEach(p=>p.classList.toggle('active', p.getAttribute('data-tab')===tab));
+}
+function docExec(cmd, val) {
+ const el = document.getElementById('doceditor-editable');
+ if (el) el.focus();
+ try { document.execCommand(cmd, false, val || null); } catch(e) {}
+}
+function docSetFontSize(v) {
+ if (!v) return;
+ docExec('fontSize', v);
+}
+function docInsertTable() {
+ const el = document.getElementById('doceditor-editable'); if(!el) return; el.focus();
+ let html = '<table style="border-collapse:collapse;width:100%;margin:8px 0">';
+ for (let r=0;r<2;r++) { html+='<tr>'; for(let c=0;c<2;c++){ html+='<td style="border:1px solid #ccc;padding:6px 8px">&nbsp;</td>'; } html+='</tr>'; }
+ html+='</table><p><br></p>';
+ try { document.execCommand('insertHTML', false, html); } catch(e) {}
+}
+function docInsertDate() {
+ const el = document.getElementById('doceditor-editable'); if(!el) return; el.focus();
+ try { document.execCommand('insertText', false, new Date().toLocaleDateString('fr-FR')); } catch(e) {}
+}
+
+// ── BARRE D'OUTILS EXCEL (Accueil / Insertion / Données) ──
+function currentSheetTable() {
+ if (_activeSheetCell) return _activeSheetCell.closest('table');
+ return document.querySelector('#doceditor-content table[data-sheet]');
+}
+function sheetToolbarHTML() {
+ return `<div id="sheet-toolbar" style="margin-bottom:8px">
+ <div class="doc-tb-tabs">
+ <button class="doc-tb-tab active" onclick="sheetSwitchTab('accueil',this)">Accueil</button>
+ <button class="doc-tb-tab" onclick="sheetSwitchTab('insertion',this)">Insertion</button>
+ <button class="doc-tb-tab" onclick="sheetSwitchTab('donnees',this)">Données</button>
+ </div>
+ <div class="doc-tb-panel active" data-tab="accueil">
+ <button class="doc-tb-btn" style="font-weight:800" onclick="sheetToggleStyle('fontWeight','700')" title="Gras">G</button>
+ <button class="doc-tb-btn" style="font-style:italic" onclick="sheetToggleStyle('fontStyle','italic')" title="Italique">I</button>
+ <button class="doc-tb-btn" style="text-decoration:underline" onclick="sheetToggleStyle('textDecoration','underline')" title="Souligné">S</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de police</span>
+ ${['#000000','#dc2626','#0b6e4f','#1d4ed8','#c47a0b'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px" onclick="sheetSetFontColor('${c}')"></button>`).join('')}
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de fond</span>
+ <button class="doc-tb-btn" style="width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('transparent')" title="Aucune">✕</button>
+ ${['#fff59d','#a7f3d0','#bfdbfe','#fbcfe8'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('${c}')"></button>`).join('')}
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Alignement</span>
+ <button class="doc-tb-btn" onclick="sheetSetAlign('left')">≡</button>
+ <button class="doc-tb-btn" onclick="sheetSetAlign('center')">≣</button>
+ <button class="doc-tb-btn" onclick="sheetSetAlign('right')">≡→</button>
+ </div>
+ <div class="doc-tb-panel" data-tab="insertion">
+ <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
+ <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
+ </div>
+ <div class="doc-tb-panel" data-tab="donnees">
+ <button class="doc-tb-btn" onclick="sheetDeleteRow()">− Ligne</button>
+ <button class="doc-tb-btn" onclick="sheetDeleteCol()">− Colonne</button>
+ <button class="doc-tb-btn" onclick="sheetSortColumn('asc')">Trier ↑</button>
+ <button class="doc-tb-btn" onclick="sheetSortColumn('desc')">Trier ↓</button>
+ </div>
+ </div>`;
+}
+function sheetSwitchTab(tab, btn) {
+ const container = btn.closest('#sheet-toolbar');
+ if (!container) return;
+ container.querySelectorAll('.doc-tb-tab').forEach(b=>b.classList.remove('active'));
+ btn.classList.add('active');
+ container.querySelectorAll('.doc-tb-panel').forEach(p=>p.classList.toggle('active', p.getAttribute('data-tab')===tab));
+}
+function sheetToggleStyle(prop, val) {
+ const td = _activeSheetCell;
+ if (!td || td.tagName!=='TD') { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ td.style[prop] = td.style[prop] === val ? '' : val;
+}
+function sheetSetFontColor(c) {
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ td.style.color = c;
+}
+function sheetSetFillColor(c) {
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ td.style.background = c === 'transparent' ? '' : c;
+}
+function sheetSetAlign(al) {
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ td.style.textAlign = al;
+}
+function sheetDeleteRow() {
+ const td = _activeSheetCell;
+ if (!td || td.tagName!=='TD') { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ const table = td.closest('table');
+ if (table.querySelectorAll('tr').length <= 2) { showToast('⚠ Impossible de supprimer la dernière ligne'); return; }
+ td.closest('tr').remove();
+ [...table.querySelectorAll('tr')].slice(1).forEach((r,i) => {
+ const th = r.querySelector('th'); if (th) th.textContent = i+1;
+ r.querySelectorAll('td[data-cell]').forEach(c => {
+ const col = c.getAttribute('data-cell').replace(/\d+$/,'');
+ c.setAttribute('data-cell', col+(i+1));
+ });
+ });
+ recalcSheet(table);
+ _activeSheetCell = null;
+}
+function sheetDeleteCol() {
+ const td = _activeSheetCell;
+ if (!td || td.tagName!=='TD') { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ const table = td.closest('table');
+ const colIdx = td.getAttribute('data-cell').replace(/\d+$/,'').charCodeAt(0)-65;
+ if (table.querySelectorAll('tr')[0].children.length <= 2) { showToast('⚠ Impossible de supprimer la dernière colonne'); return; }
+ table.querySelectorAll('tr').forEach(tr => {
+ const cell = tr.children[colIdx+1];
+ if (cell) cell.remove();
+ });
+ [...table.querySelectorAll('tr')].forEach((tr,ri) => {
+ [...tr.children].slice(1).forEach((cell,ci) => {
+ if (ri===0) cell.textContent = sheetColLetter(ci);
+ else cell.setAttribute('data-cell', sheetColLetter(ci)+ri);
+ });
+ });
+ recalcSheet(table);
+ _activeSheetCell = null;
+}
+function sheetSortColumn(dir) {
+ const table = currentSheetTable();
+ if (!table) { showToast('⚠ Aucune feuille active'); return; }
+ if (!_activeSheetCell) { showToast('⚠ Clique dans une cellule de la colonne à trier'); return; }
+ const colRef = _activeSheetCell.getAttribute('data-cell').replace(/\d+$/,'');
+ const rows = [...table.querySelectorAll('tr')].slice(1);
+ rows.sort((a,b) => {
+ const va = [...a.querySelectorAll('td[data-cell]')].find(x=>x.getAttribute('data-cell').replace(/\d+$/,'')===colRef);
+ const vb = [...b.querySelectorAll('td[data-cell]')].find(x=>x.getAttribute('data-cell').replace(/\d+$/,'')===colRef);
+ const ta = va ? va.textContent.trim() : '', tb = vb ? vb.textContent.trim() : '';
+ const na = parseFloat(ta.replace(',','.')), nb = parseFloat(tb.replace(',','.'));
+ const cmp = (!isNaN(na) && !isNaN(nb)) ? na-nb : ta.localeCompare(tb);
+ return dir==='asc' ? cmp : -cmp;
+ });
+ rows.forEach((tr,i) => {
+ const th = tr.querySelector('th'); if (th) th.textContent = i+1;
+ tr.querySelectorAll('td[data-cell]').forEach(c => {
+ const col = c.getAttribute('data-cell').replace(/\d+$/,'');
+ c.setAttribute('data-cell', col+(i+1));
+ });
+ table.appendChild(tr);
+ });
+ recalcSheet(table);
+ showToast('✓ Trié');
+}
+
 function newBlankDoc(type) {
  docEditorState = { type, filename: type==='word' ? 'nouveau_document.docx' : 'nouveau_classeur.xlsx' };
  if (type === 'word') {
  document.getElementById('doceditor-content').innerHTML =
- symbolToolbarHTML() +
+ docToolbarHTML() +
  `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6" data-placeholder="Commence à écrire..."></div>`;
  } else {
  document.getElementById('doceditor-content').innerHTML =
+ sheetToolbarHTML() +
  `<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Astuce : tape une formule comme <code>=SOMME(A1:A5)</code> ou <code>=MOYENNE(B1:B3)</code> dans une cellule.</div>` +
  buildSheetHTML('Feuille1', 8, 5, null);
  }
@@ -2965,14 +3205,14 @@ async function handleDocEditorOpen(input) {
  const result = await mammoth.convertToHtml({ arrayBuffer });
  docEditorState.type = 'word';
  document.getElementById('doceditor-content').innerHTML =
- symbolToolbarHTML() +
+ docToolbarHTML() +
  `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6">${result.value}</div>`;
 
  } else if (ext === 'xlsx' || ext === 'xls') {
  const arrayBuffer = await file.arrayBuffer();
  const wb = XLSX.read(arrayBuffer, { type: 'array' });
  docEditorState.type = 'excel';
- let html = '';
+ let html = sheetToolbarHTML();
  wb.SheetNames.forEach((sheetName, si) => {
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
  const nCols = Math.max(5, ...rows.map(r=>r.length));
@@ -5046,23 +5286,25 @@ function renderProgress() {
  <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)||4}px;background:${v>0?(i===new Date().getDay()-1?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
  </div>`).join('');
 
- // Scores par matière depuis localStorage
+ // Scores par matière : on part de TOUTES les matières qui ont réellement
+ // un score enregistré (et non des 5 premières de la liste "active"), sinon
+ // une matière quizzée mais pas dans ce sous-ensemble n'apparaissait jamais
+ // — ce qui donnait un "score moyen" non nul mais une carte vide.
  const rawScores = getSubjectScores() || {};
- const scores = SUBJECTS.slice(0,5).map(subj => {
- const arr = rawScores[subj.id] || [];
+ const scores = Object.keys(rawScores).map(id => {
+ const arr = rawScores[id] || [];
  const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
- return {s: subj.id, pct: avg};
- }).filter(x => x.pct > 0);
- document.getElementById('subject-scores').innerHTML=scores.map(({s,pct})=>{
- const subj=SUBJECTS.find(x=>x.id===s);
- return `<div style="margin-bottom:12px">
+ const known = SUBJECTS.find(x=>x.id===id) || ALL_SUBJECTS.find(x=>x.id===id);
+ return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : 'var(--em)' };
+ }).filter(x => x.pct > 0).sort((a,b) => b.pct - a.pct);
+ document.getElementById('subject-scores').innerHTML = scores.length ? scores.map(({name,pct,color})=>`
+ <div style="margin-bottom:12px">
  <div style="display:flex;justify-content:space-between;margin-bottom:5px">
- <span style="font-size:13px;font-weight:500">${subj.name}</span>
- <span style="font-size:13px;font-weight:700;color:${subj.color}">${pct}%</span>
+ <span style="font-size:13px;font-weight:500">${name}</span>
+ <span style="font-size:13px;font-weight:700;color:${color}">${pct}%</span>
  </div>
- <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${subj.color}"></div></div>
- </div>`;
- }).join('');
+ <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${color}"></div></div>
+ </div>`).join('') : '<div style="font-size:12px;color:var(--text3)">Termine un quiz pour voir tes scores apparaître ici.</div>';
 
  // Sessions semaine
  const weekTotal = getWeekData().reduce((a,b)=>a+b,0);
@@ -5152,6 +5394,39 @@ function renderProfile() {
  '</div>';
  }
 
+ // ── Ma progression, intégrée directement dans le profil ──
+ const pStreakEl = document.getElementById('profile-progress-streak');
+ if (pStreakEl) pStreakEl.textContent = computeStreak();
+ const pAvgEl = document.getElementById('profile-progress-avg');
+ if (pAvgEl) { const a = getAvgScore(); pAvgEl.textContent = a > 0 ? a + '%' : '--'; }
+ const pWeekEl = document.getElementById('profile-week-chart');
+ if (pWeekEl) {
+ const wData = getWeekData();
+ const max = Math.max(...wData, 1);
+ pWeekEl.innerHTML = wData.map((v,i)=>`
+ <div style="flex:1;display:flex;align-items:flex-end;justify-content:center">
+ <div class="week-bar" style="width:100%;max-width:28px;height:${Math.round((v/max)*56)||4}px;background:${v>0?(i===new Date().getDay()-1?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
+ </div>`).join('');
+ }
+ const pScoresEl = document.getElementById('profile-subject-scores');
+ if (pScoresEl) {
+ const rawScores = getSubjectScores() || {};
+ const scores = Object.keys(rawScores).map(id => {
+ const arr = rawScores[id] || [];
+ const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
+ const known = SUBJECTS.find(x=>x.id===id) || ALL_SUBJECTS.find(x=>x.id===id);
+ return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : 'var(--em)' };
+ }).filter(x => x.pct > 0).sort((a,b) => b.pct - a.pct).slice(0, 3);
+ pScoresEl.innerHTML = scores.length ? scores.map(({name,pct,color})=>`
+ <div style="margin-bottom:10px">
+ <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+ <span style="font-size:12px;font-weight:500">${name}</span>
+ <span style="font-size:12px;font-weight:700;color:${color}">${pct}%</span>
+ </div>
+ <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${color}"></div></div>
+ </div>`).join('') : '<div style="font-size:12px;color:var(--text3)">Termine un quiz pour voir tes scores apparaître ici.</div>';
+ }
+
  const savedPrefs = getPrefs();
  const prefs=[
  {key:'notif', icon:'',label:'Notifications de rappel',sub:'Chaque jour à 18h',toggled: savedPrefs.notif !== false},
@@ -5169,20 +5444,14 @@ function renderProfile() {
  </div>
  </div>`).join('');
 
- document.getElementById('profile-subjects').innerHTML=SUBJECTS.slice(0,5).map(s=>{
- const arr = (getSubjectScores()||{})[s.id];
- const avg = (arr && arr.length) ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
- const scoreLabel = avg===null ? '— %' : avg+'%';
- const scoreColor = avg===null ? 'var(--text3)' : (avg>=70 ? '#38A169' : avg>=50 ? '#ECC94B' : '#E53E3E');
- return `
- <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
- <div style="display:flex;align-items:center;gap:10px">
+ // Simple liste des matières actives (nom + icône seulement) : les scores
+ // ont été déplacés vers "Score par matière" dans Ma progression, pour ne
+ // plus avoir deux affichages différents du même chiffre.
+ document.getElementById('profile-subjects').innerHTML=SUBJECTS.map(s=>`
+ <div onclick="showScreen('screen-progress')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
  <span style="width:28px;height:28px;border-radius:9px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</span>
  <span style="font-size:13px;font-weight:500">${s.name}</span>
- </div>
- <span class="badge" style="background:var(--bg2);color:${scoreColor};border:1px solid var(--border);font-weight:800">${scoreLabel}</span>
- </div>`;
- }).join('');
+ </div>`).join('') || '<div style="font-size:12px;color:var(--text3)">Aucune matière pour l\'instant.</div>';
  // Init boutons niveau
  setTimeout(initLevelBtns, 0);
 }
@@ -5883,6 +6152,31 @@ function registerUserGlobally() {
 
 async function registerUserInDatabase() {
  if (!APP.user || !APP.user.email) return;
+ const basePayload = {
+ email: APP.user.email,
+ plan: APP.user.plan || 'free',
+ prenom: APP.user.prenom || null,
+ level: APP.user.level || null,
+ filiere: APP.user.filiere || null,
+ pwd_hash: APP.user.pwdHash || null,
+ last_login: new Date().toISOString()
+ };
+ try {
+ const res = await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+ 'Prefer': 'resolution=merge-duplicates'
+ },
+ body: JSON.stringify({ ...basePayload, pwd_salt: APP.user.pwdSalt || null })
+ });
+ if (!res.ok) throw new Error('colonne manquante ou autre erreur : ' + res.status);
+ } catch(e) {
+ // La colonne pwd_salt (ou une autre) manque peut-être encore côté
+ // Supabase : on retente SANS elle pour ne JAMAIS perdre un compte à
+ // cause d'une colonne absente.
  try {
  await fetch(`${SUPABASE_URL}/rest/v1/users?on_conflict=email`, {
  method: 'POST',
@@ -5892,19 +6186,11 @@ async function registerUserInDatabase() {
  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
  'Prefer': 'resolution=merge-duplicates'
  },
- body: JSON.stringify({
- email: APP.user.email,
- plan: APP.user.plan || 'free',
- prenom: APP.user.prenom || null,
- level: APP.user.level || null,
- filiere: APP.user.filiere || null,
- pwd_hash: APP.user.pwdHash || null,
- pwd_salt: APP.user.pwdSalt || null,
- last_login: new Date().toISOString()
- })
+ body: JSON.stringify(basePayload)
  });
- } catch(e) {
- // Pas de connexion : le cache local prend le relais, on retentera à la prochaine session
+ } catch(e2) {
+ // Pas de connexion du tout : le cache local prend le relais, on retentera à la prochaine session
+ }
  }
 }
 
