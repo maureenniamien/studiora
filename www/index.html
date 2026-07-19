@@ -412,7 +412,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <h3 style="font-size:16px;font-weight:700" id="subjects-title">Mes matières</h3>
  <div style="display:flex;gap:14px;align-items:center">
  <span style="font-size:12px;color:var(--text3);font-weight:600;cursor:pointer" onclick="showManageSubjects()"> Gérer</span>
- <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" id="subjects-see-all">Tout voir</span>
+ <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" id="subjects-see-all" onclick="showManageSubjects()">Tout voir</span>
  </div>
  </div>
  <div id="subjects-list" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -508,13 +508,25 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="selectDiff(this,'Difficile')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" data-i18n="diff_hard"> Difficile</button>
  </div>
  </div>
- <div style="margin-bottom:24px">
+ <div style="margin-bottom:24px" id="quiz-nq-classic">
  <label class="field-label" data-i18n="quiz_label_nq">Nombre de questions</label>
  <div style="display:flex;gap:8px">
  <button onclick="selectNQ(this,5)" class="nq-btn active-nq" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">5</button>
  <button onclick="selectNQ(this,10)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">10</button>
  <button onclick="selectNQ(this,15)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">15</button>
  </div>
+ </div>
+ <div style="margin-bottom:24px;display:none" id="quiz-nq-marathon">
+ <label class="field-label">Nombre de questions (Marathon)</label>
+ <div style="display:flex;gap:8px;margin-bottom:8px">
+ <button onclick="selectNQ(this,30)" class="nq-btn-m" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">30</button>
+ <button onclick="selectNQ(this,50)" class="nq-btn-m" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">50</button>
+ <button onclick="selectNQ(this,100)" class="nq-btn-m" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">100</button>
+ </div>
+ <label class="field-label" style="font-size:11px">Ou choisis un nombre précis</label>
+ <select class="input" id="quiz-nq-custom-select" onchange="selectNQFromDropdown(this.value)">
+ <option value="">-- Personnalisé --</option>
+ </select>
  </div>
  <div style="margin-bottom:24px">
  <label class="field-label">Format</label>
@@ -583,8 +595,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div id="result-details" style="text-align:left;margin-bottom:24px"></div>
  <div id="result-correction" style="text-align:left;margin-bottom:24px"></div>
  <div style="display:flex;gap:10px">
- <button class="btn-outline" onclick="restartQuiz()" style="flex:1">Recommencer</button>
- <button class="btn-em" onclick="showScreen('screen-home')" style="flex:1">Accueil</button>
+ <button class="btn-outline" onclick="restartQuiz()" style="flex:1" data-i18n="btn_restart">Recommencer</button>
+ <button class="btn-em" onclick="showScreen('screen-home')" style="flex:1" data-i18n="nav_home">Accueil</button>
  </div>
  </div>
 </div>
@@ -592,22 +604,22 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <!-- ═══════════════════ FLASHCARDS ═══════════════════ -->
 <div id="screen-flashcards" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
- <button onclick="goBack()" class="back-btn">← Retour</button>
- <span class="display" style="font-size:17px;font-weight:700">Carte Mémo IA</span>
+ <button onclick="goBack()" class="back-btn" data-i18n="btn_back">← Retour</button>
+ <span class="display" style="font-size:17px;font-weight:700" data-i18n="fc_header">Carte Mémo IA</span>
  </div>
 
  <div id="fc-config" class="scroll-body" style="padding:0 20px 20px">
  <div style="background:linear-gradient(135deg,var(--amber),#E8920A);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
- <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Carte Mémo IA</h3>
- <p style="font-size:13px;opacity:.8">Mémorise efficacement avec la répétition espacée</p>
+ <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px" data-i18n="fc_hero_title">Carte Mémo IA</h3>
+ <p style="font-size:13px;opacity:.8" data-i18n="fc_hero_sub">Mémorise efficacement avec la répétition espacée</p>
  </div>
  <div style="margin-bottom:16px">
- <label class="field-label">Matière</label>
+ <label class="field-label" data-i18n="quiz_label_subject">Matière</label>
  <div id="fc-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
  <div style="margin-bottom:24px">
- <label class="field-label">Chapitre / sujet à mémoriser (optionnel)</label>
- <input class="input" id="fc-topic" placeholder="Ex: Les organites de la cellule, La conjugaison...">
+ <label class="field-label" data-i18n="fc_label_topic">Chapitre / sujet à mémoriser (optionnel)</label>
+ <input class="input" id="fc-topic" placeholder="Ex: Les organites de la cellule, La conjugaison..." data-i18n-placeholder="fc_topic_placeholder">
  </div>
  <button class="btn-em" id="gen-fc-btn" onclick="generateFlashcards()" style="background:linear-gradient(135deg,var(--amber),#E8920A);box-shadow:0 4px 18px rgba(196,122,11,.3)">
  <span id="fc-btn-text"> Générer les cartes mémo</span>
@@ -1053,14 +1065,14 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <!-- ═══════════════════ TRAVAUX ═══════════════════ -->
 <div id="screen-travaux" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 44px) 20px 12px;background:var(--white);border-bottom:1px solid var(--border)">
- <h2 class="display" style="font-size:22px;font-weight:700;margin-bottom:2px">Travaux</h2>
- <p style="font-size:12px;color:var(--text3)">Outils de développement & ressources</p>
+ <h2 class="display" style="font-size:22px;font-weight:700;margin-bottom:2px" data-i18n="travaux_header">Travaux</h2>
+ <p style="font-size:12px;color:var(--text3)" data-i18n="travaux_sub">Outils de développement & ressources</p>
  </div>
  <div class="scroll-body" style="padding:16px 20px 100px">
 
  <!-- Terminaux -->
  <div style="margin-bottom:20px">
- <label class="field-label" style="margin-bottom:10px"> Terminaux</label>
+ <label class="field-label" style="margin-bottom:10px" data-i18n="travaux_terminaux"> Terminaux</label>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
  <div onclick="openTerminal('linux')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.96)'" onmouseup="this.style.transform=''">
  <div style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" viewBox="0 0 100 100">
@@ -3870,12 +3882,40 @@ function selectFormat(btn, f) {
  selectedQuizFormat = f;
  document.querySelectorAll('.format-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+ const classicBlock = document.getElementById('quiz-nq-classic');
+ const marathonBlock = document.getElementById('quiz-nq-marathon');
+ if (f === 'marathon') {
+ classicBlock.style.display = 'none';
+ marathonBlock.style.display = 'block';
+ selectedNQ = 30;
+ } else {
+ classicBlock.style.display = 'block';
+ marathonBlock.style.display = 'none';
+ selectedNQ = 5;
+ }
+}
+// Remplit la liste déroulante Marathon (20 à 150, par pas de 10)
+function populateMarathonNQDropdown() {
+ const sel = document.getElementById('quiz-nq-custom-select');
+ if (!sel || sel.dataset.filled) return;
+ for (let n=20; n<=150; n+=10) {
+ const o = document.createElement('option');
+ o.value = n; o.textContent = n + ' questions';
+ sel.appendChild(o);
+ }
+ sel.dataset.filled = '1';
+}
+function selectNQFromDropdown(val) {
+ if (!val) return;
+ selectedNQ = parseInt(val, 10);
+ document.querySelectorAll('.nq-btn-m').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
 }
 function renderQuizConfig() {
  // reset
  document.getElementById('quiz-config').style.display='block';
  document.getElementById('quiz-play').style.display='none';
  document.getElementById('quiz-results').style.display='none';
+ populateMarathonNQDropdown();
  // Afficher Quiz Libre pour VIP/Admin
  const qlSection = document.getElementById('quiz-libre-section');
  if (qlSection) qlSection.style.display = isVipOrAdmin() ? 'block' : 'none';
@@ -3899,8 +3939,13 @@ function selectDiff(btn, d) {
 }
 function selectNQ(btn, n) {
  selectedNQ = n;
- document.querySelectorAll('.nq-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';b.classList.remove('active-nq')});
+ const cls = btn.classList.contains('nq-btn-m') ? '.nq-btn-m' : '.nq-btn';
+ document.querySelectorAll(cls).forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';b.classList.remove('active-nq')});
  btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+ if (btn.classList.contains('nq-btn-m')) {
+ const sel = document.getElementById('quiz-nq-custom-select');
+ if (sel) sel.value = '';
+ }
 }
 
 
@@ -3960,6 +4005,8 @@ async function startQuiz() {
  const filiere = APP.user.filiere || '';
  const filiereRule = filiere ? `- Adapte le PÉRIMÈTRE de "${subj.name}" au contexte réel de la filière ${filiere} : si cette matière n'est pas la spécialité de cette filière, reste au niveau d'usage pratique attendu (ex: "Informatique" pour une filière non-technique = bureautique et usage numérique courant, PAS de programmation/algorithmique ; à l'inverse pour une filière informatique/technique, va bien au niveau technique attendu). Ne suppose jamais un niveau d'expertise dans cette matière au-delà de ce qui est réaliste pour un·e étudiant·e de cette filière précise.\n` : '';
  const isMarathon = selectedQuizFormat === 'marathon';
+ const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const langInstruction = `- Réponds ENTIÈREMENT en ${langNames[APP_LANG]||'français'} (questions, options, explications).\n`;
  const prompt = isMarathon ? `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
 Génère exactement ${selectedNQ} questions de niveau "${selectedDiff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}, pour un format "Marathon" (liste défilante, un minuteur global).
 
@@ -3967,25 +4014,26 @@ RÈGLES ABSOLUES :
 - Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ 60% de qcm, 40% de vf, réparties dans un ordre varié (pas tout le vf à la fin).
 - Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
 - Les questions doivent être adaptées au niveau ${level}${filiere?' ('+filiere+')':''}
-${filiereRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)
+${filiereRule}${langInstruction}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)
 
 RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A, 1=B, 2=C, 3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
 L'explication DOIT commencer par "La bonne réponse est X)" (qcm) ou "La bonne réponse est Vrai/Faux" (vf).
 
 Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
 {"questions":[{"type":"qcm","q":"Énoncé","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"..."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"..."}]}` : `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
-Génère exactement ${selectedNQ} questions QCM de niveau "${selectedDiff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}.
+Génère exactement ${selectedNQ} questions de niveau "${selectedDiff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}.
 
 RÈGLES ABSOLUES :
+- Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ 70% de qcm, 30% de vf, réparties dans un ordre varié.
 - Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
 - Les questions doivent être adaptées au niveau ${level}${filiere?' ('+filiere+')':''}
-${filiereRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum), avec la démonstration ou le raisonnement complet
+${filiereRule}${langInstruction}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum), avec la démonstration ou le raisonnement complet
 
-RÈGLE CRITIQUE : correct=0 signifie A est la bonne réponse, correct=1=B, correct=2=C, correct=3=D.
-L'explication DOIT commencer par "La bonne réponse est X)" où X correspond à l'index correct. Vérifie deux fois avant de générer.
+RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A est la bonne réponse, correct=1=B, correct=2=C, correct=3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
+L'explication DOIT commencer par "La bonne réponse est X)" (qcm) ou "La bonne réponse est Vrai/Faux" (vf). Vérifie deux fois avant de générer.
 
 Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
-{"questions":[{"q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."}]}`;
+{"questions":[{"type":"qcm","q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"La bonne réponse est Vrai car... explication pédagogique 3-5 phrases."}]}`;
 
  try {
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
@@ -4229,7 +4277,9 @@ async function generateFlashcards() {
  const safeFiliere = filiere.replace(/['"\\]/g,'');
  const safeTopic = topic.replace(/['"\\]/g,'');
  const filiereRule = safeFiliere ? ` Adapte le perimetre de ${safeSubj} au contexte reel de la filiere ${safeFiliere} (si ce n'est pas sa specialite, reste a un niveau d'usage pratique realiste pour cette filiere, sinon va au niveau technique attendu).` : '';
- const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
+ const fcLangNames = {fr:'francais',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const fcLangInstruction = ' Reponds ENTIEREMENT en ' + (fcLangNames[APP_LANG]||'francais') + ' (questions et reponses).';
+ const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
 
  try {
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
@@ -4400,12 +4450,17 @@ function handleFile(input) {
  }
 }
 
+const ANALYSIS_LANG_NAMES = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+function analysisLangLine() {
+ return `Réponds ENTIÈREMENT en ${ANALYSIS_LANG_NAMES[APP_LANG]||'français'}.\n\n`;
+}
 const ANALYSIS_PROMPTS = {
- summary: (t)=>`Voici un cours :\n\n${t}\n\nFais une fiche de révision structurée avec : titre, points clés numérotés, définitions importantes, et une astuce mémo. En français, clair et concis pour un lycéen africain.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues comme Khan Academy, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
- quiz: (t)=>`Voici un cours :\n\n${t}\n\nGénère 5 questions d'examen avec leurs réponses complètes, adaptées au programme africain. Format : numéroté, question en gras, réponse développée.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
- explain: (t)=>`Voici un cours :\n\n${t}\n\nIdentifie les 3 points les plus difficiles à comprendre et explique-les simplement avec des exemples concrets adaptés au contexte africain.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
- flashcards:(t)=>`Voici un cours :\n\n${t}\n\nCrée 8 paires question/réponse pour mémoriser ce cours, format lisible : Q: ... / R: ...\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
+ summary: (t)=>`${analysisLangLine()}Voici un cours :\n\n${t}\n\nFais une fiche de révision structurée avec : titre, points clés numérotés, définitions importantes, et une astuce mémo. Clair et concis pour un lycéen africain.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues comme Khan Academy, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
+ quiz: (t)=>`${analysisLangLine()}Voici un cours :\n\n${t}\n\nGénère 5 questions d'examen avec leurs réponses complètes, adaptées au programme africain. Format : numéroté, question en gras, réponse développée.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
+ explain: (t)=>`${analysisLangLine()}Voici un cours :\n\n${t}\n\nIdentifie les 3 points les plus difficiles à comprendre et explique-les simplement avec des exemples concrets adaptés au contexte africain.\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
+ flashcards:(t)=>`${analysisLangLine()}Voici un cours :\n\n${t}\n\nCrée 8 paires question/réponse pour mémoriser ce cours, format lisible : Q: ... / R: ...\n\nTermine par une section "📚 Pour aller plus loin" avec 2-3 sources suggérées pour approfondir (types de manuels scolaires adaptés au programme, plateformes éducatives reconnues, sites de référence pour la matière). Ne donne pas d'URL précise que tu ne peux pas garantir exacte — décris plutôt le type de ressource et où la chercher.`,
 };
+
 
 async function analyzeCourse() {
  const text=document.getElementById('course-text').value.trim();
@@ -6417,6 +6472,10 @@ const APP_TRANSLATIONS = {
  diff_easy: ' Facile', diff_medium: ' Moyen', diff_hard: ' Difficile',
  quiz_label_topic: 'Chapitre / sujet précis (optionnel)', quiz_topic_placeholder: 'Ex: Théorème de Pythagore, Photosynthèse...',
  quiz_label_nq: 'Nombre de questions',
+ btn_restart: 'Recommencer', btn_back: '← Retour',
+ fc_header: 'Carte Mémo IA', fc_hero_title: 'Carte Mémo IA', fc_hero_sub: 'Mémorise efficacement avec la répétition espacée',
+ fc_label_topic: 'Chapitre / sujet à mémoriser (optionnel)', fc_topic_placeholder: 'Ex: Les organites de la cellule, La conjugaison...',
+ travaux_header: 'Travaux', travaux_sub: 'Outils de développement & ressources', travaux_terminaux: ' Terminaux',
  },
  en: {
     quiz_title: 'Quick Quiz', fc_title: 'Memo Cards',
@@ -6450,6 +6509,10 @@ const APP_TRANSLATIONS = {
  diff_easy: ' Easy', diff_medium: ' Medium', diff_hard: ' Hard',
  quiz_label_topic: 'Chapter / specific topic (optional)', quiz_topic_placeholder: 'E.g: Pythagorean theorem, Photosynthesis...',
  quiz_label_nq: 'Number of questions',
+ btn_restart: 'Restart', btn_back: '← Back',
+ fc_header: 'AI Memo Cards', fc_hero_title: 'AI Memo Cards', fc_hero_sub: 'Memorize efficiently with spaced repetition',
+ fc_label_topic: 'Chapter / topic to memorize (optional)', fc_topic_placeholder: 'E.g: Cell organelles, Verb conjugation...',
+ travaux_header: 'Tools', travaux_sub: 'Development tools & resources', travaux_terminaux: ' Terminals',
  },
  es: {
     quiz_title: 'Quiz rapido', fc_title: 'Tarjetas',
