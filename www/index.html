@@ -392,7 +392,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:11px;color:var(--text3)">QCM + minuterie</div>
  </div>
  <div onclick="showScreen('screen-flashcards')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
- <div style="font-size:13px;font-weight:700;margin-bottom:2px" id="home-fc-title">Flashcards</div>
+ <div style="font-size:13px;font-weight:700;margin-bottom:2px" id="home-fc-title">Carte Mémo</div>
  <div style="font-size:11px;color:var(--text3)">Mémorisation active</div>
  </div>
  <div onclick="showScreen('screen-upload')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
@@ -410,7 +410,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="padding:0 20px 6px" class="a3">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
  <h3 style="font-size:16px;font-weight:700" id="subjects-title">Mes matières</h3>
+ <div style="display:flex;gap:14px;align-items:center">
+ <span style="font-size:12px;color:var(--text3);font-weight:600;cursor:pointer" onclick="showManageSubjects()"> Gérer</span>
  <span style="font-size:12px;color:var(--em);font-weight:600;cursor:pointer" id="subjects-see-all">Tout voir</span>
+ </div>
  </div>
  <div id="subjects-list" style="display:flex;flex-direction:column;gap:10px"></div>
  </div>
@@ -494,16 +497,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div id="quiz-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
  <div style="margin-bottom:16px">
+ <label class="field-label" data-i18n="quiz_label_topic">Chapitre / sujet précis (optionnel)</label>
+ <input class="input" id="quiz-topic" placeholder="Ex: Théorème de Pythagore, Photosynthèse..." data-i18n-placeholder="quiz_topic_placeholder">
+ </div>
+ <div style="margin-bottom:16px">
  <label class="field-label" data-i18n="quiz_label_difficulty">Niveau de difficulté</label>
  <div style="display:flex;gap:8px">
  <button onclick="selectDiff(this,'Facile')" class="diff-btn" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" data-i18n="diff_easy"> Facile</button>
  <button onclick="selectDiff(this,'Moyen')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" data-i18n="diff_medium"> Moyen</button>
  <button onclick="selectDiff(this,'Difficile')" class="diff-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" data-i18n="diff_hard"> Difficile</button>
  </div>
- </div>
- <div style="margin-bottom:16px">
- <label class="field-label" data-i18n="quiz_label_topic">Sujet précis (optionnel)</label>
- <input class="input" id="quiz-topic" placeholder="Ex: Théorème de Pythagore, Photosynthèse..." data-i18n-placeholder="quiz_topic_placeholder">
  </div>
  <div style="margin-bottom:24px">
  <label class="field-label" data-i18n="quiz_label_nq">Nombre de questions</label>
@@ -512,6 +515,14 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="selectNQ(this,10)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">10</button>
  <button onclick="selectNQ(this,15)" class="nq-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">15</button>
  </div>
+ </div>
+ <div style="margin-bottom:24px">
+ <label class="field-label">Format</label>
+ <div style="display:flex;gap:8px">
+ <button onclick="selectFormat(this,'classique')" class="format-btn active-format" style="flex:1;padding:11px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Classique</button>
+ <button onclick="selectFormat(this,'marathon')" class="format-btn" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Marathon</button>
+ </div>
+ <p style="font-size:11px;color:var(--text3);margin-top:6px">Marathon : toutes les questions défilent en liste, un seul minuteur global, mix QCM + Vrai/Faux.</p>
  </div>
  <!-- Quiz Libre VIP -->
  <div id="quiz-libre-section" style="display:none;margin-bottom:14px">
@@ -549,6 +560,20 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  </div>
 
+ <!-- Quiz Marathon : liste déroulante avec minuteur global -->
+ <div id="quiz-marathon" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+ <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
+ <span style="font-size:12px;color:var(--text2)"> Marathon</span>
+ <div style="background:var(--pur-soft);border-radius:8px;padding:5px 11px;display:flex;align-items:center;gap:5px">
+ <span style="font-size:14px;font-weight:700;color:var(--purple)" id="marathon-timer">--:--</span>
+ </div>
+ </div>
+ <div class="scroll-body" style="padding:16px 20px;flex:1;min-height:0" id="marathon-list"></div>
+ <div style="flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)">
+ <button class="btn-em" onclick="submitMarathon()">Terminer le marathon →</button>
+ </div>
+ </div>
+
  <!-- Résultats quiz -->
  <div id="quiz-results" style="display:none;flex:1;overflow-y:auto;padding:32px 20px;text-align:center">
  <div style="font-size:56px;margin-bottom:6px" id="result-emoji"></div>
@@ -568,24 +593,24 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <div id="screen-flashcards" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
  <button onclick="goBack()" class="back-btn">← Retour</button>
- <span class="display" style="font-size:17px;font-weight:700">Flashcards IA</span>
+ <span class="display" style="font-size:17px;font-weight:700">Carte Mémo IA</span>
  </div>
 
  <div id="fc-config" class="scroll-body" style="padding:0 20px 20px">
  <div style="background:linear-gradient(135deg,var(--amber),#E8920A);border-radius:var(--r);padding:20px;margin-bottom:20px;color:#fff;text-align:center">
- <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Flashcards IA</h3>
+ <h3 class="display" style="font-size:22px;font-weight:700;margin-bottom:4px">Carte Mémo IA</h3>
  <p style="font-size:13px;opacity:.8">Mémorise efficacement avec la répétition espacée</p>
  </div>
  <div style="margin-bottom:16px">
- <label class="field-label">Sujet à mémoriser</label>
- <input class="input" id="fc-topic" placeholder="Ex: Les organites de la cellule, La conjugaison...">
- </div>
- <div style="margin-bottom:24px">
  <label class="field-label">Matière</label>
  <div id="fc-subject-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
  </div>
+ <div style="margin-bottom:24px">
+ <label class="field-label">Chapitre / sujet à mémoriser (optionnel)</label>
+ <input class="input" id="fc-topic" placeholder="Ex: Les organites de la cellule, La conjugaison...">
+ </div>
  <button class="btn-em" id="gen-fc-btn" onclick="generateFlashcards()" style="background:linear-gradient(135deg,var(--amber),#E8920A);box-shadow:0 4px 18px rgba(196,122,11,.3)">
- <span id="fc-btn-text"> Générer les flashcards</span>
+ <span id="fc-btn-text"> Générer les cartes mémo</span>
  </button>
  </div>
 
@@ -655,7 +680,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="selectAnalysis(this,'summary')" class="analysis-btn active-analysis" style="padding:13px 16px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:12px;color:var(--em);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left"> Résume ce cours en fiche claire</button>
  <button onclick="selectAnalysis(this,'quiz')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left"> Génère des questions d'examen</button>
  <button onclick="selectAnalysis(this,'explain')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left"> Explique les points difficiles</button>
- <button onclick="selectAnalysis(this,'flashcards')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left"> Crée des flashcards</button>
+ <button onclick="selectAnalysis(this,'flashcards')" class="analysis-btn" style="padding:13px 16px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left"> Crée des cartes mémo</button>
  </div>
  </div>
  <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer">
@@ -833,7 +858,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <h3 style="font-size:14px;font-weight:700;margin-bottom:12px"> Mon abonnement</h3>
  <div style="display:flex;flex-direction:column;gap:8px">
  <div onclick="showUpgradeModal('Passe à Premium ou VIP pour débloquer plus de fonctionnalités !')" style="background:linear-gradient(135deg,#0B6E4F,#16a34a);border-radius:14px;padding:14px 18px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;align-items:center">
- <div><div style="font-weight:800;font-size:14px"> Premium — 1 490 FCFA/mois</div><div style="font-size:11px;opacity:.85">45 questions IA · 20 quiz/5h · 30 flashcards</div></div>
+ <div><div style="font-weight:800;font-size:14px"> Premium — 1 490 FCFA/mois</div><div style="font-size:11px;opacity:.85">45 questions IA · 20 quiz/5h · 30 cartes mémo</div></div>
  <div style="font-size:18px">›</div>
  </div>
  <div onclick="showUpgradeModal('Passe VIP pour un accès illimité !')" style="background:linear-gradient(135deg,#b45309,#f59e0b);border-radius:14px;padding:14px 18px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;align-items:center">
@@ -1812,6 +1837,7 @@ const ALL_SUBJECTS = [
  { id:'mecaauto', icon:'', name:'Mécanique Auto', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
  { id:'batiment', icon:'', name:'Bâtiment', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
  { id:'secretariat', icon:'', name:'Secrétariat Bureautique', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'methodo', icon:'', name:'Méthodologie & Communication pro', color:'#64748B', soft:'#F1F5F9', border:'rgba(100,116,139,.2)' },
 ];
 
 // Matières par niveau et filière
@@ -1891,19 +1917,134 @@ const SUBJECTS_BY_LEVEL = {
  },
 };
 
+function slugifyId(s) { return 'f_'+(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,24); }
+
+// Matière "virtuelle" représentant la filière/spécialisation elle-même,
+// utilisée quand on n'a pas de liste de matières précise pour elle (Master,
+// filière ajoutée via "Autre", etc.) — pour que les quiz/flashcards portent
+// vraiment sur son domaine plutôt que sur des matières génériques seules.
+function synthesizeFiliereSubject(filiere) {
+ return { id: slugifyId(filiere), name: filiere, color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF', isFiliereSubject:true };
+}
+
 function getSubjects() {
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
  const byLevel = SUBJECTS_BY_LEVEL[level];
- let ids;
+ let ids, hasSpecificMapping = true;
  if (!byLevel) {
- ids = ['math','fr','ang','eco','info'];
+ ids = ['fr','ang','methodo','info'];
+ hasSpecificMapping = false;
  } else if (Array.isArray(byLevel)) {
  ids = byLevel;
+ } else if (byLevel[filiere]) {
+ ids = byLevel[filiere];
  } else {
- ids = byLevel[filiere] || byLevel['default'] || ['math','fr','ang'];
+ ids = byLevel['default'] || ['fr','ang','methodo','info'];
+ hasSpecificMapping = false; // pas de matières dédiées connues pour cette filière précise (ex: Master, filière ajoutée)
  }
- return ids.map(id => ALL_SUBJECTS.find(s => s.id === id)).filter(Boolean);
+ let subjects = ids.map(id => ALL_SUBJECTS.find(s => s.id === id)).filter(Boolean);
+ if (filiere && !hasSpecificMapping) {
+ subjects = [synthesizeFiliereSubject(filiere), ...subjects];
+ }
+ return applySubjectCustomizations(subjects);
+}
+
+// ── Ajout / retrait manuel de matières (par utilisateur, en local) ──
+function getSubjectCustomizations() {
+ try {
+ const d = JSON.parse(localStorage.getItem('studiora_subject_custom')||'null');
+ return (d && typeof d==='object') ? { added: d.added||[], removed: d.removed||[], customNames: d.customNames||{} } : { added:[], removed:[], customNames:{} };
+ } catch(e) { return { added:[], removed:[], customNames:{} }; }
+}
+function saveSubjectCustomizations(c) { localStorage.setItem('studiora_subject_custom', JSON.stringify(c)); }
+function applySubjectCustomizations(subjects) {
+ const c = getSubjectCustomizations();
+ let result = subjects.filter(s => !c.removed.includes(s.id));
+ c.added.forEach(id => {
+ if (result.find(s=>s.id===id)) return;
+ const known = ALL_SUBJECTS.find(s=>s.id===id);
+ if (known) result.push(known);
+ else if (c.customNames[id]) result.push(synthesizeFiliereSubject(c.customNames[id]));
+ });
+ return result;
+}
+function addUserSubject(id) {
+ const c = getSubjectCustomizations();
+ if (!c.added.includes(id)) c.added.push(id);
+ c.removed = c.removed.filter(x=>x!==id);
+ saveSubjectCustomizations(c);
+ SUBJECTS = getSubjects();
+ showManageSubjects();
+ renderHome();
+}
+function addCustomUserSubject() {
+ const input = document.getElementById('manage-subj-custom-input');
+ const name = (input.value||'').trim();
+ if (!name) { showToast('! Écris le nom de la matière'); return; }
+ const id = slugifyId(name);
+ const c = getSubjectCustomizations();
+ c.customNames[id] = name;
+ if (!c.added.includes(id)) c.added.push(id);
+ c.removed = c.removed.filter(x=>x!==id);
+ saveSubjectCustomizations(c);
+ input.value = '';
+ SUBJECTS = getSubjects();
+ showManageSubjects();
+ renderHome();
+ showToast('✓ Matière ajoutée : ' + name);
+}
+function removeUserSubject(id) {
+ const c = getSubjectCustomizations();
+ if (!c.removed.includes(id)) c.removed.push(id);
+ c.added = c.added.filter(x=>x!==id);
+ saveSubjectCustomizations(c);
+ SUBJECTS = getSubjects();
+ showManageSubjects();
+ renderHome();
+}
+
+function showManageSubjects() {
+ let overlay = document.getElementById('manage-subjects-overlay');
+ if (overlay) overlay.remove();
+ overlay = document.createElement('div');
+ overlay.id = 'manage-subjects-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+ const current = SUBJECTS;
+ const currentIds = current.map(s=>s.id);
+ const available = ALL_SUBJECTS.filter(s => !currentIds.includes(s.id));
+
+ overlay.innerHTML = `
+ <div style="background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;animation:slideUp .3s ease">
+ <h2 style="font-size:18px;font-weight:800;margin-bottom:4px"> Gérer mes matières</h2>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:16px">Ajoute une matière absente de ta liste, ou retire celles qui ne te concernent pas.</p>
+
+ <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Mes matières actuelles</h4>
+ <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+ ${current.map(s=>`
+ <div style="display:flex;align-items:center;justify-content:space-between;background:${s.soft};border:1px solid ${s.border};border-radius:12px;padding:10px 14px">
+ <span style="font-size:13px;font-weight:600;color:${s.color}">${s.name}</span>
+ <button onclick="removeUserSubject('${s.id}')" style="background:none;border:none;color:var(--red);font-size:12px;font-weight:700;cursor:pointer">Retirer</button>
+ </div>`).join('') || '<div style="font-size:12px;color:var(--text3)">Aucune matière pour l\'instant.</div>'}
+ </div>
+
+ <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Ajouter une matière existante</h4>
+ <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+ ${available.map(s=>`
+ <button onclick="addUserSubject('${s.id}')" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">+ ${s.name}</button>`).join('') || '<div style="font-size:12px;color:var(--text3)">Toutes les matières connues sont déjà dans ta liste.</div>'}
+ </div>
+
+ <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Ou ajouter une matière absente de la liste</h4>
+ <div style="display:flex;gap:8px;margin-bottom:20px">
+ <input id="manage-subj-custom-input" class="input" placeholder="Ex: Sociologie du sport" style="flex:1">
+ <button onclick="addCustomUserSubject()" style="padding:0 16px;background:var(--em);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Ajouter</button>
+ </div>
+
+ <button onclick="document.getElementById('manage-subjects-overlay').remove()" style="width:100%;padding:12px;background:var(--bg2);border:none;border-radius:12px;color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Fermer</button>
+ </div>`;
+ document.body.appendChild(overlay);
 }
 
 // SUBJECTS - initialisé après APP
@@ -2049,7 +2190,7 @@ function goBack() {
  const fcBtn = document.getElementById('gen-fc-btn');
  const fcTxt = document.getElementById('fc-btn-text');
  if(fcBtn){ fcBtn.disabled=false; }
- if(fcTxt){ fcTxt.textContent=' Générer les flashcards'; }
+ if(fcTxt){ fcTxt.textContent=' Générer les cartes mémo'; }
  const prev = screenHistory.pop();
  showScreen(prev || 'screen-home', true);
 }
@@ -3705,7 +3846,7 @@ function showWelcomeModal() {
  <h2 style="font-size:22px;font-weight:800;margin-bottom:8px">Bienvenue ${escHtml(APP.user.prenom)} !</h2>
  <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:18px">
  Pour célébrer ton arrivée, on t'offre <strong style="color:var(--amber)">2 semaines VIP gratuites</strong> 🎁<br>
- Accès illimité aux quiz, flashcards et à ton coach IA — profites-en à fond !
+ Accès illimité aux quiz, cartes mémo et à ton coach IA — profites-en à fond !
  </p>
  <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:20px;text-align:left;display:flex;gap:12px;align-items:center">
  <div style="width:56px;flex-shrink:0">${renderKnowledgeTreeSVG(0, false)}</div>
@@ -3724,6 +3865,12 @@ SUBJECTS = getSubjects();
 
 // ── QUIZ ──
 let selectedDiff = 'Facile', selectedNQ = 5, selectedSubjectQuiz = 'math';
+let selectedQuizFormat = 'classique';
+function selectFormat(btn, f) {
+ selectedQuizFormat = f;
+ document.querySelectorAll('.format-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
+ btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
+}
 function renderQuizConfig() {
  // reset
  document.getElementById('quiz-config').style.display='block';
@@ -3811,13 +3958,28 @@ async function startQuiz() {
 
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
- const prompt = `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
+ const filiereRule = filiere ? `- Adapte le PÉRIMÈTRE de "${subj.name}" au contexte réel de la filière ${filiere} : si cette matière n'est pas la spécialité de cette filière, reste au niveau d'usage pratique attendu (ex: "Informatique" pour une filière non-technique = bureautique et usage numérique courant, PAS de programmation/algorithmique ; à l'inverse pour une filière informatique/technique, va bien au niveau technique attendu). Ne suppose jamais un niveau d'expertise dans cette matière au-delà de ce qui est réaliste pour un·e étudiant·e de cette filière précise.\n` : '';
+ const isMarathon = selectedQuizFormat === 'marathon';
+ const prompt = isMarathon ? `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
+Génère exactement ${selectedNQ} questions de niveau "${selectedDiff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}, pour un format "Marathon" (liste défilante, un minuteur global).
+
+RÈGLES ABSOLUES :
+- Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ 60% de qcm, 40% de vf, réparties dans un ordre varié (pas tout le vf à la fin).
+- Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
+- Les questions doivent être adaptées au niveau ${level}${filiere?' ('+filiere+')':''}
+${filiereRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)
+
+RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A, 1=B, 2=C, 3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
+L'explication DOIT commencer par "La bonne réponse est X)" (qcm) ou "La bonne réponse est Vrai/Faux" (vf).
+
+Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
+{"questions":[{"type":"qcm","q":"Énoncé","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"..."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"..."}]}` : `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
 Génère exactement ${selectedNQ} questions QCM de niveau "${selectedDiff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}.
 
 RÈGLES ABSOLUES :
 - Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
 - Les questions doivent être adaptées au niveau ${level}${filiere?' ('+filiere+')':''}
-- L'explication doit être pédagogique et détaillée (3-5 phrases minimum), avec la démonstration ou le raisonnement complet
+${filiereRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum), avec la démonstration ou le raisonnement complet
 
 RÈGLE CRITIQUE : correct=0 signifie A est la bonne réponse, correct=1=B, correct=2=C, correct=3=D.
 L'explication DOIT commencer par "La bonne réponse est X)" où X correspond à l'index correct. Vérifie deux fois avant de générer.
@@ -3850,9 +4012,66 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
 
 function launchQuiz() {
  document.getElementById('quiz-config').style.display='none';
- document.getElementById('quiz-play').style.display='flex';
  document.getElementById('quiz-results').style.display='none';
+ if (selectedQuizFormat === 'marathon') {
+ document.getElementById('quiz-play').style.display='none';
+ document.getElementById('quiz-marathon').style.display='flex';
+ renderMarathon();
+ } else {
+ document.getElementById('quiz-marathon').style.display='none';
+ document.getElementById('quiz-play').style.display='flex';
  showQuestion();
+ }
+}
+
+// ── Mode Marathon : toutes les questions défilent d'un coup, un seul
+// minuteur global (pas de révélation par question, même logique de
+// correction finale que le mode classique — showResults() est réutilisée
+// telle quelle car elle ne dépend que de APP.quizQuestions/APP.quizAnswers).
+let marathonInterval, marathonTimeLeft = 0;
+function renderMarathon() {
+ clearInterval(marathonInterval);
+ const list = document.getElementById('marathon-list');
+ list.innerHTML = APP.quizQuestions.map((q,i)=>`
+ <div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+ <p style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:4px">Question ${i+1}/${APP.quizQuestions.length}${q.type==='vf'?' · Vrai ou Faux':''}</p>
+ <p style="font-size:15px;font-weight:600;line-height:1.5;margin-bottom:10px" class="marathon-q">${q.q}</p>
+ <div style="display:flex;flex-direction:column;gap:8px">
+ ${q.options.map((opt,j)=>`
+ <button class="quiz-option" onclick="selectMarathonAnswer(${i},${j})" id="mopt-${i}-${j}" style="margin-bottom:0">
+ <div class="option-letter">${q.type==='vf' ? (j===0?'V':'F') : String.fromCharCode(65+j)}</div>
+ <span>${opt}</span>
+ </button>`).join('')}
+ </div>
+ </div>`).join('');
+ renderMathInChat(list);
+
+ // Minuteur global : temps généreux pour lire toute la liste (25s/question, min 90s)
+ marathonTimeLeft = Math.max(90, APP.quizQuestions.length * 25);
+ updateMarathonTimerDisplay();
+ marathonInterval = setInterval(()=>{
+ marathonTimeLeft--;
+ updateMarathonTimerDisplay();
+ if (marathonTimeLeft<=0) { clearInterval(marathonInterval); submitMarathon(); }
+ }, 1000);
+}
+function updateMarathonTimerDisplay() {
+ const m = Math.floor(marathonTimeLeft/60), s = marathonTimeLeft%60;
+ document.getElementById('marathon-timer').textContent = m+':'+String(s).padStart(2,'0');
+}
+function selectMarathonAnswer(qIndex, optIndex) {
+ if (!APP.quizAnswers) APP.quizAnswers = [];
+ APP.quizAnswers[qIndex] = optIndex;
+ const q = APP.quizQuestions[qIndex];
+ q.options.forEach((_,j)=>{
+ const el = document.getElementById('mopt-'+qIndex+'-'+j);
+ if (el) el.classList.toggle('selected', j===optIndex);
+ });
+}
+function submitMarathon() {
+ clearInterval(marathonInterval);
+ document.getElementById('quiz-marathon').style.display='none';
+ showResults();
 }
 
 let timerInterval, timeLeft=30;
@@ -3968,6 +4187,9 @@ function showResults() {
 function restartQuiz() {
  APP.quizQuestions=[]; APP.quizIndex=0; APP.quizScore=0; APP.quizAnswers=[];
  clearInterval(timerInterval);
+ clearInterval(marathonInterval);
+ const marathonEl = document.getElementById('quiz-marathon');
+ if (marathonEl) marathonEl.style.display = 'none';
  const btn = document.getElementById('start-quiz-btn');
  const btnTxt = document.getElementById('quiz-btn-text');
  if (btn) { btn.disabled = false; }
@@ -3990,7 +4212,7 @@ function selectFCSubject(btn,id){ selectedSubjectFC=id; renderFCConfig(); }
 
 async function generateFlashcards() {
  if (!canUseFC()) {
- showUpgradeModal("Tu as atteint ta limite de " + getPlanLimits().fc_per_day + " flashcards aujourd'hui. Passe Premium !");
+ showUpgradeModal("Tu as atteint ta limite de " + getPlanLimits().fc_per_day + " cartes mémo aujourd'hui. Passe Premium !");
  return;
  }
  incUsage('fc');
@@ -4006,7 +4228,8 @@ async function generateFlashcards() {
  const safeLevel = level.replace(/['"\\]/g,'');
  const safeFiliere = filiere.replace(/['"\\]/g,'');
  const safeTopic = topic.replace(/['"\\]/g,'');
- const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '. Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
+ const filiereRule = safeFiliere ? ` Adapte le perimetre de ${safeSubj} au contexte reel de la filiere ${safeFiliere} (si ce n'est pas sa specialite, reste a un niveau d'usage pratique realiste pour cette filiere, sinon va au niveau technique attendu).` : '';
+ const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
 
  try {
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
@@ -4039,7 +4262,7 @@ async function generateFlashcards() {
  launchFC();
  } catch(e) {
  showToast((e && e.name)==='AbortError' ? ' Délai dépassé. Réessaie.' : ' Erreur : '+((e && e.message)||'Connexion impossible'));
- btn.disabled=false; txt.textContent=' Générer les flashcards';
+ btn.disabled=false; txt.textContent=' Générer les cartes mémo';
  }
 }
 
@@ -4066,11 +4289,11 @@ function fcRate(r) {
  if(!APP.fcFlipped) { showToast(" Retourne la carte d'abord !"); return; }
  if(APP.fcIndex<APP.flashcards.length-1){ APP.fcIndex++; showFC(); }
  else {
- showToast(' Tu as terminé toutes les flashcards !');
+ showToast(' Tu as terminé toutes les cartes mémo !');
  const fcBtn = document.getElementById('gen-fc-btn');
  const fcTxt = document.getElementById('fc-btn-text');
  if (fcBtn) fcBtn.disabled = false;
- if (fcTxt) fcTxt.textContent = ' Générer les flashcards';
+ if (fcTxt) fcTxt.textContent = ' Générer les cartes mémo';
  document.getElementById('fc-config').style.display='block';
  document.getElementById('fc-play').style.display='none';
  renderFCConfig();
@@ -4872,7 +5095,7 @@ function showUpgradeModal(reason) {
  <div style="display:flex;justify-content:space-between;align-items:center">
  <div>
  <div style="font-size:16px;font-weight:800"> Premium</div>
- <div style="font-size:12px;opacity:.85">45 questions IA/4h · 20 quiz/5h · 30 flashcards/jour</div>
+ <div style="font-size:12px;opacity:.85">45 questions IA/4h · 20 quiz/5h · 30 cartes mémo/jour</div>
  </div>
  <div style="font-size:18px;font-weight:800">1 490<br><span style="font-size:11px;font-weight:400">FCFA/mois</span></div>
  </div>
@@ -6163,25 +6386,25 @@ function newDiagram() {
 // ── LANGUE DE L'APPLICATION ──
 const APP_TRANSLATIONS = {
  fr: {
-    quiz_title: 'Quiz express', fc_title: 'Flashcards',
+    quiz_title: 'Quiz express', fc_title: 'Carte Mémo',
     upload_title: 'Analyser un cours', progress_title: 'Ma progression',
     subjects_title: 'Mes matières', see_all: 'Tout voir',
     login_title: 'Reconnecte-toi', login_sub: "Continue là où tu t'es arrêté",
     register_title: 'Crée ton profil', register_sub: 'Inscription gratuite',
     btn_login: 'Se connecter', btn_register: 'Créer mon compte',
     onboarding_title: 'Studiora', onboarding_sub: 'Ton coach IA pour les programmes africains.',
-    quiz_generate: 'Générer le quiz', fc_generate: 'Générer les flashcards',
+    quiz_generate: 'Générer le quiz', fc_generate: 'Générer les cartes mémo',
     upload_btn: 'Analyser avec l\'IA', profile_logout: 'Se déconnecter',
     lang_label: 'Langue de l\'application',
  home_title: 'Bonjour', home_sub: 'Prêt à apprendre ?',
  nav_home: 'Accueil', nav_coach: 'Coach IA', nav_quiz: 'Quiz', nav_tools: 'Travaux', nav_profile: 'Profil',
  home_greeting: 'Bonjour ', chat_placeholder: 'Pose ta question au coach IA...',
- quiz_title: 'Quiz express', fc_title: 'Flashcards', upload_title: 'Analyser un cours', progress_title: 'Ma progression',
+ quiz_title: 'Quiz express', fc_title: 'Carte Mémo', upload_title: 'Analyser un cours', progress_title: 'Ma progression',
  subjects_title: 'Mes matières', see_all: 'Tout voir',
  login_title: 'Reconnecte-toi', login_sub: 'Continue là où tu t\'es arrêté·e',
  register_title: 'Crée ton profil', register_sub: 'Inscription gratuite',
  btn_login: 'Se connecter', btn_register: 'Créer mon compte →',
- quiz_generate: ' Générer le quiz avec l\'IA', fc_generate: ' Générer les flashcards',
+ quiz_generate: ' Générer le quiz avec l\'IA', fc_generate: ' Générer les cartes mémo',
  upload_btn: ' Analyser avec l\'IA', profile_logout: 'Se déconnecter',
  onboarding_title: 'Studiora', onboarding_sub: 'Ton coach IA qui comprend les programmes africains.',
  chat_placeholder: 'Pose ta question à Studiora…',
@@ -6192,29 +6415,29 @@ const APP_TRANSLATIONS = {
  quiz_header: 'Quiz express', quiz_hero_title: 'Génère ton quiz', quiz_hero_sub: "L'IA crée des questions sur mesure selon ta matière",
  quiz_label_subject: 'Matière', quiz_label_difficulty: 'Niveau de difficulté',
  diff_easy: ' Facile', diff_medium: ' Moyen', diff_hard: ' Difficile',
- quiz_label_topic: 'Sujet précis (optionnel)', quiz_topic_placeholder: 'Ex: Théorème de Pythagore, Photosynthèse...',
+ quiz_label_topic: 'Chapitre / sujet précis (optionnel)', quiz_topic_placeholder: 'Ex: Théorème de Pythagore, Photosynthèse...',
  quiz_label_nq: 'Nombre de questions',
  },
  en: {
-    quiz_title: 'Quick Quiz', fc_title: 'Flashcards',
+    quiz_title: 'Quick Quiz', fc_title: 'Memo Cards',
     upload_title: 'Analyze a course', progress_title: 'My progress',
     subjects_title: 'My subjects', see_all: 'See all',
     login_title: 'Welcome back', login_sub: 'Continue where you left off',
     register_title: 'Create your profile', register_sub: 'Free registration',
     btn_login: 'Sign in', btn_register: 'Create my account',
     onboarding_title: 'Studiora', onboarding_sub: 'Your AI coach for African curricula.',
-    quiz_generate: 'Generate quiz', fc_generate: 'Generate flashcards',
+    quiz_generate: 'Generate quiz', fc_generate: 'Generate memo cards',
     upload_btn: 'Analyze with AI', profile_logout: 'Sign out',
     lang_label: 'App Language',
  home_title: 'Hello', home_sub: 'Ready to learn?',
  nav_home: 'Home', nav_coach: 'AI Coach', nav_quiz: 'Quiz', nav_tools: 'Tools', nav_profile: 'Profile',
  home_greeting: 'Good morning ', chat_placeholder: 'Ask your AI coach...',
- quiz_title: 'Quick Quiz', fc_title: 'Flashcards', upload_title: 'Analyze a course', progress_title: 'My progress',
+ quiz_title: 'Quick Quiz', fc_title: 'Memo Cards', upload_title: 'Analyze a course', progress_title: 'My progress',
  subjects_title: 'My subjects', see_all: 'See all',
  login_title: 'Welcome back', login_sub: 'Continue where you left off',
  register_title: 'Create your profile', register_sub: 'Free registration',
  btn_login: 'Sign in', btn_register: 'Create my account →',
- quiz_generate: ' Generate quiz with AI', fc_generate: ' Generate flashcards',
+ quiz_generate: ' Generate quiz with AI', fc_generate: ' Generate memo cards',
  upload_btn: ' Analyze with AI', profile_logout: 'Sign out',
  onboarding_title: 'Studiora', onboarding_sub: 'Your AI coach that understands African curricula.',
  chat_placeholder: 'Ask Studiora a question…',
@@ -6225,7 +6448,7 @@ const APP_TRANSLATIONS = {
  quiz_header: 'Quick Quiz', quiz_hero_title: 'Generate your quiz', quiz_hero_sub: 'AI creates custom questions for your subject',
  quiz_label_subject: 'Subject', quiz_label_difficulty: 'Difficulty level',
  diff_easy: ' Easy', diff_medium: ' Medium', diff_hard: ' Hard',
- quiz_label_topic: 'Specific topic (optional)', quiz_topic_placeholder: 'E.g: Pythagorean theorem, Photosynthesis...',
+ quiz_label_topic: 'Chapter / specific topic (optional)', quiz_topic_placeholder: 'E.g: Pythagorean theorem, Photosynthesis...',
  quiz_label_nq: 'Number of questions',
  },
  es: {
