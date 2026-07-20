@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -22,6 +22,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- ── Éditeur Word complet : Quill (thème snow, barre d'outils riche) ── -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.snow.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.min.js"></script>
+<!-- ── Éditeur Excel complet : Luckysheet (tableur, formules, mise en forme) ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/plugins.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/css/luckysheet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css">
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luckyexcel@1.0.1/dist/luckyexcel.umd.js"></script>
 <style>
 :root {
  --bg: #F7F6F2;
@@ -1321,7 +1333,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div onclick="showScreen('screen-dict')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)">
  <div>
  <div style="font-size:14px;font-weight:700">Dictionnaire IA</div>
- <div style="font-size:11px;color:var(--text3)">Définitions, traductions FR/EN/Dioula</div>
+ <div style="font-size:11px;color:var(--text3)">Définitions, traductions en 12 langues internationales</div>
  </div>
  <div style="color:var(--text3);margin-left:auto">›</div>
  </div>
@@ -1668,14 +1680,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <option value="tr">Turc</option>
  <option value="ja">Japonais</option>
  <option value="ko">Coréen</option>
- <option value="sw">Swahili</option>
- <option value="ha">Haoussa</option>
- <option value="yo">Yoruba</option>
- <option value="wo">Wolof</option>
- <option value="dyu">Dioula</option>
- <option value="bci">Baoulé</option>
- <option value="bm">Bambara</option>
- <option value="ln">Lingala</option>
  </select>
  <button id="dict-dir-btn" onclick="toggleDictDirection()" style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">⇄ Français → Langue</button>
  </div>
@@ -2820,6 +2824,11 @@ function copyMessageText(b64text) {
 // Génère et télécharge un vrai fichier Word/Excel/PowerPoint/LaTeX à partir d'une directive IA
 // ── ÉDITEUR DE DOCUMENTS (Word / Excel / texte-LaTeX) ──
 let docEditorState = { type: null, filename: null };
+// Instance Quill (éditeur Word) et drapeau Luckysheet (éditeur Excel) actifs —
+// utilisés pour lire/écrire le contenu et pour tout nettoyer proprement
+// quand on quitte l'éditeur ou qu'on ouvre un autre fichier.
+let quillInstance = null;
+let luckysheetActive = false;
 
 const DOC_SYMBOLS = ['°','±','÷','×','≤','≥','≠','≈','½','¼','∞','√','π','Σ','Δ','→','←','↔','★','✓','✕','☐','§','€','©'];
 
@@ -3449,6 +3458,55 @@ function pptInsertTable() {
  catch(e) { target.innerHTML += html; }
 }
 
+// ── Initialise l'éditeur Word (Quill, thème snow) ──
+// Quill prend le div #doceditor-editable et le transforme en zone éditable
+// (.ql-editor à l'intérieur, barre d'outils insérée juste au-dessus).
+function initQuillEditor(initialHtml) {
+ document.getElementById('doceditor-content').innerHTML =
+ `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+ <div id="doceditor-editable" style="min-height:320px;font-size:14px;line-height:1.6"></div>
+ </div>`;
+ quillInstance = new Quill('#doceditor-editable', {
+ theme: 'snow',
+ placeholder: 'Commence à écrire...',
+ modules: {
+ toolbar: [
+ [{ header: [1,2,3,false] }],
+ ['bold','italic','underline','strike'],
+ [{ color: [] }, { background: [] }],
+ [{ list:'ordered' }, { list:'bullet' }],
+ [{ indent:'-1' }, { indent:'+1' }],
+ [{ align: [] }],
+ ['blockquote','code-block'],
+ ['link','image'],
+ ['clean']
+ ]
+ }
+ });
+ if (initialHtml) quillInstance.clipboard.dangerouslyPasteHTML(initialHtml);
+}
+
+// ── Initialise l'éditeur Excel (Luckysheet, tableur complet) ──
+// sheetsData : tableau au format Luckysheet (venant de LuckyExcel), ou null
+// pour un classeur vierge à une feuille.
+function initLuckysheetEditor(sheetsData) {
+ document.getElementById('doceditor-content').innerHTML =
+ `<div id="luckysheet-container" style="width:100%;height:65vh;border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative"></div>`;
+ luckysheetActive = true;
+ // Petit délai pour laisser le conteneur prendre sa taille réelle dans la
+ // mise en page avant que Luckysheet ne calcule ses dimensions internes.
+ setTimeout(() => {
+ const opts = {
+ container: 'luckysheet-container',
+ lang: 'en',
+ showtoolbarConfig: { chart: false },
+ title: (docEditorState.filename || 'Classeur').replace(/\.[^.]+$/, '')
+ };
+ if (sheetsData && sheetsData.length) opts.data = sheetsData;
+ luckysheet.create(opts);
+ }, 60);
+}
+
 function newBlankDoc(type) {
  if (type === 'latex') {
  docEditorState = { type: 'text', filename: 'nouveau_document.tex' };
@@ -3473,20 +3531,15 @@ function newBlankDoc(type) {
  return;
  }
  docEditorState = { type, filename: type==='word' ? 'nouveau_document.docx' : 'nouveau_classeur.xlsx' };
- if (type === 'word') {
- document.getElementById('doceditor-content').innerHTML =
- docToolbarHTML() +
- `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6" data-placeholder="Commence à écrire..."></div>`;
- } else {
- document.getElementById('doceditor-content').innerHTML =
- sheetToolbarHTML() +
- `<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Astuce : tape une formule comme <code>=SOMME(A1:A5)</code> ou <code>=MOYENNE(B1:B3)</code> dans une cellule.</div>` +
- buildSheetHTML('Feuille1', 8, 5, null);
- }
  document.getElementById('doceditor-empty').style.display = 'none';
  document.getElementById('doceditor-content').style.display = 'block';
  document.getElementById('doceditor-save-btn').style.display = 'block';
  document.getElementById('doceditor-pdf-btn').style.display = (type === 'word') ? 'block' : 'none';
+ if (type === 'word') {
+ initQuillEditor('');
+ } else {
+ initLuckysheetEditor(null);
+ }
 }
 
 async function handleDocEditorOpen(input) {
@@ -3501,24 +3554,34 @@ async function handleDocEditorOpen(input) {
  const arrayBuffer = await file.arrayBuffer();
  const result = await mammoth.convertToHtml({ arrayBuffer });
  docEditorState.type = 'word';
- document.getElementById('doceditor-content').innerHTML =
- docToolbarHTML() +
- `<div id="doceditor-editable" contenteditable="true" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:300px;font-size:14px;line-height:1.6">${result.value}</div>`;
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = 'block';
+ initQuillEditor(result.value);
+ return;
 
  } else if (ext === 'xlsx' || ext === 'xls') {
- const arrayBuffer = await file.arrayBuffer();
- const wb = XLSX.read(arrayBuffer, { type: 'array' });
  docEditorState.type = 'excel';
- let html = sheetToolbarHTML();
- wb.SheetNames.forEach((sheetName, si) => {
- const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
- const nCols = Math.max(5, ...rows.map(r=>r.length));
- const nRows = Math.max(8, rows.length);
- html += `<div style="font-size:12px;font-weight:700;color:var(--text2);margin:${si?'16px':'0'} 0 6px">${escHtml(sheetName)}</div>
- <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Astuce : tape une formule comme <code>=SOMME(A1:A5)</code></div>` +
- buildSheetHTML(sheetName, nRows, nCols, rows);
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = 'none';
+ // LuckyExcel lit le fichier Excel réel (formules, mise en forme, plusieurs
+ // feuilles...) et le convertit directement au format attendu par Luckysheet.
+ // Fonctionne par callback (pas une Promise), d'où le retour anticipé.
+ LuckyExcel.transformExcelToLucky(file, (exportJson) => {
+ if (!exportJson || !exportJson.sheets || !exportJson.sheets.length) {
+ showToast('⚠ Impossible de lire ce fichier Excel');
+ initLuckysheetEditor(null);
+ return;
+ }
+ initLuckysheetEditor(exportJson.sheets);
+ }, (err) => {
+ showToast('⚠ Erreur lecture Excel (' + ((err && err.message) || err) + ')');
+ initLuckysheetEditor(null);
  });
- document.getElementById('doceditor-content').innerHTML = html;
+ return;
 
  } else if (['txt','tex','md'].includes(ext)) {
  const text = await file.text();
@@ -3548,6 +3611,11 @@ function docEditorBack() {
  const content = document.getElementById('doceditor-content');
  const empty = document.getElementById('doceditor-empty');
  if (content && content.style.display === 'block') {
+ if (luckysheetActive && typeof luckysheet !== 'undefined' && luckysheet.destroy) {
+ try { luckysheet.destroy(); } catch(e) {}
+ }
+ luckysheetActive = false;
+ quillInstance = null;
  content.style.display = 'none';
  content.innerHTML = '';
  if (empty) empty.style.display = 'block';
@@ -3564,7 +3632,7 @@ function docEditorBack() {
 
 // Exporte le document actuellement ouvert (Word ou texte/LaTeX) en PDF réel
 async function exportDocEditorToPDF() {
- const el = document.getElementById('doceditor-editable');
+ const el = docEditorState.type === 'word' && quillInstance ? quillInstance.root : document.getElementById('doceditor-editable');
  if (!el) { showToast('⚠ Rien à exporter'); return; }
  if (!window.jspdf) { showToast('⚠ Export PDF indisponible sur cet appareil'); return; }
  const safeName = (docEditorState.filename || 'document').replace(/\.[^.]+$/, '') || 'document';
@@ -3609,17 +3677,55 @@ async function saveDocEditorFile() {
 
  if (docEditorState.type === 'word') {
  const { Document, Packer, Paragraph, HeadingLevel, TextRun } = docx;
- const container = document.getElementById('doceditor-editable');
+ const root = quillInstance ? quillInstance.root : document.getElementById('doceditor-editable');
+ if (!root) { showToast('⚠ Éditeur Word non initialisé'); return; }
  const levels = { H1:HeadingLevel.HEADING_1, H2:HeadingLevel.HEADING_2, H3:HeadingLevel.HEADING_3 };
+
+ // Reconstruit les runs (gras/italique/souligné/barré/couleur) d'une ligne
+ // Quill (paragraphe, titre, item de liste...) pour l'export docx.
+ function buildRuns(node) {
+ const runs = [];
+ node.childNodes.forEach(child => {
+ if (child.nodeType === 3) {
+ if (child.textContent) runs.push(new TextRun({ text: child.textContent }));
+ return;
+ }
+ if (child.nodeType !== 1) return;
+ const text = child.textContent;
+ if (!text) return;
+ const bold = !!(child.closest && child.closest('strong,b'));
+ const italics = !!(child.closest && child.closest('em,i'));
+ const hasUnderline = !!(child.closest && child.closest('u'));
+ const strike = !!(child.closest && child.closest('s'));
+ const styleAttr = (child.getAttribute && child.getAttribute('style')) || '';
+ const colorMatch = styleAttr.match(/color:\s*(#[0-9a-f]{3,6})/i);
+ runs.push(new TextRun({
+ text, bold, italics, strike,
+ underline: hasUnderline ? {} : undefined,
+ color: colorMatch ? colorMatch[1].replace('#','') : undefined
+ }));
+ });
+ if (!runs.length && node.textContent) runs.push(new TextRun({ text: node.textContent }));
+ return runs;
+ }
+
  const children = [];
- container.childNodes.forEach(node => {
- if (node.nodeType !== 1) return; // ignore texte flottant hors balise
+ root.childNodes.forEach(node => {
+ if (node.nodeType !== 1) return;
  const tag = node.tagName;
  if (levels[tag]) {
- children.push(new Paragraph({ text: node.textContent, heading: levels[tag] }));
+ children.push(new Paragraph({ children: buildRuns(node), heading: levels[tag] }));
+ } else if (tag === 'UL' || tag === 'OL') {
+ [...node.children].forEach((li, i) => {
+ const runs = tag === 'OL' ? [new TextRun({ text: (i+1)+'. ' }), ...buildRuns(li)] : buildRuns(li);
+ children.push(new Paragraph({ children: runs, bullet: tag === 'UL' ? { level: 0 } : undefined }));
+ });
+ } else if (tag === 'BLOCKQUOTE') {
+ children.push(new Paragraph({ children: buildRuns(node), indent: { left: 480 } }));
+ } else if (tag === 'PRE') {
+ children.push(new Paragraph({ children: [new TextRun({ text: node.textContent, font: 'Courier New' })] }));
  } else {
- const bold = !!node.querySelector('strong,b') || node.tagName === 'STRONG' || node.tagName === 'B';
- children.push(new Paragraph({ children:[ new TextRun({ text: node.textContent, bold }) ] }));
+ children.push(new Paragraph({ children: buildRuns(node) }));
  }
  });
  const docxDoc = new Document({ sections:[{ properties:{}, children: children.length?children:[new Paragraph('')] }] });
@@ -3627,19 +3733,19 @@ async function saveDocEditorFile() {
  mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
  } else if (docEditorState.type === 'excel') {
+ if (typeof luckysheet === 'undefined' || !luckysheetActive) { showToast('⚠ Éditeur Excel non initialisé'); return; }
+ const sheets = luckysheet.getAllSheets();
  const wb = XLSX.utils.book_new();
- document.querySelectorAll('#doceditor-content table[data-sheet]').forEach(table => {
- recalcSheet(table); // s'assure que toutes les formules sont a jour avant export
- const dataRows = [...table.querySelectorAll('tr')].slice(1); // ignore la ligne d'en-tetes A,B,C...
- const rows = dataRows.map(tr =>
- [...tr.querySelectorAll('td[data-cell]')].map(td => {
- const v = td.textContent.trim();
- const num = parseFloat(v.replace(',','.'));
- return (v !== '' && !isNaN(num)) ? num : v;
- })
- );
- const ws = XLSX.utils.aoa_to_sheet(rows);
- XLSX.utils.book_append_sheet(wb, ws, table.getAttribute('data-sheet').substring(0,31));
+ sheets.forEach(sheet => {
+ const grid = sheet.data || [];
+ const aoa = grid.map(row => (row || []).map(cell => {
+ if (!cell) return '';
+ if (cell.m !== undefined && cell.m !== null) return cell.m; // valeur affichée (formules calculées incluses)
+ if (cell.v !== undefined && cell.v !== null) return cell.v;
+ return '';
+ }));
+ const ws = XLSX.utils.aoa_to_sheet(aoa);
+ XLSX.utils.book_append_sheet(wb, ws, (sheet.name || 'Feuille').substring(0,31));
  });
  const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
  blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -7579,9 +7685,6 @@ const DICT_LANGS = [
  {code:'it', name:'italien'}, {code:'pt', name:'portugais'}, {code:'ar', name:'arabe'},
  {code:'zh', name:'chinois (mandarin)'}, {code:'ru', name:'russe'}, {code:'nl', name:'néerlandais'},
  {code:'tr', name:'turc'}, {code:'ja', name:'japonais'}, {code:'ko', name:'coréen'},
- {code:'sw', name:'swahili'}, {code:'ha', name:'haoussa'}, {code:'yo', name:'yoruba'},
- {code:'wo', name:'wolof'}, {code:'dyu', name:'dioula'}, {code:'bci', name:'baoulé'},
- {code:'bm', name:'bambara'}, {code:'ln', name:'lingala'},
 ];
 function setDictMainMode(mode) {
  const defineBtn = document.getElementById('dict-mode-define-btn');
