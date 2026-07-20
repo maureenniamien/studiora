@@ -20,6 +20,8 @@
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
  --bg: #F7F6F2;
@@ -1234,6 +1236,21 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  </div>
 
+ <!-- Outil de transcription -->
+ <div style="margin-bottom:20px">
+ <label class="field-label" style="margin-bottom:10px"> Transcription</label>
+ <div onclick="showScreen('screen-transcription')" style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:var(--shadow)">
+ <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#F97316,#EA580C);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+ </div>
+ <div style="flex:1">
+ <div style="font-size:14px;font-weight:700">Transcrire un enregistrement vocal</div>
+ <div style="font-size:12px;color:var(--text3)">Dicte, corrige, puis exporte en .txt ou vers l'éditeur</div>
+ </div>
+ <div style="color:var(--text3)">›</div>
+ </div>
+ </div>
+
 
  <!-- Bibliothèque partagée (VIP) -->
  <div style="margin-bottom:20px">
@@ -1308,6 +1325,31 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="color:var(--text3);margin-left:auto">›</div>
  </div>
+ </div>
+ </div>
+</div>
+
+<!-- ═══════════════════ TRANSCRIPTION ═══════════════════ -->
+<div id="screen-transcription" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 44px) 20px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <h2 class="display" style="font-size:20px;font-weight:700">Transcription vocale</h2>
+ </div>
+ <div class="scroll-body" style="padding:20px 20px 100px">
+ <div style="text-align:center;margin-bottom:18px">
+ <button id="transcribe-mic-btn" onclick="toggleVoiceInput('transcript-textarea','transcribe-mic-btn')" style="width:72px;height:72px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:var(--shadow)">
+ <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+ </button>
+ <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour parler · chaque prise de parole ajoute une ligne</div>
+ </div>
+ <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
+ <div style="display:flex;gap:8px;margin-top:12px">
+ <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">📋 Copier</button>
+ <button onclick="clearTranscript()" class="doc-tb-btn" style="flex:1;padding:11px"> Effacer</button>
+ </div>
+ <div style="display:flex;gap:8px;margin-top:8px">
+ <button onclick="saveTranscriptAsFile()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Enregistrer en .txt</button>
+ <button onclick="sendTranscriptToEditor()" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text)">→ Éditeur</button>
  </div>
  </div>
 </div>
@@ -1403,10 +1445,13 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <div id="screen-doceditor" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 44px) 20px 12px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;justify-content:space-between">
  <div style="display:flex;align-items:center;gap:10px">
- <button onclick="goBack()" class="back-btn">← Retour</button>
+ <button onclick="docEditorBack()" class="back-btn">← Retour</button>
  <h2 class="display" style="font-size:20px;font-weight:700">Éditeur de documents</h2>
  </div>
+ <div style="display:flex;gap:8px">
+ <button id="doceditor-pdf-btn" onclick="exportDocEditorToPDF()" style="display:none;background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">PDF</button>
  <button id="doceditor-save-btn" onclick="saveDocEditorFile()" style="display:none;background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Enregistrer</button>
+ </div>
  </div>
  <div class="scroll-body" style="padding:16px 20px 100px">
  <div id="doceditor-empty">
@@ -1425,7 +1470,13 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:11px;color:var(--text3)">Tableau vierge</div>
  </button>
  </div>
- <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">PowerPoint et PDF : aperçu non disponible pour l'instant, seul le téléchargement fonctionne.</div>
+ <div style="margin-top:10px">
+ <button onclick="newBlankDoc('latex')" style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-size:13px;font-weight:700">+ Nouveau LaTeX (.tex)</div>
+ <div style="font-size:11px;color:var(--text3)">Modèle de départ avec structure de base</div>
+ </button>
+ </div>
+ <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word et LaTeX : exportables directement en PDF depuis l'éditeur. PowerPoint : téléchargement direct (aperçu non disponible).</div>
  </div>
  <div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px"></div>
  <div id="doceditor-content" style="display:none"></div>
@@ -2335,13 +2386,13 @@ window.onAndroidBackPressed = function() {
 // Screens qui affichent la nav globale
 const NAV_SCREENS = new Set(['screen-home',
  'screen-progress','screen-profile','screen-travaux','screen-upload',
- 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor']);
+ 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor','screen-transcription']);
 const NAV_ACTIVE_MAP = {
  'screen-home':'nav-home',
  'screen-progress':'nav-home','screen-upload':'nav-travaux',
  'screen-calc':'nav-travaux','screen-dict':'nav-travaux','screen-diagrams':'nav-travaux',
  'screen-travaux':'nav-travaux','screen-media':'nav-travaux','screen-profile':'nav-profile',
- 'screen-library':'nav-travaux','screen-doceditor':'nav-travaux',
+ 'screen-library':'nav-travaux','screen-doceditor':'nav-travaux','screen-transcription':'nav-travaux',
 };
 
 function updateGlobalNav(id) {
@@ -2520,15 +2571,16 @@ Tes principes :
 - Utilise le profil utilisateur (niveau, filière) pour personnaliser chaque réponse
 - COHÉRENCE : l'historique de conversation ci-dessus fait partie de la même discussion sur cette matière. Reste cohérent avec ce qui a déjà été dit (ne te contredis pas, ne redonne pas une explication déjà faite sauf si on te le redemande explicitement), et appuie-toi dessus quand c'est pertinent (ex. "comme on l'a vu tout à l'heure...")
 
-GÉNÉRATION DE DOCUMENTS : si l'utilisateur demande explicitement de créer/générer un document Word, Excel, PowerPoint ou LaTeX (ex. "crée-moi un document Word sur...", "fais-moi un tableau Excel de...", "génère une présentation PowerPoint sur..."), réponds avec une courte phrase d'introduction PUIS un bloc structuré exactement dans ce format (rien d'autre après) :
+GÉNÉRATION DE DOCUMENTS : si l'utilisateur demande explicitement de créer/générer un document Word, Excel, PowerPoint, PDF ou LaTeX (ex. "crée-moi un document Word sur...", "fais-moi un tableau Excel de...", "génère une présentation PowerPoint sur...", "fais-moi un PDF de..."), réponds avec une courte phrase d'introduction PUIS un bloc structuré exactement dans ce format (rien d'autre après) :
 [DOC_START]
-{"type":"word"|"excel"|"pptx"|"latex","title":"Titre du document","content":{...}}
+{"type":"word"|"excel"|"pptx"|"pdf"|"latex","title":"Titre du document","content":{...}}
 [DOC_END]
 
 Format de "content" selon le type :
 - word : {"paragraphs":[{"text":"...","heading":1|2|3|null,"bold":false}]}
 - excel : {"sheets":[{"name":"Feuille1","rows":[["En-tête1","En-tête2"],["val1","val2"]]}]}
 - pptx : {"slides":[{"title":"...","bullets":["point 1","point 2"]}]}
+- pdf : {"paragraphs":[{"text":"...","heading":1|2|3|null,"bold":false}]}
 - latex : {"source":"\\\\documentclass{article}...code LaTeX complet et compilable..."}
 
 N'utilise ce format QUE si un document est explicitement demandé. Pour toute autre question, réponds normalement en texte.`;
@@ -2702,8 +2754,8 @@ function renderMsgHTML(m) {
  let docCard = '';
  if (doc) {
  const idx = window.APP_GENERATED_DOCS.push(doc) - 1;
- const labels = { word:'DOC', excel:'XLS', pptx:'PPT', latex:'TEX' };
- const typeNames = { word:'Document Word', excel:'Classeur Excel', pptx:'Présentation PowerPoint', latex:'Document LaTeX' };
+ const labels = { word:'DOC', excel:'XLS', pptx:'PPT', pdf:'PDF', latex:'TEX' };
+ const typeNames = { word:'Document Word', excel:'Classeur Excel', pptx:'Présentation PowerPoint', pdf:'Document PDF', latex:'Document LaTeX' };
  docCard = `<div style="margin-top:8px;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;background:var(--bg2)">
  <div style="width:38px;height:38px;border-radius:9px;background:var(--em);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${labels[doc.type]||'DOC'}</div>
  <div style="flex:1;min-width:0">
@@ -3175,7 +3227,67 @@ function sheetSortColumn(dir) {
  showToast('✓ Trié');
 }
 
+// ── BARRE D'OUTILS LATEX (insertion de structures courantes dans l'éditeur texte) ──
+const TEX_SNIPPETS = [
+ {label:'Section', code:'\\section{Titre}\n'},
+ {label:'Sous-section', code:'\\subsection{Titre}\n'},
+ {label:'Gras', code:'\\textbf{texte}'},
+ {label:'Italique', code:'\\textit{texte}'},
+ {label:'Liste •', code:'\\begin{itemize}\n \\item \n \\item \n\\end{itemize}\n'},
+ {label:'Liste 1.', code:'\\begin{enumerate}\n \\item \n \\item \n\\end{enumerate}\n'},
+ {label:'Équation', code:'\\begin{equation}\n\n\\end{equation}\n'},
+ {label:'Fraction', code:'\\frac{a}{b}'},
+ {label:'Math inline', code:'$ $'},
+ {label:'Tableau', code:'\\begin{tabular}{|c|c|}\n\\hline\nA & B \\\\\n\\hline\n1 & 2 \\\\\n\\hline\n\\end{tabular}\n'},
+ {label:'Image', code:'\\begin{figure}[h]\n\\centering\n\\includegraphics[width=0.8\\textwidth]{image.png}\n\\caption{Légende}\n\\end{figure}\n'},
+];
+function texToolbarHTML() {
+ return `<div id="tex-toolbar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;background:var(--bg2);border-radius:10px;padding:8px">
+ ${TEX_SNIPPETS.map((s,i)=>`<button class="doc-tb-btn" onclick="texInsertSnippet(${i})">${s.label}</button>`).join('')}
+ </div>`;
+}
+function texInsertSnippet(i) {
+ const el = document.getElementById('doceditor-editable');
+ if (!el || el.tagName !== 'TEXTAREA') return;
+ const code = TEX_SNIPPETS[i].code;
+ const start = el.selectionStart, end = el.selectionEnd;
+ el.value = el.value.slice(0,start) + code + el.value.slice(end);
+ const newPos = start + code.length;
+ el.focus();
+ el.setSelectionRange(newPos, newPos);
+}
+
+const LATEX_STARTER = `\\documentclass[a4paper,12pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[french]{babel}
+\\usepackage{amsmath,amssymb}
+\\usepackage{graphicx}
+
+\\title{Titre du document}
+\\author{}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\section{Introduction}
+Ton texte ici...
+
+\\end{document}
+`;
+
 function newBlankDoc(type) {
+ if (type === 'latex') {
+ docEditorState = { type: 'text', filename: 'nouveau_document.tex' };
+ document.getElementById('doceditor-content').innerHTML =
+ texToolbarHTML() +
+ `<textarea id="doceditor-editable" style="width:100%;min-height:400px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-family:monospace;line-height:1.5">${escHtml(LATEX_STARTER)}</textarea>`;
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = 'block';
+ return;
+ }
  docEditorState = { type, filename: type==='word' ? 'nouveau_document.docx' : 'nouveau_classeur.xlsx' };
  if (type === 'word') {
  document.getElementById('doceditor-content').innerHTML =
@@ -3190,6 +3302,7 @@ function newBlankDoc(type) {
  document.getElementById('doceditor-empty').style.display = 'none';
  document.getElementById('doceditor-content').style.display = 'block';
  document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = (type === 'word') ? 'block' : 'none';
 }
 
 async function handleDocEditorOpen(input) {
@@ -3227,6 +3340,7 @@ async function handleDocEditorOpen(input) {
  const text = await file.text();
  docEditorState.type = 'text';
  document.getElementById('doceditor-content').innerHTML =
+ (ext === 'tex' ? texToolbarHTML() : '') +
  `<textarea id="doceditor-editable" style="width:100%;min-height:400px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-family:monospace;line-height:1.5">${escHtml(text)}</textarea>`;
 
  } else {
@@ -3237,8 +3351,70 @@ async function handleDocEditorOpen(input) {
  document.getElementById('doceditor-empty').style.display = 'none';
  document.getElementById('doceditor-content').style.display = 'block';
  document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = (docEditorState.type === 'word' || ext === 'tex') ? 'block' : 'none';
  } catch(e) {
  showToast('⚠ Impossible d\'ouvrir ce fichier (' + (e.message||e) + ')');
+ }
+}
+
+// Le bouton "← Retour" de l'éditeur ramène d'abord à la page d'import/nouveau
+// document (au lieu de quitter direct l'écran), pour pouvoir ouvrir/créer un
+// autre fichier sans repasser par Travaux.
+function docEditorBack() {
+ const content = document.getElementById('doceditor-content');
+ const empty = document.getElementById('doceditor-empty');
+ if (content && content.style.display === 'block') {
+ content.style.display = 'none';
+ content.innerHTML = '';
+ if (empty) empty.style.display = 'block';
+ const saveBtn = document.getElementById('doceditor-save-btn');
+ const pdfBtn = document.getElementById('doceditor-pdf-btn');
+ if (saveBtn) saveBtn.style.display = 'none';
+ if (pdfBtn) pdfBtn.style.display = 'none';
+ docEditorState = { type: null, filename: null };
+ _activeSheetCell = null;
+ } else {
+ goBack();
+ }
+}
+
+// Exporte le document actuellement ouvert (Word ou texte/LaTeX) en PDF réel
+async function exportDocEditorToPDF() {
+ const el = document.getElementById('doceditor-editable');
+ if (!el) { showToast('⚠ Rien à exporter'); return; }
+ if (!window.jspdf) { showToast('⚠ Export PDF indisponible sur cet appareil'); return; }
+ const safeName = (docEditorState.filename || 'document').replace(/\.[^.]+$/, '') || 'document';
+ try {
+ const { jsPDF } = window.jspdf;
+ let blob;
+ if (docEditorState.type === 'word') {
+ const pdf = new jsPDF({ unit:'pt', format:'a4' });
+ await pdf.html(el, {
+ margin: [40,40,40,40],
+ autoPaging: 'text',
+ width: 515,
+ windowWidth: el.scrollWidth || 700,
+ html2canvas: { scale: 0.75 }
+ });
+ blob = pdf.output('blob');
+ } else {
+ const pdf = new jsPDF({ unit:'mm', format:'a4' });
+ pdf.setFont('courier','normal'); pdf.setFontSize(10);
+ const marginX = 15, maxWidth = 180;
+ let y = 18;
+ (el.value||'').split('\n').forEach(rawLine => {
+ const wrapped = pdf.splitTextToSize(rawLine || ' ', maxWidth);
+ wrapped.forEach(line => {
+ if (y > 285) { pdf.addPage(); y = 18; }
+ pdf.text(line, marginX, y);
+ y += 5;
+ });
+ });
+ blob = pdf.output('blob');
+ }
+ await saveFileEverywhere(blob, safeName + '.pdf', 'application/pdf');
+ } catch(e) {
+ showToast('⚠ Erreur export PDF (' + (e.message||e) + ')');
  }
 }
 
@@ -3435,16 +3611,43 @@ async function downloadGeneratedDoc(idx) {
 
  } else if (doc.type === 'pptx') {
  const pres = new PptxGenJS();
- (doc.content.slides||[]).forEach(s => {
+ (doc.content.slides||[]).forEach((s,si) => {
  const slide = pres.addSlide();
- if (s.title) slide.addText(s.title, { x:0.5, y:0.3, w:9, fontSize:24, bold:true });
+ slide.background = { color: 'F7F6F2' };
+ if (s.title) slide.addText(s.title, { x:0.5, y:0.35, w:9, fontSize:26, bold:true, color:'0B6E4F', fontFace:'Arial' });
  if (s.bullets && s.bullets.length) {
- slide.addText(s.bullets.map(b=>({ text:b, options:{ bullet:true, breakLine:true } })), { x:0.5, y:1.3, w:9, fontSize:16 });
+ slide.addText(s.bullets.map(b=>({ text:b, options:{ bullet:true, breakLine:true, color:'333333' } })), { x:0.6, y:1.4, w:8.8, fontSize:16, fontFace:'Arial' });
  }
+ slide.addText(String(si+1), { x:9.3, y:5.2, w:0.5, fontSize:10, color:'999999', align:'right' });
  });
  blob = await pres.write({ outputType:'blob' });
  filename = safeTitle + '.pptx';
  mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+ } else if (doc.type === 'pdf') {
+ const { jsPDF } = window.jspdf;
+ const pdf = new jsPDF({ unit:'mm', format:'a4' });
+ const marginX = 18, maxWidth = 174;
+ let y = 22;
+ pdf.setFont('helvetica','bold'); pdf.setFontSize(18);
+ pdf.text(doc.title||'Document', marginX, y);
+ y += 12;
+ (doc.content.paragraphs||[]).forEach(p => {
+ const sizes = {1:16,2:14,3:12};
+ const size = p.heading ? (sizes[p.heading]||14) : 11;
+ pdf.setFont('helvetica', (p.heading || p.bold) ? 'bold' : 'normal');
+ pdf.setFontSize(size);
+ const lines = pdf.splitTextToSize(p.text||'', maxWidth);
+ lines.forEach(line => {
+ if (y > 280) { pdf.addPage(); y = 20; }
+ pdf.text(line, marginX, y);
+ y += size/2.2 + 2.5;
+ });
+ y += p.heading ? 3 : 2;
+ });
+ blob = pdf.output('blob');
+ filename = safeTitle + '.pdf';
+ mimeType = 'application/pdf';
 
  } else if (doc.type === 'latex') {
  blob = new Blob([doc.content.source||''], { type:'text/plain' });
@@ -3613,35 +3816,55 @@ function removeChatAttachment() {
 let voiceRecognition = null;
 let isListening = false;
 let micStream = null; // garde le flux micro ouvert le temps de l'écoute
+let _voiceTargetId = 'chat-input'; // champ où insérer le texte reconnu
+let _voiceMicBtnId = 'mic-btn'; // bouton dont on change l'apparence pendant l'écoute
+let _voiceAppendNewline = false; // true pour l'outil de transcription (une ligne par prise de parole)
+
+function _voiceInsertText(text) {
+ const el = document.getElementById(_voiceTargetId);
+ if (!el) return;
+ if (_voiceAppendNewline) {
+ el.value = (el.value ? el.value + '\n' : '') + text;
+ } else {
+ el.value = (el.value ? el.value + ' ' : '') + text;
+ }
+ if (typeof autoResize === 'function') { try { autoResize(el); } catch(e) {} }
+ el.dispatchEvent(new Event('input', { bubbles:true }));
+}
+function _voiceSetMicActive(active) {
+ const micBtn = document.getElementById(_voiceMicBtnId);
+ if (!micBtn) return;
+ if (active) { micBtn.style.background = 'var(--em)'; micBtn.style.color = '#fff'; micBtn.style.borderColor = 'var(--em)'; }
+ else { micBtn.style.background = 'var(--white)'; micBtn.style.color = 'var(--text2)'; micBtn.style.borderColor = 'var(--border)'; }
+}
 
 // Callbacks appelés par MainActivity.java (reconnaissance vocale native Android,
 // utilisée en priorité car l'API web SpeechRecognition échoue en WebView sur cet appareil)
 window.onAndroidSTTStart = function() {
  isListening = true;
- const micBtn = document.getElementById('mic-btn');
- if (micBtn) { micBtn.style.background = 'var(--em)'; micBtn.style.color = '#fff'; micBtn.style.borderColor = 'var(--em)'; }
+ _voiceSetMicActive(true);
 };
 window.onAndroidSTTResult = function(text) {
  isListening = false;
- const micBtn = document.getElementById('mic-btn');
- if (micBtn) { micBtn.style.background = 'var(--white)'; micBtn.style.color = 'var(--text2)'; micBtn.style.borderColor = 'var(--border)'; }
+ _voiceSetMicActive(false);
  if (text) {
- const input = document.getElementById('chat-input');
- input.value = (input.value ? input.value + ' ' : '') + text;
- autoResize(input);
+ _voiceInsertText(text);
  } else {
  showToast('⚠ Rien entendu, réessaie');
  }
 };
 window.onAndroidSTTError = function(code) {
  isListening = false;
- const micBtn = document.getElementById('mic-btn');
- if (micBtn) { micBtn.style.background = 'var(--white)'; micBtn.style.color = 'var(--text2)'; micBtn.style.borderColor = 'var(--border)'; }
+ _voiceSetMicActive(false);
  if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
  else showToast('⚠ Micro : erreur (' + code + '), réessaie');
 };
 
-async function toggleVoiceInput() {
+async function toggleVoiceInput(targetId, micBtnId) {
+ _voiceTargetId = targetId || 'chat-input';
+ _voiceMicBtnId = micBtnId || 'mic-btn';
+ _voiceAppendNewline = (_voiceTargetId === 'transcript-textarea');
+
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
  if (isListening) { window.AndroidSTT.stopListening(); return; }
@@ -3655,7 +3878,7 @@ async function toggleVoiceInput() {
  showToast('⚠ Reconnaissance vocale indisponible sur cet appareil');
  return;
  }
- const micBtn = document.getElementById('mic-btn');
+ const micBtn = document.getElementById(_voiceMicBtnId);
 
  if (isListening) {
  if (voiceRecognition) voiceRecognition.stop();
@@ -3683,15 +3906,11 @@ async function toggleVoiceInput() {
 
  voiceRecognition.onstart = () => {
  isListening = true;
- micBtn.style.background = 'var(--em)';
- micBtn.style.color = '#fff';
- micBtn.style.borderColor = 'var(--em)';
+ if (micBtn) { micBtn.style.background = 'var(--em)'; micBtn.style.color = '#fff'; micBtn.style.borderColor = 'var(--em)'; }
  };
  voiceRecognition.onresult = (event) => {
  const transcript = event.results[0][0].transcript;
- const input = document.getElementById('chat-input');
- input.value = (input.value ? input.value + ' ' : '') + transcript;
- autoResize(input);
+ _voiceInsertText(transcript);
  };
  voiceRecognition.onerror = (event) => {
  if (event.error === 'not-allowed') showToast('⚠ Autorise le micro dans les paramètres de l\'app');
@@ -3701,9 +3920,7 @@ async function toggleVoiceInput() {
  };
  voiceRecognition.onend = () => {
  isListening = false;
- micBtn.style.background = 'var(--white)';
- micBtn.style.color = 'var(--text2)';
- micBtn.style.borderColor = 'var(--border)';
+ if (micBtn) { micBtn.style.background = 'var(--white)'; micBtn.style.color = 'var(--text2)'; micBtn.style.borderColor = 'var(--border)'; }
  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
  };
 
@@ -3712,6 +3929,56 @@ async function toggleVoiceInput() {
  showToast('⚠ Impossible de démarrer le micro');
  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
  }
+}
+
+// ── OUTIL DE TRANSCRIPTION (écran dédié dans Travaux) ──
+function copyTranscript() {
+ const ta = document.getElementById('transcript-textarea');
+ if (!ta || !ta.value.trim()) { showToast('⚠ Rien à copier'); return; }
+ if (navigator.clipboard && navigator.clipboard.writeText) {
+ navigator.clipboard.writeText(ta.value).then(()=>showToast('✓ Copié')).catch(()=>_fallbackCopyTranscript(ta));
+ } else {
+ _fallbackCopyTranscript(ta);
+ }
+}
+function _fallbackCopyTranscript(ta) {
+ try { ta.select(); document.execCommand('copy'); showToast('✓ Copié'); }
+ catch(e) { showToast('⚠ Impossible de copier'); }
+}
+function clearTranscript() {
+ const ta = document.getElementById('transcript-textarea');
+ if (ta) ta.value = '';
+}
+async function saveTranscriptAsFile() {
+ const ta = document.getElementById('transcript-textarea');
+ if (!ta || !ta.value.trim()) { showToast('⚠ Rien à enregistrer'); return; }
+ try {
+ const blob = new Blob([ta.value], { type:'text/plain' });
+ await saveFileEverywhere(blob, 'transcription_' + Date.now() + '.txt', 'text/plain');
+ } catch(e) {
+ showToast('⚠ Erreur d\'enregistrement (' + (e.message||e) + ')');
+ }
+}
+function sendTranscriptToEditor() {
+ const ta = document.getElementById('transcript-textarea');
+ if (!ta || !ta.value.trim()) { showToast('⚠ Rien à envoyer'); return; }
+ const text = ta.value;
+ docEditorState = { type: 'text', filename: 'transcription_' + Date.now() + '.txt' };
+ showScreen('screen-doceditor');
+ setTimeout(() => {
+ const empty = document.getElementById('doceditor-empty');
+ const content = document.getElementById('doceditor-content');
+ const saveBtn = document.getElementById('doceditor-save-btn');
+ const pdfBtn = document.getElementById('doceditor-pdf-btn');
+ if (empty) empty.style.display = 'none';
+ if (content) {
+ content.style.display = 'block';
+ content.innerHTML = `<textarea id="doceditor-editable" style="width:100%;min-height:400px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-family:monospace;line-height:1.5">${escHtml(text)}</textarea>`;
+ }
+ if (saveBtn) saveBtn.style.display = 'block';
+ if (pdfBtn) pdfBtn.style.display = 'block';
+ }, 60);
+ showToast('✓ Transcription envoyée vers l\'éditeur');
 }
 
 
@@ -5603,7 +5870,7 @@ function renderLibraryDownloads() {
  </div>`;
  return;
  }
- const labels = { word:'DOC', excel:'XLS', pptx:'PPT', latex:'TEX', image:'IMG' };
+ const labels = { word:'DOC', excel:'XLS', pptx:'PPT', pdf:'PDF', latex:'TEX', image:'IMG' };
  el.innerHTML = list.map(d => `
  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
  <div style="width:34px;height:34px;border-radius:9px;background:var(--em);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${labels[d.type]||'DOC'}</div>
