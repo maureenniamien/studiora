@@ -1460,23 +1460,25 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:14px;font-weight:700;margin-bottom:4px">Ouvrir un fichier</div>
  <div style="font-size:12px;color:var(--text3)">Word (.docx), Excel (.xlsx), texte ou LaTeX (.txt/.tex)</div>
  </div>
- <div style="display:flex;gap:10px">
- <button onclick="newBlankDoc('word')" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+ <button onclick="newBlankDoc('word')" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
  <div style="font-size:13px;font-weight:700">+ Nouveau Word</div>
  <div style="font-size:11px;color:var(--text3)">Feuille vierge</div>
  </button>
- <button onclick="newBlankDoc('excel')" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <button onclick="newBlankDoc('excel')" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
  <div style="font-size:13px;font-weight:700">+ Nouveau Excel</div>
  <div style="font-size:11px;color:var(--text3)">Tableau vierge</div>
  </button>
- </div>
- <div style="margin-top:10px">
- <button onclick="newBlankDoc('latex')" style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <button onclick="newBlankDoc('pptx')" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-size:13px;font-weight:700">+ Nouveau PowerPoint</div>
+ <div style="font-size:11px;color:var(--text3)">Diapositive vierge</div>
+ </button>
+ <button onclick="newBlankDoc('latex')" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
  <div style="font-size:13px;font-weight:700">+ Nouveau LaTeX (.tex)</div>
- <div style="font-size:11px;color:var(--text3)">Modèle de départ avec structure de base</div>
+ <div style="font-size:11px;color:var(--text3)">Structure de base</div>
  </button>
  </div>
- <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word et LaTeX : exportables directement en PDF depuis l'éditeur. PowerPoint : téléchargement direct (aperçu non disponible).</div>
+ <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word, PowerPoint et LaTeX se rédigent et se mettent en forme entièrement dans l'app. Word et LaTeX sont aussi exportables directement en PDF.</div>
  </div>
  <div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px"></div>
  <div id="doceditor-content" style="display:none"></div>
@@ -1646,16 +1648,37 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div class="scroll-body" style="padding:16px 20px 100px;flex:1">
  <div style="margin-bottom:12px">
  <input class="input" id="dict-word" placeholder="Entrer un mot ou une phrase à définir..." style="margin-bottom:8px">
- <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
- <button onclick="selectDictMode(this,'define')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Définir<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--em)"></span></button>
- <button onclick="selectDictMode(this,'translate_en')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 20 14" style="flex-shrink:0;border-radius:2px"><rect width="20" height="14" fill="#00247d"/><path d="M0 0L20 14M20 0L0 14" stroke="#fff" stroke-width="2.4"/><path d="M0 0L20 14M20 0L0 14" stroke="#cf142b" stroke-width="1.2"/><path d="M10 0V14M0 7H20" stroke="#fff" stroke-width="4"/><path d="M10 0V14M0 7H20" stroke="#cf142b" stroke-width="2.2"/></svg>EN→FR<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
- <button onclick="selectDictMode(this,'translate_fr')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="1" height="2" fill="#0055A4"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#EF4135"/></svg>FR→EN<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
-
- <button onclick="selectDictMode(this,'translate_es')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="2" fill="#AA151B"/><rect width="3" height="1" y="0.5" fill="#F1BF00"/></svg>FR→ES<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
- <button onclick="selectDictMode(this,'translate_ar')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="0.667" fill="#007A3D"/><rect width="3" height="0.667" y="0.667" fill="#fff"/><rect width="3" height="0.667" y="1.333" fill="#000"/><polygon points="0,0 1,1 0,2" fill="#CE1126"/></svg>FR→AR<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
- <button onclick="selectDictMode(this,'translate_de')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 3" style="flex-shrink:0;border-radius:2px"><rect width="3" height="1" fill="#000"/><rect width="3" height="1" y="1" fill="#DD0000"/><rect width="3" height="1" y="2" fill="#FFCE00"/></svg>FR→DE<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
- <button onclick="selectDictMode(this,'translate_pt')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 5 3" style="flex-shrink:0;border-radius:2px"><rect width="2" height="3" fill="#046A38"/><rect width="3" height="3" x="2" fill="#DA291C"/></svg>FR→PT<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
- <button onclick="selectDictMode(this,'translate_zh')" class="dict-mode-btn" style="position:relative;padding:8px 14px 8px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:inline-flex;align-items:center;gap:5px"><svg width="14" height="10" viewBox="0 0 3 2" style="flex-shrink:0;border-radius:2px"><rect width="3" height="2" fill="#DE2910"/><polygon points="0.5,0.4 0.6,0.7 0.9,0.7 0.65,0.9 0.75,1.2 0.5,1.0 0.25,1.2 0.35,0.9 0.1,0.7 0.4,0.7" fill="#FFDE00"/></svg>FR→ZH<span class="dm-dot" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:transparent"></span></button>
+ <div style="display:flex;gap:8px;margin-bottom:10px">
+ <button id="dict-mode-define-btn" onclick="setDictMainMode('define')" style="flex:1;padding:9px 10px;background:var(--em-soft);border:1.5px solid var(--em);border-radius:10px;color:var(--em);font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Définir</button>
+ <button id="dict-mode-translate-btn" onclick="setDictMainMode('translate')" style="flex:1;padding:9px 10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Traduire</button>
+ </div>
+ <div id="dict-translate-options" style="display:none;margin-bottom:10px">
+ <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Langues de traduction</div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+ <select id="dict-lang-select" class="doc-tb-select" onchange="syncDictModeFromSelect()" style="flex:1;min-width:160px;padding:10px 8px">
+ <option value="en">Anglais</option>
+ <option value="es">Espagnol</option>
+ <option value="de">Allemand</option>
+ <option value="it">Italien</option>
+ <option value="pt">Portugais</option>
+ <option value="ar">Arabe</option>
+ <option value="zh">Chinois (mandarin)</option>
+ <option value="ru">Russe</option>
+ <option value="nl">Néerlandais</option>
+ <option value="tr">Turc</option>
+ <option value="ja">Japonais</option>
+ <option value="ko">Coréen</option>
+ <option value="sw">Swahili</option>
+ <option value="ha">Haoussa</option>
+ <option value="yo">Yoruba</option>
+ <option value="wo">Wolof</option>
+ <option value="dyu">Dioula</option>
+ <option value="bci">Baoulé</option>
+ <option value="bm">Bambara</option>
+ <option value="ln">Lingala</option>
+ </select>
+ <button id="dict-dir-btn" onclick="toggleDictDirection()" style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">⇄ Français → Langue</button>
+ </div>
  </div>
  <button class="btn-em" onclick="searchDict()"> Rechercher</button>
  </div>
@@ -3071,6 +3094,11 @@ function docToolbarHTML() {
  <button class="doc-tb-btn" onclick="docInsertTable()"> Tableau</button>
  <button class="doc-tb-btn" onclick="docExec('insertHorizontalRule')"> Ligne</button>
  <button class="doc-tb-btn" onclick="docInsertDate()"> Date</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Redimensionner le tableau (clique dans une cellule)</span>
+ <button class="doc-tb-btn" onclick="tableAddRow(getFocusedTable('#doceditor-editable'))">+ Ligne</button>
+ <button class="doc-tb-btn" onclick="tableAddCol(getFocusedTable('#doceditor-editable'))">+ Colonne</button>
+ <button class="doc-tb-btn" onclick="tableDelRow(getFocusedTable('#doceditor-editable'))">− Ligne</button>
+ <button class="doc-tb-btn" onclick="tableDelCol(getFocusedTable('#doceditor-editable'))">− Colonne</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Symboles</span>
  ${DOC_SYMBOLS.map(s => `<button onclick="insertDocSymbol('${s}')" class="doc-tb-btn" style="width:30px;padding:0;height:30px">${s}</button>`).join('')}
  </div>
@@ -3257,6 +3285,56 @@ function texInsertSnippet(i) {
  el.setSelectionRange(newPos, newPos);
 }
 
+// ── TABLEAUX GÉNÉRIQUES (redimensionnement lignes/colonnes) : utilisés à la fois
+// dans les tableaux insérés en Word et dans les tableaux insérés en PowerPoint ──
+function getFocusedTable(containerSelector) {
+ const sel = window.getSelection();
+ if (!sel || sel.rangeCount === 0) return null;
+ let node = sel.getRangeAt(0).startContainer;
+ if (node.nodeType === 3) node = node.parentNode;
+ const table = node.closest ? node.closest('table') : null;
+ if (!table) return null;
+ if (containerSelector && !table.closest(containerSelector)) return null;
+ return table;
+}
+function tableAddRow(table) {
+ if (!table) { showToast('⚠ Clique dans une cellule du tableau d\'abord'); return; }
+ const rows = table.querySelectorAll('tr');
+ const lastRow = rows[rows.length-1];
+ const newRow = lastRow.cloneNode(true);
+ newRow.querySelectorAll('td,th').forEach(c=>{ c.innerHTML='&nbsp;'; });
+ table.appendChild(newRow);
+}
+function tableAddCol(table) {
+ if (!table) { showToast('⚠ Clique dans une cellule du tableau d\'abord'); return; }
+ table.querySelectorAll('tr').forEach(tr=>{
+ const lastCell = tr.querySelector('td:last-child,th:last-child');
+ if (!lastCell) return;
+ const newCell = document.createElement(lastCell.tagName);
+ newCell.style.cssText = lastCell.style.cssText;
+ newCell.innerHTML = '&nbsp;';
+ tr.appendChild(newCell);
+ });
+}
+function tableDelRow(table) {
+ if (!table) { showToast('⚠ Clique dans une cellule du tableau d\'abord'); return; }
+ const rows = table.querySelectorAll('tr');
+ if (rows.length <= 1) { showToast('⚠ Impossible de supprimer la dernière ligne'); return; }
+ rows[rows.length-1].remove();
+}
+function tableDelCol(table) {
+ if (!table) { showToast('⚠ Clique dans une cellule du tableau d\'abord'); return; }
+ const firstRow = table.querySelector('tr');
+ if (!firstRow || firstRow.children.length <= 1) { showToast('⚠ Impossible de supprimer la dernière colonne'); return; }
+ table.querySelectorAll('tr').forEach(tr=>{
+ const lastCell = tr.lastElementChild;
+ if (lastCell) lastCell.remove();
+ });
+}
+function execInsertText(text) {
+ try { document.execCommand('insertText', false, text); } catch(e) {}
+}
+
 const LATEX_STARTER = `\\documentclass[a4paper,12pt]{article}
 \\usepackage[utf8]{inputenc}
 \\usepackage[french]{babel}
@@ -3276,6 +3354,101 @@ Ton texte ici...
 \\end{document}
 `;
 
+// ── BARRE D'OUTILS POWERPOINT (Accueil / Insertion / Tableau) ──
+function pptToolbarHTML() {
+ return `<div id="ppt-toolbar" style="margin-bottom:8px">
+ <div class="doc-tb-tabs">
+ <button class="doc-tb-tab active" onclick="pptSwitchTab('accueil',this)">Accueil</button>
+ <button class="doc-tb-tab" onclick="pptSwitchTab('insertion',this)">Insertion</button>
+ <button class="doc-tb-tab" onclick="pptSwitchTab('tableau',this)">Tableau</button>
+ </div>
+ <div class="doc-tb-panel active" data-tab="accueil">
+ <button class="doc-tb-btn" style="font-weight:800" onclick="docExec('bold')" title="Gras">G</button>
+ <button class="doc-tb-btn" style="font-style:italic" onclick="docExec('italic')" title="Italique">I</button>
+ <button class="doc-tb-btn" style="text-decoration:underline" onclick="docExec('underline')" title="Souligné">S</button>
+ <button class="doc-tb-btn" style="text-decoration:line-through" onclick="docExec('strikeThrough')" title="Barré">ab</button>
+ <button class="doc-tb-btn" onclick="docExec('removeFormat')" title="Effacer la mise en forme">⌫A</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de police</span>
+ ${['#000000','#dc2626','#0b6e4f','#1d4ed8','#c47a0b','#7c3aed','#ffffff'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="docExec('foreColor','${c}')"></button>`).join('')}
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Alignement</span>
+ <button class="doc-tb-btn" onclick="docExec('justifyLeft')" title="Aligner à gauche">≡</button>
+ <button class="doc-tb-btn" onclick="docExec('justifyCenter')" title="Centrer">≣</button>
+ <button class="doc-tb-btn" onclick="docExec('justifyRight')" title="Aligner à droite">≡→</button>
+ <button class="doc-tb-btn" onclick="docExec('insertUnorderedList')">• Liste</button>
+ <button class="doc-tb-btn" onclick="docExec('insertOrderedList')">1. Liste</button>
+ </div>
+ <div class="doc-tb-panel" data-tab="insertion">
+ <button class="doc-tb-btn" onclick="pptAddSlide()">+ Diapositive</button>
+ <button class="doc-tb-btn" onclick="pptInsertTable()"> Tableau</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Symboles</span>
+ ${DOC_SYMBOLS.map(s => `<button onclick="execInsertText('${s}')" class="doc-tb-btn" style="width:30px;padding:0;height:30px">${s}</button>`).join('')}
+ </div>
+ <div class="doc-tb-panel" data-tab="tableau">
+ <span style="font-size:11px;color:var(--text3);width:100%">Redimensionner le tableau (clique dans une cellule)</span>
+ <button class="doc-tb-btn" onclick="tableAddRow(getFocusedTable('#doceditor-content'))">+ Ligne</button>
+ <button class="doc-tb-btn" onclick="tableAddCol(getFocusedTable('#doceditor-content'))">+ Colonne</button>
+ <button class="doc-tb-btn" onclick="tableDelRow(getFocusedTable('#doceditor-content'))">− Ligne</button>
+ <button class="doc-tb-btn" onclick="tableDelCol(getFocusedTable('#doceditor-content'))">− Colonne</button>
+ </div>
+ </div>`;
+}
+function pptSwitchTab(tab, btn) {
+ const container = btn.closest('#ppt-toolbar');
+ if (!container) return;
+ container.querySelectorAll('.doc-tb-tab').forEach(b=>b.classList.remove('active'));
+ btn.classList.add('active');
+ container.querySelectorAll('.doc-tb-panel').forEach(p=>p.classList.toggle('active', p.getAttribute('data-tab')===tab));
+}
+function pptSlideHTML(n) {
+ return `<div class="ppt-slide" style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow);position:relative">
+ <div style="position:absolute;top:10px;right:10px;display:flex;gap:6px;align-items:center">
+ <span class="ppt-slide-num" style="font-size:10px;color:var(--text3);background:var(--bg2);border-radius:6px;padding:3px 8px">Diapo ${n}</span>
+ <button onclick="pptDeleteSlide(this)" title="Supprimer la diapositive" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px">✕</button>
+ </div>
+ <div class="ppt-slide-title" contenteditable="true" style="font-size:19px;font-weight:800;color:var(--em);margin:6px 70px 10px 0;min-height:26px" data-placeholder="Titre de la diapositive"></div>
+ <div class="ppt-slide-body" contenteditable="true" style="font-size:14px;line-height:1.6;min-height:100px" data-placeholder="Contenu, points clés..."></div>
+ </div>`;
+}
+function pptAddSlide() {
+ const container = document.getElementById('ppt-slides-container');
+ if (!container) return;
+ const n = container.querySelectorAll('.ppt-slide').length + 1;
+ container.insertAdjacentHTML('beforeend', pptSlideHTML(n));
+ pptRenumberSlides();
+}
+function pptDeleteSlide(btn) {
+ const container = document.getElementById('ppt-slides-container');
+ if (!container) return;
+ const slides = container.querySelectorAll('.ppt-slide');
+ if (slides.length <= 1) { showToast('⚠ Impossible de supprimer la dernière diapositive'); return; }
+ btn.closest('.ppt-slide').remove();
+ pptRenumberSlides();
+}
+function pptRenumberSlides() {
+ const container = document.getElementById('ppt-slides-container');
+ if (!container) return;
+ container.querySelectorAll('.ppt-slide').forEach((s,i) => {
+ const label = s.querySelector('.ppt-slide-num');
+ if (label) label.textContent = 'Diapo ' + (i+1);
+ });
+}
+function pptInsertTable() {
+ // Insère un tableau 2x2 redimensionnable dans le corps de la diapositive ciblée
+ // (celle qui a le focus, sinon la dernière diapositive du document)
+ let target = document.activeElement;
+ if (!target || !target.classList || !target.classList.contains('ppt-slide-body')) {
+ const bodies = document.querySelectorAll('.ppt-slide-body');
+ target = bodies[bodies.length-1];
+ }
+ if (!target) { showToast('⚠ Ajoute d\'abord une diapositive'); return; }
+ target.focus();
+ let html = '<table style="border-collapse:collapse;width:100%;margin:8px 0">';
+ for (let r=0;r<2;r++) { html+='<tr>'; for(let c=0;c<2;c++){ html+='<td style="border:1px solid #ccc;padding:6px 8px">&nbsp;</td>'; } html+='</tr>'; }
+ html+='</table><div><br></div>';
+ try { document.execCommand('insertHTML', false, html); }
+ catch(e) { target.innerHTML += html; }
+}
+
 function newBlankDoc(type) {
  if (type === 'latex') {
  docEditorState = { type: 'text', filename: 'nouveau_document.tex' };
@@ -3286,6 +3459,17 @@ function newBlankDoc(type) {
  document.getElementById('doceditor-content').style.display = 'block';
  document.getElementById('doceditor-save-btn').style.display = 'block';
  document.getElementById('doceditor-pdf-btn').style.display = 'block';
+ return;
+ }
+ if (type === 'pptx') {
+ docEditorState = { type: 'pptx', filename: 'nouvelle_presentation.pptx' };
+ document.getElementById('doceditor-content').innerHTML =
+ pptToolbarHTML() +
+ `<div id="ppt-slides-container">${pptSlideHTML(1)}</div>`;
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = 'none';
  return;
  }
  docEditorState = { type, filename: type==='word' ? 'nouveau_document.docx' : 'nouveau_classeur.xlsx' };
@@ -3465,6 +3649,35 @@ async function saveDocEditorFile() {
  const text = document.getElementById('doceditor-editable').value;
  blob = new Blob([text], { type:'text/plain' });
  mimeType = 'text/plain';
+
+ } else if (docEditorState.type === 'pptx') {
+ const pres = new PptxGenJS();
+ document.querySelectorAll('.ppt-slide').forEach(slideEl => {
+ const slide = pres.addSlide();
+ slide.background = { color: 'FFFFFF' };
+ const titleEl = slideEl.querySelector('.ppt-slide-title');
+ const bodyEl = slideEl.querySelector('.ppt-slide-body');
+ if (titleEl && titleEl.textContent.trim()) {
+ slide.addText(titleEl.textContent.trim(), { x:0.5, y:0.3, w:9, fontSize:26, bold:true, color:'0B6E4F' });
+ }
+ if (bodyEl) {
+ const table = bodyEl.querySelector('table');
+ if (table) {
+ const rows = [...table.querySelectorAll('tr')].map(tr => [...tr.children].map(td => ({ text: td.textContent.trim() })));
+ if (rows.length) slide.addTable(rows, { x:0.5, y:1.4, w:9, fontSize:12, border:{type:'solid',color:'CCCCCC',pt:1} });
+ } else {
+ const items = [...bodyEl.querySelectorAll('li')];
+ if (items.length) {
+ slide.addText(items.map(li=>({ text: li.textContent.trim(), options:{ bullet:true, breakLine:true } })), { x:0.6, y:1.4, w:8.8, fontSize:16 });
+ } else {
+ const text = bodyEl.innerText.trim();
+ if (text) slide.addText(text, { x:0.6, y:1.4, w:8.8, fontSize:16 });
+ }
+ }
+ }
+ });
+ blob = await pres.write({ outputType:'blob' });
+ mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
  } else {
  showToast('⚠ Rien à enregistrer'); return;
@@ -7359,15 +7572,60 @@ function plotGraph() {
 
 // ── DICTIONNAIRE IA ──
 let dictMode = 'define';
+let dictReverse = false; // false : Français → langue sélectionnée ; true : langue sélectionnée → Français
 let dictSearchHistory = [];
-function selectDictMode(btn, mode) {
- dictMode = mode;
- document.querySelectorAll('.dict-mode-btn').forEach(b=>{
- b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600';
- const dot=b.querySelector('.dm-dot'); if(dot) dot.style.background='transparent';
- });
- btn.style.background='var(--em-soft)';btn.style.borderColor='var(--em)';btn.style.color='var(--em)';btn.style.fontWeight='700';
- const activeDot=btn.querySelector('.dm-dot'); if(activeDot) activeDot.style.background='var(--em)';
+const DICT_LANGS = [
+ {code:'en', name:'anglais'}, {code:'es', name:'espagnol'}, {code:'de', name:'allemand'},
+ {code:'it', name:'italien'}, {code:'pt', name:'portugais'}, {code:'ar', name:'arabe'},
+ {code:'zh', name:'chinois (mandarin)'}, {code:'ru', name:'russe'}, {code:'nl', name:'néerlandais'},
+ {code:'tr', name:'turc'}, {code:'ja', name:'japonais'}, {code:'ko', name:'coréen'},
+ {code:'sw', name:'swahili'}, {code:'ha', name:'haoussa'}, {code:'yo', name:'yoruba'},
+ {code:'wo', name:'wolof'}, {code:'dyu', name:'dioula'}, {code:'bci', name:'baoulé'},
+ {code:'bm', name:'bambara'}, {code:'ln', name:'lingala'},
+];
+function setDictMainMode(mode) {
+ const defineBtn = document.getElementById('dict-mode-define-btn');
+ const translateBtn = document.getElementById('dict-mode-translate-btn');
+ const optionsPanel = document.getElementById('dict-translate-options');
+ if (mode === 'define') {
+ dictMode = 'define';
+ defineBtn.style.background='var(--em-soft)'; defineBtn.style.borderColor='var(--em)'; defineBtn.style.color='var(--em)'; defineBtn.style.fontWeight='700';
+ translateBtn.style.background='var(--bg2)'; translateBtn.style.borderColor='var(--border)'; translateBtn.style.color='var(--text2)'; translateBtn.style.fontWeight='600';
+ if (optionsPanel) optionsPanel.style.display = 'none';
+ } else {
+ translateBtn.style.background='var(--em-soft)'; translateBtn.style.borderColor='var(--em)'; translateBtn.style.color='var(--em)'; translateBtn.style.fontWeight='700';
+ defineBtn.style.background='var(--bg2)'; defineBtn.style.borderColor='var(--border)'; defineBtn.style.color='var(--text2)'; defineBtn.style.fontWeight='600';
+ if (optionsPanel) optionsPanel.style.display = 'block';
+ syncDictModeFromSelect();
+ }
+}
+function toggleDictDirection() {
+ dictReverse = !dictReverse;
+ const btn = document.getElementById('dict-dir-btn');
+ const sel = document.getElementById('dict-lang-select');
+ const langName = sel ? (DICT_LANGS.find(l=>l.code===sel.value)||{}).name || 'Langue' : 'Langue';
+ if (btn) btn.textContent = dictReverse ? `⇄ ${capitalize(langName)} → Français` : '⇄ Français → Langue';
+ syncDictModeFromSelect();
+}
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+function syncDictModeFromSelect() {
+ const sel = document.getElementById('dict-lang-select');
+ if (!sel) return;
+ dictMode = 'translate_' + sel.value + (dictReverse ? '_rev' : '');
+ const btn = document.getElementById('dict-dir-btn');
+ if (btn) {
+ const langName = (DICT_LANGS.find(l=>l.code===sel.value)||{}).name || 'langue';
+ btn.textContent = dictReverse ? `⇄ ${capitalize(langName)} → Français` : '⇄ Français → Langue';
+ }
+}
+function dictModeLabel(mode) {
+ if (mode === 'define') return 'Définition';
+ const m = mode.match(/^translate_([a-z]+)(_rev)?$/);
+ if (!m) return '';
+ const code = m[1], rev = !!m[2];
+ const info = DICT_LANGS.find(l=>l.code===code);
+ const name = info ? capitalize(info.name) : code.toUpperCase();
+ return rev ? (name + ' → FR') : ('FR → ' + name);
 }
 async function searchDict() {
  const word = document.getElementById('dict-word').value.trim();
@@ -7375,21 +7633,22 @@ async function searchDict() {
  const resultEl = document.getElementById('dict-result');
  resultEl.style.display = 'block';
  resultEl.textContent = ' Recherche en cours...';
- const prompts = {
- define: `Donne la définition complète et pédagogique du terme "${word}" : définition, étymologie si pertinent, exemples, synonymes, contexte dans les études. En français, pour un étudiant africain.`,
- translate_en: `Traduis "${word}" de l'anglais vers le français. Donne : traduction principale, alternatives, exemples de phrases et contexte. Format clair.`,
- translate_fr: `Traduis "${word}" du français vers l'anglais. Donne : traduction principale, alternatives, exemples de phrases et contexte. Format clair.`,
-
- translate_es: `Traduits "${word}" du français vers l'espagnol. Donne : traduction principale, genre grammatical si applicable, alternatives, exemples de phrases et contexte. Format clair.`,
- translate_ar: `Traduis "${word}" du français vers l'arabe (arabe standard moderne). Donne : traduction en arabe avec translittération latine, exemples de phrases et contexte. Format clair.`,
- translate_de: `Traduis "${word}" du français vers l'allemand. Donne : traduction principale, genre grammatical, alternatives, exemples de phrases et contexte. Format clair.`,
- translate_pt: `Traduis "${word}" du français vers le portugais (brésilien). Donne : traduction principale, alternatives, exemples de phrases et contexte. Format clair.`,
- translate_zh: `Traduis "${word}" du français vers le mandarin (chinois simplifié). Donne : caractères chinois, pinyin, traduction et exemples de phrases. Format clair.`,
- };
+ let prompt;
+ if (dictMode === 'define') {
+ prompt = `Donne la définition complète et pédagogique du terme "${word}" : définition, étymologie si pertinent, exemples, synonymes, contexte dans les études. En français, pour un étudiant africain.`;
+ } else {
+ const m = dictMode.match(/^translate_([a-z]+)(_rev)?$/);
+ const code = m ? m[1] : 'en';
+ const rev = m ? !!m[2] : false;
+ const langInfo = DICT_LANGS.find(l=>l.code===code) || { name: code };
+ const from = rev ? langInfo.name : 'français';
+ const to = rev ? 'français' : langInfo.name;
+ prompt = `Traduis "${word}" de la langue ${from} vers la langue ${to}. Donne : traduction principale, alternatives, exemples de phrases et contexte. Si la langue cible n'utilise pas l'alphabet latin, ajoute une translittération. Explications en français, pour un étudiant africain.`;
+ }
  try {
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',headers:{'Content-Type':'application/json',},
- body:JSON.stringify({model:MODEL,max_tokens:600,system:'Tu es un assistant pédagogique expert pour étudiants africains. Réponds toujours en français de façon claire et structurée.',messages:[{role:'user',content:prompts[dictMode]}]})
+ body:JSON.stringify({model:MODEL,max_tokens:600,system:'Tu es un assistant pédagogique expert pour étudiants africains. Réponds toujours en français de façon claire et structurée.',messages:[{role:'user',content:prompt}]})
  });
  const data = await res.json();
  const result = (data.content && data.content[0] ? data.content[0].text : '') || 'Résultat non disponible';
@@ -7402,11 +7661,10 @@ async function searchDict() {
  }
 }
 function renderDictHistory() {
- const modeLabels = {define:'Définition',translate_en:'EN→FR',translate_fr:'FR→EN',translate_es:'FR→ES',translate_ar:'FR→AR',translate_de:'FR→DE',translate_pt:'FR→PT',translate_zh:'FR→ZH'};
  document.getElementById('dict-history').innerHTML = dictSearchHistory.map(h=>`
  <div onclick="document.getElementById('dict-word').value='${escHtml(h.word)}';searchDict()" style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
  <span style="font-size:13px;font-weight:500">${escHtml(h.word)}</span>
- <span style="font-size:10px;color:var(--text3)">${modeLabels[h.mode]||''}</span>
+ <span style="font-size:10px;color:var(--text3)">${dictModeLabel(h.mode)}</span>
  </div>`).join('');
 }
 
