@@ -489,7 +489,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  
  <!-- Conseil du jour -->
  <div style="padding:16px 20px 0" class="a5">
- <div style="background:linear-gradient(135deg,var(--em-soft),#fff);border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px">
+ <div style="background:linear-gradient(135deg,var(--em-soft),var(--white));border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px">
  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
  
  <span style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px">Conseil du jour</span>
@@ -2932,7 +2932,7 @@ function renderMsgHTML(m) {
  <div class="msg-bubble ai">${formatAiMsg(cleanText)}${docCard}</div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${m.time || ''}</div>
- <button onclick="speakMessage('${b64}')" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <button onclick="speakMessage('${b64}', this)" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
  </button>
  <button onclick="copyMessageText('${b64}')" title="Copier" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
@@ -3761,7 +3761,7 @@ function initExcelLuckysheet(sheetsData, filename) {
  container: 'luckysheet-container',
  lang: 'en',
  title: (filename||'classeur').replace(/\.[^.]+$/,''),
- showtoolbarConfig: { chart:false, image:false, link:false, print:false, screenshot:false },
+ showtoolbarConfig: { chart:false, image:false, link:false, print:false, screenshot:false, postil:false, pivotTable:false, function:false, frozenMode:false, sortAndFilter:false, conditionalFormat:false, dataVerification:false, splitColumn:false, findAndReplace:false, protection:false, exportXlsx:false },
  data: sheetsData && sheetsData.length ? sheetsData : [xlsxRowsToLuckysheetSheet('Feuille1', [], 0)],
  hook: {
  cellUpdateBefore: function(r, c, value, isRefresh) {
@@ -3784,6 +3784,13 @@ function closeLuckysheetOverlay() {
  try { if (window.luckysheet && luckysheet.destroy) luckysheet.destroy(); } catch(e) {}
  const overlay = document.getElementById('luckysheet-overlay');
  if (overlay) overlay.remove();
+ // Luckysheet injecte parfois des menus/tooltips/dialogues directement dans <body>
+ // (hors de #luckysheet-overlay) et modifie le style inline de body/html. S'ils ne
+ // sont pas nettoyés, ils restent au-dessus de l'app et bloquent le clavier tactile
+ // (nav du bas, éditeur Word, etc.) même une fois l'éditeur Excel fermé.
+ document.querySelectorAll('[id^="luckysheet"], .luckysheet-cell-input, .luckysheet-modal-dialog-slider-wrapper').forEach(el => el.remove());
+ document.body.removeAttribute('style');
+ document.documentElement.style.overflow = 'hidden';
 }
 function collectLuckysheetWorkbookRows() {
  const sheets = (window.luckysheet && luckysheet.getAllSheets) ? luckysheet.getAllSheets() : [];
@@ -4606,19 +4613,40 @@ function sendTranscriptToEditor() {
 
 
 
-function speakMessage(b64text) {
+const TTS_ICON_PLAY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
+const TTS_ICON_STOP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+let ttsActiveBtn = null;
+function stopSpeaking() {
+ if (window.AndroidTTS && typeof window.AndroidTTS.stop === 'function') {
+ try { window.AndroidTTS.stop(); } catch(e) {}
+ }
+ if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
+ if (ttsActiveBtn) { ttsActiveBtn.innerHTML = TTS_ICON_PLAY; ttsActiveBtn.title = 'Écouter'; }
+ ttsActiveBtn = null;
+}
+function speakMessage(b64text, btn) {
+ // Un second clic sur le bouton en cours de lecture l'arrête simplement
+ if (btn && ttsActiveBtn === btn) { stopSpeaking(); return; }
+ // Un clic sur un autre message coupe la lecture précédente avant de démarrer la nouvelle
+ stopSpeaking();
+
  const text = decodeURIComponent(escape(atob(b64text)));
  const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
+
+ if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; ttsActiveBtn = btn; }
+
  // 1) Priorité au TTS natif Android (plus fiable dans une WebView que l'API Web Speech)
  if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
  try { window.AndroidTTS.speak(clean); return; } catch(e) { /* on retente en JS pur */ }
  }
  // 2) Repli : API Web Speech du navigateur
- if (!('speechSynthesis' in window)) { showToast('⚠ Synthèse vocale indisponible sur cet appareil'); return; }
+ if (!('speechSynthesis' in window)) { showToast('⚠ Synthèse vocale indisponible sur cet appareil'); stopSpeaking(); return; }
  window.speechSynthesis.cancel();
  const utter = new SpeechSynthesisUtterance(clean);
  utter.lang = 'fr-FR';
  utter.rate = 1;
+ utter.onend = stopSpeaking;
+ utter.onerror = stopSpeaking;
  window.speechSynthesis.speak(utter);
 }
 
