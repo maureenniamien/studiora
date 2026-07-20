@@ -2,7 +2,7 @@
 <html lang="fr" style="height:100%;overflow:hidden">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -26,12 +26,8 @@
 <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/css/pluginsCss.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/plugins.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/css/luckysheet.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/assets/iconfont/iconfont.css">
-<script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/js/plugin.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/luckysheet.umd.js"></script>
+<!-- Luckysheet (éditeur Excel) est volumineux : il est chargé à la demande via loadLuckysheetAssets(),
+ seulement quand l'utilisateur ouvre réellement Excel, pour ne pas ralentir le démarrage de l'app. -->
 <style>
 :root {
  --bg: #F7F6F2;
@@ -1366,6 +1362,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
  </button>
  <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour parler · chaque prise de parole ajoute une ligne</div>
+ <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
  </div>
  <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
  <div style="display:flex;gap:8px;margin-top:12px">
@@ -1754,6 +1751,18 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 // ── CONFIGURATION ──
 const MODEL = 'llama-3.1-8b-instant';
 
+// Horodatage de la dernière modification locale réelle des données synchronisées
+// (stats, série, arbre, matières perso). Contrairement à Date.now() calculé au
+// moment de l'envoi, celui-ci reflète le moment où la donnée a VRAIMENT changé,
+// ce qui permet à pullCloudSync() de comparer correctement "local vs cloud" au
+// lieu de toujours croire le local plus récent (et donc d'ignorer le cloud).
+function touchLocalStateUpdatedAt() {
+ try { localStorage.setItem('studiora_state_updatedAt', String(Date.now())); } catch(e) {}
+}
+function getLocalStateUpdatedAt() {
+ return parseInt(localStorage.getItem('studiora_state_updatedAt') || '0', 10);
+}
+
 // ── STREAK (jours de connexion réels) ──
 function computeStreak() {
  const today = new Date().toISOString().slice(0,10);
@@ -1766,6 +1775,8 @@ function computeStreak() {
  // Garder max 365 jours
  if (days.length > 365) days = days.slice(-365);
  localStorage.setItem('studiora_days', JSON.stringify(days));
+ touchLocalStateUpdatedAt();
+ pushCloudSync();
  }
 
  // Trier et compter jours consécutifs en remontant depuis aujourd'hui
@@ -1798,6 +1809,7 @@ function getStats() {
 }
 function saveStats(s) {
  localStorage.setItem('studiora_stats', JSON.stringify(s));
+ touchLocalStateUpdatedAt();
  pushCloudSync();
 }
 function incrementSessions() {
@@ -1864,7 +1876,11 @@ const TREE_STAGES = [
 function getTreeData() {
  try { return JSON.parse(localStorage.getItem('studiora_tree') || '{}'); } catch(e) { return {}; }
 }
-function saveTreeData(d) { localStorage.setItem('studiora_tree', JSON.stringify(d)); }
+function saveTreeData(d) {
+ localStorage.setItem('studiora_tree', JSON.stringify(d));
+ touchLocalStateUpdatedAt();
+ pushCloudSync();
+}
 
 // Attribue les points du jour (une seule fois chacun par jour) et met à jour
 // l'état maladie/guérison. Appelé à chaque affichage du widget.
@@ -2265,7 +2281,7 @@ function getSubjectCustomizations() {
  return (d && typeof d==='object') ? { added: d.added||[], removed: d.removed||[], customNames: d.customNames||{} } : { added:[], removed:[], customNames:{} };
  } catch(e) { return { added:[], removed:[], customNames:{} }; }
 }
-function saveSubjectCustomizations(c) { localStorage.setItem('studiora_subject_custom', JSON.stringify(c)); pushCloudSync(); }
+function saveSubjectCustomizations(c) { localStorage.setItem('studiora_subject_custom', JSON.stringify(c)); touchLocalStateUpdatedAt(); pushCloudSync(); }
 function applySubjectCustomizations(subjects) {
  const c = getSubjectCustomizations();
  let result = subjects.filter(s => !c.removed.includes(s.id));
@@ -2523,6 +2539,7 @@ function onScreenEnter(id) {
  if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); renderSharedDocs(); }
  if(id==='screen-library') { renderLibraryImports(); renderLibraryDownloads(); }
  if(id==='screen-diagrams') renderSavedDiagrams();
+ if(id==='screen-transcription') updateTranscriptionQuotaLabel();
 }
 
 // ── TOAST ──
@@ -3738,11 +3755,39 @@ function translateFrenchFormula(value) {
  });
  return out;
 }
-function initExcelLuckysheet(sheetsData, filename) {
- if (!window.luckysheet) {
- showToast('⚠ L\'éditeur Excel enrichi n\'a pas pu charger (connexion internet requise au premier lancement)');
- return;
- }
+// Charge les CSS/JS de Luckysheet à la demande (pinnés en v2.1.13 pour un cache
+// CDN fiable — "@latest" force une résolution à chaque fois et casse le cache).
+// Chargés une seule fois : les appels suivants réutilisent la même promesse.
+let _luckysheetAssetsPromise = null;
+function loadLuckysheetAssets() {
+ if (window.luckysheet) return Promise.resolve();
+ if (_luckysheetAssetsPromise) return _luckysheetAssetsPromise;
+ const CSS = [
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/plugins.css',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/css/luckysheet.css',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css',
+ ];
+ const JS = [
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js',
+ ];
+ CSS.forEach(href => {
+ if (document.querySelector(`link[href="${href}"]`)) return;
+ const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href;
+ document.head.appendChild(l);
+ });
+ const loadScript = src => new Promise((resolve, reject) => {
+ if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+ const s = document.createElement('script'); s.src = src;
+ s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + src));
+ document.head.appendChild(s);
+ });
+ _luckysheetAssetsPromise = JS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve())
+ .catch(e => { _luckysheetAssetsPromise = null; throw e; });
+ return _luckysheetAssetsPromise;
+}
+async function initExcelLuckysheet(sheetsData, filename) {
  let overlay = document.getElementById('luckysheet-overlay');
  if (overlay) overlay.remove();
  overlay = document.createElement('div');
@@ -3751,11 +3796,28 @@ function initExcelLuckysheet(sheetsData, filename) {
  overlay.innerHTML = `
  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(env(safe-area-inset-top,0px) + 10px, 38px) 14px 8px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0">
  <button onclick="closeLuckysheetOverlay()" class="back-btn">← Retour</button>
- <button id="luckysheet-save-btn" onclick="saveLuckysheetFile()" style="background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Enregistrer</button>
+ <button id="luckysheet-save-btn" onclick="saveLuckysheetFile()" style="display:none;background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Enregistrer</button>
  </div>
- <div id="luckysheet-container" style="flex:1;position:relative;min-height:0"></div>
+ <div id="luckysheet-container" style="flex:1;position:relative;min-height:0;display:flex;align-items:center;justify-content:center">
+ <div style="text-align:center;color:var(--text3);font-size:13px">
+ <div class="spinner" style="margin:0 auto 12px"></div>
+ Chargement de l'éditeur Excel…
+ </div>
+ </div>
  `;
  document.body.appendChild(overlay);
+ try {
+ await loadLuckysheetAssets();
+ } catch(e) {
+ showToast('⚠ L\'éditeur Excel enrichi n\'a pas pu charger (connexion internet requise au premier lancement)');
+ return;
+ }
+ // L'utilisateur a peut-être fermé l'overlay pendant le chargement des librairies
+ if (!document.getElementById('luckysheet-overlay')) return;
+ const container = document.getElementById('luckysheet-container');
+ if (container) { container.style.display = 'block'; container.innerHTML = ''; }
+ const saveBtn = document.getElementById('luckysheet-save-btn');
+ if (saveBtn) saveBtn.style.display = 'block';
  try {
  luckysheet.create({
  container: 'luckysheet-container',
@@ -4449,6 +4511,8 @@ let micStream = null; // garde le flux micro ouvert le temps de l'écoute
 let _voiceTargetId = 'chat-input'; // champ où insérer le texte reconnu
 let _voiceMicBtnId = 'mic-btn'; // bouton dont on change l'apparence pendant l'écoute
 let _voiceAppendNewline = false; // true pour l'outil de transcription (une ligne par prise de parole)
+let _voiceSessionIsTranscription = false; // capture figée au démarrage (le quota s'applique seulement à l'outil de transcription)
+let _voiceSessionStartTs = 0;
 
 function _voiceInsertText(text) {
  const el = document.getElementById(_voiceTargetId);
@@ -4472,11 +4536,14 @@ function _voiceSetMicActive(active) {
 // utilisée en priorité car l'API web SpeechRecognition échoue en WebView sur cet appareil)
 window.onAndroidSTTStart = function() {
  isListening = true;
+ _voiceSessionStartTs = Date.now();
  _voiceSetMicActive(true);
 };
 window.onAndroidSTTResult = function(text) {
  isListening = false;
  _voiceSetMicActive(false);
+ if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
+ _voiceSessionStartTs = 0;
  if (text) {
  _voiceInsertText(text);
  } else {
@@ -4486,6 +4553,8 @@ window.onAndroidSTTResult = function(text) {
 window.onAndroidSTTError = function(code) {
  isListening = false;
  _voiceSetMicActive(false);
+ if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
+ _voiceSessionStartTs = 0;
  if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
  else showToast('⚠ Micro : erreur (' + code + '), réessaie');
 };
@@ -4494,6 +4563,12 @@ async function toggleVoiceInput(targetId, micBtnId) {
  _voiceTargetId = targetId || 'chat-input';
  _voiceMicBtnId = micBtnId || 'mic-btn';
  _voiceAppendNewline = (_voiceTargetId === 'transcript-textarea');
+
+ if (_voiceAppendNewline && !isListening && !canUseTranscription()) {
+ showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
+ return;
+ }
+ _voiceSessionIsTranscription = _voiceAppendNewline;
 
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
@@ -4536,6 +4611,7 @@ async function toggleVoiceInput(targetId, micBtnId) {
 
  voiceRecognition.onstart = () => {
  isListening = true;
+ _voiceSessionStartTs = Date.now();
  if (micBtn) { micBtn.style.background = 'var(--em)'; micBtn.style.color = '#fff'; micBtn.style.borderColor = 'var(--em)'; }
  };
  voiceRecognition.onresult = (event) => {
@@ -4550,6 +4626,8 @@ async function toggleVoiceInput(targetId, micBtnId) {
  };
  voiceRecognition.onend = () => {
  isListening = false;
+ if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
+ _voiceSessionStartTs = 0;
  if (micBtn) { micBtn.style.background = 'var(--white)'; micBtn.style.color = 'var(--text2)'; micBtn.style.borderColor = 'var(--border)'; }
  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
  };
@@ -6631,7 +6709,9 @@ const SESSION_KEY = 'studiora_session';
 // plus du localStorage qui reste utilisé comme cache rapide/hors-ligne.
 // Nécessite : ALTER TABLE users ADD COLUMN app_state jsonb; (silencieux si absent)
 function getLocalStateBlob() {
- return { stats: getStats(), curriculum: getCurriculumCache(), subjectCustom: getSubjectCustomizations(), updatedAt: Date.now() };
+ let days = [];
+ try { days = JSON.parse(localStorage.getItem('studiora_days') || '[]'); } catch(e) {}
+ return { stats: getStats(), curriculum: getCurriculumCache(), subjectCustom: getSubjectCustomizations(), days, tree: getTreeData(), updatedAt: getLocalStateUpdatedAt() };
 }
 let _cloudSyncTimer = null;
 function pushCloudSync() {
@@ -6646,9 +6726,24 @@ function pushCloudSync() {
  }).catch(()=>{}); // colonne absente / hors-ligne : on continue avec le localStorage seul
  }, 800);
 }
-// Au login/chargement, on va chercher l'état cloud et on l'adopte s'il est
-// plus récent que ce qu'on a en local (par device/domaine) — sinon on
-// pousse l'état local pour rattraper le cloud.
+// Recalcule le total de points de l'arbre à partir de l'historique fusionné
+// des attributions journalières (2 pts série + 4 pts défi + 2 pts score, par
+// jour où le flag est vrai). Évite de perdre des points gagnés sur un autre
+// appareil quand on fusionne deux historiques "awarded".
+function recomputeTreePoints(awarded) {
+ let pts = 0;
+ Object.values(awarded || {}).forEach(day => {
+ if (day.streak) pts += 2;
+ if (day.challenge) pts += 4;
+ if (day.score) pts += 2;
+ });
+ return pts;
+}
+// Au login/chargement, on va chercher l'état cloud et on le fusionne avec le
+// local : les jours de série et les points de l'arbre sont FUSIONNÉS (union)
+// pour ne jamais perdre une journée/un point gagné sur un autre appareil ; les
+// stats/curriculum/matières perso suivent le plus récent des deux (maintenant
+// que updatedAt reflète le vrai moment de modification, pas l'instant de l'appel).
 async function pullCloudSync() {
  if (!APP.user || !APP.user.email) return;
  try {
@@ -6660,14 +6755,43 @@ async function pullCloudSync() {
  const cloud = rows && rows[0] && rows[0].app_state;
  if (!cloud) { pushCloudSync(); return; }
  const local = getLocalStateBlob();
+ let changed = false;
+
+ // Fusion des jours de série (union, jamais de perte)
+ if (Array.isArray(cloud.days) && cloud.days.length) {
+ const merged = Array.from(new Set([...(local.days||[]), ...cloud.days])).sort();
+ if (merged.length !== (local.days||[]).length) {
+ localStorage.setItem('studiora_days', JSON.stringify(merged.slice(-365)));
+ changed = true;
+ }
+ }
+
+ // Fusion de l'arbre de connaissance (union des attributions journalières)
+ if (cloud.tree && cloud.tree.awarded) {
+ const localTree = getTreeData();
+ const mergedAwarded = { ...(localTree.awarded||{}) };
+ Object.keys(cloud.tree.awarded).forEach(day => {
+ mergedAwarded[day] = { ...(mergedAwarded[day]||{}), ...cloud.tree.awarded[day] };
+ });
+ const mergedPoints = recomputeTreePoints(mergedAwarded);
+ if (mergedPoints !== (localTree.points||0) || JSON.stringify(mergedAwarded) !== JSON.stringify(localTree.awarded||{})) {
+ const mergedRewards = Array.from(new Set([...(localTree.rewardsClaimed||[]), ...(cloud.tree.rewardsClaimed||[])]));
+ localStorage.setItem('studiora_tree', JSON.stringify({ ...localTree, awarded: mergedAwarded, points: mergedPoints, rewardsClaimed: mergedRewards }));
+ changed = true;
+ }
+ }
+
+ // Stats / curriculum / matières perso : le plus récent des deux gagne
  if ((cloud.updatedAt||0) > (local.updatedAt||0)) {
  if (cloud.stats) saveStats(cloud.stats);
  if (cloud.curriculum) localStorage.setItem('studiora_curriculum_cache', JSON.stringify(cloud.curriculum));
  if (cloud.subjectCustom) saveSubjectCustomizations(cloud.subjectCustom);
  SUBJECTS = getSubjects();
- } else {
- pushCloudSync();
+ changed = true;
  }
+
+ if (changed) { touchLocalStateUpdatedAt(); pushCloudSync(); }
+ else pushCloudSync();
  } catch(e) { /* colonne absente ou hors-ligne : silencieux, le localStorage reste la source */ }
 }
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
@@ -6711,10 +6835,10 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const ADMIN_EMAIL = 'm16reen@gmail.com';
 
 const PLANS = {
- free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10 },
- premium: { name:'Premium', color:'#0B6E4F', ia_per_4h:45, quiz_per_5h:20, fc_per_day:30 },
- vip: { name:'VIP', color:'#f59e0b', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999 },
- admin: { name:'Admin', color:'#7c3aed', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999 }
+ free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10, transcription_min_per_day:150 },
+ premium: { name:'Premium', color:'#0B6E4F', ia_per_4h:45, quiz_per_5h:20, fc_per_day:30, transcription_min_per_day:300 },
+ vip: { name:'VIP', color:'#f59e0b', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999, transcription_min_per_day:999 },
+ admin: { name:'Admin', color:'#7c3aed', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999, transcription_min_per_day:999 }
 };
 
 function getPlan() {
@@ -6831,6 +6955,33 @@ function canUseFC() {
  if (isAdmin()||getPlan()==='vip') return true;
  const d=getUsageToday();
  return (d.fc||0) < getPlanLimits().fc_per_day;
+}
+
+// ── QUOTA DE TRANSCRIPTION (compte le temps réel d'écoute, pas le nombre de
+// sessions, pour ne jamais dépasser le budget même si une prise de parole
+// dure plus ou moins que 30/60 min) ──
+function getTranscriptionQuotaSec() { return (getPlanLimits().transcription_min_per_day || 150) * 60; }
+function getTranscriptionUsedSec() { return getUsageToday().transcribeSec || 0; }
+function getTranscriptionRemainingSec() { return Math.max(0, getTranscriptionQuotaSec() - getTranscriptionUsedSec()); }
+function canUseTranscription() {
+ if (isAdmin()||getPlan()==='vip') return true;
+ return getTranscriptionRemainingSec() > 0;
+}
+function addTranscriptionUsageSec(sec) {
+ if (!sec || sec <= 0) return;
+ const u=getUsage(), today=getTodayKey();
+ if (!u[today]) u[today]={ia:0,quiz:0,fc:0,ia_reset:Date.now(),quiz_reset:Date.now()};
+ u[today].transcribeSec = (u[today].transcribeSec||0) + sec;
+ saveUsage(u);
+ updateTranscriptionQuotaLabel();
+}
+function updateTranscriptionQuotaLabel() {
+ const el = document.getElementById('transcribe-quota-label');
+ if (!el) return;
+ if (isAdmin()||getPlan()==='vip') { el.textContent = 'Temps de transcription illimité'; return; }
+ const remainingMin = Math.floor(getTranscriptionRemainingSec()/60);
+ const quotaMin = Math.round(getTranscriptionQuotaSec()/60);
+ el.textContent = 'Temps de transcription restant aujourd\'hui : ' + remainingMin + ' / ' + quotaMin + ' min';
 }
 
 // Modal upgrade
