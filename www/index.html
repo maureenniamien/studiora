@@ -22,18 +22,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<!-- ── Éditeur Word complet : Quill (thème snow, barre d'outils riche) ── -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.snow.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.min.js"></script>
-<!-- ── Éditeur Excel complet : Luckysheet (tableur, formules, mise en forme) ── -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/plugins.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/css/luckysheet.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css">
-<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/luckyexcel@1.0.1/dist/luckyexcel.umd.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/css/pluginsCss.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/plugins.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/css/luckysheet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/assets/iconfont/iconfont.css">
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/js/plugin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/luckysheet.umd.js"></script>
 <style>
 :root {
  --bg: #F7F6F2;
@@ -1490,7 +1488,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:11px;color:var(--text3)">Structure de base</div>
  </button>
  </div>
- <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word, PowerPoint et LaTeX se rédigent et se mettent en forme entièrement dans l'app. Word et LaTeX sont aussi exportables directement en PDF.</div>
+ <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word, PowerPoint et LaTeX se rédigent et se mettent en forme entièrement dans l'app. Word et LaTeX sont aussi exportables directement en PDF. Excel s'ouvre en plein écran pour l'expérience la plus proche d'un vrai tableur.</div>
  </div>
  <div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px"></div>
  <div id="doceditor-content" style="display:none"></div>
@@ -2402,6 +2400,8 @@ let screenHistory = [];
 // Appelée par MainActivity.java quand l'utilisateur appuie sur le bouton retour physique.
 // Renvoie true si géré en interne (retour à l'écran précédent), false pour laisser Android fermer l'app.
 window.onAndroidBackPressed = function() {
+ const lsOverlay = document.getElementById('luckysheet-overlay');
+ if (lsOverlay) { closeLuckysheetOverlay(); return true; }
  const curr = document.querySelector('.screen:not(.hidden)');
  if (!curr) return false;
  const exitScreens = ['screen-home', 'screen-onboarding', 'screen-login'];
@@ -2456,6 +2456,12 @@ function updateGlobalNav(id) {
 }
 
 function showScreen(id, skipHistory) {
+ // Le calque Luckysheet vit hors de la hiérarchie normale des écrans (il a besoin
+ // d'un espace plein écran fixe) : on le referme systématiquement si on change d'écran.
+ if (id !== 'screen-doceditor') {
+ const lsOverlay = document.getElementById('luckysheet-overlay');
+ if (lsOverlay) { try { closeLuckysheetOverlay(); } catch(e) { lsOverlay.remove(); } }
+ }
  const curr = document.querySelector('.screen:not(.hidden):not(.slide-left)');
  if (curr && curr.id !== id) {
  if (!skipHistory) screenHistory.push(curr.id);
@@ -2824,11 +2830,6 @@ function copyMessageText(b64text) {
 // Génère et télécharge un vrai fichier Word/Excel/PowerPoint/LaTeX à partir d'une directive IA
 // ── ÉDITEUR DE DOCUMENTS (Word / Excel / texte-LaTeX) ──
 let docEditorState = { type: null, filename: null };
-// Instance Quill (éditeur Word) et drapeau Luckysheet (éditeur Excel) actifs —
-// utilisés pour lire/écrire le contenu et pour tout nettoyer proprement
-// quand on quitte l'éditeur ou qu'on ouvre un autre fichier.
-let quillInstance = null;
-let luckysheetActive = false;
 
 const DOC_SYMBOLS = ['°','±','÷','×','≤','≥','≠','≈','½','¼','∞','√','π','Σ','Δ','→','←','↔','★','✓','✕','☐','§','€','©'];
 
@@ -3458,53 +3459,190 @@ function pptInsertTable() {
  catch(e) { target.innerHTML += html; }
 }
 
-// ── Initialise l'éditeur Word (Quill, thème snow) ──
-// Quill prend le div #doceditor-editable et le transforme en zone éditable
-// (.ql-editor à l'intérieur, barre d'outils insérée juste au-dessus).
-function initQuillEditor(initialHtml) {
+// ── ÉDITEUR WORD PROFESSIONNEL (Quill + quill-table-better) ──
+let quillEditor = null;
+let quillTableModule = null;
+function ensureQuillTableRegistered() {
+ if (window._qtbRegistered) return;
+ if (window.Quill && window.QuillTableBetter) {
+ Quill.register({ 'modules/table-better': QuillTableBetter }, true);
+ window._qtbRegistered = true;
+ }
+}
+function initWordQuillEditor(initialHTML) {
+ if (!window.Quill) {
+ // Repli si Quill n'a pas pu charger (ex. pas de réseau au premier lancement)
  document.getElementById('doceditor-content').innerHTML =
- `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
- <div id="doceditor-editable" style="min-height:320px;font-size:14px;line-height:1.6"></div>
- </div>`;
- quillInstance = new Quill('#doceditor-editable', {
- theme: 'snow',
- placeholder: 'Commence à écrire...',
- modules: {
- toolbar: [
+ `<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">⚠ L'éditeur Word enrichi n'a pas pu se charger (connexion internet requise au premier lancement). Réessaie avec une connexion active.</div>`;
+ return;
+ }
+ ensureQuillTableRegistered();
+ document.getElementById('doceditor-content').innerHTML = `
+ <div id="doc-word-extra-toolbar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;background:var(--bg2);border-radius:10px;padding:8px">
+ <button class="doc-tb-btn" onclick="quillInsertDate()"> Date</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Symboles</span>
+ ${DOC_SYMBOLS.map(s => `<button onclick="quillInsertSymbol('${s}')" class="doc-tb-btn" style="width:30px;padding:0;height:30px">${s}</button>`).join('')}
+ </div>
+ <div id="doceditor-quill-wrap" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden">
+ <div id="doceditor-quill" style="min-height:320px"></div>
+ </div>
+ <div style="font-size:11px;color:var(--text3);margin-top:6px">Utilise l'icône tableau dans la barre d'outils pour insérer un tableau redimensionnable (lignes/colonnes).</div>
+ `;
+ const toolbarOptions = window.QuillTableBetter ? [
  [{ header: [1,2,3,false] }],
  ['bold','italic','underline','strike'],
  [{ color: [] }, { background: [] }],
- [{ list:'ordered' }, { list:'bullet' }],
- [{ indent:'-1' }, { indent:'+1' }],
+ [{ script:'sub' },{ script:'super' }],
+ [{ list:'ordered' },{ list:'bullet' }],
+ [{ indent:'-1' },{ indent:'+1' }],
  [{ align: [] }],
- ['blockquote','code-block'],
- ['link','image'],
+ ['blockquote','link'],
+ ['table-better'],
  ['clean']
- ]
+ ] : [
+ [{ header: [1,2,3,false] }],
+ ['bold','italic','underline','strike'],
+ [{ color: [] }, { background: [] }],
+ [{ script:'sub' },{ script:'super' }],
+ [{ list:'ordered' },{ list:'bullet' }],
+ [{ indent:'-1' },{ indent:'+1' }],
+ [{ align: [] }],
+ ['blockquote','link'],
+ ['clean']
+ ];
+ const moduleConfig = { toolbar: toolbarOptions };
+ if (window.QuillTableBetter) {
+ moduleConfig.table = false;
+ moduleConfig['table-better'] = { language:'en_US', toolbarTable:true };
+ moduleConfig.keyboard = { bindings: QuillTableBetter.keyboardBindings };
  }
+ quillEditor = new Quill('#doceditor-quill', {
+ theme: 'snow',
+ placeholder: 'Commence à écrire...',
+ modules: moduleConfig
  });
- if (initialHtml) quillInstance.clipboard.dangerouslyPasteHTML(initialHtml);
+ quillTableModule = window.QuillTableBetter ? (quillEditor.getModule('table-better') || null) : null;
+ if (initialHTML) {
+ try {
+ const delta = quillEditor.clipboard.convert({ html: initialHTML });
+ quillEditor.setContents(delta, 'silent');
+ } catch(e) {
+ quillEditor.root.innerHTML = initialHTML;
+ }
+ }
+}
+function quillInsertDate() {
+ if (!quillEditor) return;
+ const range = quillEditor.getSelection(true) || { index: quillEditor.getLength() };
+ quillEditor.insertText(range.index, new Date().toLocaleDateString('fr-FR'), 'user');
+}
+function quillInsertSymbol(sym) {
+ if (!quillEditor) return;
+ const range = quillEditor.getSelection(true) || { index: quillEditor.getLength() };
+ quillEditor.insertText(range.index, sym, 'user');
 }
 
-// ── Initialise l'éditeur Excel (Luckysheet, tableur complet) ──
-// sheetsData : tableau au format Luckysheet (venant de LuckyExcel), ou null
-// pour un classeur vierge à une feuille.
-function initLuckysheetEditor(sheetsData) {
- document.getElementById('doceditor-content').innerHTML =
- `<div id="luckysheet-container" style="width:100%;height:65vh;border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative"></div>`;
- luckysheetActive = true;
- // Petit délai pour laisser le conteneur prendre sa taille réelle dans la
- // mise en page avant que Luckysheet ne calcule ses dimensions internes.
- setTimeout(() => {
- const opts = {
+// ── ÉDITEUR EXCEL PROFESSIONNEL (Luckysheet) ──
+// Luckysheet a besoin d'un espace d'affichage fixe (comme un vrai tableur plein
+// écran) : on lui donne donc un calque dédié par-dessus l'app plutôt que de
+// l'insérer dans la zone de défilement normale, qui n'a pas de hauteur fixe.
+function xlsxRowsToLuckysheetSheet(sheetName, rows, index) {
+ const celldata = [];
+ (rows||[]).forEach((row,r) => {
+ (row||[]).forEach((val,c) => {
+ if (val !== undefined && val !== null && val !== '') {
+ celldata.push({ r, c, v: { v: val, m: String(val) } });
+ }
+ });
+ });
+ return {
+ name: (sheetName || 'Feuille1').slice(0,31),
+ index: String(index||0),
+ order: index||0,
+ status: index===0 ? 1 : 0,
+ row: Math.max(50, (rows||[]).length + 20),
+ column: Math.max(26, Math.max(0, ...(rows||[]).map(r=>(r||[]).length)) + 10),
+ celldata,
+ };
+}
+function initExcelLuckysheet(sheetsData, filename) {
+ if (!window.luckysheet) {
+ showToast('⚠ L\'éditeur Excel enrichi n\'a pas pu charger (connexion internet requise au premier lancement)');
+ return;
+ }
+ let overlay = document.getElementById('luckysheet-overlay');
+ if (overlay) overlay.remove();
+ overlay = document.createElement('div');
+ overlay.id = 'luckysheet-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#fff;display:flex;flex-direction:column';
+ overlay.innerHTML = `
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(env(safe-area-inset-top,0px) + 10px, 38px) 14px 8px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0">
+ <button onclick="closeLuckysheetOverlay()" class="back-btn">← Retour</button>
+ <button id="luckysheet-save-btn" onclick="saveLuckysheetFile()" style="background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Enregistrer</button>
+ </div>
+ <div id="luckysheet-container" style="flex:1;position:relative;min-height:0"></div>
+ `;
+ document.body.appendChild(overlay);
+ try {
+ luckysheet.create({
  container: 'luckysheet-container',
  lang: 'en',
- showtoolbarConfig: { chart: false },
- title: (docEditorState.filename || 'Classeur').replace(/\.[^.]+$/, '')
- };
- if (sheetsData && sheetsData.length) opts.data = sheetsData;
- luckysheet.create(opts);
- }, 60);
+ title: (filename||'classeur').replace(/\.[^.]+$/,''),
+ showtoolbarConfig: { chart:false, image:false, link:false, print:false, screenshot:false },
+ data: sheetsData && sheetsData.length ? sheetsData : [xlsxRowsToLuckysheetSheet('Feuille1', [], 0)],
+ });
+ } catch(e) {
+ showToast('⚠ Erreur au chargement de l\'éditeur Excel (' + (e.message||e) + ')');
+ }
+}
+function closeLuckysheetOverlay() {
+ try { if (window.luckysheet && luckysheet.destroy) luckysheet.destroy(); } catch(e) {}
+ const overlay = document.getElementById('luckysheet-overlay');
+ if (overlay) overlay.remove();
+}
+function collectLuckysheetWorkbookRows() {
+ const sheets = (window.luckysheet && luckysheet.getAllSheets) ? luckysheet.getAllSheets() : [];
+ return sheets.map(sheet => {
+ let rows = [];
+ if (Array.isArray(sheet.data) && sheet.data.length) {
+ rows = sheet.data.map(row => (row||[]).map(cell => {
+ if (cell === null || cell === undefined) return '';
+ if (typeof cell === 'object') return (cell.v !== undefined && cell.v !== null) ? cell.v : (cell.m || '');
+ return cell;
+ }));
+ } else if (Array.isArray(sheet.celldata)) {
+ const maxR = Math.max(0, ...sheet.celldata.map(c=>c.r));
+ const maxC = Math.max(0, ...sheet.celldata.map(c=>c.c));
+ rows = Array.from({length:maxR+1}, () => Array(maxC+1).fill(''));
+ sheet.celldata.forEach(c => {
+ const raw = c.v;
+ const v = raw && typeof raw === 'object' ? ((raw.v !== undefined && raw.v !== null) ? raw.v : raw.m) : raw;
+ rows[c.r][c.c] = v != null ? v : '';
+ });
+ }
+ // retire les lignes/colonnes vides en fin de tableau
+ while (rows.length && rows[rows.length-1].every(v=>v==='')) rows.pop();
+ return { name: sheet.name || 'Feuille', rows };
+ });
+}
+async function saveLuckysheetFile() {
+ const btn = document.getElementById('luckysheet-save-btn');
+ try {
+ const sheets = collectLuckysheetWorkbookRows();
+ const wb = XLSX.utils.book_new();
+ sheets.forEach(s => {
+ const ws = XLSX.utils.aoa_to_sheet(s.rows.length ? s.rows : [['']]);
+ XLSX.utils.book_append_sheet(wb, ws, (s.name||'Feuille').slice(0,31));
+ });
+ const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+ const blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+ const filename = docEditorState.filename || 'classeur.xlsx';
+ await saveFileEverywhere(blob, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+ if (btn) { const old = btn.textContent; btn.textContent = '✓ Enregistré'; setTimeout(()=>{ if(btn) btn.textContent = old; }, 1500); }
+ } catch(e) {
+ if (btn) btn.textContent = '⚠ Erreur';
+ showToast('⚠ Erreur d\'enregistrement (' + (e.message||e) + ')');
+ }
 }
 
 function newBlankDoc(type) {
@@ -3530,15 +3668,19 @@ function newBlankDoc(type) {
  document.getElementById('doceditor-pdf-btn').style.display = 'none';
  return;
  }
- docEditorState = { type, filename: type==='word' ? 'nouveau_document.docx' : 'nouveau_classeur.xlsx' };
+ if (type === 'word') {
+ docEditorState = { type: 'word', filename: 'nouveau_document.docx' };
  document.getElementById('doceditor-empty').style.display = 'none';
  document.getElementById('doceditor-content').style.display = 'block';
  document.getElementById('doceditor-save-btn').style.display = 'block';
- document.getElementById('doceditor-pdf-btn').style.display = (type === 'word') ? 'block' : 'none';
- if (type === 'word') {
- initQuillEditor('');
- } else {
- initLuckysheetEditor(null);
+ document.getElementById('doceditor-pdf-btn').style.display = 'block';
+ initWordQuillEditor('');
+ return;
+ }
+ if (type === 'excel') {
+ docEditorState = { type: 'excel', filename: 'nouveau_classeur.xlsx' };
+ initExcelLuckysheet([xlsxRowsToLuckysheetSheet('Feuille1', [], 0)], docEditorState.filename);
+ return;
  }
 }
 
@@ -3556,31 +3698,17 @@ async function handleDocEditorOpen(input) {
  docEditorState.type = 'word';
  document.getElementById('doceditor-empty').style.display = 'none';
  document.getElementById('doceditor-content').style.display = 'block';
- document.getElementById('doceditor-save-btn').style.display = 'block';
- document.getElementById('doceditor-pdf-btn').style.display = 'block';
- initQuillEditor(result.value);
- return;
+ initWordQuillEditor(result.value);
 
  } else if (ext === 'xlsx' || ext === 'xls') {
+ const arrayBuffer = await file.arrayBuffer();
+ const wb = XLSX.read(arrayBuffer, { type: 'array' });
  docEditorState.type = 'excel';
- document.getElementById('doceditor-empty').style.display = 'none';
- document.getElementById('doceditor-content').style.display = 'block';
- document.getElementById('doceditor-save-btn').style.display = 'block';
- document.getElementById('doceditor-pdf-btn').style.display = 'none';
- // LuckyExcel lit le fichier Excel réel (formules, mise en forme, plusieurs
- // feuilles...) et le convertit directement au format attendu par Luckysheet.
- // Fonctionne par callback (pas une Promise), d'où le retour anticipé.
- LuckyExcel.transformExcelToLucky(file, (exportJson) => {
- if (!exportJson || !exportJson.sheets || !exportJson.sheets.length) {
- showToast('⚠ Impossible de lire ce fichier Excel');
- initLuckysheetEditor(null);
- return;
- }
- initLuckysheetEditor(exportJson.sheets);
- }, (err) => {
- showToast('⚠ Erreur lecture Excel (' + ((err && err.message) || err) + ')');
- initLuckysheetEditor(null);
+ const sheetsData = wb.SheetNames.map((sheetName, si) => {
+ const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
+ return xlsxRowsToLuckysheetSheet(sheetName, rows, si);
  });
+ initExcelLuckysheet(sheetsData, docEditorState.filename);
  return;
 
  } else if (['txt','tex','md'].includes(ext)) {
@@ -3611,11 +3739,6 @@ function docEditorBack() {
  const content = document.getElementById('doceditor-content');
  const empty = document.getElementById('doceditor-empty');
  if (content && content.style.display === 'block') {
- if (luckysheetActive && typeof luckysheet !== 'undefined' && luckysheet.destroy) {
- try { luckysheet.destroy(); } catch(e) {}
- }
- luckysheetActive = false;
- quillInstance = null;
  content.style.display = 'none';
  content.innerHTML = '';
  if (empty) empty.style.display = 'block';
@@ -3625,6 +3748,8 @@ function docEditorBack() {
  if (pdfBtn) pdfBtn.style.display = 'none';
  docEditorState = { type: null, filename: null };
  _activeSheetCell = null;
+ quillEditor = null;
+ quillTableModule = null;
  } else {
  goBack();
  }
@@ -3632,14 +3757,14 @@ function docEditorBack() {
 
 // Exporte le document actuellement ouvert (Word ou texte/LaTeX) en PDF réel
 async function exportDocEditorToPDF() {
- const el = docEditorState.type === 'word' && quillInstance ? quillInstance.root : document.getElementById('doceditor-editable');
- if (!el) { showToast('⚠ Rien à exporter'); return; }
  if (!window.jspdf) { showToast('⚠ Export PDF indisponible sur cet appareil'); return; }
  const safeName = (docEditorState.filename || 'document').replace(/\.[^.]+$/, '') || 'document';
  try {
  const { jsPDF } = window.jspdf;
  let blob;
  if (docEditorState.type === 'word') {
+ if (!quillEditor) { showToast('⚠ Rien à exporter'); return; }
+ const el = quillEditor.root;
  const pdf = new jsPDF({ unit:'pt', format:'a4' });
  await pdf.html(el, {
  margin: [40,40,40,40],
@@ -3650,6 +3775,8 @@ async function exportDocEditorToPDF() {
  });
  blob = pdf.output('blob');
  } else {
+ const el = document.getElementById('doceditor-editable');
+ if (!el) { showToast('⚠ Rien à exporter'); return; }
  const pdf = new jsPDF({ unit:'mm', format:'a4' });
  pdf.setFont('courier','normal'); pdf.setFontSize(10);
  const marginX = 15, maxWidth = 180;
@@ -3676,56 +3803,48 @@ async function saveDocEditorFile() {
  const filename = docEditorState.filename || 'document';
 
  if (docEditorState.type === 'word') {
- const { Document, Packer, Paragraph, HeadingLevel, TextRun } = docx;
- const root = quillInstance ? quillInstance.root : document.getElementById('doceditor-editable');
- if (!root) { showToast('⚠ Éditeur Word non initialisé'); return; }
+ if (!quillEditor) { showToast('⚠ Rien à enregistrer'); return; }
+ const { Document, Packer, Paragraph, HeadingLevel, TextRun, Table, TableRow, TableCell, WidthType } = docx;
  const levels = { H1:HeadingLevel.HEADING_1, H2:HeadingLevel.HEADING_2, H3:HeadingLevel.HEADING_3 };
-
- // Reconstruit les runs (gras/italique/souligné/barré/couleur) d'une ligne
- // Quill (paragraphe, titre, item de liste...) pour l'export docx.
- function buildRuns(node) {
- const runs = [];
- node.childNodes.forEach(child => {
- if (child.nodeType === 3) {
- if (child.textContent) runs.push(new TextRun({ text: child.textContent }));
+ const children = [];
+ quillEditor.root.childNodes.forEach(node => {
+ if (node.nodeType === 3) {
+ const t = node.textContent.trim();
+ if (t) children.push(new Paragraph({ children:[ new TextRun(t) ] }));
  return;
  }
- if (child.nodeType !== 1) return;
- const text = child.textContent;
- if (!text) return;
- const bold = !!(child.closest && child.closest('strong,b'));
- const italics = !!(child.closest && child.closest('em,i'));
- const hasUnderline = !!(child.closest && child.closest('u'));
- const strike = !!(child.closest && child.closest('s'));
- const styleAttr = (child.getAttribute && child.getAttribute('style')) || '';
- const colorMatch = styleAttr.match(/color:\s*(#[0-9a-f]{3,6})/i);
- runs.push(new TextRun({
- text, bold, italics, strike,
- underline: hasUnderline ? {} : undefined,
- color: colorMatch ? colorMatch[1].replace('#','') : undefined
- }));
- });
- if (!runs.length && node.textContent) runs.push(new TextRun({ text: node.textContent }));
- return runs;
- }
-
- const children = [];
- root.childNodes.forEach(node => {
  if (node.nodeType !== 1) return;
  const tag = node.tagName;
  if (levels[tag]) {
- children.push(new Paragraph({ children: buildRuns(node), heading: levels[tag] }));
+ children.push(new Paragraph({ text: node.textContent, heading: levels[tag] }));
  } else if (tag === 'UL' || tag === 'OL') {
- [...node.children].forEach((li, i) => {
- const runs = tag === 'OL' ? [new TextRun({ text: (i+1)+'. ' }), ...buildRuns(li)] : buildRuns(li);
- children.push(new Paragraph({ children: runs, bullet: tag === 'UL' ? { level: 0 } : undefined }));
+ [...node.children].forEach((li,i) => {
+ children.push(new Paragraph({ text: (tag==='OL' ? (i+1)+'. ' : '• ') + li.textContent }));
  });
+ } else if (tag === 'TABLE') {
+ const rows = [...node.querySelectorAll('tr')];
+ if (rows.length) {
+ const nCols = Math.max(...rows.map(r=>r.children.length)) || 1;
+ const tableRows = rows.map(tr => new TableRow({
+ children: [...tr.children].map(cell => new TableCell({
+ children: [ new Paragraph(cell.textContent.trim()) ],
+ width: { size: Math.floor(100/nCols), type: WidthType.PERCENTAGE }
+ }))
+ }));
+ children.push(new Table({ rows: tableRows, width: { size:100, type: WidthType.PERCENTAGE } }));
+ children.push(new Paragraph(''));
+ }
  } else if (tag === 'BLOCKQUOTE') {
- children.push(new Paragraph({ children: buildRuns(node), indent: { left: 480 } }));
- } else if (tag === 'PRE') {
- children.push(new Paragraph({ children: [new TextRun({ text: node.textContent, font: 'Courier New' })] }));
+ children.push(new Paragraph({ children:[ new TextRun({ text: node.textContent, italics:true }) ] }));
  } else {
- children.push(new Paragraph({ children: buildRuns(node) }));
+ const bold = !!node.querySelector('strong,b') || tag === 'STRONG' || tag === 'B';
+ const italics = !!node.querySelector('em,i') || tag === 'EM' || tag === 'I';
+ const text = node.textContent;
+ if (text.trim()) {
+ children.push(new Paragraph({ children:[ new TextRun({ text, bold, italics }) ] }));
+ } else {
+ children.push(new Paragraph(''));
+ }
  }
  });
  const docxDoc = new Document({ sections:[{ properties:{}, children: children.length?children:[new Paragraph('')] }] });
@@ -3733,19 +3852,19 @@ async function saveDocEditorFile() {
  mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
  } else if (docEditorState.type === 'excel') {
- if (typeof luckysheet === 'undefined' || !luckysheetActive) { showToast('⚠ Éditeur Excel non initialisé'); return; }
- const sheets = luckysheet.getAllSheets();
  const wb = XLSX.utils.book_new();
- sheets.forEach(sheet => {
- const grid = sheet.data || [];
- const aoa = grid.map(row => (row || []).map(cell => {
- if (!cell) return '';
- if (cell.m !== undefined && cell.m !== null) return cell.m; // valeur affichée (formules calculées incluses)
- if (cell.v !== undefined && cell.v !== null) return cell.v;
- return '';
- }));
- const ws = XLSX.utils.aoa_to_sheet(aoa);
- XLSX.utils.book_append_sheet(wb, ws, (sheet.name || 'Feuille').substring(0,31));
+ document.querySelectorAll('#doceditor-content table[data-sheet]').forEach(table => {
+ recalcSheet(table); // s'assure que toutes les formules sont a jour avant export
+ const dataRows = [...table.querySelectorAll('tr')].slice(1); // ignore la ligne d'en-tetes A,B,C...
+ const rows = dataRows.map(tr =>
+ [...tr.querySelectorAll('td[data-cell]')].map(td => {
+ const v = td.textContent.trim();
+ const num = parseFloat(v.replace(',','.'));
+ return (v !== '' && !isNaN(num)) ? num : v;
+ })
+ );
+ const ws = XLSX.utils.aoa_to_sheet(rows);
+ XLSX.utils.book_append_sheet(wb, ws, table.getAttribute('data-sheet').substring(0,31));
  });
  const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
  blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
