@@ -159,6 +159,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes typing{0%,100%{opacity:.3}50%{opacity:1}}
 @keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:32px;height:32px;border:3px solid var(--em-soft);border-top-color:var(--em);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes pulse-em{0%,100%{box-shadow:0 0 0 0 rgba(11,110,79,.35)}50%{box-shadow:0 0 0 10px rgba(11,110,79,0)}}
 .a1{animation:fadeUp .35s ease both}
@@ -449,22 +450,18 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
  <!-- Quick actions -->
  <div style="padding:0 20px 18px" class="a2">
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
- <div onclick="showScreen('screen-quiz')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+ <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+ <div onclick="showScreen('screen-quiz')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 10px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;text-align:center" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
  <div style="font-size:13px;font-weight:700;margin-bottom:2px" id="home-quiz-title">Quiz express</div>
  <div style="font-size:11px;color:var(--text3)">QCM + minuterie</div>
  </div>
- <div onclick="showScreen('screen-flashcards')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+ <div onclick="showScreen('screen-flashcards')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 10px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;text-align:center" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
  <div style="font-size:13px;font-weight:700;margin-bottom:2px" id="home-fc-title">Carte Mémo</div>
  <div style="font-size:11px;color:var(--text3)">Mémorisation active</div>
  </div>
- <div onclick="showScreen('screen-upload')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
+ <div onclick="showScreen('screen-upload')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 10px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s;text-align:center" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
  <div style="font-size:13px;font-weight:700;margin-bottom:2px" id="home-upload-title">Analyser un cours</div>
  <div style="font-size:11px;color:var(--text3)">Résumé + fiches IA</div>
- </div>
- <div onclick="showScreen('screen-progress')" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
- <div style="font-size:13px;font-weight:700;margin-bottom:2px" id="home-progress-title">Ma progression</div>
- <div style="font-size:11px;color:var(--text3)">Stats & objectifs</div>
  </div>
  </div>
  <div onclick="showScreen('screen-sujet')" style="margin-top:10px;background:linear-gradient(135deg,var(--em),var(--em2));border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:transform .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''">
@@ -500,6 +497,24 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <p style="font-size:13px;color:var(--text2);line-height:1.6" id="tip-text">La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !</p>
  </div>
  </div>
+ </div>
+</div>
+
+<!-- ═══════════════════ FICHE MATIÈRE ═══════════════════ -->
+<div id="screen-subject-info" class="screen hidden" style="background:var(--bg);flex-direction:column">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;gap:12px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div id="subjinfo-icon" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0"></div>
+ <span class="display" style="font-size:16px;font-weight:700" id="subjinfo-title">Matière</span>
+ </div>
+ <div class="scroll-body" style="padding:0 20px 100px" id="subjinfo-body">
+ <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px">
+ <div class="spinner"></div>
+ <p style="font-size:13px;color:var(--text3);text-align:center">Génération de la fiche...</p>
+ </div>
+ </div>
+ <div style="position:fixed;left:0;right:0;bottom:0;padding:14px 20px max(env(safe-area-inset-bottom,0px) + 14px, 24px);background:linear-gradient(0deg,var(--bg) 60%,transparent)">
+ <button class="btn-em" id="subjinfo-chat-btn" onclick="openSubjectChatFromInfo()"> Réviser cette matière avec l'IA</button>
  </div>
 </div>
 
@@ -2539,11 +2554,11 @@ function renderHome() {
 
  const el = document.getElementById('subjects-list');
  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
- <div class="subject-chip" onclick="openSubjectChat('${s.id}')">
+ <div class="subject-chip" onclick="openSubjectInfo('${s.id}')">
  <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</div>
  <div style="flex:1">
  <div style="font-size:13px;font-weight:700">${s.name}</div>
- <div style="font-size:11px;color:var(--text3);margin-top:2px">Appuie pour réviser avec l'IA</div>
+ <div style="font-size:11px;color:var(--text3);margin-top:2px">Appuie pour voir la fiche</div>
  </div>
  <div style="color:var(--text3);font-size:18px">›</div>
  </div>`).join('');
@@ -2555,6 +2570,120 @@ function openSubjectChat(subjectId) {
  const overlay = document.getElementById('all-subjects-overlay');
  if (overlay) overlay.remove();
  showScreen('screen-chat');
+}
+// ── Fiche matière (définition, termes clés, concepts de base) ──
+// Remplace l'ancien comportement qui ouvrait directement le chat au clic
+// sur une matière depuis l'accueil : on affiche d'abord une fiche de
+// présentation générée par l'IA, avec un bouton pour aller réviser au chat.
+function openSubjectInfo(subjectId) {
+ const overlay = document.getElementById('all-subjects-overlay');
+ if (overlay) overlay.remove();
+ const subj = SUBJECTS.find(s=>s.id===subjectId);
+ if (!subj) return;
+ APP.subjectInfoCurrent = subjectId;
+ showScreen('screen-subject-info');
+ renderSubjectInfoScreen(subj);
+}
+function openSubjectChatFromInfo() {
+ if (APP.subjectInfoCurrent) openSubjectChat(APP.subjectInfoCurrent);
+}
+function subjectInfoCacheKey(subj) {
+ const level = (APP.user && APP.user.level) || '';
+ const filiere = (APP.user && APP.user.filiere) || '';
+ return 'studiora_subjinfo_' + subj.id + '_' + level + '_' + filiere + '_' + APP_LANG;
+}
+async function renderSubjectInfoScreen(subj) {
+ const iconEl = document.getElementById('subjinfo-icon');
+ iconEl.style.background = subj.soft; iconEl.style.border = '1px solid ' + subj.border;
+ iconEl.style.color = subj.color;
+ iconEl.textContent = subj.icon || subjInitials(subj.name);
+ document.getElementById('subjinfo-title').textContent = subj.name;
+ const body = document.getElementById('subjinfo-body');
+
+ const cacheKey = subjectInfoCacheKey(subj);
+ let cached = null;
+ try { cached = JSON.parse(localStorage.getItem(cacheKey) || 'null'); } catch(e) {}
+ if (cached) { renderSubjectInfoContent(body, cached); return; }
+
+ body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px">
+ <div class="spinner"></div>
+ <p style="font-size:13px;color:var(--text3);text-align:center">Génération de la fiche...</p>
+ </div>`;
+
+ try {
+ const data = await generateSubjectInfo(subj);
+ try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch(e) {}
+ renderSubjectInfoContent(body, data);
+ } catch(e) {
+ body.innerHTML = `<div style="padding:40px 20px;text-align:center">
+ <p style="font-size:13px;color:var(--text3);margin-bottom:14px">Impossible de générer la fiche pour le moment.</p>
+ <button onclick="renderSubjectInfoScreen(SUBJECTS.find(s=>s.id==='${subj.id}'))" style="padding:10px 18px;background:var(--em-soft);border:1px solid var(--em-mid);border-radius:10px;color:var(--em);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Réessayer</button>
+ </div>`;
+ }
+}
+function renderSubjectInfoContent(body, data) {
+ const esc = s => (s||'').toString();
+ body.innerHTML = `
+ <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px;margin:10px 0 18px">
+ <div style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Définition</div>
+ <p style="font-size:14px;color:var(--text);line-height:1.6">${esc(data.definition)}</p>
+ </div>
+ <div style="margin-bottom:20px">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Termes clés</h3>
+ <div style="display:flex;flex-direction:column;gap:8px">
+ ${(data.key_terms||[]).map(t=>`
+ <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+ <div style="font-size:13px;font-weight:700;margin-bottom:3px">${esc(t.term)}</div>
+ <div style="font-size:12px;color:var(--text2);line-height:1.5">${esc(t.definition)}</div>
+ </div>`).join('')}
+ </div>
+ </div>
+ <div>
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Concepts de base</h3>
+ <div style="display:flex;flex-direction:column;gap:8px">
+ ${(data.concepts||[]).map(c=>`
+ <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+ <div style="font-size:13px;font-weight:700;margin-bottom:3px">${esc(c.title)}</div>
+ <div style="font-size:12px;color:var(--text2);line-height:1.5">${esc(c.description)}</div>
+ </div>`).join('')}
+ </div>
+ </div>`;
+}
+async function generateSubjectInfo(subj) {
+ const level = (APP.user && APP.user.level) || 'Licence 2';
+ const filiere = (APP.user && APP.user.filiere) || '';
+ const safeSubj = subj.name.replace(/['"\\]/g,'');
+ const safeLevel = level.replace(/['"\\]/g,'');
+ const safeFiliere = filiere.replace(/['"\\]/g,'');
+ const filiereRule = safeFiliere ? ` Adapte le niveau au contexte de la filiere ${safeFiliere}.` : '';
+ const langNames = {fr:'francais',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const langInstruction = ' Reponds ENTIEREMENT en ' + (langNames[APP_LANG]||'francais') + '.';
+ const prompt = 'Presente la matiere "' + safeSubj + '" pour un etudiant de niveau ' + safeLevel + '.' + filiereRule + langInstruction +
+ ' Donne une definition courte de la matiere (2-3 phrases), 5 a 6 termes cles avec une definition courte chacun, et 4 a 5 concepts de base avec une explication courte chacun.' +
+ ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}';
+
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ method:'POST',
+ headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({model:MODEL,max_tokens:1600,system:'Tu es un generateur de fiches pedagogiques JSON. Reponds UNIQUEMENT avec du JSON valide, format exact: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}. Aucun texte avant ou apres. Aucun markdown. Aucune apostrophe ou guillemet dans les valeurs JSON, utilise des synonymes si necessaire.',messages:[{role:'user',content:prompt}]})
+ });
+ if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ raw = raw.replace(/\t/g,' ');
+ let parsed;
+ try { parsed = JSON.parse(raw); }
+ catch(je) {
+ try {
+ const fixedRaw = raw.replace(/([{,]\s*")([^"]+)(":\s*")([^"]*?)(")/g, (m,a,b,c,d,e)=>a+b+c+d.replace(/"/g,"'")+e);
+ parsed = JSON.parse(fixedRaw);
+ } catch(je2) {
+ parsed = repairTruncatedJson(raw);
+ }
+ }
+ if (!parsed.definition) throw new Error('empty');
+ return parsed;
 }
 // "Tout voir" : une simple liste de navigation vers toutes les matières
 // actives (pas de bouton Retirer/Ajouter — ça, c'est le rôle de "Gérer").
@@ -2570,7 +2699,7 @@ function showAllSubjects() {
  <h2 style="font-size:18px;font-weight:800;margin-bottom:16px">Toutes mes matières</h2>
  <div style="display:flex;flex-direction:column;gap:10px">
  ${SUBJECTS.map(s=>`
- <div class="subject-chip" onclick="openSubjectChat('${s.id}')">
+ <div class="subject-chip" onclick="openSubjectInfo('${s.id}')">
  <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</div>
  <div style="flex:1">
  <div style="font-size:13px;font-weight:700">${s.name}</div>
@@ -3480,13 +3609,14 @@ function initWordQuillEditor(initialHTML) {
  document.getElementById('doceditor-content').innerHTML = `
  <div id="doc-word-extra-toolbar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;background:var(--bg2);border-radius:10px;padding:8px">
  <button class="doc-tb-btn" onclick="quillInsertDate()"> Date</button>
+ ${window.QuillTableBetter ? `<button class="doc-tb-btn" onclick="quillInsertTablePrompt()"> Tableau</button>` : ''}
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Symboles</span>
  ${DOC_SYMBOLS.map(s => `<button onclick="quillInsertSymbol('${s}')" class="doc-tb-btn" style="width:30px;padding:0;height:30px">${s}</button>`).join('')}
  </div>
- <div id="doceditor-quill-wrap" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden">
+ <div id="doceditor-quill-wrap" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:visible">
  <div id="doceditor-quill" style="min-height:320px"></div>
  </div>
- <div style="font-size:11px;color:var(--text3);margin-top:6px">Utilise l'icône tableau dans la barre d'outils pour insérer un tableau redimensionnable (lignes/colonnes).</div>
+ <div style="font-size:11px;color:var(--text3);margin-top:6px">Utilise le bouton "Tableau" ci-dessus (ou l'icône tableau dans la barre d'outils) pour insérer un tableau redimensionnable (lignes/colonnes).</div>
  `;
  const toolbarOptions = window.QuillTableBetter ? [
  [{ header: [1,2,3,false] }],
@@ -3541,6 +3671,21 @@ function quillInsertSymbol(sym) {
  const range = quillEditor.getSelection(true) || { index: quillEditor.getLength() };
  quillEditor.insertText(range.index, sym, 'user');
 }
+function quillInsertTablePrompt() {
+ if (!quillEditor || !quillTableModule) { showToast('⚠ Le module tableau n\'est pas disponible'); return; }
+ const rowsStr = prompt('Nombre de lignes ?', '3');
+ if (rowsStr === null) return;
+ const colsStr = prompt('Nombre de colonnes ?', '3');
+ if (colsStr === null) return;
+ const rows = Math.max(1, Math.min(20, parseInt(rowsStr, 10) || 3));
+ const cols = Math.max(1, Math.min(10, parseInt(colsStr, 10) || 3));
+ quillEditor.focus();
+ try {
+ quillTableModule.insertTable(rows, cols);
+ } catch(e) {
+ showToast('⚠ Impossible d\'insérer le tableau');
+ }
+}
 
 // ── ÉDITEUR EXCEL PROFESSIONNEL (Luckysheet) ──
 // Luckysheet a besoin d'un espace d'affichage fixe (comme un vrai tableur plein
@@ -3564,6 +3709,34 @@ function xlsxRowsToLuckysheetSheet(sheetName, rows, index) {
  column: Math.max(26, Math.max(0, ...(rows||[]).map(r=>(r||[]).length)) + 10),
  celldata,
  };
+}
+// Luckysheet ne reconnaît que les noms de fonctions en anglais (SUM, IF, ...).
+// On traduit automatiquement les noms de fonctions français les plus courants
+// avant que la formule soit évaluée, pour éviter les erreurs #NAME?.
+const FR_FORMULA_ALIASES = {
+ 'SOMME.SI.ENS':'SUMIFS','SOMME.SI':'SUMIF','SOMME':'SUM',
+ 'MOYENNE.SI.ENS':'AVERAGEIFS','MOYENNE.SI':'AVERAGEIF','MOYENNE':'AVERAGE',
+ 'NB.SI.ENS':'COUNTIFS','NB.SI':'COUNTIF','NB.VIDE':'COUNTBLANK','NBVAL':'COUNTA','NB':'COUNT',
+ 'SIERREUR':'IFERROR','SIOMET':'IFNA','SI':'IF','ET':'AND','OU':'OR','NON':'NOT',
+ 'MAX':'MAX','MIN':'MIN','ARRONDI.SUP':'ROUNDUP','ARRONDI.INF':'ROUNDDOWN','ARRONDI':'ROUND',
+ 'RECHERCHEV':'VLOOKUP','RECHERCHEH':'HLOOKUP','RECHERCHEX':'XLOOKUP','EQUIV':'MATCH','INDEX':'INDEX',
+ 'CONCATENER':'CONCATENATE','GAUCHE':'LEFT','DROITE':'RIGHT','STXT':'MID','NBCAR':'LEN',
+ 'MAJUSCULE':'UPPER','MINUSCULE':'LOWER','NOMPROPRE':'PROPER','SUPPRESPACE':'TRIM',
+ 'AUJOURDHUI':'TODAY','MAINTENANT':'NOW','ANNEE':'YEAR','MOIS':'MONTH','JOUR':'DAY','JOURSEM':'WEEKDAY',
+ 'ESTVIDE':'ISBLANK','ESTNUM':'ISNUMBER','ESTTEXTE':'ISTEXT','PUISSANCE':'POWER','RACINE':'SQRT',
+ 'ENT':'INT','ALEA.ENTRE.BORNES':'RANDBETWEEN','ALEA':'RAND','TRANSPOSE':'TRANSPOSE',
+};
+const FR_FORMULA_KEYS = Object.keys(FR_FORMULA_ALIASES).sort((a,b)=>b.length-a.length);
+function translateFrenchFormula(value) {
+ if (typeof value !== 'string' || value.charAt(0) !== '=') return value;
+ let out = value;
+ FR_FORMULA_KEYS.forEach(fr => {
+ const en = FR_FORMULA_ALIASES[fr];
+ const escaped = fr.replace(/\./g, '\\.');
+ const re = new RegExp('(^|[^A-Za-zÀ-ÿ.])' + escaped + '(\\s*\\()', 'gi');
+ out = out.replace(re, (m, pre, paren) => pre + en + paren);
+ });
+ return out;
 }
 function initExcelLuckysheet(sheetsData, filename) {
  if (!window.luckysheet) {
@@ -3590,6 +3763,18 @@ function initExcelLuckysheet(sheetsData, filename) {
  title: (filename||'classeur').replace(/\.[^.]+$/,''),
  showtoolbarConfig: { chart:false, image:false, link:false, print:false, screenshot:false },
  data: sheetsData && sheetsData.length ? sheetsData : [xlsxRowsToLuckysheetSheet('Feuille1', [], 0)],
+ hook: {
+ cellUpdateBefore: function(r, c, value, isRefresh) {
+ if (typeof value === 'string' && value.charAt(0) === '=') {
+ const translated = translateFrenchFormula(value);
+ if (translated !== value) {
+ setTimeout(() => { try { luckysheet.setCellValue(r, c, translated); } catch(e) {} }, 0);
+ return false;
+ }
+ }
+ return true;
+ }
+ },
  });
  } catch(e) {
  showToast('⚠ Erreur au chargement de l\'éditeur Excel (' + (e.message||e) + ')');
@@ -8225,7 +8410,6 @@ function applyAppLang(lang, silent) {
   setText('home-quiz-title', t.quiz_title);
   setText('home-fc-title', t.fc_title);
   setText('home-upload-title', t.upload_title);
-  setText('home-progress-title', t.progress_title);
 
   // Boutons quiz/fc/analyser
   const quizBtnTxt = document.getElementById('quiz-btn-text');
