@@ -485,12 +485,12 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  
  <!-- Conseil du jour -->
  <div style="padding:16px 20px 0" class="a5">
- <div style="background:linear-gradient(135deg,var(--em-soft),var(--white));border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px">
+ <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px">
  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
  
  <span style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px">Conseil du jour</span>
  </div>
- <p style="font-size:13px;color:var(--text2);line-height:1.6" id="tip-text">La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !</p>
+ <p style="font-size:13px;color:var(--text);line-height:1.6" id="tip-text">La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !</p>
  </div>
  </div>
  </div>
@@ -1776,7 +1776,11 @@ function computeStreak() {
  if (days.length > 365) days = days.slice(-365);
  localStorage.setItem('studiora_days', JSON.stringify(days));
  touchLocalStateUpdatedAt();
- pushCloudSync();
+ // setTimeout : computeStreak() est appelée depuis "let APP = {...streak: computeStreak()}",
+ // donc APP n'existe pas encore à cet instant précis. pushCloudSync() lit APP.user et
+ // plantait avec "Cannot access 'APP' before initialization" au tout premier lancement
+ // (cache vide). On reporte l'appel à l'itération suivante, une fois APP initialisée.
+ setTimeout(pushCloudSync, 0);
  }
 
  // Trier et compter jours consécutifs en remontant depuis aujourd'hui
@@ -3989,6 +3993,23 @@ async function handleDocEditorOpen(input) {
 // Le bouton "← Retour" de l'éditeur ramène d'abord à la page d'import/nouveau
 // document (au lieu de quitter direct l'écran), pour pouvoir ouvrir/créer un
 // autre fichier sans repasser par Travaux.
+// La nav du bas (fixed) chevauche la barre d'outils de l'éditeur Word/PowerPoint/LaTeX
+// quand le clavier est ouvert sur mobile. On la cache pendant l'édition et on la
+// réaffiche à la fermeture. On observe l'élément plutôt que de patcher chaque
+// fonction qui ouvre l'éditeur (newBlankDoc, handleDocEditorOpen, etc.).
+(function watchDocEditorNav(){
+ const target = document.getElementById('doceditor-content');
+ if (!target) return;
+ const apply = () => {
+ const nav = document.getElementById('global-nav');
+ if (!nav) return;
+ const editing = target.style.display === 'block';
+ if (editing) { nav.style.display = 'none'; }
+ else if (document.getElementById('screen-doceditor') && !document.getElementById('screen-doceditor').classList.contains('hidden')) { nav.style.display = 'flex'; }
+ };
+ new MutationObserver(apply).observe(target, { attributes:true, attributeFilter:['style'] });
+})();
+
 function docEditorBack() {
  const content = document.getElementById('doceditor-content');
  const empty = document.getElementById('doceditor-empty');
@@ -5326,6 +5347,7 @@ async function doRegister() {
  APP.user.trial_type = 'signup_vip_14d';
  APP.user.retro_trial_granted = true;
  APP.user.treePlantedAt = new Date().toISOString();
+ guardAccountSwitch(e);
  saveSession();
  if (isCustomFiliere) registerCustomFiliere(niv, filiere); // recherche IA des vraies matières + partage aux futurs inscrits
  SUBJECTS = getSubjects();
@@ -5513,9 +5535,10 @@ async function startQuizLibre(topic) {
  const level=APP.user.level||'Licence 2';
  const prompt='Genere exactement '+selectedNQ+' questions QCM de niveau "'+selectedDiff+'" sur ce sujet libre: '+topic+'. Reponds UNIQUEMENT en JSON valide: {"questions":[{"q":"question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"La bonne reponse est A) ..."}]}';
  try {
+ const quizLibreMaxTokens = Math.min(8000, 400 + selectedNQ*180);
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',headers:{'Content-Type':'application/json'},
- body:JSON.stringify({model:MODEL,max_tokens:2000,
+ body:JSON.stringify({model:MODEL,max_tokens:quizLibreMaxTokens,
  system:'Tu es un generateur de QCM. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres.',
  messages:[{role:'user',content:prompt}]})
  });
@@ -5523,7 +5546,12 @@ async function startQuizLibre(topic) {
  let raw=(data.content&&data.content[0]?data.content[0].text:'')||'{}';
  raw=extractJsonBlock(raw);
  raw=raw.replace(/[\u0000-\u001f]/g,'');
- const parsed=JSON.parse(raw);
+ let parsed;
+ try { parsed=JSON.parse(raw); }
+ catch(je) {
+ try { parsed = repairTruncatedJson(raw); }
+ catch(je2) { throw new Error('JSON invalide — Réessaie ou baisse le nombre de questions.'); }
+ }
  APP.quizQuestions=parsed.questions||[];
  if(APP.quizQuestions.length===0) throw new Error('empty');
  APP.quizIndex=0; APP.quizScore=0; APP.quizAnswers=[];
@@ -5593,10 +5621,11 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
 {"questions":[{"type":"qcm","q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"La bonne réponse est Vrai car... explication pédagogique 3-5 phrases."}]}`;
 
  try {
+ const quizMaxTokens = Math.min(8000, 400 + selectedNQ*180);
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
  headers:{'Content-Type':'application/json',},
- body:JSON.stringify({model:MODEL,max_tokens:2000,system:'Tu es un professeur expert qui génère des QCM éducatifs en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
+ body:JSON.stringify({model:MODEL,max_tokens:quizMaxTokens,system:'Tu es un professeur expert qui génère des QCM éducatifs en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
  });
  if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
  const data = await res.json();
@@ -5604,7 +5633,11 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
  raw = extractJsonBlock(raw);
  let parsed;
  try { parsed = JSON.parse(raw); }
- catch(je) { throw new Error('JSON invalide: '+je.message+' — Réessaie.'); }
+ catch(je) {
+ // Réponse probablement tronquée (trop de questions demandées) : on répare au lieu d'échouer
+ try { parsed = repairTruncatedJson(raw); }
+ catch(je2) { throw new Error('JSON invalide: '+je.message+' — Réessaie ou baisse le nombre de questions.'); }
+ }
  APP.quizQuestions = parsed.questions || [];
  if(APP.quizQuestions.length===0) throw new Error('empty');
  APP.quizIndex = 0; APP.quizScore = 0; APP.quizAnswers = [];
@@ -6084,14 +6117,20 @@ Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après :
 {"titre":"Titre court du sujet","parts":[{"type":"calcul","enonce":"...","points":5}]}`;
 
  try {
+ const sujetMaxTokens = Math.min(8000, 800 + selectedSujetNParts*500);
  const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
  method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 2000, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user', content:prompt}] })
+ body: JSON.stringify({ model: MODEL, max_tokens: sujetMaxTokens, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user', content:prompt}] })
  });
  const data = await res.json();
- const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
- const jsonMatch = raw.match(/\{[\s\S]*\}/);
- const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+ const rawText = (data.content && data.content[0] ? data.content[0].text : '') || '';
+ const cleaned = extractJsonBlock(rawText);
+ let parsed;
+ try { parsed = JSON.parse(cleaned); }
+ catch(je) {
+ try { parsed = repairTruncatedJson(cleaned); }
+ catch(je2) { throw new Error('JSON invalide — Réessaie (essaie avec moins de parties si ça persiste).'); }
+ }
  sujetParts = (parsed.parts || []).map((p,i)=>({ ...p, id: i, reponse: '' }));
  if (!sujetParts.length) throw new Error('Génération vide, réessaie');
 
@@ -7295,6 +7334,7 @@ function loadSession() {
  const data = JSON.parse(s);
  if (!data || !data.prenom) return false;
  APP.user = { ...APP.user, ...data };
+ guardAccountSwitch(APP.user.email);
  checkPlanExpiry();
  grantRetroactiveTrialIfNeeded();
  recordLoginPing();
@@ -7357,6 +7397,7 @@ async function doLogin() {
  // Nouveau compte via login (pas via register) → refuser, demander de s'inscrire
  showToast("! Aucun compte trouvé. Crée un compte d'abord."); return;
  }
+ guardAccountSwitch(APP.user.email);
  checkPlanExpiry();
  saveSession();
  SUBJECTS = getSubjects();
@@ -7392,8 +7433,33 @@ async function changePassword() {
  document.getElementById('pwd-confirm').value = '';
  showToast(' Mot de passe changé avec succès !');
 }
+// ── Isolation des comptes sur un même appareil ──
+// Toutes les clés ci-dessous sont GLOBALES à l'origine (pas préfixées par compte).
+// Avant, se déconnecter ne les effaçait pas : le compte suivant qui se connectait
+// sur le même téléphone héritait des stats/scores/série du compte précédent, et
+// pullCloudSync() (qui FUSIONNE local+cloud pour ne jamais perdre de progression
+// multi-appareils) fusionnait alors ces restes avec les données cloud du nouveau
+// compte — d'où des comptes "qui se confondent". On mémorise l'email actif et on
+// nettoie ces clés dès qu'on détecte un changement de compte sur l'appareil.
+const ACCOUNT_LOCAL_KEYS = ['studiora_stats','studiora_days','studiora_tree','studiora_curriculum_cache','studiora_subject_custom','studiora_state_updatedAt'];
+const ACTIVE_ACCOUNT_KEY = 'studiora_active_account_email';
+function clearAccountLocalData() {
+ ACCOUNT_LOCAL_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
+}
+// À appeler juste après avoir déterminé quel compte va devenir actif (login/session).
+// Si un autre compte était actif localement avant, on purge les données locales
+// pour ne pas les fusionner dans le compte qui se connecte maintenant.
+function guardAccountSwitch(email) {
+ if (!email) return;
+ let prev = null;
+ try { prev = localStorage.getItem(ACTIVE_ACCOUNT_KEY); } catch(e) {}
+ if (prev && prev !== email) clearAccountLocalData();
+ try { localStorage.setItem(ACTIVE_ACCOUNT_KEY, email); } catch(e) {}
+}
 function doLogout() {
  localStorage.removeItem(SESSION_KEY);
+ localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
+ clearAccountLocalData();
  APP.chatHistory = [];
  showToast(' À bientôt ' + APP.user.prenom + ' !');
  setTimeout(() => {
