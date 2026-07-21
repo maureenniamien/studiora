@@ -1364,6 +1364,18 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour parler · chaque prise de parole ajoute une ligne</div>
  <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
  </div>
+
+ <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:16px">
+ <div style="font-size:12px;font-weight:700;margin-bottom:8px">🎬 Ou transcrire un fichier importé</div>
+ <input type="file" id="transcribe-media-input" accept="audio/*,video/*" style="display:none" onchange="handleImportMediaFile(this)">
+ <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="width:100%;padding:11px"> Importer un audio ou une vidéo</button>
+ <div id="transcribe-media-preview" style="display:none;margin-top:10px"></div>
+ <div id="transcribe-media-actions" style="display:none;gap:8px;margin-top:10px">
+ <button id="transcribe-media-btn" onclick="toggleMediaTranscription()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Transcrire pendant la lecture</button>
+ </div>
+ <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
+ </div>
+
  <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
  <div style="display:flex;gap:8px;margin-top:12px">
  <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">📋 Copier</button>
@@ -1433,7 +1445,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div class="scroll-body" style="padding:16px 20px;flex:1;min-height:0" id="sujet-parts-list"></div>
  <div style="flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px">
  <button onclick="restartSujet()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Nouveau sujet</button>
- <button onclick="finishSujet()" class="btn-em" style="flex:1">Terminer</button>
+ <button onclick="gradeSujet()" class="btn-em" id="sujet-finish-btn" style="flex:1">Terminer et corriger</button>
+ </div>
+ </div>
+
+ <!-- Phase 3 : correction IA -->
+ <div id="sujet-results" class="scroll-body" style="display:none;padding:0 20px 20px">
+ <div id="sujet-results-content"></div>
+ <div style="display:flex;gap:8px;margin-top:6px">
+ <button onclick="restartSujet()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Nouveau sujet</button>
+ <button onclick="showScreen('screen-home')" class="btn-em" style="flex:1">Terminer</button>
  </div>
  </div>
 </div>
@@ -1502,7 +1523,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word, PowerPoint et LaTeX se rédigent et se mettent en forme entièrement dans l'app. Word et LaTeX sont aussi exportables directement en PDF. Excel s'ouvre en plein écran pour l'expérience la plus proche d'un vrai tableur.</div>
  </div>
- <div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px"></div>
  <div id="doceditor-content" style="display:none"></div>
  </div>
 </div>
@@ -3031,6 +3051,19 @@ function getSheetCellValue(table, ref) {
 function evalSheetFormula(table, formula) {
  try {
  let expr = formula.slice(1).trim();
+ // SI/IF en formule complète : peut retourner du texte, pas seulement un nombre,
+ // donc traité à part et en priorité (court-circuite le reste si la formule
+ // est exactement un SI(...)/IF(...)).
+ const ifWhole = expr.match(/^(SI|IF)\((.+);(.+);(.+)\)$/i);
+ if (ifWhole) {
+ let cond = ifWhole[2].trim().replace(/\b([A-Z]+\d+)\b/g, m => getSheetCellValue(table, m.toUpperCase()));
+ let condResult;
+ try { condResult = Function('"use strict"; return (' + cond + ')')(); } catch(e2) { condResult = false; }
+ let branch = (condResult ? ifWhole[3] : ifWhole[4]).trim().replace(/^"(.*)"$/, '$1');
+ if (/^[A-Z]+\d+$/i.test(branch)) return getSheetCellValue(table, branch.toUpperCase());
+ const bnum = parseFloat(branch.replace(',','.'));
+ return isNaN(bnum) ? branch : bnum;
+ }
  expr = expr.replace(/(SOMME|SUM)\(([^)]+)\)/gi, (_, fn, range) => {
  const sum = parseCellRange(range.trim()).reduce((acc,r)=>acc+getSheetCellValue(table,r),0);
  return sum;
@@ -3086,6 +3119,7 @@ const SHEET_FORMULAS = [
  {name:'MIN', syntax:'MIN(A1:A5)', desc:'Valeur minimale'},
  {name:'NB', syntax:'NB(A1:A5)', desc:'Compte les cellules numériques'},
  {name:'NB.SI', syntax:'NB.SI(A1:A5;">5")', desc:'Compte selon un critère'},
+ {name:'SI', syntax:'SI(A1>10;"Oui";"Non")', desc:'Condition'},
 ];
 let _activeSheetCell = null;
 
@@ -3295,7 +3329,59 @@ function docInsertDate() {
 // ── BARRE D'OUTILS EXCEL (Accueil / Insertion / Données) ──
 function currentSheetTable() {
  if (_activeSheetCell) return _activeSheetCell.closest('table');
+ const wrap = document.querySelector(`[data-sheet-wrap="${_excelActiveSheetIdx}"]`);
+ if (wrap) { const t = wrap.querySelector('table[data-sheet]'); if (t) return t; }
  return document.querySelector('#doceditor-content table[data-sheet]');
+}
+function sheetToggleBorder() {
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ const on = td.style.border === '2px solid #333333' || td.style.border === '2px solid rgb(51, 51, 51)';
+ td.style.border = on ? '1px solid var(--border)' : '2px solid #333333';
+}
+// ── Excel léger (tables HTML éditables, sans dépendance externe) ──
+// Remplace Luckysheet (bibliothèque lourde chargée depuis un CDN, qui pouvait
+// rester bloquée en chargement infini sans réseau fiable). Ce moteur maison
+// est plus léger, se charge instantanément, et gère déjà : formules (FR/EN),
+// mise en forme (gras/italique/couleurs/bordures/alignement), tri, plusieurs
+// feuilles, ajout/suppression de lignes et colonnes.
+function xlsxRowsToTableSheet(sheetName, rows) {
+ return { name: (sheetName || 'Feuille1').slice(0,31), rows: rows || [] };
+}
+let _excelSheets = [];
+let _excelActiveSheetIdx = 0;
+function initExcelTable(sheetsData, filename) {
+ _excelSheets = (sheetsData && sheetsData.length) ? sheetsData : [xlsxRowsToTableSheet('Feuille1', [])];
+ _excelActiveSheetIdx = 0;
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = 'none';
+ renderExcelTableEditor();
+}
+function renderExcelTableEditor() {
+ const container = document.getElementById('doceditor-content');
+ const tabsHtml = _excelSheets.length > 1 ? `<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">
+ ${_excelSheets.map((s,i)=>`<button onclick="switchExcelSheet(${i})" style="flex-shrink:0;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:${i===_excelActiveSheetIdx?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:${i===_excelActiveSheetIdx?'var(--em-soft)':'var(--bg2)'};border:1.5px solid ${i===_excelActiveSheetIdx?'var(--em)':'var(--border)'};color:${i===_excelActiveSheetIdx?'var(--em)':'var(--text2)'}">${escHtml(s.name)}</button>`).join('')}
+ </div>` : '';
+ container.innerHTML = sheetToolbarHTML() +
+ `<div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px"></div>` +
+ tabsHtml +
+ _excelSheets.map((s,i)=>{
+ const nRows = Math.max(20, s.rows.length + 5);
+ const nCols = Math.max(10, Math.max(0, ...s.rows.map(r=>(r||[]).length)) + 3);
+ return `<div data-sheet-wrap="${i}" style="display:${i===_excelActiveSheetIdx?'block':'none'}">${buildSheetHTML(s.name, nRows, nCols, s.rows)}</div>`;
+ }).join('');
+ _activeSheetCell = null;
+}
+function switchExcelSheet(i) {
+ _excelActiveSheetIdx = i;
+ renderExcelTableEditor();
+}
+function addExcelSheet() {
+ const n = _excelSheets.length + 1;
+ _excelSheets.push(xlsxRowsToTableSheet('Feuille' + n, []));
+ _excelActiveSheetIdx = _excelSheets.length - 1;
+ renderExcelTableEditor();
 }
 function sheetToolbarHTML() {
  return `<div id="sheet-toolbar" style="margin-bottom:8px">
@@ -3313,6 +3399,8 @@ function sheetToolbarHTML() {
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de fond</span>
  <button class="doc-tb-btn" style="width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('transparent')" title="Aucune">✕</button>
  ${['#fff59d','#a7f3d0','#bfdbfe','#fbcfe8'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('${c}')"></button>`).join('')}
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Bordures</span>
+ <button class="doc-tb-btn" onclick="sheetToggleBorder()" title="Bordure fine">▦</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Alignement</span>
  <button class="doc-tb-btn" onclick="sheetSetAlign('left')">≡</button>
  <button class="doc-tb-btn" onclick="sheetSetAlign('center')">≣</button>
@@ -3321,6 +3409,7 @@ function sheetToolbarHTML() {
  <div class="doc-tb-panel" data-tab="insertion">
  <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
  <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
+ <button class="doc-tb-btn" onclick="addExcelSheet()">+ Feuille</button>
  </div>
  <div class="doc-tb-panel" data-tab="donnees">
  <button class="doc-tb-btn" onclick="sheetDeleteRow()">− Ligne</button>
@@ -3937,7 +4026,7 @@ function newBlankDoc(type) {
  }
  if (type === 'excel') {
  docEditorState = { type: 'excel', filename: 'nouveau_classeur.xlsx' };
- initExcelLuckysheet([xlsxRowsToLuckysheetSheet('Feuille1', [], 0)], docEditorState.filename);
+ initExcelTable([xlsxRowsToTableSheet('Feuille1', [])], docEditorState.filename);
  return;
  }
 }
@@ -3962,11 +4051,11 @@ async function handleDocEditorOpen(input) {
  const arrayBuffer = await file.arrayBuffer();
  const wb = XLSX.read(arrayBuffer, { type: 'array' });
  docEditorState.type = 'excel';
- const sheetsData = wb.SheetNames.map((sheetName, si) => {
+ const sheetsData = wb.SheetNames.map((sheetName) => {
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
- return xlsxRowsToLuckysheetSheet(sheetName, rows, si);
+ return xlsxRowsToTableSheet(sheetName, rows);
  });
- initExcelLuckysheet(sheetsData, docEditorState.filename);
+ initExcelTable(sheetsData, docEditorState.filename);
  return;
 
  } else if (['txt','tex','md'].includes(ext)) {
@@ -4567,8 +4656,14 @@ window.onAndroidSTTResult = function(text) {
  _voiceSessionStartTs = 0;
  if (text) {
  _voiceInsertText(text);
- } else {
+ } else if (!_mediaTranscribing) {
  showToast('⚠ Rien entendu, réessaie');
+ }
+ if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) {
+ _voiceSessionStartTs = Date.now();
+ setTimeout(_runMediaTranscriptionLoop, 300);
+ } else if (_mediaTranscribing) {
+ stopMediaTranscription();
  }
 };
 window.onAndroidSTTError = function(code) {
@@ -4576,9 +4671,89 @@ window.onAndroidSTTError = function(code) {
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
+ if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) {
+ _voiceSessionStartTs = Date.now();
+ setTimeout(_runMediaTranscriptionLoop, 300);
+ return;
+ }
+ if (_mediaTranscribing) stopMediaTranscription();
  if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
  else showToast('⚠ Micro : erreur (' + code + '), réessaie');
 };
+
+// ── Transcription d'un fichier audio/vidéo importé ──
+// L'API de reconnaissance vocale (native ou navigateur) n'accepte que le micro
+// en direct, pas un fichier. On lit donc le fichier tout en écoutant avec le
+// micro, en boucle continue, pour transcrire au fil de la lecture.
+let importedMediaEl = null;
+let _mediaTranscribing = false;
+function handleImportMediaFile(input) {
+ const file = input.files[0];
+ if (!file) return;
+ const url = URL.createObjectURL(file);
+ const isVideo = file.type.startsWith('video');
+ const container = document.getElementById('transcribe-media-preview');
+ container.innerHTML = isVideo
+ ? `<video id="transcribe-media-el" src="${url}" controls style="width:100%;border-radius:12px;background:#000;max-height:220px"></video>`
+ : `<audio id="transcribe-media-el" src="${url}" controls style="width:100%"></audio>`;
+ container.style.display = 'block';
+ document.getElementById('transcribe-media-actions').style.display = 'flex';
+ importedMediaEl = document.getElementById('transcribe-media-el');
+ importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
+ input.value = '';
+}
+function stopMediaTranscription() {
+ _mediaTranscribing = false;
+ if (importedMediaEl) importedMediaEl.pause();
+ if (voiceRecognition) { try { voiceRecognition.continuous = false; voiceRecognition.onend = null; voiceRecognition.stop(); } catch(e) {} }
+ if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') { try { window.AndroidSTT.stopListening(); } catch(e) {} }
+ const btn = document.getElementById('transcribe-media-btn');
+ if (btn) btn.textContent = ' Transcrire pendant la lecture';
+}
+function toggleMediaTranscription() {
+ if (!importedMediaEl) { showToast('⚠ Importe un fichier audio/vidéo d\'abord'); return; }
+ if (_mediaTranscribing) { stopMediaTranscription(); return; }
+ if (!canUseTranscription()) {
+ showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
+ return;
+ }
+ _mediaTranscribing = true;
+ _voiceSessionIsTranscription = true;
+ _voiceSessionStartTs = Date.now();
+ document.getElementById('transcribe-media-btn').textContent = '⏸ Arrêter la transcription';
+ importedMediaEl.currentTime = 0;
+ importedMediaEl.play().catch(()=>{ showToast('⚠ Lecture impossible'); stopMediaTranscription(); });
+ _runMediaTranscriptionLoop();
+}
+function _runMediaTranscriptionLoop() {
+ if (!_mediaTranscribing) return;
+ _voiceTargetId = 'transcript-textarea';
+ _voiceAppendNewline = true;
+ // Pont natif Android (écoute par segments) : on relance en boucle tant que le média joue
+ if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
+ try { window.AndroidSTT.startListening(); } catch(e) {}
+ return;
+ }
+ // Repli navigateur : mode continu natif de l'API Web Speech
+ const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+ if (!SpeechRecognitionAPI) { showToast('⚠ Reconnaissance vocale indisponible sur cet appareil'); stopMediaTranscription(); return; }
+ voiceRecognition = new SpeechRecognitionAPI();
+ voiceRecognition.lang = 'fr-FR';
+ voiceRecognition.interimResults = false;
+ voiceRecognition.continuous = true;
+ voiceRecognition.maxAlternatives = 1;
+ voiceRecognition.onresult = (event) => {
+ for (let i = event.resultIndex; i < event.results.length; i++) {
+ if (event.results[i].isFinal) _voiceInsertText(event.results[i][0].transcript);
+ }
+ };
+ voiceRecognition.onerror = () => {};
+ voiceRecognition.onend = () => {
+ if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) { try { voiceRecognition.start(); } catch(e) {} }
+ else stopMediaTranscription();
+ };
+ try { voiceRecognition.start(); } catch(e) { stopMediaTranscription(); }
+}
 
 async function toggleVoiceInput(targetId, micBtnId) {
  _voiceTargetId = targetId || 'chat-input';
@@ -5773,6 +5948,17 @@ function showResults() {
  APP.quizQuestions.forEach((q,i) => { if (answers[i] === q.correct) score++; });
  APP.quizScore = score;
  const pct = Math.round(score/total*100);
+
+ // Enregistrement des stats AVANT le rendu de la correction détaillée :
+ // si le rendu plante (contenu généré par l'IA imprévu), le score est déjà
+ // sauvegardé et remonte quand même dans "Ma progression" et l'arbre.
+ try {
+ APP.user.streak++;
+ incrementSessions();
+ incrementQuestions(APP.quizQuestions.length);
+ addSubjectScore(selectedSubjectQuiz, pct);
+ } catch(e) { console.error('Erreur enregistrement stats quiz', e); }
+
  const emojis = pct>=80?'':pct>=60?'':pct>=40?'':'';
  const titles = pct>=80?'Excellent !':pct>=60?'Très bien !':pct>=40?'Pas mal !':'Continue !';
  const msgs = pct>=80?'Tu maîtrises ce sujet !':pct>=60?'Encore un peu de révision.':pct>=40?'Continue, tu progresses !':'La pratique mène à la perfection.';
@@ -5815,11 +6001,6 @@ function showResults() {
  </div>`;
  }).join('')}`;
  renderMathInChat(document.getElementById('result-correction'));
-
- APP.user.streak++;
- incrementSessions();
- incrementQuestions(APP.quizQuestions.length);
- addSubjectScore(selectedSubjectQuiz, pct);
 }
 
 function restartQuiz() {
@@ -6063,6 +6244,8 @@ let selectedSujetSubject = null, selectedSujetType = 'devoir', selectedSujetNPar
 function renderSujetConfig() {
  document.getElementById('sujet-config').style.display = 'block';
  document.getElementById('sujet-workspace').style.display = 'none';
+ const resultsEl = document.getElementById('sujet-results');
+ if (resultsEl) resultsEl.style.display = 'none';
  if (!selectedSujetSubject && SUBJECTS.length) selectedSujetSubject = SUBJECTS[0].id;
  const el = document.getElementById('sujet-subject-btns');
  el.innerHTML = [...SUBJECTS].sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>`
@@ -6187,12 +6370,75 @@ function restartSujet() {
  document.getElementById('sujet-timer-start-btn').disabled = false;
  document.getElementById('sujet-timer-display').textContent = '--:--';
  document.getElementById('sujet-workspace').style.display = 'none';
+ document.getElementById('sujet-results').style.display = 'none';
  renderSujetConfig();
 }
-function finishSujet() {
+async function gradeSujet() {
  clearInterval(sujetTimerInterval);
- showToast('✓ Sujet terminé — bon travail !');
- showScreen('screen-home');
+ const answered = sujetParts.filter(p => (p.reponse||'').trim().length > 0);
+ if (!answered.length) { showToast('! Réponds au moins à une partie avant de terminer'); return; }
+
+ const btn = document.getElementById('sujet-finish-btn');
+ btn.disabled = true; btn.textContent = ' Correction en cours...';
+
+ const subj = SUBJECTS.find(s=>s.id===selectedSujetSubject);
+ const level = APP.user.level || 'Licence 2';
+ const partsBlock = sujetParts.map((p,i) => `Partie ${i+1} (${p.type}, ${p.points||0} points)\nÉnoncé : ${p.enonce}\nRéponse de l'étudiant : ${(p.reponse||'').trim() || '(non répondu)'}`).join('\n\n');
+ const langInstruction = ` Réponds ENTIÈREMENT en ${LANG_NAMES_FOR_AI[APP_LANG] || 'français'}.`;
+ const prompt = `Tu es un correcteur expert en ${subj ? subj.name : 'la matière'} pour le niveau ${level}. Corrige ce devoir/examen partie par partie, avec bienveillance mais rigueur.${langInstruction}\n\n${partsBlock}\n\nPour chaque partie, attribue une note sur le barème indiqué (0 si non répondu), avec un commentaire court et constructif. Calcule aussi le total obtenu et le total maximum (somme des points de toutes les parties).\n\nRéponds UNIQUEMENT avec ce JSON valide, sans texte avant ou après :\n{"parts":[{"note":0,"commentaire":"..."}],"total":0,"total_max":20}`;
+
+ try {
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ method:'POST', headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 2200, system: 'Tu es un correcteur pedagogique. Reponds UNIQUEMENT en JSON valide, sans texte autour.', messages:[{role:'user', content:prompt}] })
+ });
+ if (!res.ok) { const err = await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ let parsed;
+ try { parsed = JSON.parse(raw); }
+ catch(je) { parsed = repairTruncatedJson(raw); }
+
+ const totalMax = parsed.total_max || sujetParts.reduce((a,p)=>a+(p.points||0),0) || 20;
+ const total = typeof parsed.total === 'number' ? parsed.total : (parsed.parts||[]).reduce((a,p)=>a+(p.note||0),0);
+ const pct = totalMax > 0 ? Math.round((total/totalMax)*100) : 0;
+
+ // Enregistrement des stats (progression + arbre de connaissance), comme un quiz noté.
+ try {
+ incrementSessions();
+ incrementQuestions(sujetParts.length);
+ addSubjectScore(selectedSujetSubject, pct);
+ } catch(e) { console.error('Erreur enregistrement stats sujet', e); }
+
+ renderSujetResults(parsed, total, totalMax, pct, subj);
+ } catch(e) {
+ showToast('✕ Erreur de correction : ' + ((e && e.message) || 'réessaie'));
+ }
+ btn.disabled = false; btn.textContent = 'Terminer et corriger';
+}
+function renderSujetResults(parsed, total, totalMax, pct, subj) {
+ document.getElementById('sujet-workspace').style.display = 'none';
+ document.getElementById('sujet-results').style.display = 'block';
+ const partsRes = parsed.parts || [];
+ document.getElementById('sujet-results-content').innerHTML = `
+ <div style="background:linear-gradient(135deg,var(--em),var(--em2));border-radius:var(--r);padding:20px;margin:16px 0 20px;color:#fff;text-align:center">
+ <div style="font-size:11px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${subj ? subj.name : ''}</div>
+ <div style="font-size:32px;font-weight:800">${total} / ${totalMax}</div>
+ <div style="font-size:13px;opacity:.9;margin-top:2px">${pct}%</div>
+ </div>
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:10px"> Correction détaillée</h3>
+ ${sujetParts.map((p,i)=>{
+ const r = partsRes[i] || {};
+ return `<div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:3px solid var(--em)">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+ <span style="font-size:12px;font-weight:700">Partie ${i+1}</span>
+ <span style="font-size:12px;font-weight:700;color:var(--em)">${r.note != null ? r.note : '—'} / ${p.points||0}</span>
+ </div>
+ <p style="font-size:12px;color:var(--text3);line-height:1.5">${r.commentaire || ''}</p>
+ </div>`;
+ }).join('')}`;
+ renderMathInChat(document.getElementById('sujet-results-content'));
 }
 
 async function analyzeCourse() {
