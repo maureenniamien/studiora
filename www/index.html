@@ -2524,6 +2524,9 @@ function showScreen(id, skipHistory) {
  try { stopMediaTranscription(); } catch(e) {}
  if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
  }
+ if (curr && curr.id === 'screen-chat' && id !== 'screen-chat') {
+ try { stopSpeaking(); } catch(e) {}
+ }
  if (curr && curr.id !== id) {
  if (!skipHistory) screenHistory.push(curr.id);
  curr.classList.add('slide-left');
@@ -2979,7 +2982,7 @@ function renderMsgHTML(m) {
  <div class="msg-bubble ai">${formatAiMsg(cleanText)}${docCard}</div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${m.time || ''}</div>
- <button onclick="speakMessage('${b64}', this)" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <button class="tts-btn" onclick="speakMessage('${b64}', this)" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
  </button>
  <button onclick="copyMessageText('${b64}')" title="Copier" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
@@ -4890,7 +4893,7 @@ async function transcribeMediaFileViaAPI() {
  try {
  const fd = new FormData();
  fd.append('file', importedMediaFile, importedMediaFile.name);
- const res = await fetch(SUPABASE_URL + '/functions/v1/transcribe-audio', {
+ const res = await fetch(SUPABASE_URL + '/functions/v1/clever-action', {
  method: 'POST',
  headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
  body: fd
@@ -5077,25 +5080,34 @@ function sendTranscriptToEditor() {
 
 const TTS_ICON_PLAY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
 const TTS_ICON_STOP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
-let ttsActiveBtn = null;
+// On identifie le message en cours de lecture par son contenu (b64), pas par une
+// référence au bouton DOM : le chat peut se re-rendre entre le clic "lire" et le
+// clic "arrêter" (nouveau message, sync...), ce qui recrée les boutons et cassait
+// la comparaison par référence — le bouton "Arrêter" relançait alors la lecture
+// au lieu de l'interrompre, donnant l'impression que ça ne s'arrête jamais.
+let ttsActiveKey = null;
+function _resetTTSButtons() {
+ document.querySelectorAll('.tts-btn').forEach(b => { b.innerHTML = TTS_ICON_PLAY; b.title = 'Écouter'; });
+}
 function stopSpeaking() {
  if (window.AndroidTTS && typeof window.AndroidTTS.stop === 'function') {
  try { window.AndroidTTS.stop(); } catch(e) {}
  }
  if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
- if (ttsActiveBtn) { ttsActiveBtn.innerHTML = TTS_ICON_PLAY; ttsActiveBtn.title = 'Écouter'; }
- ttsActiveBtn = null;
+ _resetTTSButtons();
+ ttsActiveKey = null;
 }
 function speakMessage(b64text, btn) {
- // Un second clic sur le bouton en cours de lecture l'arrête simplement
- if (btn && ttsActiveBtn === btn) { stopSpeaking(); return; }
+ // Un second clic sur le message en cours de lecture l'arrête simplement
+ if (ttsActiveKey === b64text) { stopSpeaking(); return; }
  // Un clic sur un autre message coupe la lecture précédente avant de démarrer la nouvelle
  stopSpeaking();
 
  const text = decodeURIComponent(escape(atob(b64text)));
  const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
 
- if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; ttsActiveBtn = btn; }
+ ttsActiveKey = b64text;
+ if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; }
 
  // 1) Priorité au TTS natif Android (plus fiable dans une WebView que l'API Web Speech)
  if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
