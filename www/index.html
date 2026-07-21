@@ -4930,44 +4930,69 @@ async function transcribeMediaFileViaAPI() {
  // Extraction audio (préférée) — beaucoup plus léger à uploader qu'un fichier vidéo brut.
  let uploadBlob = importedMediaFile;
  let uploadName = importedMediaFile.name;
+ let extracted = false;
  if (importedMediaFile.type.startsWith('video/')) {
  try {
  btn.textContent = ' Extraction audio... 0%';
- uploadBlob = await extractAudioBlobFromMedia(importedMediaEl, (p) => { btn.textContent = ' Extraction audio... ' + Math.round(p*100) + '%'; });
- uploadName = (importedMediaFile.name || 'audio').replace(/\.[^.]+$/, '') + '.webm';
+ const audioBlob = await extractAudioBlobFromMedia(importedMediaEl, (p) => { btn.textContent = ' Extraction audio... ' + Math.round(p*100) + '%'; });
  importedMediaEl.currentTime = 0;
  importedMediaEl.onended = null;
  importedMediaEl.ontimeupdate = null;
+ // Garde-fou : un fichier extrait anormalement petit (silence/piste vide selon le
+ // navigateur) est plus probablement un échec silencieux qu'un vrai résultat —
+ // dans ce cas on préfère envoyer le fichier original plutôt qu'un audio muet.
+ if (audioBlob && audioBlob.size > 2000) {
+ uploadBlob = audioBlob;
+ uploadName = (importedMediaFile.name || 'audio').replace(/\.[^.]+$/, '') + '.webm';
+ extracted = true;
+ }
  } catch(e) {
  // L'extraction a échoué (API indisponible) : on envoie le fichier original tel quel,
  // c'est plus lourd mais ça reste fonctionnel plutôt que de bloquer la transcription.
  }
  }
 
- btn.textContent = ' Envoi pour transcription...';
+ let result;
  try {
+ result = await _uploadForTranscription(uploadBlob, uploadName, btn);
+ } catch(e) {
+ btn.disabled = false; btn.textContent = oldTxt;
+ return false; // hors-ligne / fonction indisponible : repli
+ }
+ if (result.notDeployed) { btn.disabled = false; btn.textContent = oldTxt; return false; }
+
+ // Si l'extraction audio n'a rien détecté, on retente une fois avec le fichier vidéo
+ // original avant d'abandonner (l'extraction a pu produire un audio silencieux).
+ if (result.emptyText && extracted) {
+ try {
+ result = await _uploadForTranscription(importedMediaFile, importedMediaFile.name, btn);
+ } catch(e) {}
+ }
+
+ btn.disabled = false; btn.textContent = oldTxt;
+ if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); return true; }
+ if (result.emptyText) { showToast('⚠ Aucun texte détecté dans ce fichier'); return true; }
+ const ta = document.getElementById('transcript-textarea');
+ ta.value = (ta.value ? ta.value + '\n' : '') + result.text;
+ addTranscriptionUsageSec(Math.round(importedMediaEl.duration || 0));
+ showToast('✓ Transcription terminée');
+ return true;
+}
+async function _uploadForTranscription(blob, name, btn) {
+ btn.textContent = ' Envoi pour transcription...';
  const fd = new FormData();
- fd.append('file', uploadBlob, uploadName);
+ fd.append('file', blob, name);
  const res = await fetch(SUPABASE_URL + '/functions/v1/clever-action', {
  method: 'POST',
  headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
  body: fd
  });
- btn.disabled = false; btn.textContent = oldTxt;
- if (res.status === 404) return false; // fonction pas encore déployée : repli
- if (!res.ok) { showToast('⚠ Erreur de transcription, réessaie'); return true; }
+ if (res.status === 404) return { notDeployed: true };
+ if (!res.ok) return { error: true };
  const data = await res.json();
  const text = (data && (data.text || data.transcript || '')).trim();
- if (!text) { showToast('⚠ Aucun texte détecté dans ce fichier'); return true; }
- const ta = document.getElementById('transcript-textarea');
- ta.value = (ta.value ? ta.value + '\n' : '') + text;
- addTranscriptionUsageSec(Math.round(importedMediaEl.duration || 0));
- showToast('✓ Transcription terminée');
- return true;
- } catch(e) {
- btn.disabled = false; btn.textContent = oldTxt;
- return false; // hors-ligne / fonction indisponible : repli
- }
+ if (!text) return { emptyText: true };
+ return { text };
 }
 function _runMediaTranscriptionLoop() {
  if (!_mediaTranscribing) return;
@@ -5145,9 +5170,18 @@ function _resetTTSButtons() {
  document.querySelectorAll('.tts-btn').forEach(b => { b.innerHTML = TTS_ICON_PLAY; b.title = 'Écouter'; });
 }
 function stopSpeaking() {
- if (window.AndroidTTS && typeof window.AndroidTTS.stop === 'function') {
- try { window.AndroidTTS.stop(); } catch(e) {}
- }
+ // Le nom exact de la méthode d'arrêt du pont natif Android n'est pas garanti — on
+ // essaie toutes les méthodes plausibles plutôt qu'une seule, et on réessaie une
+ // fois après un court délai (certains ponts TTS natifs ignorent un stop() appelé
+ // trop tôt après le speak(), le temps que la lecture démarre vraiment).
+ const killAndroidTTS = () => {
+ if (!window.AndroidTTS) return;
+ ['stop','pause','shutdown','cancel'].forEach(m => {
+ if (typeof window.AndroidTTS[m] === 'function') { try { window.AndroidTTS[m](); } catch(e) {} }
+ });
+ };
+ killAndroidTTS();
+ setTimeout(killAndroidTTS, 150);
  if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
  _resetTTSButtons();
  ttsActiveKey = null;
