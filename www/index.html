@@ -4867,7 +4867,10 @@ async function toggleMediaTranscription() {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
  return;
  }
- // 1) Transcription réelle du fichier envoyé à l'IA (précise, ne dépend pas du micro/volume)
+ // 1) Transcription réelle du fichier envoyé à l'IA (précise, ne dépend pas du micro/volume).
+ // On extrait d'abord uniquement la piste audio (via captureStream + MediaRecorder) avant
+ // l'envoi : une vidéo peut peser 100+ Mo alors que son audio seul pèse quelques Mo — ça
+ // évite de faire exploser la consommation de données pour une transcription.
  const handled = await transcribeMediaFileViaAPI();
  if (handled) return;
  // 2) Repli si la fonction serveur n'est pas encore déployée : lecture + écoute micro en
@@ -4877,11 +4880,44 @@ async function toggleMediaTranscription() {
  _voiceSessionIsTranscription = true;
  _voiceSessionStartTs = Date.now();
  document.getElementById('transcribe-media-btn').textContent = '⏸ Arrêter la transcription';
+ importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
+ importedMediaEl.ontimeupdate = null;
  importedMediaEl.currentTime = 0;
  importedMediaEl.play().catch(()=>{ showToast('⚠ Lecture impossible'); stopMediaTranscription(); });
  _runMediaTranscriptionLoop();
 }
-// Envoie le fichier importé à la fonction Supabase 'transcribe-audio' (Whisper via Groq).
+// Enregistre uniquement la piste audio du fichier importé (lecture en temps réel via
+// captureStream + MediaRecorder, encodage compact opus/webm à faible débit). Beaucoup
+// plus léger à uploader qu'une vidéo brute, et beaucoup plus fiable que l'écoute par
+// micro-en-direct (capture numérique exacte, pas de bruit ambiant).
+function extractAudioBlobFromMedia(mediaEl, onProgress) {
+ return new Promise((resolve, reject) => {
+ if (typeof mediaEl.captureStream !== 'function' && typeof mediaEl.mozCaptureStream !== 'function') {
+ reject(new Error('captureStream indisponible')); return;
+ }
+ if (typeof MediaRecorder === 'undefined') { reject(new Error('MediaRecorder indisponible')); return; }
+ try {
+ const rawStream = mediaEl.captureStream ? mediaEl.captureStream() : mediaEl.mozCaptureStream();
+ const audioTracks = rawStream.getAudioTracks();
+ if (!audioTracks.length) { reject(new Error('pas de piste audio')); return; }
+ const audioStream = new MediaStream(audioTracks);
+ const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/webm';
+ const recorder = new MediaRecorder(audioStream, { mimeType, audioBitsPerSecond: 32000 });
+ const chunks = [];
+ let settled = false;
+ recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+ recorder.onstop = () => { if (!settled) { settled = true; resolve(new Blob(chunks, { type: mimeType })); } };
+ recorder.onerror = (e) => { if (!settled) { settled = true; reject((e && e.error) || new Error('erreur enregistrement')); } };
+ mediaEl.oncanplay = null;
+ mediaEl.onended = () => { try { recorder.stop(); } catch(e) {} };
+ mediaEl.ontimeupdate = () => { if (onProgress && mediaEl.duration) onProgress(mediaEl.currentTime / mediaEl.duration); };
+ mediaEl.currentTime = 0;
+ recorder.start();
+ mediaEl.play().catch(err => { if (!settled) { settled = true; reject(err); } });
+ } catch(e) { reject(e); }
+ });
+}
+// Envoie le fichier importé à la fonction Supabase 'clever-action' (Whisper via Groq).
 // Retourne true si la fonction a répondu (succès, quota atteint, ou fichier vide) — dans
 // ce cas on ne bascule PAS sur le repli micro-en-direct. Retourne false uniquement si la
 // fonction n'est pas déployée/joignable, pour laisser toggleMediaTranscription() basculer.
@@ -4889,10 +4925,29 @@ async function transcribeMediaFileViaAPI() {
  if (!importedMediaFile) return false;
  const btn = document.getElementById('transcribe-media-btn');
  const oldTxt = btn.textContent;
- btn.disabled = true; btn.textContent = ' Transcription en cours...';
+ btn.disabled = true;
+
+ // Extraction audio (préférée) — beaucoup plus léger à uploader qu'un fichier vidéo brut.
+ let uploadBlob = importedMediaFile;
+ let uploadName = importedMediaFile.name;
+ if (importedMediaFile.type.startsWith('video/')) {
+ try {
+ btn.textContent = ' Extraction audio... 0%';
+ uploadBlob = await extractAudioBlobFromMedia(importedMediaEl, (p) => { btn.textContent = ' Extraction audio... ' + Math.round(p*100) + '%'; });
+ uploadName = (importedMediaFile.name || 'audio').replace(/\.[^.]+$/, '') + '.webm';
+ importedMediaEl.currentTime = 0;
+ importedMediaEl.onended = null;
+ importedMediaEl.ontimeupdate = null;
+ } catch(e) {
+ // L'extraction a échoué (API indisponible) : on envoie le fichier original tel quel,
+ // c'est plus lourd mais ça reste fonctionnel plutôt que de bloquer la transcription.
+ }
+ }
+
+ btn.textContent = ' Envoi pour transcription...';
  try {
  const fd = new FormData();
- fd.append('file', importedMediaFile, importedMediaFile.name);
+ fd.append('file', uploadBlob, uploadName);
  const res = await fetch(SUPABASE_URL + '/functions/v1/clever-action', {
  method: 'POST',
  headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
