@@ -3402,10 +3402,20 @@ async function initExcelXS(sheetsData, filename) {
  return;
  }
  docEditorState = { type: 'excel-xs', filename: filename };
- content.innerHTML = `<div id="xs-container" style="height:65vh;min-height:360px;border:1px solid var(--border);border-radius:12px;overflow:hidden"></div>`;
+ content.innerHTML = `<div id="xs-container" style="height:65vh;min-height:360px;border:1px solid var(--border);border-radius:12px"></div>`;
+ // Force un reflow avant de laisser la bibliothèque mesurer le conteneur : sans ça,
+ // clientHeight/clientWidth valent parfois 0 juste après l'injection du HTML (avant
+ // que le navigateur n'ait posé la mise en page), et la barre d'outils/le quadrillage
+ // se retrouvent construits avec une hauteur nulle (invisibles).
+ void content.offsetHeight;
+ await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
  const xsData = (sheetsData || []).map(s => rowsToXS(s.name, s.rows));
  try {
  xsInstance = window.x_spreadsheet('#xs-container', {
+ showToolbar: true,
+ showGrid: true,
+ showContextmenu: true,
+ showBottomBar: true,
  view: {
  height: () => document.getElementById('xs-container').clientHeight,
  width: () => document.getElementById('xs-container').clientWidth,
@@ -4770,7 +4780,14 @@ window.onAndroidSTTStart = function() {
  _voiceSessionStartTs = Date.now();
  _voiceSetMicActive(true);
 };
+// Certains appareils déclenchent le callback natif Android *après* qu'on ait déjà
+// explicitement arrêté l'écoute (navigation vers un autre écran, etc.). Sans ce
+// garde-fou, ce callback tardif relance la boucle ou affiche un toast d'erreur
+// alors que l'utilisateur a quitté l'outil depuis longtemps.
+let _voiceExpectingCallback = false;
 window.onAndroidSTTResult = function(text) {
+ if (!_voiceExpectingCallback) return;
+ _voiceExpectingCallback = false;
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
@@ -4788,6 +4805,8 @@ window.onAndroidSTTResult = function(text) {
  }
 };
 window.onAndroidSTTError = function(code) {
+ if (!_voiceExpectingCallback) return;
+ _voiceExpectingCallback = false;
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
@@ -4831,6 +4850,7 @@ function handleImportMediaFile(input) {
 }
 function stopMediaTranscription() {
  _mediaTranscribing = false;
+ _voiceExpectingCallback = false;
  if (importedMediaEl) importedMediaEl.pause();
  if (voiceRecognition) { try { voiceRecognition.continuous = false; voiceRecognition.onend = null; voiceRecognition.stop(); } catch(e) {} }
  if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') { try { window.AndroidSTT.stopListening(); } catch(e) {} }
@@ -4897,7 +4917,8 @@ function _runMediaTranscriptionLoop() {
  _voiceAppendNewline = true;
  // Pont natif Android (écoute par segments) : on relance en boucle tant que le média joue
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- try { window.AndroidSTT.startListening(); } catch(e) {}
+ _voiceExpectingCallback = true;
+ try { window.AndroidSTT.startListening(); } catch(e) { _voiceExpectingCallback = false; }
  return;
  }
  // Repli navigateur : mode continu natif de l'API Web Speech
@@ -4934,7 +4955,8 @@ async function toggleVoiceInput(targetId, micBtnId) {
 
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- if (isListening) { window.AndroidSTT.stopListening(); return; }
+ if (isListening) { window.AndroidSTT.stopListening(); _voiceExpectingCallback = false; return; }
+ _voiceExpectingCallback = true;
  window.AndroidSTT.startListening();
  return;
  }
