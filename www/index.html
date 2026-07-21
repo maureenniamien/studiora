@@ -5174,7 +5174,12 @@ function stopSpeaking() {
  // appelle TextToSpeech.stop(), qui vide la file d'attente et interrompt
  // l'énoncé en cours.
  if (window.AndroidTTS && typeof window.AndroidTTS.stop === 'function') {
- try { window.AndroidTTS.stop(); } catch(e) {}
+ try { window.AndroidTTS.stop(); } catch(e) { showToast('⚠ AndroidTTS.stop() a levé une erreur : ' + e); }
+ } else if (window.AndroidTTS) {
+ // DIAGNOSTIC TEMPORAIRE : le pont natif AndroidTTS existe mais n'a pas de
+ // méthode stop() → l'APK installée ne contient pas encore le correctif
+ // MainActivity.java (vérifie le build Codemagic / le commit poussé).
+ showToast('⚠ Diagnostic : AndroidTTS.stop() absent — APK pas à jour');
  }
  if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
  _resetTTSButtons();
