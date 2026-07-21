@@ -2518,6 +2518,12 @@ function showScreen(id, skipHistory) {
  if (lsOverlay) { try { closeLuckysheetOverlay(); } catch(e) { lsOverlay.remove(); } }
  }
  const curr = document.querySelector('.screen:not(.hidden):not(.slide-left)');
+ // Si on quitte l'écran Transcription, on arrête la lecture/transcription en cours :
+ // elle ne doit jamais continuer à tourner (micro + lecture) hors de cet outil.
+ if (curr && curr.id === 'screen-transcription' && id !== 'screen-transcription') {
+ try { stopMediaTranscription(); } catch(e) {}
+ if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
+ }
  if (curr && curr.id !== id) {
  if (!skipHistory) screenHistory.push(curr.id);
  curr.classList.add('slide-left');
@@ -3327,6 +3333,98 @@ function docInsertDate() {
 }
 
 // ── BARRE D'OUTILS EXCEL (Accueil / Insertion / Données) ──
+// ── Excel complet : x-spreadsheet (bibliothèque libre/MIT, légère ~150 Ko) ──
+// Chargée à la demande depuis un CDN. Si le CDN est indisponible (hors-ligne,
+// réseau instable) ou met plus de 7s à répondre, on bascule automatiquement et
+// silencieusement sur le moteur maison (initExcelTable, sans dépendance externe,
+// toujours disponible) : l'utilisateur n'est jamais bloqué sur un écran de
+// chargement infini comme avec Luckysheet.
+let _xsAssetsPromise = null;
+let xsInstance = null;
+function loadXSpreadsheetAssets() {
+ if (window.x_spreadsheet) return Promise.resolve();
+ if (_xsAssetsPromise) return _xsAssetsPromise;
+ const CSS = 'https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.5/dist/xspreadsheet.css';
+ const JS = 'https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.5/dist/xspreadsheet.js';
+ if (!document.querySelector(`link[href="${CSS}"]`)) {
+ const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = CSS;
+ document.head.appendChild(l);
+ }
+ _xsAssetsPromise = new Promise((resolve, reject) => {
+ if (document.querySelector(`script[src="${JS}"]`)) { resolve(); return; }
+ const s = document.createElement('script'); s.src = JS;
+ s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + JS));
+ document.head.appendChild(s);
+ }).catch(e => { _xsAssetsPromise = null; throw e; });
+ return _xsAssetsPromise;
+}
+function _withTimeout(promise, ms) {
+ return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+}
+function rowsToXS(name, rows) {
+ const o = { name: (name || 'Feuille1').slice(0,31), rows: {} };
+ (rows || []).forEach((r,i) => {
+ if (!r || !r.length) return;
+ const cells = {};
+ r.forEach((c,j) => { if (c !== undefined && c !== null && c !== '') cells[j] = { text: String(c) }; });
+ if (Object.keys(cells).length) o.rows[i] = { cells };
+ });
+ return o;
+}
+function xsToRows(sheetData) {
+ const rowsObj = (sheetData && sheetData.rows) || {};
+ const keys = Object.keys(rowsObj).map(Number);
+ const maxRow = keys.length ? Math.max(...keys) : -1;
+ const out = [];
+ for (let i=0;i<=maxRow;i++) {
+ const r = rowsObj[i];
+ if (!r || !r.cells) { out.push([]); continue; }
+ const cellKeys = Object.keys(r.cells).map(Number);
+ const maxCol = cellKeys.length ? Math.max(...cellKeys) : -1;
+ const row = [];
+ for (let j=0;j<=maxCol;j++) row.push(r.cells[j] ? (r.cells[j].text || '') : '');
+ out.push(row);
+ }
+ return out;
+}
+async function initExcelXS(sheetsData, filename) {
+ document.getElementById('doceditor-empty').style.display = 'none';
+ const content = document.getElementById('doceditor-content');
+ content.style.display = 'block';
+ content.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px"><div class="spinner"></div><p style="font-size:13px;color:var(--text3);text-align:center">Chargement de l'éditeur...</p></div>`;
+ document.getElementById('doceditor-save-btn').style.display = 'none';
+ document.getElementById('doceditor-pdf-btn').style.display = 'none';
+ try {
+ await _withTimeout(loadXSpreadsheetAssets(), 7000);
+ if (!window.x_spreadsheet) throw new Error('bibliothèque absente après chargement');
+ } catch(e) {
+ initExcelTable(sheetsData, filename); // repli fiable, sans réseau
+ return;
+ }
+ docEditorState = { type: 'excel-xs', filename: filename };
+ content.innerHTML = `<div id="xs-container" style="height:65vh;min-height:360px;border:1px solid var(--border);border-radius:12px;overflow:hidden"></div>`;
+ const xsData = (sheetsData || []).map(s => rowsToXS(s.name, s.rows));
+ try {
+ xsInstance = window.x_spreadsheet('#xs-container', {
+ view: {
+ height: () => document.getElementById('xs-container').clientHeight,
+ width: () => document.getElementById('xs-container').clientWidth,
+ },
+ row: { len: 100, height: 26 },
+ col: { len: 26, width: 90, indexWidth: 44 },
+ }).loadData(xsData.length ? xsData : [{ name: 'Feuille1', rows: {} }]);
+ xsInstance.on('cell-edited', (text, ri, ci) => {
+ if (typeof text === 'string' && text.charAt(0) === '=') {
+ const translated = translateFrenchFormula(text);
+ if (translated !== text) xsInstance.cellText(ri, ci, translated);
+ }
+ });
+ } catch(e) {
+ initExcelTable(sheetsData, filename); // repli si l'initialisation plante
+ return;
+ }
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+}
 function currentSheetTable() {
  if (_activeSheetCell) return _activeSheetCell.closest('table');
  const wrap = document.querySelector(`[data-sheet-wrap="${_excelActiveSheetIdx}"]`);
@@ -4026,7 +4124,7 @@ function newBlankDoc(type) {
  }
  if (type === 'excel') {
  docEditorState = { type: 'excel', filename: 'nouveau_classeur.xlsx' };
- initExcelTable([xlsxRowsToTableSheet('Feuille1', [])], docEditorState.filename);
+ initExcelXS([xlsxRowsToTableSheet('Feuille1', [])], docEditorState.filename);
  return;
  }
 }
@@ -4055,7 +4153,7 @@ async function handleDocEditorOpen(input) {
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
  return xlsxRowsToTableSheet(sheetName, rows);
  });
- initExcelTable(sheetsData, docEditorState.filename);
+ initExcelXS(sheetsData, docEditorState.filename);
  return;
 
  } else if (['txt','tex','md'].includes(ext)) {
@@ -4164,6 +4262,14 @@ async function exportDocEditorToPDF() {
 async function saveDocEditorFile() {
  try {
  let blob, mimeType;
+
+ if (docEditorState.type === 'word') {
+ const currentBase = (docEditorState.filename || 'document').replace(/\.[^.]+$/, '');
+ const chosen = prompt('Titre du fichier :', currentBase);
+ if (chosen === null) return; // annulé
+ const cleanTitle = chosen.trim() || currentBase || 'document';
+ docEditorState.filename = cleanTitle + '.docx';
+ }
  const filename = docEditorState.filename || 'document';
 
  if (docEditorState.type === 'word') {
@@ -4214,6 +4320,21 @@ async function saveDocEditorFile() {
  const docxDoc = new Document({ sections:[{ properties:{}, children: children.length?children:[new Paragraph('')] }] });
  blob = await Packer.toBlob(docxDoc);
  mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+ } else if (docEditorState.type === 'excel-xs') {
+ const wb = XLSX.utils.book_new();
+ const data = xsInstance ? xsInstance.getData() : [];
+ (data.length ? data : [{name:'Feuille1', rows:{}}]).forEach(sheetData => {
+ const rows = xsToRows(sheetData).map(row => row.map(v => {
+ const num = parseFloat(String(v).replace(',', '.'));
+ return (v !== '' && v != null && !isNaN(num)) ? num : v;
+ }));
+ const ws = XLSX.utils.aoa_to_sheet(rows.length ? rows : [[]]);
+ XLSX.utils.book_append_sheet(wb, ws, (sheetData.name || 'Feuille1').substring(0,31));
+ });
+ const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+ blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+ mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
  } else if (docEditorState.type === 'excel') {
  const wb = XLSX.utils.book_new();
@@ -4686,10 +4807,16 @@ window.onAndroidSTTError = function(code) {
 // en direct, pas un fichier. On lit donc le fichier tout en écoutant avec le
 // micro, en boucle continue, pour transcrire au fil de la lecture.
 let importedMediaEl = null;
+let importedMediaFile = null;
 let _mediaTranscribing = false;
 function handleImportMediaFile(input) {
  const file = input.files[0];
  if (!file) return;
+ // Réinitialise toute lecture/transcription en cours avant de charger le nouveau fichier,
+ // sinon l'ancienne session (micro + lecture) continue en arrière-plan et bloque le changement.
+ if (_mediaTranscribing) stopMediaTranscription();
+ if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
+ importedMediaFile = file;
  const url = URL.createObjectURL(file);
  const isVideo = file.type.startsWith('video');
  const container = document.getElementById('transcribe-media-preview');
@@ -4710,13 +4837,19 @@ function stopMediaTranscription() {
  const btn = document.getElementById('transcribe-media-btn');
  if (btn) btn.textContent = ' Transcrire pendant la lecture';
 }
-function toggleMediaTranscription() {
+async function toggleMediaTranscription() {
  if (!importedMediaEl) { showToast('⚠ Importe un fichier audio/vidéo d\'abord'); return; }
  if (_mediaTranscribing) { stopMediaTranscription(); return; }
  if (!canUseTranscription()) {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
  return;
  }
+ // 1) Transcription réelle du fichier envoyé à l'IA (précise, ne dépend pas du micro/volume)
+ const handled = await transcribeMediaFileViaAPI();
+ if (handled) return;
+ // 2) Repli si la fonction serveur n'est pas encore déployée : lecture + écoute micro en
+ // direct (moins fiable, dépend du volume et du bruit ambiant).
+ showToast('ℹ Transcription serveur indisponible, écoute en direct pendant la lecture...');
  _mediaTranscribing = true;
  _voiceSessionIsTranscription = true;
  _voiceSessionStartTs = Date.now();
@@ -4724,6 +4857,39 @@ function toggleMediaTranscription() {
  importedMediaEl.currentTime = 0;
  importedMediaEl.play().catch(()=>{ showToast('⚠ Lecture impossible'); stopMediaTranscription(); });
  _runMediaTranscriptionLoop();
+}
+// Envoie le fichier importé à la fonction Supabase 'transcribe-audio' (Whisper via Groq).
+// Retourne true si la fonction a répondu (succès, quota atteint, ou fichier vide) — dans
+// ce cas on ne bascule PAS sur le repli micro-en-direct. Retourne false uniquement si la
+// fonction n'est pas déployée/joignable, pour laisser toggleMediaTranscription() basculer.
+async function transcribeMediaFileViaAPI() {
+ if (!importedMediaFile) return false;
+ const btn = document.getElementById('transcribe-media-btn');
+ const oldTxt = btn.textContent;
+ btn.disabled = true; btn.textContent = ' Transcription en cours...';
+ try {
+ const fd = new FormData();
+ fd.append('file', importedMediaFile, importedMediaFile.name);
+ const res = await fetch(SUPABASE_URL + '/functions/v1/transcribe-audio', {
+ method: 'POST',
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+ body: fd
+ });
+ btn.disabled = false; btn.textContent = oldTxt;
+ if (res.status === 404) return false; // fonction pas encore déployée : repli
+ if (!res.ok) { showToast('⚠ Erreur de transcription, réessaie'); return true; }
+ const data = await res.json();
+ const text = (data && (data.text || data.transcript || '')).trim();
+ if (!text) { showToast('⚠ Aucun texte détecté dans ce fichier'); return true; }
+ const ta = document.getElementById('transcript-textarea');
+ ta.value = (ta.value ? ta.value + '\n' : '') + text;
+ addTranscriptionUsageSec(Math.round(importedMediaEl.duration || 0));
+ showToast('✓ Transcription terminée');
+ return true;
+ } catch(e) {
+ btn.disabled = false; btn.textContent = oldTxt;
+ return false; // hors-ligne / fonction indisponible : repli
+ }
 }
 function _runMediaTranscriptionLoop() {
  if (!_mediaTranscribing) return;
