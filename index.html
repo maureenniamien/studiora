@@ -5170,18 +5170,12 @@ function _resetTTSButtons() {
  document.querySelectorAll('.tts-btn').forEach(b => { b.innerHTML = TTS_ICON_PLAY; b.title = 'Écouter'; });
 }
 function stopSpeaking() {
- // Le nom exact de la méthode d'arrêt du pont natif Android n'est pas garanti — on
- // essaie toutes les méthodes plausibles plutôt qu'une seule, et on réessaie une
- // fois après un court délai (certains ponts TTS natifs ignorent un stop() appelé
- // trop tôt après le speak(), le temps que la lecture démarre vraiment).
- const killAndroidTTS = () => {
- if (!window.AndroidTTS) return;
- ['stop','pause','shutdown','cancel'].forEach(m => {
- if (typeof window.AndroidTTS[m] === 'function') { try { window.AndroidTTS[m](); } catch(e) {} }
- });
- };
- killAndroidTTS();
- setTimeout(killAndroidTTS, 150);
+ // AndroidTTS.stop() est désormais exposé côté natif (MainActivity.java) et
+ // appelle TextToSpeech.stop(), qui vide la file d'attente et interrompt
+ // l'énoncé en cours.
+ if (window.AndroidTTS && typeof window.AndroidTTS.stop === 'function') {
+ try { window.AndroidTTS.stop(); } catch(e) {}
+ }
  if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
  _resetTTSButtons();
  ttsActiveKey = null;
