@@ -1770,6 +1770,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <script>
 // ── CONFIGURATION ──
 const MODEL = 'llama-3.1-8b-instant';
+const BUILD_TAG = '2026-07-22-exception-user';
+console.log('[Studiora build]', BUILD_TAG);
 
 // Horodatage de la dernière modification locale réelle des données synchronisées
 // (stats, série, arbre, matières perso). Contrairement à Date.now() calculé au
@@ -7406,6 +7408,12 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ── SYSTÈME PREMIUM / FREEMIUM ──
 // ══════════════════════════════════════════════
 const ADMIN_EMAIL = 'm16reen@gmail.com';
+// Comptes "exception" : aucune restriction (quotas illimités, accès aux
+// fonctions VIP comme le Quiz Libre) mais SANS les droits d'administration
+// (pas de tableau de bord admin, pas de badge "Admin"). Le plan affiché à
+// l'utilisateur (badge, couleur) reste celui réellement enregistré en base.
+const EXCEPTION_EMAILS = ['manstaki@yahoo.fr'];
+function isExceptionUser() { return EXCEPTION_EMAILS.includes((APP.user.email||'').toLowerCase()); }
 
 const PLANS = {
  free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10, transcription_min_per_day:150 },
@@ -7423,6 +7431,7 @@ function getPlan() {
  return APP.user.plan || 'free';
 }
 function getPlanLimits() {
+ if (isExceptionUser()) return { ...PLANS[getPlan()], ia_per_4h:999, quiz_per_5h:999, fc_per_day:999, transcription_min_per_day:999 };
  const base = PLANS[getPlan()];
  if (APP.user.bonusQuizUntil && APP.user.bonusQuizAmount && Date.now() < new Date(APP.user.bonusQuizUntil).getTime()) {
  return { ...base, quiz_per_5h: base.quiz_per_5h + APP.user.bonusQuizAmount };
@@ -7430,7 +7439,7 @@ function getPlanLimits() {
  return base;
 }
 function isAdmin() { return APP.user.email === ADMIN_EMAIL; }
-function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'; }
+function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'||isExceptionUser(); }
 
 // Repasse l'utilisateur en Gratuit si son plan (essai VIP, Premium, VIP payant)
 // a dépassé sa date d'expiration. À appeler à chaque chargement de session.
@@ -7492,7 +7501,7 @@ function incUsage(type) {
 
 // Check IA (reset toutes les 4h)
 function canUseIA() {
- if (isAdmin()||getPlan()==='vip'||getPlan()==='premium'&&getPlanLimits().ia_per_4h>=999) return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()||getPlan()==='premium'&&getPlanLimits().ia_per_4h>=999) return true;
  const u=getUsage(), today=getTodayKey();
  if (!u[today]) return true;
  const d=u[today];
@@ -7510,7 +7519,7 @@ function iaTimeLeft() {
  return h+'h'+String(m).padStart(2,'0');
 }
 function canUseQuiz() {
- if (isAdmin()||getPlan()==='vip') return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
  const u=getUsage(), today=getTodayKey();
  const d=getUsageToday();
  const elapsed=(Date.now()-(d.quiz_reset||0))/(1000*3600);
@@ -7525,7 +7534,7 @@ function quizTimeLeft() {
  return h+'h'+String(m).padStart(2,'0');
 }
 function canUseFC() {
- if (isAdmin()||getPlan()==='vip') return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
  const d=getUsageToday();
  return (d.fc||0) < getPlanLimits().fc_per_day;
 }
@@ -7537,7 +7546,7 @@ function getTranscriptionQuotaSec() { return (getPlanLimits().transcription_min_
 function getTranscriptionUsedSec() { return getUsageToday().transcribeSec || 0; }
 function getTranscriptionRemainingSec() { return Math.max(0, getTranscriptionQuotaSec() - getTranscriptionUsedSec()); }
 function canUseTranscription() {
- if (isAdmin()||getPlan()==='vip') return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
  return getTranscriptionRemainingSec() > 0;
 }
 function addTranscriptionUsageSec(sec) {
@@ -7551,7 +7560,7 @@ function addTranscriptionUsageSec(sec) {
 function updateTranscriptionQuotaLabel() {
  const el = document.getElementById('transcribe-quota-label');
  if (!el) return;
- if (isAdmin()||getPlan()==='vip') { el.textContent = 'Temps de transcription illimité'; return; }
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) { el.textContent = 'Temps de transcription illimité'; return; }
  const remainingMin = Math.floor(getTranscriptionRemainingSec()/60);
  const quotaMin = Math.round(getTranscriptionQuotaSec()/60);
  el.textContent = 'Temps de transcription restant aujourd\'hui : ' + remainingMin + ' / ' + quotaMin + ' min';
