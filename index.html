@@ -6881,18 +6881,11 @@ async function pullCloudSync() {
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 
 // ── Bouton "Passer à l'app" (affiché uniquement en navigateur web/PWA) ──
-// Lit désormais l'URL depuis version.json (la même source que la bannière de
-// mise à jour) au lieu d'une constante codée en dur — avant, cette URL restait
-// figée sur l'ancien APK v1.0.0/app-debug-51.apk même après chaque nouvelle
-// release, puisque rien ne la synchronisait automatiquement.
-let studioraLatestApkUrl = null;
-async function fetchLatestApkUrl() {
- try {
- const res = await fetch('https://maureenniamien.github.io/studiora/version.json?t=' + Date.now());
- const data = await res.json();
- if (data.apkUrl) studioraLatestApkUrl = data.apkUrl;
- } catch(e) { /* pas de connexion : on retente au prochain appel */ }
-}
+// Lien direct codé en dur dans le <a href> du bouton (voir plus bas dans le HTML) —
+// plus simple et plus fiable qu'un fetch() au clic : pas de dépendance au réseau,
+// au CORS cross-domaine, ni à un éventuel cache JS périmé pile au mauvais moment.
+// À mettre à jour manuellement (le href) à chaque nouvelle release, en même temps
+// que version.json.
 
 function isRunningInNativeApp() {
  // Capacitor injecte automatiquement window.Capacitor dans l'app native —
@@ -6904,20 +6897,9 @@ function initWebToAppBanner() {
  try {
  if (isRunningInNativeApp()) return; // jamais dans l'app installée
  if (localStorage.getItem('studiora_hide_apk_banner') === '1') return; // déjà fermée par l'utilisateur
- fetchLatestApkUrl();
  const fab = document.getElementById('web-to-app-fab');
  if (fab) fab.style.display = 'block';
  } catch(e) {}
-}
-
-function downloadStudioraApk() {
- if (studioraLatestApkUrl) { window.open(studioraLatestApkUrl, '_blank'); return; }
- // Au cas où fetchLatestApkUrl() n'a pas encore répondu (clic très rapide) : on refait
- // l'appel à la volée avant d'ouvrir, plutôt que d'échouer silencieusement.
- fetchLatestApkUrl().then(() => {
- if (studioraLatestApkUrl) window.open(studioraLatestApkUrl, '_blank');
- else showToast('! Lien de téléchargement indisponible, réessaie dans un instant.');
- });
 }
 
 function dismissWebToAppBanner() {
@@ -9173,9 +9155,12 @@ function mediaExtractAudio() {
 <div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- Bulle flottante "Passer à l'app" — visible uniquement en navigateur web (jamais dans l'app
- Android installée), persiste sur tous les écrans, style bulle façon icône flottante -->
+ Android installée), persiste sur tous les écrans, style bulle façon icône flottante.
+ Lien direct en dur (STUDIORA_APK_URL, ci-dessous) plutôt qu'un fetch() au clic : plus robuste,
+ aucune dépendance au réseau/cache au moment précis où l'utilisateur appuie. À mettre à jour
+ manuellement à chaque nouvelle release, en même temps que version.json. -->
 <div id="web-to-app-fab" style="display:none;position:fixed;right:16px;bottom:96px;z-index:9999">
- <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer">📲</button>
+ <a href="https://maureenniamien.github.io/studiora/downloads/app-debug-56.apk" download aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;text-decoration:none">📲</a>
  <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--text3);color:#fff;border:2px solid var(--white,#fff);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
 </div>
 
