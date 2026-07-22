@@ -1364,18 +1364,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour parler · chaque prise de parole ajoute une ligne</div>
  <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
  </div>
-
- <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:16px">
- <div style="font-size:12px;font-weight:700;margin-bottom:8px">🎬 Ou transcrire un fichier importé</div>
- <input type="file" id="transcribe-media-input" accept="audio/*,video/*" style="display:none" onchange="handleImportMediaFile(this)">
- <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="width:100%;padding:11px"> Importer un audio ou une vidéo</button>
- <div id="transcribe-media-preview" style="display:none;margin-top:10px"></div>
- <div id="transcribe-media-actions" style="display:none;gap:8px;margin-top:10px">
- <button id="transcribe-media-btn" onclick="toggleMediaTranscription()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Transcrire pendant la lecture</button>
- </div>
- <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
- </div>
-
  <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
  <div style="display:flex;gap:8px;margin-top:12px">
  <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">📋 Copier</button>
@@ -1445,16 +1433,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div class="scroll-body" style="padding:16px 20px;flex:1;min-height:0" id="sujet-parts-list"></div>
  <div style="flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px">
  <button onclick="restartSujet()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Nouveau sujet</button>
- <button onclick="gradeSujet()" class="btn-em" id="sujet-finish-btn" style="flex:1">Terminer et corriger</button>
- </div>
- </div>
-
- <!-- Phase 3 : correction IA -->
- <div id="sujet-results" class="scroll-body" style="display:none;padding:0 20px 20px">
- <div id="sujet-results-content"></div>
- <div style="display:flex;gap:8px;margin-top:6px">
- <button onclick="restartSujet()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Nouveau sujet</button>
- <button onclick="showScreen('screen-home')" class="btn-em" style="flex:1">Terminer</button>
+ <button onclick="finishSujet()" class="btn-em" style="flex:1">Terminer</button>
  </div>
  </div>
 </div>
@@ -1523,6 +1502,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
  <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word, PowerPoint et LaTeX se rédigent et se mettent en forme entièrement dans l'app. Word et LaTeX sont aussi exportables directement en PDF. Excel s'ouvre en plein écran pour l'expérience la plus proche d'un vrai tableur.</div>
  </div>
+ <div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px"></div>
  <div id="doceditor-content" style="display:none"></div>
  </div>
 </div>
@@ -1770,8 +1750,6 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 <script>
 // ── CONFIGURATION ──
 const MODEL = 'llama-3.1-8b-instant';
-const BUILD_TAG = '2026-07-22-exception-user';
-console.log('[Studiora build]', BUILD_TAG);
 
 // Horodatage de la dernière modification locale réelle des données synchronisées
 // (stats, série, arbre, matières perso). Contrairement à Date.now() calculé au
@@ -2520,15 +2498,6 @@ function showScreen(id, skipHistory) {
  if (lsOverlay) { try { closeLuckysheetOverlay(); } catch(e) { lsOverlay.remove(); } }
  }
  const curr = document.querySelector('.screen:not(.hidden):not(.slide-left)');
- // Si on quitte l'écran Transcription, on arrête la lecture/transcription en cours :
- // elle ne doit jamais continuer à tourner (micro + lecture) hors de cet outil.
- if (curr && curr.id === 'screen-transcription' && id !== 'screen-transcription') {
- try { stopMediaTranscription(); } catch(e) {}
- if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
- }
- if (curr && curr.id === 'screen-chat' && id !== 'screen-chat') {
- try { stopSpeaking(); } catch(e) {}
- }
  if (curr && curr.id !== id) {
  if (!skipHistory) screenHistory.push(curr.id);
  curr.classList.add('slide-left');
@@ -2984,7 +2953,7 @@ function renderMsgHTML(m) {
  <div class="msg-bubble ai">${formatAiMsg(cleanText)}${docCard}</div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${m.time || ''}</div>
- <button class="tts-btn" onclick="speakMessage('${b64}', this)" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <button onclick="speakMessage('${b64}', this)" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
  </button>
  <button onclick="copyMessageText('${b64}')" title="Copier" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
@@ -3062,19 +3031,6 @@ function getSheetCellValue(table, ref) {
 function evalSheetFormula(table, formula) {
  try {
  let expr = formula.slice(1).trim();
- // SI/IF en formule complète : peut retourner du texte, pas seulement un nombre,
- // donc traité à part et en priorité (court-circuite le reste si la formule
- // est exactement un SI(...)/IF(...)).
- const ifWhole = expr.match(/^(SI|IF)\((.+);(.+);(.+)\)$/i);
- if (ifWhole) {
- let cond = ifWhole[2].trim().replace(/\b([A-Z]+\d+)\b/g, m => getSheetCellValue(table, m.toUpperCase()));
- let condResult;
- try { condResult = Function('"use strict"; return (' + cond + ')')(); } catch(e2) { condResult = false; }
- let branch = (condResult ? ifWhole[3] : ifWhole[4]).trim().replace(/^"(.*)"$/, '$1');
- if (/^[A-Z]+\d+$/i.test(branch)) return getSheetCellValue(table, branch.toUpperCase());
- const bnum = parseFloat(branch.replace(',','.'));
- return isNaN(bnum) ? branch : bnum;
- }
  expr = expr.replace(/(SOMME|SUM)\(([^)]+)\)/gi, (_, fn, range) => {
  const sum = parseCellRange(range.trim()).reduce((acc,r)=>acc+getSheetCellValue(table,r),0);
  return sum;
@@ -3130,7 +3086,6 @@ const SHEET_FORMULAS = [
  {name:'MIN', syntax:'MIN(A1:A5)', desc:'Valeur minimale'},
  {name:'NB', syntax:'NB(A1:A5)', desc:'Compte les cellules numériques'},
  {name:'NB.SI', syntax:'NB.SI(A1:A5;">5")', desc:'Compte selon un critère'},
- {name:'SI', syntax:'SI(A1>10;"Oui";"Non")', desc:'Condition'},
 ];
 let _activeSheetCell = null;
 
@@ -3338,163 +3293,9 @@ function docInsertDate() {
 }
 
 // ── BARRE D'OUTILS EXCEL (Accueil / Insertion / Données) ──
-// ── Excel complet : x-spreadsheet (bibliothèque libre/MIT, légère ~150 Ko) ──
-// Chargée à la demande depuis un CDN. Si le CDN est indisponible (hors-ligne,
-// réseau instable) ou met plus de 7s à répondre, on bascule automatiquement et
-// silencieusement sur le moteur maison (initExcelTable, sans dépendance externe,
-// toujours disponible) : l'utilisateur n'est jamais bloqué sur un écran de
-// chargement infini comme avec Luckysheet.
-let _xsAssetsPromise = null;
-let xsInstance = null;
-function loadXSpreadsheetAssets() {
- if (window.x_spreadsheet) return Promise.resolve();
- if (_xsAssetsPromise) return _xsAssetsPromise;
- const CSS = 'https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.5/dist/xspreadsheet.css';
- const JS = 'https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.5/dist/xspreadsheet.js';
- if (!document.querySelector(`link[href="${CSS}"]`)) {
- const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = CSS;
- document.head.appendChild(l);
- }
- _xsAssetsPromise = new Promise((resolve, reject) => {
- if (document.querySelector(`script[src="${JS}"]`)) { resolve(); return; }
- const s = document.createElement('script'); s.src = JS;
- s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + JS));
- document.head.appendChild(s);
- }).catch(e => { _xsAssetsPromise = null; throw e; });
- return _xsAssetsPromise;
-}
-function _withTimeout(promise, ms) {
- return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
-}
-function rowsToXS(name, rows) {
- const o = { name: (name || 'Feuille1').slice(0,31), rows: {} };
- (rows || []).forEach((r,i) => {
- if (!r || !r.length) return;
- const cells = {};
- r.forEach((c,j) => { if (c !== undefined && c !== null && c !== '') cells[j] = { text: String(c) }; });
- if (Object.keys(cells).length) o.rows[i] = { cells };
- });
- return o;
-}
-function xsToRows(sheetData) {
- const rowsObj = (sheetData && sheetData.rows) || {};
- const keys = Object.keys(rowsObj).map(Number);
- const maxRow = keys.length ? Math.max(...keys) : -1;
- const out = [];
- for (let i=0;i<=maxRow;i++) {
- const r = rowsObj[i];
- if (!r || !r.cells) { out.push([]); continue; }
- const cellKeys = Object.keys(r.cells).map(Number);
- const maxCol = cellKeys.length ? Math.max(...cellKeys) : -1;
- const row = [];
- for (let j=0;j<=maxCol;j++) row.push(r.cells[j] ? (r.cells[j].text || '') : '');
- out.push(row);
- }
- return out;
-}
-async function initExcelXS(sheetsData, filename) {
- document.getElementById('doceditor-empty').style.display = 'none';
- const content = document.getElementById('doceditor-content');
- content.style.display = 'block';
- content.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px"><div class="spinner"></div><p style="font-size:13px;color:var(--text3);text-align:center">Chargement de l'éditeur...</p></div>`;
- document.getElementById('doceditor-save-btn').style.display = 'none';
- document.getElementById('doceditor-pdf-btn').style.display = 'none';
- try {
- await _withTimeout(loadXSpreadsheetAssets(), 7000);
- if (!window.x_spreadsheet) throw new Error('bibliothèque absente après chargement');
- } catch(e) {
- initExcelTable(sheetsData, filename); // repli fiable, sans réseau
- return;
- }
- docEditorState = { type: 'excel-xs', filename: filename };
- content.innerHTML = `<div id="xs-container" style="height:65vh;min-height:360px;border:1px solid var(--border);border-radius:12px"></div>`;
- // Force un reflow avant de laisser la bibliothèque mesurer le conteneur : sans ça,
- // clientHeight/clientWidth valent parfois 0 juste après l'injection du HTML (avant
- // que le navigateur n'ait posé la mise en page), et la barre d'outils/le quadrillage
- // se retrouvent construits avec une hauteur nulle (invisibles).
- void content.offsetHeight;
- await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
- const xsData = (sheetsData || []).map(s => rowsToXS(s.name, s.rows));
- try {
- xsInstance = window.x_spreadsheet('#xs-container', {
- showToolbar: true,
- showGrid: true,
- showContextmenu: true,
- showBottomBar: true,
- view: {
- height: () => document.getElementById('xs-container').clientHeight,
- width: () => document.getElementById('xs-container').clientWidth,
- },
- row: { len: 100, height: 26 },
- col: { len: 26, width: 90, indexWidth: 44 },
- }).loadData(xsData.length ? xsData : [{ name: 'Feuille1', rows: {} }]);
- xsInstance.on('cell-edited', (text, ri, ci) => {
- if (typeof text === 'string' && text.charAt(0) === '=') {
- const translated = translateFrenchFormula(text);
- if (translated !== text) xsInstance.cellText(ri, ci, translated);
- }
- });
- } catch(e) {
- initExcelTable(sheetsData, filename); // repli si l'initialisation plante
- return;
- }
- document.getElementById('doceditor-save-btn').style.display = 'block';
-}
 function currentSheetTable() {
  if (_activeSheetCell) return _activeSheetCell.closest('table');
- const wrap = document.querySelector(`[data-sheet-wrap="${_excelActiveSheetIdx}"]`);
- if (wrap) { const t = wrap.querySelector('table[data-sheet]'); if (t) return t; }
  return document.querySelector('#doceditor-content table[data-sheet]');
-}
-function sheetToggleBorder() {
- const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
- const on = td.style.border === '2px solid #333333' || td.style.border === '2px solid rgb(51, 51, 51)';
- td.style.border = on ? '1px solid var(--border)' : '2px solid #333333';
-}
-// ── Excel léger (tables HTML éditables, sans dépendance externe) ──
-// Remplace Luckysheet (bibliothèque lourde chargée depuis un CDN, qui pouvait
-// rester bloquée en chargement infini sans réseau fiable). Ce moteur maison
-// est plus léger, se charge instantanément, et gère déjà : formules (FR/EN),
-// mise en forme (gras/italique/couleurs/bordures/alignement), tri, plusieurs
-// feuilles, ajout/suppression de lignes et colonnes.
-function xlsxRowsToTableSheet(sheetName, rows) {
- return { name: (sheetName || 'Feuille1').slice(0,31), rows: rows || [] };
-}
-let _excelSheets = [];
-let _excelActiveSheetIdx = 0;
-function initExcelTable(sheetsData, filename) {
- _excelSheets = (sheetsData && sheetsData.length) ? sheetsData : [xlsxRowsToTableSheet('Feuille1', [])];
- _excelActiveSheetIdx = 0;
- document.getElementById('doceditor-empty').style.display = 'none';
- document.getElementById('doceditor-content').style.display = 'block';
- document.getElementById('doceditor-save-btn').style.display = 'block';
- document.getElementById('doceditor-pdf-btn').style.display = 'none';
- renderExcelTableEditor();
-}
-function renderExcelTableEditor() {
- const container = document.getElementById('doceditor-content');
- const tabsHtml = _excelSheets.length > 1 ? `<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">
- ${_excelSheets.map((s,i)=>`<button onclick="switchExcelSheet(${i})" style="flex-shrink:0;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:${i===_excelActiveSheetIdx?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:${i===_excelActiveSheetIdx?'var(--em-soft)':'var(--bg2)'};border:1.5px solid ${i===_excelActiveSheetIdx?'var(--em)':'var(--border)'};color:${i===_excelActiveSheetIdx?'var(--em)':'var(--text2)'}">${escHtml(s.name)}</button>`).join('')}
- </div>` : '';
- container.innerHTML = sheetToolbarHTML() +
- `<div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px"></div>` +
- tabsHtml +
- _excelSheets.map((s,i)=>{
- const nRows = Math.max(20, s.rows.length + 5);
- const nCols = Math.max(10, Math.max(0, ...s.rows.map(r=>(r||[]).length)) + 3);
- return `<div data-sheet-wrap="${i}" style="display:${i===_excelActiveSheetIdx?'block':'none'}">${buildSheetHTML(s.name, nRows, nCols, s.rows)}</div>`;
- }).join('');
- _activeSheetCell = null;
-}
-function switchExcelSheet(i) {
- _excelActiveSheetIdx = i;
- renderExcelTableEditor();
-}
-function addExcelSheet() {
- const n = _excelSheets.length + 1;
- _excelSheets.push(xlsxRowsToTableSheet('Feuille' + n, []));
- _excelActiveSheetIdx = _excelSheets.length - 1;
- renderExcelTableEditor();
 }
 function sheetToolbarHTML() {
  return `<div id="sheet-toolbar" style="margin-bottom:8px">
@@ -3512,8 +3313,6 @@ function sheetToolbarHTML() {
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de fond</span>
  <button class="doc-tb-btn" style="width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('transparent')" title="Aucune">✕</button>
  ${['#fff59d','#a7f3d0','#bfdbfe','#fbcfe8'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('${c}')"></button>`).join('')}
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Bordures</span>
- <button class="doc-tb-btn" onclick="sheetToggleBorder()" title="Bordure fine">▦</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Alignement</span>
  <button class="doc-tb-btn" onclick="sheetSetAlign('left')">≡</button>
  <button class="doc-tb-btn" onclick="sheetSetAlign('center')">≣</button>
@@ -3522,7 +3321,6 @@ function sheetToolbarHTML() {
  <div class="doc-tb-panel" data-tab="insertion">
  <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
  <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
- <button class="doc-tb-btn" onclick="addExcelSheet()">+ Feuille</button>
  </div>
  <div class="doc-tb-panel" data-tab="donnees">
  <button class="doc-tb-btn" onclick="sheetDeleteRow()">− Ligne</button>
@@ -4139,7 +3937,7 @@ function newBlankDoc(type) {
  }
  if (type === 'excel') {
  docEditorState = { type: 'excel', filename: 'nouveau_classeur.xlsx' };
- initExcelXS([xlsxRowsToTableSheet('Feuille1', [])], docEditorState.filename);
+ initExcelLuckysheet([xlsxRowsToLuckysheetSheet('Feuille1', [], 0)], docEditorState.filename);
  return;
  }
 }
@@ -4164,11 +3962,11 @@ async function handleDocEditorOpen(input) {
  const arrayBuffer = await file.arrayBuffer();
  const wb = XLSX.read(arrayBuffer, { type: 'array' });
  docEditorState.type = 'excel';
- const sheetsData = wb.SheetNames.map((sheetName) => {
+ const sheetsData = wb.SheetNames.map((sheetName, si) => {
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
- return xlsxRowsToTableSheet(sheetName, rows);
+ return xlsxRowsToLuckysheetSheet(sheetName, rows, si);
  });
- initExcelXS(sheetsData, docEditorState.filename);
+ initExcelLuckysheet(sheetsData, docEditorState.filename);
  return;
 
  } else if (['txt','tex','md'].includes(ext)) {
@@ -4277,14 +4075,6 @@ async function exportDocEditorToPDF() {
 async function saveDocEditorFile() {
  try {
  let blob, mimeType;
-
- if (docEditorState.type === 'word') {
- const currentBase = (docEditorState.filename || 'document').replace(/\.[^.]+$/, '');
- const chosen = prompt('Titre du fichier :', currentBase);
- if (chosen === null) return; // annulé
- const cleanTitle = chosen.trim() || currentBase || 'document';
- docEditorState.filename = cleanTitle + '.docx';
- }
  const filename = docEditorState.filename || 'document';
 
  if (docEditorState.type === 'word') {
@@ -4335,21 +4125,6 @@ async function saveDocEditorFile() {
  const docxDoc = new Document({ sections:[{ properties:{}, children: children.length?children:[new Paragraph('')] }] });
  blob = await Packer.toBlob(docxDoc);
  mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
- } else if (docEditorState.type === 'excel-xs') {
- const wb = XLSX.utils.book_new();
- const data = xsInstance ? xsInstance.getData() : [];
- (data.length ? data : [{name:'Feuille1', rows:{}}]).forEach(sheetData => {
- const rows = xsToRows(sheetData).map(row => row.map(v => {
- const num = parseFloat(String(v).replace(',', '.'));
- return (v !== '' && v != null && !isNaN(num)) ? num : v;
- }));
- const ws = XLSX.utils.aoa_to_sheet(rows.length ? rows : [[]]);
- XLSX.utils.book_append_sheet(wb, ws, (sheetData.name || 'Feuille1').substring(0,31));
- });
- const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
- blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
- mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
  } else if (docEditorState.type === 'excel') {
  const wb = XLSX.utils.book_new();
@@ -4785,247 +4560,25 @@ window.onAndroidSTTStart = function() {
  _voiceSessionStartTs = Date.now();
  _voiceSetMicActive(true);
 };
-// Certains appareils déclenchent le callback natif Android *après* qu'on ait déjà
-// explicitement arrêté l'écoute (navigation vers un autre écran, etc.). Sans ce
-// garde-fou, ce callback tardif relance la boucle ou affiche un toast d'erreur
-// alors que l'utilisateur a quitté l'outil depuis longtemps.
-let _voiceExpectingCallback = false;
 window.onAndroidSTTResult = function(text) {
- if (!_voiceExpectingCallback) return;
- _voiceExpectingCallback = false;
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
  if (text) {
  _voiceInsertText(text);
- } else if (!_mediaTranscribing) {
+ } else {
  showToast('⚠ Rien entendu, réessaie');
- }
- if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) {
- _voiceSessionStartTs = Date.now();
- setTimeout(_runMediaTranscriptionLoop, 300);
- } else if (_mediaTranscribing) {
- stopMediaTranscription();
  }
 };
 window.onAndroidSTTError = function(code) {
- if (!_voiceExpectingCallback) return;
- _voiceExpectingCallback = false;
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
- if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) {
- _voiceSessionStartTs = Date.now();
- setTimeout(_runMediaTranscriptionLoop, 300);
- return;
- }
- if (_mediaTranscribing) stopMediaTranscription();
  if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
  else showToast('⚠ Micro : erreur (' + code + '), réessaie');
 };
-
-// ── Transcription d'un fichier audio/vidéo importé ──
-// L'API de reconnaissance vocale (native ou navigateur) n'accepte que le micro
-// en direct, pas un fichier. On lit donc le fichier tout en écoutant avec le
-// micro, en boucle continue, pour transcrire au fil de la lecture.
-let importedMediaEl = null;
-let importedMediaFile = null;
-let _mediaTranscribing = false;
-function handleImportMediaFile(input) {
- const file = input.files[0];
- if (!file) return;
- // Réinitialise toute lecture/transcription en cours avant de charger le nouveau fichier,
- // sinon l'ancienne session (micro + lecture) continue en arrière-plan et bloque le changement.
- if (_mediaTranscribing) stopMediaTranscription();
- if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
- importedMediaFile = file;
- const url = URL.createObjectURL(file);
- const isVideo = file.type.startsWith('video');
- const container = document.getElementById('transcribe-media-preview');
- container.innerHTML = isVideo
- ? `<video id="transcribe-media-el" src="${url}" controls style="width:100%;border-radius:12px;background:#000;max-height:220px"></video>`
- : `<audio id="transcribe-media-el" src="${url}" controls style="width:100%"></audio>`;
- container.style.display = 'block';
- document.getElementById('transcribe-media-actions').style.display = 'flex';
- importedMediaEl = document.getElementById('transcribe-media-el');
- importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
- input.value = '';
-}
-function stopMediaTranscription() {
- _mediaTranscribing = false;
- _voiceExpectingCallback = false;
- if (importedMediaEl) importedMediaEl.pause();
- if (voiceRecognition) { try { voiceRecognition.continuous = false; voiceRecognition.onend = null; voiceRecognition.stop(); } catch(e) {} }
- if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') { try { window.AndroidSTT.stopListening(); } catch(e) {} }
- const btn = document.getElementById('transcribe-media-btn');
- if (btn) btn.textContent = ' Transcrire pendant la lecture';
-}
-async function toggleMediaTranscription() {
- if (!importedMediaEl) { showToast('⚠ Importe un fichier audio/vidéo d\'abord'); return; }
- if (_mediaTranscribing) { stopMediaTranscription(); return; }
- if (!canUseTranscription()) {
- showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
- return;
- }
- // 1) Transcription réelle du fichier envoyé à l'IA (précise, ne dépend pas du micro/volume).
- // On extrait d'abord uniquement la piste audio (via captureStream + MediaRecorder) avant
- // l'envoi : une vidéo peut peser 100+ Mo alors que son audio seul pèse quelques Mo — ça
- // évite de faire exploser la consommation de données pour une transcription.
- const handled = await transcribeMediaFileViaAPI();
- if (handled) return;
- // 2) Repli si la fonction serveur n'est pas encore déployée : lecture + écoute micro en
- // direct (moins fiable, dépend du volume et du bruit ambiant).
- showToast('ℹ Transcription serveur indisponible, écoute en direct pendant la lecture...');
- _mediaTranscribing = true;
- _voiceSessionIsTranscription = true;
- _voiceSessionStartTs = Date.now();
- document.getElementById('transcribe-media-btn').textContent = '⏸ Arrêter la transcription';
- importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
- importedMediaEl.ontimeupdate = null;
- importedMediaEl.currentTime = 0;
- importedMediaEl.play().catch(()=>{ showToast('⚠ Lecture impossible'); stopMediaTranscription(); });
- _runMediaTranscriptionLoop();
-}
-// Enregistre uniquement la piste audio du fichier importé (lecture en temps réel via
-// captureStream + MediaRecorder, encodage compact opus/webm à faible débit). Beaucoup
-// plus léger à uploader qu'une vidéo brute, et beaucoup plus fiable que l'écoute par
-// micro-en-direct (capture numérique exacte, pas de bruit ambiant).
-function extractAudioBlobFromMedia(mediaEl, onProgress) {
- return new Promise((resolve, reject) => {
- if (typeof mediaEl.captureStream !== 'function' && typeof mediaEl.mozCaptureStream !== 'function') {
- reject(new Error('captureStream indisponible')); return;
- }
- if (typeof MediaRecorder === 'undefined') { reject(new Error('MediaRecorder indisponible')); return; }
- try {
- const rawStream = mediaEl.captureStream ? mediaEl.captureStream() : mediaEl.mozCaptureStream();
- const audioTracks = rawStream.getAudioTracks();
- if (!audioTracks.length) { reject(new Error('pas de piste audio')); return; }
- const audioStream = new MediaStream(audioTracks);
- const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/webm';
- const recorder = new MediaRecorder(audioStream, { mimeType, audioBitsPerSecond: 32000 });
- const chunks = [];
- let settled = false;
- recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
- recorder.onstop = () => { if (!settled) { settled = true; resolve(new Blob(chunks, { type: mimeType })); } };
- recorder.onerror = (e) => { if (!settled) { settled = true; reject((e && e.error) || new Error('erreur enregistrement')); } };
- mediaEl.oncanplay = null;
- mediaEl.onended = () => { try { recorder.stop(); } catch(e) {} };
- mediaEl.ontimeupdate = () => { if (onProgress && mediaEl.duration) onProgress(mediaEl.currentTime / mediaEl.duration); };
- mediaEl.currentTime = 0;
- recorder.start();
- mediaEl.play().catch(err => { if (!settled) { settled = true; reject(err); } });
- } catch(e) { reject(e); }
- });
-}
-// Envoie le fichier importé à la fonction Supabase 'clever-action' (Whisper via Groq).
-// Retourne true si la fonction a répondu (succès, quota atteint, ou fichier vide) — dans
-// ce cas on ne bascule PAS sur le repli micro-en-direct. Retourne false uniquement si la
-// fonction n'est pas déployée/joignable, pour laisser toggleMediaTranscription() basculer.
-async function transcribeMediaFileViaAPI() {
- if (!importedMediaFile) return false;
- const btn = document.getElementById('transcribe-media-btn');
- const oldTxt = btn.textContent;
- btn.disabled = true;
-
- // Extraction audio (préférée) — beaucoup plus léger à uploader qu'un fichier vidéo brut.
- let uploadBlob = importedMediaFile;
- let uploadName = importedMediaFile.name;
- let extracted = false;
- if (importedMediaFile.type.startsWith('video/')) {
- try {
- btn.textContent = ' Extraction audio... 0%';
- const audioBlob = await extractAudioBlobFromMedia(importedMediaEl, (p) => { btn.textContent = ' Extraction audio... ' + Math.round(p*100) + '%'; });
- importedMediaEl.currentTime = 0;
- importedMediaEl.onended = null;
- importedMediaEl.ontimeupdate = null;
- // Garde-fou : un fichier extrait anormalement petit (silence/piste vide selon le
- // navigateur) est plus probablement un échec silencieux qu'un vrai résultat —
- // dans ce cas on préfère envoyer le fichier original plutôt qu'un audio muet.
- if (audioBlob && audioBlob.size > 2000) {
- uploadBlob = audioBlob;
- uploadName = (importedMediaFile.name || 'audio').replace(/\.[^.]+$/, '') + '.webm';
- extracted = true;
- }
- } catch(e) {
- // L'extraction a échoué (API indisponible) : on envoie le fichier original tel quel,
- // c'est plus lourd mais ça reste fonctionnel plutôt que de bloquer la transcription.
- }
- }
-
- let result;
- try {
- result = await _uploadForTranscription(uploadBlob, uploadName, btn);
- } catch(e) {
- btn.disabled = false; btn.textContent = oldTxt;
- return false; // hors-ligne / fonction indisponible : repli
- }
- if (result.notDeployed) { btn.disabled = false; btn.textContent = oldTxt; return false; }
-
- // Si l'extraction audio n'a rien détecté, on retente une fois avec le fichier vidéo
- // original avant d'abandonner (l'extraction a pu produire un audio silencieux).
- if (result.emptyText && extracted) {
- try {
- result = await _uploadForTranscription(importedMediaFile, importedMediaFile.name, btn);
- } catch(e) {}
- }
-
- btn.disabled = false; btn.textContent = oldTxt;
- if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); return true; }
- if (result.emptyText) { showToast('⚠ Aucun texte détecté dans ce fichier'); return true; }
- const ta = document.getElementById('transcript-textarea');
- ta.value = (ta.value ? ta.value + '\n' : '') + result.text;
- addTranscriptionUsageSec(Math.round(importedMediaEl.duration || 0));
- showToast('✓ Transcription terminée');
- return true;
-}
-async function _uploadForTranscription(blob, name, btn) {
- btn.textContent = ' Envoi pour transcription...';
- const fd = new FormData();
- fd.append('file', blob, name);
- const res = await fetch(SUPABASE_URL + '/functions/v1/clever-action', {
- method: 'POST',
- headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
- body: fd
- });
- if (res.status === 404) return { notDeployed: true };
- if (!res.ok) return { error: true };
- const data = await res.json();
- const text = (data && (data.text || data.transcript || '')).trim();
- if (!text) return { emptyText: true };
- return { text };
-}
-function _runMediaTranscriptionLoop() {
- if (!_mediaTranscribing) return;
- _voiceTargetId = 'transcript-textarea';
- _voiceAppendNewline = true;
- // Pont natif Android (écoute par segments) : on relance en boucle tant que le média joue
- if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- _voiceExpectingCallback = true;
- try { window.AndroidSTT.startListening(); } catch(e) { _voiceExpectingCallback = false; }
- return;
- }
- // Repli navigateur : mode continu natif de l'API Web Speech
- const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
- if (!SpeechRecognitionAPI) { showToast('⚠ Reconnaissance vocale indisponible sur cet appareil'); stopMediaTranscription(); return; }
- voiceRecognition = new SpeechRecognitionAPI();
- voiceRecognition.lang = 'fr-FR';
- voiceRecognition.interimResults = false;
- voiceRecognition.continuous = true;
- voiceRecognition.maxAlternatives = 1;
- voiceRecognition.onresult = (event) => {
- for (let i = event.resultIndex; i < event.results.length; i++) {
- if (event.results[i].isFinal) _voiceInsertText(event.results[i][0].transcript);
- }
- };
- voiceRecognition.onerror = () => {};
- voiceRecognition.onend = () => {
- if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) { try { voiceRecognition.start(); } catch(e) {} }
- else stopMediaTranscription();
- };
- try { voiceRecognition.start(); } catch(e) { stopMediaTranscription(); }
-}
 
 async function toggleVoiceInput(targetId, micBtnId) {
  _voiceTargetId = targetId || 'chat-input';
@@ -5040,8 +4593,7 @@ async function toggleVoiceInput(targetId, micBtnId) {
 
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- if (isListening) { window.AndroidSTT.stopListening(); _voiceExpectingCallback = false; return; }
- _voiceExpectingCallback = true;
+ if (isListening) { window.AndroidSTT.stopListening(); return; }
  window.AndroidSTT.startListening();
  return;
  }
@@ -5162,42 +4714,25 @@ function sendTranscriptToEditor() {
 
 const TTS_ICON_PLAY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
 const TTS_ICON_STOP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
-// On identifie le message en cours de lecture par son contenu (b64), pas par une
-// référence au bouton DOM : le chat peut se re-rendre entre le clic "lire" et le
-// clic "arrêter" (nouveau message, sync...), ce qui recrée les boutons et cassait
-// la comparaison par référence — le bouton "Arrêter" relançait alors la lecture
-// au lieu de l'interrompre, donnant l'impression que ça ne s'arrête jamais.
-let ttsActiveKey = null;
-function _resetTTSButtons() {
- document.querySelectorAll('.tts-btn').forEach(b => { b.innerHTML = TTS_ICON_PLAY; b.title = 'Écouter'; });
-}
+let ttsActiveBtn = null;
 function stopSpeaking() {
- // AndroidTTS.stop() est désormais exposé côté natif (MainActivity.java) et
- // appelle TextToSpeech.stop(), qui vide la file d'attente et interrompt
- // l'énoncé en cours.
  if (window.AndroidTTS && typeof window.AndroidTTS.stop === 'function') {
- try { window.AndroidTTS.stop(); } catch(e) { showToast('⚠ AndroidTTS.stop() a levé une erreur : ' + e); }
- } else if (window.AndroidTTS) {
- // DIAGNOSTIC TEMPORAIRE : le pont natif AndroidTTS existe mais n'a pas de
- // méthode stop() → l'APK installée ne contient pas encore le correctif
- // MainActivity.java (vérifie le build Codemagic / le commit poussé).
- showToast('⚠ Diagnostic : AndroidTTS.stop() absent — APK pas à jour');
+ try { window.AndroidTTS.stop(); } catch(e) {}
  }
  if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
- _resetTTSButtons();
- ttsActiveKey = null;
+ if (ttsActiveBtn) { ttsActiveBtn.innerHTML = TTS_ICON_PLAY; ttsActiveBtn.title = 'Écouter'; }
+ ttsActiveBtn = null;
 }
 function speakMessage(b64text, btn) {
- // Un second clic sur le message en cours de lecture l'arrête simplement
- if (ttsActiveKey === b64text) { stopSpeaking(); return; }
+ // Un second clic sur le bouton en cours de lecture l'arrête simplement
+ if (btn && ttsActiveBtn === btn) { stopSpeaking(); return; }
  // Un clic sur un autre message coupe la lecture précédente avant de démarrer la nouvelle
  stopSpeaking();
 
  const text = decodeURIComponent(escape(atob(b64text)));
  const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
 
- ttsActiveKey = b64text;
- if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; }
+ if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; ttsActiveBtn = btn; }
 
  // 1) Priorité au TTS natif Android (plus fiable dans une WebView que l'API Web Speech)
  if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
@@ -6238,17 +5773,6 @@ function showResults() {
  APP.quizQuestions.forEach((q,i) => { if (answers[i] === q.correct) score++; });
  APP.quizScore = score;
  const pct = Math.round(score/total*100);
-
- // Enregistrement des stats AVANT le rendu de la correction détaillée :
- // si le rendu plante (contenu généré par l'IA imprévu), le score est déjà
- // sauvegardé et remonte quand même dans "Ma progression" et l'arbre.
- try {
- APP.user.streak++;
- incrementSessions();
- incrementQuestions(APP.quizQuestions.length);
- addSubjectScore(selectedSubjectQuiz, pct);
- } catch(e) { console.error('Erreur enregistrement stats quiz', e); }
-
  const emojis = pct>=80?'':pct>=60?'':pct>=40?'':'';
  const titles = pct>=80?'Excellent !':pct>=60?'Très bien !':pct>=40?'Pas mal !':'Continue !';
  const msgs = pct>=80?'Tu maîtrises ce sujet !':pct>=60?'Encore un peu de révision.':pct>=40?'Continue, tu progresses !':'La pratique mène à la perfection.';
@@ -6291,6 +5815,11 @@ function showResults() {
  </div>`;
  }).join('')}`;
  renderMathInChat(document.getElementById('result-correction'));
+
+ APP.user.streak++;
+ incrementSessions();
+ incrementQuestions(APP.quizQuestions.length);
+ addSubjectScore(selectedSubjectQuiz, pct);
 }
 
 function restartQuiz() {
@@ -6534,8 +6063,6 @@ let selectedSujetSubject = null, selectedSujetType = 'devoir', selectedSujetNPar
 function renderSujetConfig() {
  document.getElementById('sujet-config').style.display = 'block';
  document.getElementById('sujet-workspace').style.display = 'none';
- const resultsEl = document.getElementById('sujet-results');
- if (resultsEl) resultsEl.style.display = 'none';
  if (!selectedSujetSubject && SUBJECTS.length) selectedSujetSubject = SUBJECTS[0].id;
  const el = document.getElementById('sujet-subject-btns');
  el.innerHTML = [...SUBJECTS].sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>`
@@ -6660,75 +6187,12 @@ function restartSujet() {
  document.getElementById('sujet-timer-start-btn').disabled = false;
  document.getElementById('sujet-timer-display').textContent = '--:--';
  document.getElementById('sujet-workspace').style.display = 'none';
- document.getElementById('sujet-results').style.display = 'none';
  renderSujetConfig();
 }
-async function gradeSujet() {
+function finishSujet() {
  clearInterval(sujetTimerInterval);
- const answered = sujetParts.filter(p => (p.reponse||'').trim().length > 0);
- if (!answered.length) { showToast('! Réponds au moins à une partie avant de terminer'); return; }
-
- const btn = document.getElementById('sujet-finish-btn');
- btn.disabled = true; btn.textContent = ' Correction en cours...';
-
- const subj = SUBJECTS.find(s=>s.id===selectedSujetSubject);
- const level = APP.user.level || 'Licence 2';
- const partsBlock = sujetParts.map((p,i) => `Partie ${i+1} (${p.type}, ${p.points||0} points)\nÉnoncé : ${p.enonce}\nRéponse de l'étudiant : ${(p.reponse||'').trim() || '(non répondu)'}`).join('\n\n');
- const langInstruction = ` Réponds ENTIÈREMENT en ${LANG_NAMES_FOR_AI[APP_LANG] || 'français'}.`;
- const prompt = `Tu es un correcteur expert en ${subj ? subj.name : 'la matière'} pour le niveau ${level}. Corrige ce devoir/examen partie par partie, avec bienveillance mais rigueur.${langInstruction}\n\n${partsBlock}\n\nPour chaque partie, attribue une note sur le barème indiqué (0 si non répondu), avec un commentaire court et constructif. Calcule aussi le total obtenu et le total maximum (somme des points de toutes les parties).\n\nRéponds UNIQUEMENT avec ce JSON valide, sans texte avant ou après :\n{"parts":[{"note":0,"commentaire":"..."}],"total":0,"total_max":20}`;
-
- try {
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
- method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 2200, system: 'Tu es un correcteur pedagogique. Reponds UNIQUEMENT en JSON valide, sans texte autour.', messages:[{role:'user', content:prompt}] })
- });
- if (!res.ok) { const err = await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
- const data = await res.json();
- let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
- raw = extractJsonBlock(raw);
- let parsed;
- try { parsed = JSON.parse(raw); }
- catch(je) { parsed = repairTruncatedJson(raw); }
-
- const totalMax = parsed.total_max || sujetParts.reduce((a,p)=>a+(p.points||0),0) || 20;
- const total = typeof parsed.total === 'number' ? parsed.total : (parsed.parts||[]).reduce((a,p)=>a+(p.note||0),0);
- const pct = totalMax > 0 ? Math.round((total/totalMax)*100) : 0;
-
- // Enregistrement des stats (progression + arbre de connaissance), comme un quiz noté.
- try {
- incrementSessions();
- incrementQuestions(sujetParts.length);
- addSubjectScore(selectedSujetSubject, pct);
- } catch(e) { console.error('Erreur enregistrement stats sujet', e); }
-
- renderSujetResults(parsed, total, totalMax, pct, subj);
- } catch(e) {
- showToast('✕ Erreur de correction : ' + ((e && e.message) || 'réessaie'));
- }
- btn.disabled = false; btn.textContent = 'Terminer et corriger';
-}
-function renderSujetResults(parsed, total, totalMax, pct, subj) {
- document.getElementById('sujet-workspace').style.display = 'none';
- document.getElementById('sujet-results').style.display = 'block';
- const partsRes = parsed.parts || [];
- document.getElementById('sujet-results-content').innerHTML = `
- <div style="background:linear-gradient(135deg,var(--em),var(--em2));border-radius:var(--r);padding:20px;margin:16px 0 20px;color:#fff;text-align:center">
- <div style="font-size:11px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${subj ? subj.name : ''}</div>
- <div style="font-size:32px;font-weight:800">${total} / ${totalMax}</div>
- <div style="font-size:13px;opacity:.9;margin-top:2px">${pct}%</div>
- </div>
- <h3 style="font-size:14px;font-weight:700;margin-bottom:10px"> Correction détaillée</h3>
- ${sujetParts.map((p,i)=>{
- const r = partsRes[i] || {};
- return `<div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:3px solid var(--em)">
- <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
- <span style="font-size:12px;font-weight:700">Partie ${i+1}</span>
- <span style="font-size:12px;font-weight:700;color:var(--em)">${r.note != null ? r.note : '—'} / ${p.points||0}</span>
- </div>
- <p style="font-size:12px;color:var(--text3);line-height:1.5">${r.commentaire || ''}</p>
- </div>`;
- }).join('')}`;
- renderMathInChat(document.getElementById('sujet-results-content'));
+ showToast('✓ Sujet terminé — bon travail !');
+ showScreen('screen-home');
 }
 
 async function analyzeCourse() {
@@ -7408,12 +6872,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ── SYSTÈME PREMIUM / FREEMIUM ──
 // ══════════════════════════════════════════════
 const ADMIN_EMAIL = 'm16reen@gmail.com';
-// Comptes "exception" : aucune restriction (quotas illimités, accès aux
-// fonctions VIP comme le Quiz Libre) mais SANS les droits d'administration
-// (pas de tableau de bord admin, pas de badge "Admin"). Le plan affiché à
-// l'utilisateur (badge, couleur) reste celui réellement enregistré en base.
-const EXCEPTION_EMAILS = ['manstaki@yahoo.fr'];
-function isExceptionUser() { return EXCEPTION_EMAILS.includes((APP.user.email||'').toLowerCase()); }
 
 const PLANS = {
  free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10, transcription_min_per_day:150 },
@@ -7431,7 +6889,6 @@ function getPlan() {
  return APP.user.plan || 'free';
 }
 function getPlanLimits() {
- if (isExceptionUser()) return { ...PLANS[getPlan()], ia_per_4h:999, quiz_per_5h:999, fc_per_day:999, transcription_min_per_day:999 };
  const base = PLANS[getPlan()];
  if (APP.user.bonusQuizUntil && APP.user.bonusQuizAmount && Date.now() < new Date(APP.user.bonusQuizUntil).getTime()) {
  return { ...base, quiz_per_5h: base.quiz_per_5h + APP.user.bonusQuizAmount };
@@ -7439,7 +6896,7 @@ function getPlanLimits() {
  return base;
 }
 function isAdmin() { return APP.user.email === ADMIN_EMAIL; }
-function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'||isExceptionUser(); }
+function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'; }
 
 // Repasse l'utilisateur en Gratuit si son plan (essai VIP, Premium, VIP payant)
 // a dépassé sa date d'expiration. À appeler à chaque chargement de session.
@@ -7501,7 +6958,7 @@ function incUsage(type) {
 
 // Check IA (reset toutes les 4h)
 function canUseIA() {
- if (isAdmin()||getPlan()==='vip'||isExceptionUser()||getPlan()==='premium'&&getPlanLimits().ia_per_4h>=999) return true;
+ if (isAdmin()||getPlan()==='vip'||getPlan()==='premium'&&getPlanLimits().ia_per_4h>=999) return true;
  const u=getUsage(), today=getTodayKey();
  if (!u[today]) return true;
  const d=u[today];
@@ -7519,7 +6976,7 @@ function iaTimeLeft() {
  return h+'h'+String(m).padStart(2,'0');
 }
 function canUseQuiz() {
- if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
+ if (isAdmin()||getPlan()==='vip') return true;
  const u=getUsage(), today=getTodayKey();
  const d=getUsageToday();
  const elapsed=(Date.now()-(d.quiz_reset||0))/(1000*3600);
@@ -7534,7 +6991,7 @@ function quizTimeLeft() {
  return h+'h'+String(m).padStart(2,'0');
 }
 function canUseFC() {
- if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
+ if (isAdmin()||getPlan()==='vip') return true;
  const d=getUsageToday();
  return (d.fc||0) < getPlanLimits().fc_per_day;
 }
@@ -7546,7 +7003,7 @@ function getTranscriptionQuotaSec() { return (getPlanLimits().transcription_min_
 function getTranscriptionUsedSec() { return getUsageToday().transcribeSec || 0; }
 function getTranscriptionRemainingSec() { return Math.max(0, getTranscriptionQuotaSec() - getTranscriptionUsedSec()); }
 function canUseTranscription() {
- if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
+ if (isAdmin()||getPlan()==='vip') return true;
  return getTranscriptionRemainingSec() > 0;
 }
 function addTranscriptionUsageSec(sec) {
@@ -7560,7 +7017,7 @@ function addTranscriptionUsageSec(sec) {
 function updateTranscriptionQuotaLabel() {
  const el = document.getElementById('transcribe-quota-label');
  if (!el) return;
- if (isAdmin()||getPlan()==='vip'||isExceptionUser()) { el.textContent = 'Temps de transcription illimité'; return; }
+ if (isAdmin()||getPlan()==='vip') { el.textContent = 'Temps de transcription illimité'; return; }
  const remainingMin = Math.floor(getTranscriptionRemainingSec()/60);
  const quotaMin = Math.round(getTranscriptionQuotaSec()/60);
  el.textContent = 'Temps de transcription restant aujourd\'hui : ' + remainingMin + ' / ' + quotaMin + ' min';
@@ -8036,7 +7493,7 @@ function _runInit() {
 // On attend que tout le HTML (dont la nav) soit parsé
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.1'; // à incrémenter à chaque nouvel APK publié (voir version.json)
+const APP_VERSION = '1.0.0'; // à incrémenter à chaque nouvel APK publié (voir version.json)
 
 async function checkForAppUpdate() {
  try {
