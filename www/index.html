@@ -6881,10 +6881,18 @@ async function pullCloudSync() {
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 
 // ── Bouton "Passer à l'app" (affiché uniquement en navigateur web/PWA) ──
-// L'URL réelle est mise à jour dynamiquement par checkForAppUpdate() à partir
-// de version.json — cette valeur n'est qu'un filet de sécurité si jamais
-// version.json est injoignable au tout premier chargement.
-let STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/latest';
+// Lit désormais l'URL depuis version.json (la même source que la bannière de
+// mise à jour) au lieu d'une constante codée en dur — avant, cette URL restait
+// figée sur l'ancien APK v1.0.0/app-debug-51.apk même après chaque nouvelle
+// release, puisque rien ne la synchronisait automatiquement.
+let studioraLatestApkUrl = null;
+async function fetchLatestApkUrl() {
+ try {
+ const res = await fetch('https://maureenniamien.github.io/studiora/version.json?t=' + Date.now());
+ const data = await res.json();
+ if (data.apkUrl) studioraLatestApkUrl = data.apkUrl;
+ } catch(e) { /* pas de connexion : on retente au prochain appel */ }
+}
 
 function isRunningInNativeApp() {
  // Capacitor injecte automatiquement window.Capacitor dans l'app native —
@@ -6896,13 +6904,20 @@ function initWebToAppBanner() {
  try {
  if (isRunningInNativeApp()) return; // jamais dans l'app installée
  if (localStorage.getItem('studiora_hide_apk_banner') === '1') return; // déjà fermée par l'utilisateur
+ fetchLatestApkUrl();
  const fab = document.getElementById('web-to-app-fab');
  if (fab) fab.style.display = 'block';
  } catch(e) {}
 }
 
 function downloadStudioraApk() {
- window.open(STUDIORA_APK_URL, '_blank');
+ if (studioraLatestApkUrl) { window.open(studioraLatestApkUrl, '_blank'); return; }
+ // Au cas où fetchLatestApkUrl() n'a pas encore répondu (clic très rapide) : on refait
+ // l'appel à la volée avant d'ouvrir, plutôt que d'échouer silencieusement.
+ fetchLatestApkUrl().then(() => {
+ if (studioraLatestApkUrl) window.open(studioraLatestApkUrl, '_blank');
+ else showToast('! Lien de téléchargement indisponible, réessaie dans un instant.');
+ });
 }
 
 function dismissWebToAppBanner() {
@@ -7549,19 +7564,23 @@ function _runInit() {
 // On attend que tout le HTML (dont la nav) soit parsé
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.0'; // à incrémenter à chaque nouvel APK publié (voir version.json)
+const APP_VERSION = '1.0.2'; // fallback web/PWA uniquement — à incrémenter à chaque release (voir version.json)
 
 async function checkForAppUpdate() {
  try {
- // Priorité à la vraie version native installée sur CET appareil (pont AndroidApp,
- // ajouté en v1.0.1). Si le pont n'existe pas (vieil APK d'avant ce pont), on retombe
- // sur APP_VERSION, qui dans ce cas précis vaut toujours "plus vieux que le serveur"
- // puisque le JS lui-même vient d'être rafraîchi depuis GitHub Pages.
- const nativeVersion = (window.AndroidApp && window.AndroidApp.getVersion && window.AndroidApp.getVersion()) || null;
- const currentVersion = nativeVersion || APP_VERSION;
+ // Priorité au plugin officiel @capacitor/app, qui lit la vraie versionName
+ // native compilée dans CET APK précis (fiable, pas de pont maison à maintenir).
+ // Fallback sur APP_VERSION uniquement pour le web/PWA (où @capacitor/app n'existe
+ // pas) ou si le plugin n'a pas encore été synchronisé côté natif.
+ let currentVersion = APP_VERSION;
+ try {
+ if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+ const info = await window.Capacitor.Plugins.App.getInfo();
+ if (info && info.version) currentVersion = info.version;
+ }
+ } catch(e) { /* plugin absent ou pas encore synchronisé : on garde APP_VERSION */ }
  const res = await fetch('https://maureenniamien.github.io/studiora/version.json?t=' + Date.now());
  const data = await res.json();
- if (data.apkUrl) STUDIORA_APK_URL = data.apkUrl; // garde le bouton "Passer à l'app" toujours à jour
  if (data.version && data.version !== currentVersion && data.apkUrl) {
  showUpdateBanner(data.version, data.apkUrl);
  }
