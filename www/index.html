@@ -2210,6 +2210,8 @@ const SUBJECTS_BY_LEVEL = {
  'Science Politique':['politiq','droit','eco','ang','fr'],
  // Tronc commun biologie/sciences de la vie, niveau L1
  'Biologie': ['biocell','chimiegen','svt','math','fr','ang'],
+ // Biologie Médicale : bases pré-cliniques (anatomie, biologie cellulaire, chimie, physiologie)
+ 'Biologie Médicale': ['anatomie','biocell','chimiegen','physiohum','svt','ang'],
  },
  'Licence 2': {
  'default': ['math','info','ang','eco','stats'],
@@ -2225,6 +2227,8 @@ const SUBJECTS_BY_LEVEL = {
  'Communication':['comm','marketing','fr','ang','politiq'],
  'Science Politique':['politiq','droitpub','eco','ang','fr'],
  'Biologie': ['physiohum','microbio','biochimie','biophysique','ang'],
+ // Biologie Médicale L2 : microbiologie, biochimie clinique, immunologie
+ 'Biologie Médicale': ['biochimie','microbio','immuno','physiohum','biophysique','ang'],
  },
  'Licence 3': {
  'default': ['info','math','ang','eco','stats'],
@@ -2235,6 +2239,8 @@ const SUBJECTS_BY_LEVEL = {
  'Droit': ['droit','eco','gestion','ang','fr'],
  'Gestion': ['gestion','compta','eco','droit','ang'],
  'Biologie': ['immuno','hemato','genetiquemed','anapath','ang'],
+ // Biologie Médicale L3 : hématologie, génétique médicale, anatomopathologie, pharmacologie
+ 'Biologie Médicale': ['hemato','genetiquemed','anapath','pharmaco','immuno','ang'],
  },
  'Master 1': {
  'default': ['fr','ang','math'],
@@ -5013,9 +5019,9 @@ let selectedSerie = 'D';
 let selectedFiliere = '';
 
 const FILIERES_BY_NIVEAU = {
- 'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
- 'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
- 'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
  'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
  'BT': ['Hôtellerie-Restauration','Électrotechnique','Électronique','Mécanique Auto','Bâtiment','Comptabilité','Secrétariat Bureautique','Structures Métalliques','Froid & Climatisation','Fabrication Mécanique','Génie Civil','Industrie de l\'Habillement','Agriculture'],
  'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
@@ -5034,6 +5040,7 @@ const MASTER_SPECS_BY_LICENCE = {
  'Archéologie': ['Archéologie Préventive', 'Patrimoine Culturel', 'Muséologie', 'Histoire de l\'Art'],
  'ASSRI': ['Cybersécurité', 'Administration Systèmes & Réseaux', 'Cloud Computing', 'Sécurité des Systèmes d\'Information', 'DevOps & Infrastructure'],
  'Biologie': ['Biologie Moléculaire et Cellulaire', 'Biotechnologies', 'Microbiologie', 'Écologie et Environnement'],
+ 'Biologie Médicale': ['Biologie Clinique', 'Immunologie Clinique', 'Génétique Médicale', 'Recherche Biomédicale', 'Anatomopathologie'],
  'Chimie': ['Chimie Analytique', 'Chimie Organique', 'Chimie des Matériaux', 'Génie des Procédés', 'Chimie Environnementale'],
  'Communication': ['Communication Digitale', 'Communication des Organisations', 'Relations Publiques', 'Communication Événementielle', 'Marketing Digital'],
  'Comptabilité': ['Comptabilité Contrôle Audit (CCA)', 'Expertise Comptable', 'Fiscalité', 'Audit Financier', 'Contrôle de Gestion'],
