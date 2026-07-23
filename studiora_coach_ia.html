@@ -243,9 +243,50 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .doc-tb-tab.active{color:var(--em);border-bottom-color:var(--em)}
 .doc-tb-panel{display:none;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg2);border-radius:10px;padding:8px;margin-bottom:8px}
 .doc-tb-panel.active{display:flex}
+
+/* ── SPLASH SCREEN ── */
+#app-splash{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease,visibility .5s}
+#app-splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.splash-logo-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.splash-ring{position:absolute;width:96px;height:96px;border-radius:26px;border:2px solid var(--em);opacity:.5;animation:splashRing 1.8s ease-out infinite}
+.splash-ring2{animation-delay:.6s}
+.splash-logo{width:96px;height:96px;border-radius:26px;background:var(--em);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 34px rgba(0,0,0,.18);animation:splashPop .7s cubic-bezier(.34,1.56,.64,1) both}
+.splash-logo span{font-family:'Fraunces',serif;font-weight:900;font-size:52px;color:#fff;line-height:1}
+@keyframes splashPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@keyframes splashRing{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.7);opacity:0}}
+.splash-brand{position:absolute;bottom:max(env(safe-area-inset-bottom,0px) + 36px,48px);display:flex;flex-direction:column;align-items:center;gap:9px;opacity:0;animation:splashBrandIn .6s ease .55s forwards}
+.splash-brand-dots{display:flex;gap:5px}
+.splash-dot{width:5px;height:5px;border-radius:50%;background:var(--em);animation:splashDot 1.2s ease infinite}
+.splash-dot:nth-child(2){animation-delay:.15s}
+.splash-dot:nth-child(3){animation-delay:.3s}
+@keyframes splashDot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.25)}}
+@keyframes splashBrandIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.splash-brand-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;letter-spacing:3px;color:var(--text3);font-weight:700;text-transform:uppercase}
 </style>
 </head>
 <body style="touch-action:manipulation">
+<script>
+// Applique le thème sauvegardé AVANT le premier rendu, pour que le splash
+// s'affiche directement dans la bonne couleur (pas de flash blanc→noir)
+try {
+ const p = JSON.parse(localStorage.getItem('studiora_prefs') || '{}');
+ document.documentElement.setAttribute('data-theme', p.dark ? 'dark' : 'light');
+} catch(e) {}
+</script>
+
+<!-- ═══════════════════ SPLASH ═══════════════════ -->
+<div id="app-splash">
+ <div class="splash-logo-wrap">
+ <div class="splash-ring"></div>
+ <div class="splash-ring splash-ring2"></div>
+ <div class="splash-logo"><span>S</span></div>
+ </div>
+ <div class="splash-brand">
+ <div class="splash-brand-dots"><span class="splash-dot"></span><span class="splash-dot"></span><span class="splash-dot"></span></div>
+ <div class="splash-brand-name">Maurdev</div>
+ </div>
+</div>
+<script>window.__splashStart = Date.now();</script>
 
 <!-- ═══════════════════ ONBOARDING ═══════════════════ -->
 <div id="screen-onboarding" class="screen">
@@ -316,16 +357,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <option value="BTS 2">BTS 2ème année</option>
  <option value="DUT">DUT / BUT</option>
  </optgroup>
- <optgroup label="Université — Licence">
+ <optgroup label="Licence">
  <option value="Licence 1">Licence 1 (L1)</option>
  <option value="Licence 2">Licence 2 (L2)</option>
  <option value="Licence 3">Licence 3 (L3)</option>
  </optgroup>
- <optgroup label="Université — Master">
+ <optgroup label="Master">
  <option value="Master 1">Master 1 (M1)</option>
  <option value="Master 2">Master 2 (M2)</option>
  </optgroup>
- <optgroup label="Université — Doctorat">
+ <optgroup label="Doctorat">
  <option value="Doctorat">Doctorat (PhD)</option>
  </optgroup>
  </select>
@@ -1364,6 +1405,16 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour parler · chaque prise de parole ajoute une ligne</div>
  <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
  </div>
+ <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:18px">
+ <div style="font-size:13px;font-weight:700;margin-bottom:10px">🎬 Ou transcrire un fichier importé</div>
+ <input type="file" id="transcribe-file-input" accept="audio/*,video/*" style="display:none" onchange="handleTranscriptionMediaSelected(this)">
+ <button onclick="document.getElementById('transcribe-file-input').click()" class="doc-tb-btn" style="width:100%;padding:12px">Importer un audio ou une vidéo</button>
+ <div id="transcribe-media-preview" style="display:none;margin-top:12px">
+ <video id="transcribe-media-player" controls playsinline style="width:100%;border-radius:10px;background:#000;max-height:220px;display:block"></video>
+ <button id="transcribe-playback-btn" onclick="toggleTranscribeDuringPlayback()" style="width:100%;margin-top:10px;padding:12px;background:var(--em);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Transcrire pendant la lecture</button>
+ <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
+ </div>
+ </div>
  <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
  <div style="display:flex;gap:8px;margin-top:12px">
  <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">📋 Copier</button>
@@ -2167,9 +2218,10 @@ const SUBJECTS_BY_LEVEL = {
  'Marketing':['marketing','eco','gestion','fr','ang'],
  'Communication':['comm','fr','ang','marketing'],
  'Science Politique':['politiq','droit','eco','ang','fr'],
- // Tronc commun biologie/sciences de la vie, niveau L1 (mène vers la spécialisation
- // Master "Biologie Médicale" déjà définie plus bas — même logique de programme d'excellence)
+ // Tronc commun biologie/sciences de la vie, niveau L1
  'Biologie': ['biocell','chimiegen','svt','math','fr','ang'],
+ // Biologie Médicale : bases pré-cliniques (anatomie, biologie cellulaire, chimie, physiologie)
+ 'Biologie Médicale': ['anatomie','biocell','chimiegen','physiohum','svt','ang'],
  },
  'Licence 2': {
  'default': ['math','info','ang','eco','stats'],
@@ -2185,6 +2237,8 @@ const SUBJECTS_BY_LEVEL = {
  'Communication':['comm','marketing','fr','ang','politiq'],
  'Science Politique':['politiq','droitpub','eco','ang','fr'],
  'Biologie': ['physiohum','microbio','biochimie','biophysique','ang'],
+ // Biologie Médicale L2 : microbiologie, biochimie clinique, immunologie
+ 'Biologie Médicale': ['biochimie','microbio','immuno','physiohum','biophysique','ang'],
  },
  'Licence 3': {
  'default': ['info','math','ang','eco','stats'],
@@ -2195,14 +2249,14 @@ const SUBJECTS_BY_LEVEL = {
  'Droit': ['droit','eco','gestion','ang','fr'],
  'Gestion': ['gestion','compta','eco','droit','ang'],
  'Biologie': ['immuno','hemato','genetiquemed','anapath','ang'],
+ // Biologie Médicale L3 : hématologie, génétique médicale, anatomopathologie, pharmacologie
+ 'Biologie Médicale': ['hemato','genetiquemed','anapath','pharmaco','immuno','ang'],
  },
  'Master 1': {
- // Programme inspiré des cursus biomédicaux de référence (Harvard Medical
- // School, Johns Hopkins) adapté au niveau Master 1
- 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','physiohum','ang'],
+ 'default': ['fr','ang','math'],
  },
  'Master 2': {
- 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','anapath','pharmaco'],
+ 'default': ['fr','ang','math'],
  },
  'BT': {
  'default': ['fr','ang','math','info'],
@@ -3776,10 +3830,20 @@ function loadLuckysheetAssets() {
  'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js',
  'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js',
  ];
- CSS.forEach(href => {
- if (document.querySelector(`link[href="${href}"]`)) return;
+ // Avant : les <link> CSS étaient ajoutées sans onload/onerror, donc si l'une d'elles
+ // échouait ou traînait sur un réseau lent, rien ne le détectait — luckysheet.create()
+ // s'exécutait quand même dès que les JS étaient prêts, créant une grille 100%
+ // fonctionnelle mais totalement sans style (d'où la grille "nue" observée). On attend
+ // désormais chaque CSS explicitement, avec un timeout de sécurité par fichier.
+ const loadCss = href => new Promise((resolve) => {
+ if (document.querySelector(`link[href="${href}"]`)) { resolve(true); return; }
  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href;
+ let done = false;
+ const finish = ok => { if (done) return; done = true; resolve(ok); };
+ l.onload = () => finish(true);
+ l.onerror = () => finish(false);
  document.head.appendChild(l);
+ setTimeout(() => finish(false), 8000); // sécurité si le navigateur ne déclenche ni onload ni onerror
  });
  const loadScript = src => new Promise((resolve, reject) => {
  if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
@@ -3787,7 +3851,12 @@ function loadLuckysheetAssets() {
  s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + src));
  document.head.appendChild(s);
  });
- _luckysheetAssetsPromise = JS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve())
+ _luckysheetAssetsPromise = Promise.all(CSS.map(loadCss))
+ .then(results => {
+ const failed = results.filter(ok => !ok).length;
+ if (failed > 0) throw new Error(failed + ' feuille(s) de style Excel n\'ont pas pu charger (réseau)');
+ })
+ .then(() => JS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve()))
  .catch(e => { _luckysheetAssetsPromise = null; throw e; });
  return _luckysheetAssetsPromise;
 }
@@ -4567,18 +4636,85 @@ window.onAndroidSTTResult = function(text) {
  _voiceSessionStartTs = 0;
  if (text) {
  _voiceInsertText(text);
- } else {
+ } else if (!_transcribeContinuous) {
  showToast('⚠ Rien entendu, réessaie');
  }
+ _maybeContinueTranscribePlayback();
 };
 window.onAndroidSTTError = function(code) {
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
+ if (!_transcribeContinuous) {
  if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
  else showToast('⚠ Micro : erreur (' + code + '), réessaie');
+ }
+ _maybeContinueTranscribePlayback();
 };
+
+// ── Import audio/vidéo + transcription pendant la lecture ──
+// Réutilise le pont STT natif existant (single-shot : une écoute = un résultat),
+// en le relançant automatiquement après chaque segment tant que le média joue
+// encore — ainsi la transcription continue sans que l'utilisateur retape sur le micro.
+let _transcribeMediaObjectUrl = null;
+let _transcribeContinuous = false;
+
+function handleTranscriptionMediaSelected(input) {
+ const file = input.files && input.files[0];
+ if (!file) return;
+ if (_transcribeMediaObjectUrl) { try { URL.revokeObjectURL(_transcribeMediaObjectUrl); } catch(e) {} }
+ _transcribeMediaObjectUrl = URL.createObjectURL(file);
+ const player = document.getElementById('transcribe-media-player');
+ const preview = document.getElementById('transcribe-media-preview');
+ if (player) {
+ player.src = _transcribeMediaObjectUrl;
+ player.onended = () => stopTranscribeDuringPlayback();
+ }
+ if (preview) preview.style.display = 'block';
+ stopTranscribeDuringPlayback();
+}
+
+function toggleTranscribeDuringPlayback() {
+ if (_transcribeContinuous) { stopTranscribeDuringPlayback(); return; }
+ startTranscribeDuringPlayback();
+}
+
+function startTranscribeDuringPlayback() {
+ const player = document.getElementById('transcribe-media-player');
+ if (!player || !player.src) return;
+ if (!canUseTranscription()) {
+ showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
+ return;
+ }
+ _transcribeContinuous = true;
+ const btn = document.getElementById('transcribe-playback-btn');
+ if (btn) { btn.textContent = '⏹ Arrêter la transcription'; btn.style.background = '#C0392B'; }
+ player.currentTime = 0;
+ player.play().catch(()=>{ showToast('⚠ Lecture impossible, réessaie'); stopTranscribeDuringPlayback(); });
+ toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn');
+}
+
+function stopTranscribeDuringPlayback() {
+ if (!_transcribeContinuous) return;
+ _transcribeContinuous = false;
+ const player = document.getElementById('transcribe-media-player');
+ if (player) { try { player.pause(); } catch(e) {} }
+ if (isListening) {
+ if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') window.AndroidSTT.stopListening();
+ else if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e) {} }
+ }
+ const btn = document.getElementById('transcribe-playback-btn');
+ if (btn) { btn.textContent = 'Transcrire pendant la lecture'; btn.style.background = 'var(--em)'; }
+}
+
+function _maybeContinueTranscribePlayback() {
+ if (!_transcribeContinuous) return;
+ const player = document.getElementById('transcribe-media-player');
+ if (!player || player.paused || player.ended) { stopTranscribeDuringPlayback(); return; }
+ if (!canUseTranscription()) { stopTranscribeDuringPlayback(); return; }
+ setTimeout(() => { if (_transcribeContinuous) toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn'); }, 400);
+}
 
 async function toggleVoiceInput(targetId, micBtnId) {
  _voiceTargetId = targetId || 'chat-input';
@@ -4975,9 +5111,9 @@ let selectedSerie = 'D';
 let selectedFiliere = '';
 
 const FILIERES_BY_NIVEAU = {
- 'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
- 'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
- 'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
  'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
  'BT': ['Hôtellerie-Restauration','Électrotechnique','Électronique','Mécanique Auto','Bâtiment','Comptabilité','Secrétariat Bureautique','Structures Métalliques','Froid & Climatisation','Fabrication Mécanique','Génie Civil','Industrie de l\'Habillement','Agriculture'],
  'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
@@ -4995,7 +5131,8 @@ const MASTER_SPECS_BY_LICENCE = {
  'Anthropologie': ['Anthropologie du Développement', 'Anthropologie Sociale et Culturelle', 'Ethnologie', 'Patrimoine et Muséologie'],
  'Archéologie': ['Archéologie Préventive', 'Patrimoine Culturel', 'Muséologie', 'Histoire de l\'Art'],
  'ASSRI': ['Cybersécurité', 'Administration Systèmes & Réseaux', 'Cloud Computing', 'Sécurité des Systèmes d\'Information', 'DevOps & Infrastructure'],
- 'Biologie': ['Biologie Moléculaire et Cellulaire', 'Biotechnologies', 'Microbiologie', 'Écologie et Environnement', 'Biologie Médicale'],
+ 'Biologie': ['Biologie Moléculaire et Cellulaire', 'Biotechnologies', 'Microbiologie', 'Écologie et Environnement'],
+ 'Biologie Médicale': ['Biologie Clinique', 'Immunologie Clinique', 'Génétique Médicale', 'Recherche Biomédicale', 'Anatomopathologie'],
  'Chimie': ['Chimie Analytique', 'Chimie Organique', 'Chimie des Matériaux', 'Génie des Procédés', 'Chimie Environnementale'],
  'Communication': ['Communication Digitale', 'Communication des Organisations', 'Relations Publiques', 'Communication Événementielle', 'Marketing Digital'],
  'Comptabilité': ['Comptabilité Contrôle Audit (CCA)', 'Expertise Comptable', 'Fiscalité', 'Audit Financier', 'Contrôle de Gestion'],
@@ -6836,11 +6973,11 @@ async function pullCloudSync() {
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 
 // ── Bouton "Passer à l'app" (affiché uniquement en navigateur web/PWA) ──
-// IMPORTANT : remplace cette URL par le vrai lien de téléchargement de ton
-// dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
-// Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
-// "Installer" ouvrira un lien invalide.
-const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.0/app-debug-51.apk';
+// Lien direct codé en dur dans le <a href> du bouton (voir plus bas dans le HTML) —
+// plus simple et plus fiable qu'un fetch() au clic : pas de dépendance au réseau,
+// au CORS cross-domaine, ni à un éventuel cache JS périmé pile au mauvais moment.
+// À mettre à jour manuellement (le href) à chaque nouvelle release, en même temps
+// que version.json.
 
 function isRunningInNativeApp() {
  // Capacitor injecte automatiquement window.Capacitor dans l'app native —
@@ -6855,10 +6992,6 @@ function initWebToAppBanner() {
  const fab = document.getElementById('web-to-app-fab');
  if (fab) fab.style.display = 'block';
  } catch(e) {}
-}
-
-function downloadStudioraApk() {
- window.open(STUDIORA_APK_URL, '_blank');
 }
 
 function dismissWebToAppBanner() {
@@ -7471,6 +7604,17 @@ function doLogout() {
 // ── INIT : auto-login si session sauvegardée ──
 // Utilise setTimeout(0) pour s'assurer que la nav (#global-nav) est dans le DOM
 // avant d'appeler showScreen → updateGlobalNav
+function hideSplash() {
+ const el = document.getElementById('app-splash');
+ if (!el) return;
+ const elapsed = Date.now() - (window.__splashStart || 0);
+ const wait = Math.max(0, 1400 - elapsed);
+ setTimeout(() => {
+ el.classList.add('hide');
+ setTimeout(() => el.remove(), 600);
+ }, wait);
+}
+
 function _runInit() {
  try {
  checkPaymentReturn();
@@ -7489,17 +7633,29 @@ function _runInit() {
  console.error('Init error:', e.message);
  try { showScreen('screen-onboarding'); } catch(e2) {}
  }
+ hideSplash();
 }
 // On attend que tout le HTML (dont la nav) soit parsé
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.0'; // à incrémenter à chaque nouvel APK publié (voir version.json)
+const APP_VERSION = '1.0.2'; // fallback web/PWA uniquement — à incrémenter à chaque release (voir version.json)
 
 async function checkForAppUpdate() {
  try {
+ // Priorité au plugin officiel @capacitor/app, qui lit la vraie versionName
+ // native compilée dans CET APK précis (fiable, pas de pont maison à maintenir).
+ // Fallback sur APP_VERSION uniquement pour le web/PWA (où @capacitor/app n'existe
+ // pas) ou si le plugin n'a pas encore été synchronisé côté natif.
+ let currentVersion = APP_VERSION;
+ try {
+ if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+ const info = await window.Capacitor.Plugins.App.getInfo();
+ if (info && info.version) currentVersion = info.version;
+ }
+ } catch(e) { /* plugin absent ou pas encore synchronisé : on garde APP_VERSION */ }
  const res = await fetch('https://maureenniamien.github.io/studiora/version.json?t=' + Date.now());
  const data = await res.json();
- if (data.version && data.version !== APP_VERSION && data.apkUrl) {
+ if (data.version && data.version !== currentVersion && data.apkUrl) {
  showUpdateBanner(data.version, data.apkUrl);
  }
  } catch(e) { /* pas de connexion ou version.json absent : silencieux */ }
@@ -9091,9 +9247,12 @@ function mediaExtractAudio() {
 <div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- Bulle flottante "Passer à l'app" — visible uniquement en navigateur web (jamais dans l'app
- Android installée), persiste sur tous les écrans, style bulle façon icône flottante -->
+ Android installée), persiste sur tous les écrans, style bulle façon icône flottante.
+ Lien direct en dur (STUDIORA_APK_URL, ci-dessous) plutôt qu'un fetch() au clic : plus robuste,
+ aucune dépendance au réseau/cache au moment précis où l'utilisateur appuie. À mettre à jour
+ manuellement à chaque nouvelle release, en même temps que version.json. -->
 <div id="web-to-app-fab" style="display:none;position:fixed;right:16px;bottom:96px;z-index:9999">
- <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer">📲</button>
+ <a href="https://maureenniamien.github.io/studiora/downloads/app-debug-56.apk" download aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;text-decoration:none">📲</a>
  <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--text3);color:#fff;border:2px solid var(--white,#fff);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
 </div>
 
