@@ -246,6 +246,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .sheet-cell-sel{background:var(--em-soft) !important}
 .sheet-charts-area{display:flex;flex-direction:column;gap:12px}
 .sheet-chart-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px;background:var(--white)}
+.sheet-dropdown{display:none;flex-wrap:wrap;gap:6px;padding:10px;margin-top:6px;background:var(--white);border:1px solid var(--border);border-radius:10px;width:100%}
+.sheet-dropdown.open{display:flex}
+.sheet-dd-toggle{display:flex;align-items:center;gap:6px}
 </style>
 </head>
 <body style="touch-action:manipulation">
@@ -3788,6 +3791,11 @@ function currentSheetTable() {
  return document.querySelector('#doceditor-content table[data-sheet]');
 }
 const SHEET_PALETTE = ['#000000','#374151','#dc2626','#ea580c','#c47a0b','#65a30d','#0b6e4f','#0891b2','#1d4ed8','#4338ca','#7c3aed','#a21caf','#db2777','#fff59d','#a7f3d0','#bfdbfe','#fbcfe8','#fed7aa','#e5e7eb','#ffffff'];
+function toggleSheetDropdown(id) {
+ document.querySelectorAll('.sheet-dropdown').forEach(el => { if (el.id !== id) el.classList.remove('open'); });
+ const el = document.getElementById(id);
+ if (el) el.classList.toggle('open');
+}
 let _sheetBorderColor = '#000000';
 function sheetSetBorderColor(c, btn) {
  _sheetBorderColor = c;
@@ -3822,6 +3830,8 @@ function sheetSetFontColor(c) {
  if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
  _sheetSnapshot();
  cells.forEach(td => { td.style.color = c; });
+ const sw = document.getElementById('sheet-dd-font-swatch');
+ if (sw) sw.style.background = c;
 }
 function sheetSetFillColor(c) {
  const cells = _sheetTargetCells();
@@ -3890,32 +3900,42 @@ function sheetToolbarHTML() {
  <button class="doc-tb-tab" onclick="sheetSwitchTab('donnees',this)">Données</button>
  </div>
  <div class="doc-tb-panel active" data-tab="accueil">
- <button class="doc-tb-btn" onclick="sheetUndo()" title="Annuler">↶ Annuler</button>
- <button class="doc-tb-btn" onclick="sheetRedo()" title="Rétablir">↷ Rétablir</button>
- <button class="doc-tb-btn" onclick="sheetClearCells()" title="Effacer contenu et mise en forme">🧹 Effacer</button>
+ <button class="doc-tb-btn" onclick="sheetUndo()" title="Annuler">↶</button>
+ <button class="doc-tb-btn" onclick="sheetRedo()" title="Rétablir">↷</button>
+ <button class="doc-tb-btn" onclick="sheetClearCells()" title="Effacer">🧹</button>
  <button class="doc-tb-btn" style="font-weight:800" onclick="sheetToggleStyle('fontWeight','700')" title="Gras">G</button>
  <button class="doc-tb-btn" style="font-style:italic" onclick="sheetToggleStyle('fontStyle','italic')" title="Italique">I</button>
  <button class="doc-tb-btn" style="text-decoration:underline" onclick="sheetToggleStyle('textDecoration','underline')" title="Souligné">S</button>
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de police</span>
+ <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-font')">A <span style="width:12px;height:12px;border-radius:3px;background:#000;display:inline-block;border:1px solid var(--border)" id="sheet-dd-font-swatch"></span> ▾</button>
+ <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-fill')">🎨 Fond ▾</button>
+ <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-border')">▦ Bordure ▾</button>
+ <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-align')">≡ Aligner ▾</button>
+
+ <div id="sheet-dd-font" class="sheet-dropdown">
  ${SHEET_PALETTE.map(c=>`<button class="doc-tb-btn" style="background:${c};width:24px;padding:0;height:24px;border:1px solid var(--border)" onclick="sheetSetFontColor('${c}')"></button>`).join('')}
  <input type="color" onchange="sheetSetFontColor(this.value)" title="Autre couleur" style="width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:6px;background:none">
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Couleur de fond</span>
+ </div>
+ <div id="sheet-dd-fill" class="sheet-dropdown">
  <button class="doc-tb-btn" style="width:24px;padding:0;height:24px;border:1px solid var(--border)" onclick="sheetSetFillColor('transparent')" title="Aucune">✕</button>
  ${SHEET_PALETTE.map(c=>`<button class="doc-tb-btn" style="background:${c};width:24px;padding:0;height:24px;border:1px solid var(--border)" onclick="sheetSetFillColor('${c}')"></button>`).join('')}
  <input type="color" onchange="sheetSetFillColor(this.value)" title="Autre couleur" style="width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:6px;background:none">
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Couleur de bordure</span>
+ </div>
+ <div id="sheet-dd-border" class="sheet-dropdown">
+ <span style="font-size:11px;color:var(--text3);width:100%">Couleur</span>
  ${SHEET_PALETTE.slice(0,12).map(c=>`<button class="doc-tb-btn" style="background:${c};width:24px;padding:0;height:24px;border:1px solid var(--border)${c===_sheetBorderColor?';outline:2px solid var(--em)':''}" onclick="sheetSetBorderColor('${c}',this)"></button>`).join('')}
  <input type="color" onchange="sheetSetBorderColor(this.value,this)" title="Autre couleur" style="width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:6px;background:none">
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Type de bordure</span>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:4px">Type</span>
  <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('solid',1)" title="Fine">▭ Fine</button>
  <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('solid',3)" title="Épaisse">▬ Épaisse</button>
  <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('dashed',2)" title="Tirets">┅ Tirets</button>
  <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('dotted',2)" title="Pointillés">┈ Pointillés</button>
  <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('none',0)" title="Aucune bordure">✕ Aucune</button>
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Alignement</span>
- <button class="doc-tb-btn" onclick="sheetSetAlign('left')">≡</button>
- <button class="doc-tb-btn" onclick="sheetSetAlign('center')">≣</button>
- <button class="doc-tb-btn" onclick="sheetSetAlign('right')">≡→</button>
+ </div>
+ <div id="sheet-dd-align" class="sheet-dropdown">
+ <button class="doc-tb-btn" onclick="sheetSetAlign('left')">≡ Gauche</button>
+ <button class="doc-tb-btn" onclick="sheetSetAlign('center')">≣ Centre</button>
+ <button class="doc-tb-btn" onclick="sheetSetAlign('right')">≡→ Droite</button>
+ </div>
  </div>
  <div class="doc-tb-panel" data-tab="insertion">
  <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
