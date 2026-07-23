@@ -6115,6 +6115,55 @@ async function startQuizLibre(topic) {
  }
  btn.disabled=false; btnTxt.textContent=" Générer le quiz avec l'IA";
 }
+// Génère un lot de `n` questions (utilisé directement pour un quiz classique,
+// et en boucle par petits lots pour un Marathon — voir startQuiz()). Séparer
+// la génération en lots de 10 max évite la troncature JSON silencieuse qui
+// arrivait sur les gros Marathon (30/50/100 questions demandées, 3 reçues) :
+// un modèle rapide comme llama-3.1-8b-instant tient mal une longue réponse
+// JSON d'un seul bloc, alors que 10 questions à la fois passent de façon fiable.
+async function generateQuizBatch(n, subj, level, filiere, topic, isMarathon, diff) {
+ const filiereRule = filiere ? `- Adapte le PÉRIMÈTRE de "${subj.name}" au contexte réel de la filière ${filiere} : si cette matière n'est pas la spécialité de cette filière, reste au niveau d'usage pratique attendu (ex: "Informatique" pour une filière non-technique = bureautique et usage numérique courant, PAS de programmation/algorithmique ; à l'inverse pour une filière informatique/technique, va bien au niveau technique attendu). Ne suppose jamais un niveau d'expertise dans cette matière au-delà de ce qui est réaliste pour un·e étudiant·e de cette filière précise.\n` : '';
+ const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const langInstruction = `- Réponds ENTIÈREMENT en ${langNames[APP_LANG]||'français'} (questions, options, explications).\n`;
+ // Calibrage explicite : "Facile/Moyen/Difficile" est relatif au NIVEAU SCOLAIRE, pas absolu.
+ // Sans cette règle, un petit modèle a tendance à générer des questions dignes du primaire
+ // dès qu'on lui demande "Facile", même pour un·e élève de 4ème ou plus.
+ const levelCalibration = `- CALIBRAGE DU NIVEAU (règle absolue) : "${diff}" est relatif au niveau scolaire ${level}${filiere?' ('+filiere+')':''}, JAMAIS un niveau absolu. Une question "Facile" doit rester DANS le programme officiel de ${level} — challenge minimal mais réaliste pour ce niveau, jamais une notion du primaire ou d'un niveau très inférieur (ex: pas de simple addition à un chiffre pour un·e collégien·ne). "Moyen" correspond à un exercice standard de ${level}. "Difficile" challenge un·e bon·ne élève de ${level} sans dépasser son programme officiel.\n`;
+ const marathonHeader = isMarathon ? `, pour un format "Marathon" (liste défilante, un minuteur global)` : '';
+ const varietyRule = isMarathon ? `- Varie les sous-thèmes de ${subj.name} pour ne pas répéter le même type de question.\n` : '';
+ const prompt = `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
+Génère exactement ${n} questions de niveau "${diff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}${marathonHeader}.
+
+RÈGLES ABSOLUES :
+- Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ ${isMarathon?'60% de qcm, 40%':'70% de qcm, 30%'} de vf, réparties dans un ordre varié (pas tout le vf à la fin).
+- Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
+${levelCalibration}${filiereRule}${langInstruction}${varietyRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)${isMarathon?'':', avec la démonstration ou le raisonnement complet'}
+
+RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A, 1=B, 2=C, 3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
+L'explication DOIT commencer par "La bonne réponse est X)" (qcm) ou "La bonne réponse est Vrai/Faux" (vf). Vérifie deux fois avant de générer.
+
+Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
+{"questions":[{"type":"qcm","q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"La bonne réponse est Vrai car... explication pédagogique 3-5 phrases."}]}`;
+
+ const quizMaxTokens = Math.min(8000, 500 + n*220);
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ method:'POST',
+ headers:{'Content-Type':'application/json',},
+ body:JSON.stringify({model:MODEL,max_tokens:quizMaxTokens,system:'Tu es un professeur expert qui génère des QCM éducatifs en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
+ });
+ if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ let parsed;
+ try { parsed = JSON.parse(raw); }
+ catch(je) {
+ try { parsed = repairTruncatedJson(raw); }
+ catch(je2) { throw new Error('JSON invalide: '+je.message); }
+ }
+ return parsed.questions || [];
+}
+
 async function startQuiz() {
  // Check VIP pour quiz libre (sans matière imposée)
  if (!isVipOrAdmin() && !SUBJECTS.find(s=>s.id===selectedSubjectQuiz)) {
@@ -6140,57 +6189,34 @@ async function startQuiz() {
 
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
- const filiereRule = filiere ? `- Adapte le PÉRIMÈTRE de "${subj.name}" au contexte réel de la filière ${filiere} : si cette matière n'est pas la spécialité de cette filière, reste au niveau d'usage pratique attendu (ex: "Informatique" pour une filière non-technique = bureautique et usage numérique courant, PAS de programmation/algorithmique ; à l'inverse pour une filière informatique/technique, va bien au niveau technique attendu). Ne suppose jamais un niveau d'expertise dans cette matière au-delà de ce qui est réaliste pour un·e étudiant·e de cette filière précise.\n` : '';
  const isMarathon = selectedQuizFormat === 'marathon';
- const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
- const langInstruction = `- Réponds ENTIÈREMENT en ${langNames[APP_LANG]||'français'} (questions, options, explications).\n`;
- const prompt = isMarathon ? `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
-Génère exactement ${selectedNQ} questions de niveau "${selectedDiff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}, pour un format "Marathon" (liste défilante, un minuteur global).
-
-RÈGLES ABSOLUES :
-- Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ 60% de qcm, 40% de vf, réparties dans un ordre varié (pas tout le vf à la fin).
-- Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
-- Les questions doivent être adaptées au niveau ${level}${filiere?' ('+filiere+')':''}
-${filiereRule}${langInstruction}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)
-
-RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A, 1=B, 2=C, 3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
-L'explication DOIT commencer par "La bonne réponse est X)" (qcm) ou "La bonne réponse est Vrai/Faux" (vf).
-
-Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
-{"questions":[{"type":"qcm","q":"Énoncé","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"..."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"..."}]}` : `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
-Génère exactement ${selectedNQ} questions de niveau "${selectedDiff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}.
-
-RÈGLES ABSOLUES :
-- Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ 70% de qcm, 30% de vf, réparties dans un ordre varié.
-- Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
-- Les questions doivent être adaptées au niveau ${level}${filiere?' ('+filiere+')':''}
-${filiereRule}${langInstruction}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum), avec la démonstration ou le raisonnement complet
-
-RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A est la bonne réponse, correct=1=B, correct=2=C, correct=3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
-L'explication DOIT commencer par "La bonne réponse est X)" (qcm) ou "La bonne réponse est Vrai/Faux" (vf). Vérifie deux fois avant de générer.
-
-Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
-{"questions":[{"type":"qcm","q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"La bonne réponse est Vrai car... explication pédagogique 3-5 phrases."}]}`;
+ // Lots de 10 max : au-delà, un seul appel JSON tend à être tronqué silencieusement
+ // par le modèle (d'où les Marathon "30 demandées, 3 reçues"). On enchaîne donc
+ // plusieurs petits appels fiables plutôt qu'un seul gros appel fragile.
+ const BATCH = 10;
 
  try {
- const quizMaxTokens = Math.min(8000, 400 + selectedNQ*180);
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
- method:'POST',
- headers:{'Content-Type':'application/json',},
- body:JSON.stringify({model:MODEL,max_tokens:quizMaxTokens,system:'Tu es un professeur expert qui génère des QCM éducatifs en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
- });
- if(!res.ok){ const err=await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
- const data = await res.json();
- let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
- raw = extractJsonBlock(raw);
- let parsed;
- try { parsed = JSON.parse(raw); }
- catch(je) {
- // Réponse probablement tronquée (trop de questions demandées) : on répare au lieu d'échouer
- try { parsed = repairTruncatedJson(raw); }
- catch(je2) { throw new Error('JSON invalide: '+je.message+' — Réessaie ou baisse le nombre de questions.'); }
+ let allQuestions = [];
+ if (selectedNQ > BATCH) {
+ const totalBatches = Math.ceil(selectedNQ / BATCH);
+ for (let b = 0; b < totalBatches; b++) {
+ const remaining = selectedNQ - allQuestions.length;
+ if (remaining <= 0) break;
+ const n = Math.min(BATCH, remaining);
+ btnTxt.textContent = ` Génération en cours... (${allQuestions.length}/${selectedNQ})`;
+ try {
+ const qs = await generateQuizBatch(n, subj, level, filiere, topic, isMarathon, selectedDiff);
+ allQuestions = allQuestions.concat(qs);
+ } catch(batchErr) {
+ // Un lot a échoué (réseau/JSON) : on garde ce qu'on a déjà plutôt que de tout perdre.
+ if (allQuestions.length === 0) throw batchErr;
+ break;
  }
- APP.quizQuestions = parsed.questions || [];
+ }
+ } else {
+ allQuestions = await generateQuizBatch(selectedNQ, subj, level, filiere, topic, isMarathon, selectedDiff);
+ }
+ APP.quizQuestions = allQuestions;
  if(APP.quizQuestions.length===0) throw new Error('empty');
  APP.quizIndex = 0; APP.quizScore = 0; APP.quizAnswers = [];
  launchQuiz();
