@@ -243,6 +243,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .doc-tb-tab.active{color:var(--em);border-bottom-color:var(--em)}
 .doc-tb-panel{display:none;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg2);border-radius:10px;padding:8px;margin-bottom:8px}
 .doc-tb-panel.active{display:flex}
+.sheet-cell-sel{background:var(--em-soft) !important}
+.sheet-charts-area{display:flex;flex-direction:column;gap:12px}
+.sheet-chart-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px;background:var(--white)}
 </style>
 </head>
 <body style="touch-action:manipulation">
@@ -2114,6 +2117,10 @@ const ALL_SUBJECTS = [
  { id:'info', icon:'', name:'Informatique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
  { id:'eco', icon:'', name:'Économie', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
  { id:'ang', icon:'EN', name:'Anglais', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'esp', icon:'ES', name:'Espagnol', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'de', icon:'DE', name:'Allemand', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'eps', icon:'', name:'EPS', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'edhc', icon:'', name:'EDHC', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
  { id:'hg', icon:'', name:'Histoire-Géo', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
  { id:'philo', icon:'', name:'Philosophie', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
  { id:'stats', icon:'', name:'Statistiques', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
@@ -2156,25 +2163,28 @@ const ALL_SUBJECTS = [
 
 // Matières par niveau et filière
 const SUBJECTS_BY_LEVEL = {
- '3ème': ['math','physique','svt','fr','ang','hg'],
- '2nde': ['math','physique','svt','fr','ang','hg','eco'],
+ '6ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ '5ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ '4ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ '3ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ '2nde': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
  'Terminal': {
- 'default': ['math','physique','svt','fr','ang','hg','philo'],
- 'A': ['fr','philo','hg','ang','eco','math'],
- 'B': ['math','physique','svt','fr','ang','hg','philo'],
- 'C': ['math','physique','svt','fr','ang','hg'],
- 'D': ['math','physique','svt','fr','ang','hg'],
+ 'default': ['math','physique','svt','fr','ang','hg','philo','eps','edhc','esp'],
+ 'A': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
+ 'B': ['math','physique','svt','fr','ang','hg','philo','eps','edhc','esp'],
+ 'C': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'D': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
  },
  'Terminale': {
- 'default': ['math','physique','svt','fr','ang','hg','philo'],
- 'A': ['fr','philo','hg','ang','eco','math'],
- 'A1': ['fr','philo','hg','ang','eco','math'],
- 'A2': ['fr','philo','hg','ang','eco','math'],
- 'B': ['math','physique','svt','fr','ang','hg','philo'],
- 'C': ['math','physique','svt','fr','ang','hg'],
- 'D': ['math','physique','svt','fr','ang','hg'],
- 'E': ['math','physique','svt','fr','ang','hg'],
- 'STMG': ['math','eco','gestion','fr','ang','hg'],
+ 'default': ['math','physique','svt','fr','ang','hg','philo','eps','edhc','esp'],
+ 'A': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
+ 'A1': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
+ 'A2': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
+ 'B': ['math','physique','svt','fr','ang','hg','philo','eps','edhc','esp'],
+ 'C': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'D': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'E': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'STMG': ['math','eco','gestion','fr','ang','hg','eps','edhc','esp'],
  },
  'Licence 1': {
  'default': ['math','info','ang','eco','fr'],
@@ -3176,6 +3186,11 @@ function sheetAddRow(table) {
  td.setAttribute('onfocus','onSheetCellFocus(this)');
  td.setAttribute('onblur','onSheetCellBlur(this)');
  td.setAttribute('oninput','onSheetCellInput(this)');
+ td.setAttribute('onmousedown','sheetCellMouseDown(event,this)');
+ td.setAttribute('onmouseenter','sheetCellMouseEnter(this)');
+ td.setAttribute('ontouchstart','sheetCellTouchStart(event,this)');
+ td.setAttribute('ontouchmove','sheetCellTouchMove(event)');
+ td.setAttribute('ontouchend','sheetCellTouchEnd()');
  td.style.cssText = 'border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px';
  tr.appendChild(td);
  }
@@ -3199,6 +3214,11 @@ function sheetAddCol(table) {
  td.setAttribute('onfocus','onSheetCellFocus(this)');
  td.setAttribute('onblur','onSheetCellBlur(this)');
  td.setAttribute('oninput','onSheetCellInput(this)');
+ td.setAttribute('onmousedown','sheetCellMouseDown(event,this)');
+ td.setAttribute('onmouseenter','sheetCellMouseEnter(this)');
+ td.setAttribute('ontouchstart','sheetCellTouchStart(event,this)');
+ td.setAttribute('ontouchmove','sheetCellTouchMove(event)');
+ td.setAttribute('ontouchend','sheetCellTouchEnd()');
  td.style.cssText = 'border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px';
  tr.appendChild(td);
  }
@@ -3242,7 +3262,7 @@ function buildSheetHTML(sheetName, nRows, nCols, values) {
  for (let c=0; c<nCols; c++) {
  const ref = sheetColLetter(c)+(r+1);
  const val = (values && values[r] && values[r][c] !== undefined) ? values[r][c] : '';
- html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" oninput="onSheetCellInput(this)" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px">${escHtml(String(val))}</td>`;
+ html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" oninput="onSheetCellInput(this)" onmousedown="sheetCellMouseDown(event,this)" onmouseenter="sheetCellMouseEnter(this)" ontouchstart="sheetCellTouchStart(event,this)" ontouchmove="sheetCellTouchMove(event)" ontouchend="sheetCellTouchEnd()" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px">${escHtml(String(val))}</td>`;
  }
  html += `</tr>`;
  }
@@ -3252,6 +3272,283 @@ function buildSheetHTML(sheetName, nRows, nCols, values) {
  <button onclick="sheetAddCol(this.closest('div').previousElementSibling.querySelector('table'))" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Colonne</button>
  </div>`;
  return html;
+}
+
+// ── SÉLECTION MULTI-CELLULES ──
+// Souris : mousedown pose l'ancre, on étend la plage en survolant d'autres
+// cellules bouton enfoncé (mouseenter), mouseup termine.
+// Tactile : un tap normal édite la cellule (comportement natif contenteditable
+// inchangé) ; un appui long (450ms) sans déplacement démarre le mode sélection,
+// puis glisser le doigt sur d'autres cellules étend la plage (comme Google Sheets
+// mobile). Si le doigt bouge avant la fin de l'appui long, on annule et on laisse
+// le scroll normal se produire.
+let _sheetSelAnchor = null, _sheetSelEnd = null, _sheetSelecting = false;
+let _sheetTouchTimer = null, _sheetTouchStartXY = null, _sheetTouchActive = false;
+
+function _sheetCellPos(td) {
+ const ref = td && td.getAttribute && td.getAttribute('data-cell');
+ const m = ref && ref.match(/^([A-Z])(\d+)$/);
+ if (!m) return null;
+ return { r: parseInt(m[2],10)-1, c: m[1].charCodeAt(0)-65 };
+}
+
+function updateSheetSelectionHighlight(table) {
+ if (!table) return;
+ table.querySelectorAll('td.sheet-cell-sel').forEach(td=>td.classList.remove('sheet-cell-sel'));
+ if (!_sheetSelAnchor || !_sheetSelEnd) return;
+ if (_sheetSelAnchor.r===_sheetSelEnd.r && _sheetSelAnchor.c===_sheetSelEnd.c) return; // simple clic, rien à surligner
+ const r0=Math.min(_sheetSelAnchor.r,_sheetSelEnd.r), r1=Math.max(_sheetSelAnchor.r,_sheetSelEnd.r);
+ const c0=Math.min(_sheetSelAnchor.c,_sheetSelEnd.c), c1=Math.max(_sheetSelAnchor.c,_sheetSelEnd.c);
+ for (let r=r0;r<=r1;r++) for (let c=c0;c<=c1;c++) {
+ const td = table.querySelector(`td[data-cell="${sheetColLetter(c)}${r+1}"]`);
+ if (td) td.classList.add('sheet-cell-sel');
+ }
+}
+
+function sheetCellMouseDown(e, td) {
+ const pos = _sheetCellPos(td);
+ if (!pos) return;
+ _sheetSelAnchor = pos; _sheetSelEnd = pos; _sheetSelecting = true;
+ updateSheetSelectionHighlight(td.closest('table'));
+}
+function sheetCellMouseEnter(td) {
+ if (!_sheetSelecting) return;
+ const pos = _sheetCellPos(td);
+ if (!pos) return;
+ _sheetSelEnd = pos;
+ updateSheetSelectionHighlight(td.closest('table'));
+}
+document.addEventListener('mouseup', () => { _sheetSelecting = false; });
+
+function sheetCellTouchStart(e, td) {
+ const touch = e.touches[0];
+ _sheetTouchStartXY = { x: touch.clientX, y: touch.clientY };
+ _sheetTouchActive = false;
+ clearTimeout(_sheetTouchTimer);
+ _sheetTouchTimer = setTimeout(() => {
+ _sheetTouchActive = true;
+ const pos = _sheetCellPos(td);
+ if (!pos) return;
+ _sheetSelAnchor = pos; _sheetSelEnd = pos;
+ updateSheetSelectionHighlight(td.closest('table'));
+ if (navigator.vibrate) navigator.vibrate(15);
+ }, 450);
+}
+function sheetCellTouchMove(e) {
+ if (!_sheetTouchActive) {
+ const touch = e.touches[0];
+ if (_sheetTouchStartXY && (Math.abs(touch.clientX-_sheetTouchStartXY.x)>8 || Math.abs(touch.clientY-_sheetTouchStartXY.y)>8)) {
+ clearTimeout(_sheetTouchTimer); // le doigt a bougé avant la fin de l'appui long : c'est un scroll, pas une sélection
+ }
+ return;
+ }
+ e.preventDefault(); // en mode sélection : on bloque le scroll pour pouvoir glisser sur la grille
+ const touch = e.touches[0];
+ const el = document.elementFromPoint(touch.clientX, touch.clientY);
+ const td = el && el.closest ? el.closest('td[data-cell]') : null;
+ if (!td) return;
+ const pos = _sheetCellPos(td);
+ if (!pos) return;
+ _sheetSelEnd = pos;
+ updateSheetSelectionHighlight(td.closest('table'));
+}
+function sheetCellTouchEnd() {
+ clearTimeout(_sheetTouchTimer);
+ _sheetTouchActive = false;
+}
+
+// Renvoie les cellules ciblées par les boutons de mise en forme : la plage
+// multi-cellules en cours si elle existe, sinon simplement la cellule active.
+function _sheetTargetCells() {
+ const table = currentSheetTable();
+ if (!table) return [];
+ if (_sheetSelAnchor && _sheetSelEnd && (_sheetSelAnchor.r!==_sheetSelEnd.r || _sheetSelAnchor.c!==_sheetSelEnd.c)) {
+ const r0=Math.min(_sheetSelAnchor.r,_sheetSelEnd.r), r1=Math.max(_sheetSelAnchor.r,_sheetSelEnd.r);
+ const c0=Math.min(_sheetSelAnchor.c,_sheetSelEnd.c), c1=Math.max(_sheetSelAnchor.c,_sheetSelEnd.c);
+ const cells = [];
+ for (let r=r0;r<=r1;r++) for (let c=c0;c<=c1;c++) {
+ const td = table.querySelector(`td[data-cell="${sheetColLetter(c)}${r+1}"]`);
+ if (td) cells.push(td);
+ }
+ return cells;
+ }
+ return (_activeSheetCell && _activeSheetCell.tagName==='TD') ? [_activeSheetCell] : [];
+}
+
+function getSheetSelectionData() {
+ const table = currentSheetTable();
+ if (!table || !_sheetSelAnchor || !_sheetSelEnd) return null;
+ const r0=Math.min(_sheetSelAnchor.r,_sheetSelEnd.r), r1=Math.max(_sheetSelAnchor.r,_sheetSelEnd.r);
+ const c0=Math.min(_sheetSelAnchor.c,_sheetSelEnd.c), c1=Math.max(_sheetSelAnchor.c,_sheetSelEnd.c);
+ const grid = [];
+ for (let r=r0;r<=r1;r++) {
+ const row = [];
+ for (let c=c0;c<=c1;c++) {
+ const ref = sheetColLetter(c) + (r+1);
+ const td = table.querySelector(`td[data-cell="${ref}"]`);
+ row.push(td ? td.textContent.trim() : '');
+ }
+ grid.push(row);
+ }
+ return grid;
+}
+
+// ── GRAPHIQUES (maison, dessinés sur <canvas>, sans dépendance externe) ──
+// À partir de la plage sélectionnée : si la première colonne n'est pas
+// numérique, elle sert d'étiquettes ; si la première ligne restante n'est pas
+// numérique, elle sert de nom de série. Le reste est interprété comme données.
+function buildChartSeriesFromGrid(grid) {
+ if (!grid || !grid.length || !grid[0].length) return null;
+ const isNum = v => v !== '' && v != null && !isNaN(parseFloat(String(v).replace(',','.')));
+ let labels, dataRows = grid;
+ const firstColAllNumeric = grid.every(row => isNum(row[0]));
+ if (!firstColAllNumeric && grid[0].length > 1) {
+ labels = grid.map(row => row[0] || '');
+ dataRows = grid.map(row => row.slice(1));
+ } else {
+ labels = grid.map((_,i) => 'L'+(i+1));
+ }
+ let headerNames = null;
+ if (dataRows.length > 1 && dataRows[0].every(v => v==='' || !isNum(v))) {
+ headerNames = dataRows[0];
+ dataRows = dataRows.slice(1);
+ labels = labels.slice(1);
+ }
+ const nSeries = dataRows[0] ? dataRows[0].length : 0;
+ if (!nSeries) return null;
+ const series = [];
+ for (let s=0; s<nSeries; s++) {
+ series.push({
+ name: (headerNames && headerNames[s]) || ('Série '+(s+1)),
+ values: dataRows.map(row => { const v = parseFloat(String(row[s]).replace(',','.')); return isNaN(v) ? 0 : v; })
+ });
+ }
+ return { labels, series };
+}
+
+const SHEET_CHART_COLORS = ['#0b6e4f','#1d4ed8','#dc2626','#c47a0b','#7c3aed','#0891b2','#db2777'];
+
+function drawChartOnCanvas(canvas, type, data) {
+ const ctx = canvas.getContext('2d');
+ const W = canvas.width, H = canvas.height;
+ ctx.clearRect(0,0,W,H);
+ const { labels, series } = data;
+ if (type === 'pie' || type === 'donut') {
+ const vals = series[0] ? series[0].values : [];
+ const total = vals.reduce((a,b)=>a+b,0) || 1;
+ const cx = W/2, cy = H/2 - 16, radius = Math.min(W,H)/2 - 46;
+ let start = -Math.PI/2;
+ vals.forEach((v,i) => {
+ const angle = (v/total)*Math.PI*2;
+ ctx.beginPath(); ctx.moveTo(cx,cy);
+ ctx.arc(cx,cy,radius,start,start+angle); ctx.closePath();
+ ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fill();
+ start += angle;
+ });
+ if (type === 'donut') { ctx.beginPath(); ctx.arc(cx,cy,radius*0.55,0,Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill(); }
+ let lx = 10, ly = H - 22;
+ labels.forEach((lab,i) => {
+ ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fillRect(lx, ly, 9, 9);
+ ctx.fillStyle = '#333'; ctx.font = '10px sans-serif'; ctx.fillText(String(lab).slice(0,10), lx+12, ly+8);
+ lx += 78; if (lx > W-70) { lx = 10; ly += 14; }
+ });
+ return;
+ }
+ const padL = 34, padB = 26, padT = 18, padR = 8;
+ const plotW = W - padL - padR, plotH = H - padT - padB;
+ const allVals = series.flatMap(s=>s.values);
+ const maxV = Math.max(1, ...allVals), minV = Math.min(0, ...allVals);
+ const n = labels.length;
+ ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+ ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+ const yFor = v => padT + plotH - ((v-minV)/((maxV-minV)||1))*plotH;
+ if (type === 'line') {
+ series.forEach((s,si) => {
+ ctx.strokeStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length]; ctx.lineWidth = 2;
+ ctx.beginPath();
+ s.values.forEach((v,i) => {
+ const x = padL + (n>1 ? (i/(n-1))*plotW : plotW/2), y = yFor(v);
+ if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+ });
+ ctx.stroke();
+ s.values.forEach((v,i) => {
+ const x = padL + (n>1 ? (i/(n-1))*plotW : plotW/2), y = yFor(v);
+ ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+ });
+ });
+ } else {
+ const groupW = plotW / n, barW = Math.max(2,(groupW*0.7)/series.length);
+ labels.forEach((lab,i) => {
+ series.forEach((s,si) => {
+ const v = s.values[i]||0, y = yFor(v), y0 = yFor(Math.max(0,minV));
+ const x = padL + i*groupW + groupW*0.15 + si*barW;
+ ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ ctx.fillRect(x, Math.min(y,y0), barW, Math.abs(y0-y) || 1);
+ });
+ });
+ }
+ ctx.fillStyle = '#666'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+ labels.forEach((lab,i) => {
+ const x = padL + (type==='line' ? (n>1?(i/(n-1))*plotW:plotW/2) : i*(plotW/n)+(plotW/n)/2);
+ ctx.fillText(String(lab).slice(0,7), x, padT+plotH+12);
+ });
+ ctx.textAlign = 'left';
+ if (series.length > 1) {
+ let lx = padL, ly = 6;
+ series.forEach((s,si) => {
+ ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length]; ctx.fillRect(lx,ly,8,8);
+ ctx.fillStyle = '#333'; ctx.font = '9px sans-serif'; ctx.fillText(s.name.slice(0,9), lx+10, ly+8);
+ lx += 62;
+ });
+ }
+}
+
+const SHEET_CHART_LABELS = { bar:'Graphique en barres', line:'Graphique en lignes', pie:'Camembert', donut:'Anneau' };
+
+function openChartTypeModal() {
+ const grid = getSheetSelectionData();
+ if (!grid || grid.length < 1 || grid[0].length < 1 || (grid.length===1 && grid[0].length===1)) {
+ showToast("⚠ Sélectionne d'abord une plage : appui long sur une cellule puis glisse le doigt");
+ return;
+ }
+ const modal = document.createElement('div');
+ modal.id = 'chart-type-modal';
+ modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+ modal.innerHTML = `<div style="background:var(--white);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px">
+ <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Insérer un graphique</h3>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+ <button onclick="insertChartFromSelection('bar')" class="doc-tb-btn" style="padding:14px">📊 Barres</button>
+ <button onclick="insertChartFromSelection('line')" class="doc-tb-btn" style="padding:14px">📈 Lignes</button>
+ <button onclick="insertChartFromSelection('pie')" class="doc-tb-btn" style="padding:14px">🥧 Camembert</button>
+ <button onclick="insertChartFromSelection('donut')" class="doc-tb-btn" style="padding:14px">🍩 Anneau</button>
+ </div>
+ <button onclick="document.getElementById('chart-type-modal').remove()" style="margin-top:14px;width:100%;background:var(--bg2);border:none;border-radius:10px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
+ </div>`;
+ document.body.appendChild(modal);
+}
+
+let _sheetChartCount = 0;
+function insertChartFromSelection(type) {
+ const modal = document.getElementById('chart-type-modal');
+ if (modal) modal.remove();
+ const grid = getSheetSelectionData();
+ const data = grid ? buildChartSeriesFromGrid(grid) : null;
+ if (!data || !data.series.length) { showToast('⚠ Sélection invalide pour un graphique'); return; }
+ const wrap = document.querySelector(`[data-sheet-wrap="${_excelActiveSheetIdx}"]`);
+ if (!wrap) return;
+ let chartsArea = wrap.querySelector('.sheet-charts-area');
+ if (!chartsArea) { chartsArea = document.createElement('div'); chartsArea.className = 'sheet-charts-area'; wrap.appendChild(chartsArea); }
+ const id = 'chart-' + (++_sheetChartCount);
+ const card = document.createElement('div');
+ card.className = 'sheet-chart-card';
+ card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+ <span style="font-size:12px;font-weight:700;color:var(--text2)">${SHEET_CHART_LABELS[type]}</span>
+ <button onclick="this.closest('.sheet-chart-card').remove()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer">✕</button>
+ </div><canvas id="${id}" width="320" height="220" style="width:100%;max-width:420px;height:auto;display:block"></canvas>`;
+ chartsArea.appendChild(card);
+ drawChartOnCanvas(document.getElementById(id), type, data);
 }
 
 // ── BARRE D'OUTILS WORD (Accueil / Insertion) ──
@@ -3447,9 +3744,10 @@ function currentSheetTable() {
  return document.querySelector('#doceditor-content table[data-sheet]');
 }
 function sheetToggleBorder() {
- const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
- const on = td.style.border === '2px solid #333333' || td.style.border === '2px solid rgb(51, 51, 51)';
- td.style.border = on ? '1px solid var(--border)' : '2px solid #333333';
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ const on = cells[0].style.border === '2px solid #333333' || cells[0].style.border === '2px solid rgb(51, 51, 51)';
+ cells.forEach(td => { td.style.border = on ? '1px solid var(--border)' : '2px solid #333333'; });
 }
 // ── Excel léger (tables HTML éditables, sans dépendance externe) ──
 // Remplace Luckysheet (bibliothèque lourde chargée depuis un CDN, qui pouvait
@@ -3485,9 +3783,11 @@ function renderExcelTableEditor() {
  return `<div data-sheet-wrap="${i}" style="display:${i===_excelActiveSheetIdx?'block':'none'}">${buildSheetHTML(s.name, nRows, nCols, s.rows)}</div>`;
  }).join('');
  _activeSheetCell = null;
+ _sheetSelAnchor = null; _sheetSelEnd = null;
 }
 function switchExcelSheet(i) {
  _excelActiveSheetIdx = i;
+ _sheetSelAnchor = null; _sheetSelEnd = null;
  renderExcelTableEditor();
 }
 function addExcelSheet() {
@@ -3523,6 +3823,8 @@ function sheetToolbarHTML() {
  <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
  <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
  <button class="doc-tb-btn" onclick="addExcelSheet()">+ Feuille</button>
+ <button class="doc-tb-btn" onclick="openChartTypeModal()" style="background:var(--em-soft);color:var(--em);border-color:var(--em-mid)">📊 Graphique</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Astuce : appui long sur une cellule puis glisse le doigt pour sélectionner une plage</span>
  </div>
  <div class="doc-tb-panel" data-tab="donnees">
  <button class="doc-tb-btn" onclick="sheetDeleteRow()">− Ligne</button>
@@ -3540,21 +3842,25 @@ function sheetSwitchTab(tab, btn) {
  container.querySelectorAll('.doc-tb-panel').forEach(p=>p.classList.toggle('active', p.getAttribute('data-tab')===tab));
 }
 function sheetToggleStyle(prop, val) {
- const td = _activeSheetCell;
- if (!td || td.tagName!=='TD') { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
- td.style[prop] = td.style[prop] === val ? '' : val;
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ const on = cells[0].style[prop] === val;
+ cells.forEach(td => { td.style[prop] = on ? '' : val; });
 }
 function sheetSetFontColor(c) {
- const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
- td.style.color = c;
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ cells.forEach(td => { td.style.color = c; });
 }
 function sheetSetFillColor(c) {
- const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
- td.style.background = c === 'transparent' ? '' : c;
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ cells.forEach(td => { td.style.background = c === 'transparent' ? '' : c; });
 }
 function sheetSetAlign(al) {
- const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
- td.style.textAlign = al;
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ cells.forEach(td => { td.style.textAlign = al; });
 }
 function sheetDeleteRow() {
  const td = _activeSheetCell;
@@ -4139,7 +4445,7 @@ function newBlankDoc(type) {
  }
  if (type === 'excel') {
  docEditorState = { type: 'excel', filename: 'nouveau_classeur.xlsx' };
- initExcelXS([xlsxRowsToTableSheet('Feuille1', [])], docEditorState.filename);
+ initExcelTable([xlsxRowsToTableSheet('Feuille1', [])], docEditorState.filename);
  return;
  }
 }
@@ -4168,7 +4474,7 @@ async function handleDocEditorOpen(input) {
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
  return xlsxRowsToTableSheet(sheetName, rows);
  });
- initExcelXS(sheetsData, docEditorState.filename);
+ initExcelTable(sheetsData, docEditorState.filename);
  return;
 
  } else if (['txt','tex','md'].includes(ext)) {
@@ -6128,7 +6434,7 @@ async function generateQuizBatch(n, subj, level, filiere, topic, isMarathon, dif
  // Calibrage explicite : "Facile/Moyen/Difficile" est relatif au NIVEAU SCOLAIRE, pas absolu.
  // Sans cette règle, un petit modèle a tendance à générer des questions dignes du primaire
  // dès qu'on lui demande "Facile", même pour un·e élève de 4ème ou plus.
- const levelCalibration = `- CALIBRAGE DU NIVEAU (règle absolue) : "${diff}" est relatif au niveau scolaire ${level}${filiere?' ('+filiere+')':''}, JAMAIS un niveau absolu. Une question "Facile" doit rester DANS le programme officiel de ${level} — challenge minimal mais réaliste pour ce niveau, jamais une notion du primaire ou d'un niveau très inférieur (ex: pas de simple addition à un chiffre pour un·e collégien·ne). "Moyen" correspond à un exercice standard de ${level}. "Difficile" challenge un·e bon·ne élève de ${level} sans dépasser son programme officiel.\n`;
+ const levelCalibration = `- CALIBRAGE DU NIVEAU (règle absolue) : "${diff}" est relatif au niveau scolaire ${level}${filiere?' ('+filiere+')':''}, JAMAIS un niveau absolu. Identifie d'abord mentalement les notions du programme officiel de ${level} en ${subj.name}, puis choisis UNIQUEMENT parmi ces notions-là. Une question "Facile" = la notion la plus accessible DU PROGRAMME DE ${level} (jamais une notion d'un niveau inférieur : PAS de simple addition/soustraction/multiplication à un chiffre, PAS de calcul de primaire, PAS de vocabulaire ultra-basique, même en "Facile"). "Moyen" = exercice standard de ${level}. "Difficile" = challenge un·e bon·ne élève de ${level} sans dépasser son programme officiel. Exemple si le niveau est un collège (6e à 3e) en mathématiques : "Facile" peut porter sur les nombres relatifs, les fractions simples, un calcul d'aire, une équation à une inconnue simple — jamais "combien font 7+4 ?".\n`;
  const marathonHeader = isMarathon ? `, pour un format "Marathon" (liste défilante, un minuteur global)` : '';
  const varietyRule = isMarathon ? `- Varie les sous-thèmes de ${subj.name} pour ne pas répéter le même type de question.\n` : '';
  const prompt = `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
@@ -6195,6 +6501,17 @@ async function startQuiz() {
  // plusieurs petits appels fiables plutôt qu'un seul gros appel fragile.
  const BATCH = 10;
 
+ // Génère un lot avec jusqu'à 2 tentatives supplémentaires en cas d'échec réseau/JSON
+ // (un lot isolé qui échoue une fois ne doit pas priver le Marathon des lots suivants).
+ async function generateBatchWithRetry(n) {
+ let lastErr;
+ for (let attempt = 0; attempt < 3; attempt++) {
+ try { return await generateQuizBatch(n, subj, level, filiere, topic, isMarathon, selectedDiff); }
+ catch(err) { lastErr = err; }
+ }
+ throw lastErr;
+ }
+
  try {
  let allQuestions = [];
  if (selectedNQ > BATCH) {
@@ -6205,19 +6522,31 @@ async function startQuiz() {
  const n = Math.min(BATCH, remaining);
  btnTxt.textContent = ` Génération en cours... (${allQuestions.length}/${selectedNQ})`;
  try {
- const qs = await generateQuizBatch(n, subj, level, filiere, topic, isMarathon, selectedDiff);
+ const qs = await generateBatchWithRetry(n);
  allQuestions = allQuestions.concat(qs);
  } catch(batchErr) {
- // Un lot a échoué (réseau/JSON) : on garde ce qu'on a déjà plutôt que de tout perdre.
- if (allQuestions.length === 0) throw batchErr;
- break;
+ // Ce lot précis a échoué même après 3 tentatives : on continue quand même avec
+ // les lots suivants plutôt que d'abandonner tout le reste du Marathon.
+ continue;
  }
+ }
+ // Rattrapage : si on est encore court à la fin (lots incomplets ou échecs), on
+ // retente une fois le nombre de questions manquantes avant de rendre la main.
+ if (allQuestions.length < selectedNQ) {
+ const missing = selectedNQ - allQuestions.length;
+ try {
+ const extra = await generateBatchWithRetry(Math.min(BATCH, missing));
+ allQuestions = allQuestions.concat(extra);
+ } catch(e) { /* on part avec ce qu'on a */ }
  }
  } else {
- allQuestions = await generateQuizBatch(selectedNQ, subj, level, filiere, topic, isMarathon, selectedDiff);
+ allQuestions = await generateBatchWithRetry(selectedNQ);
  }
  APP.quizQuestions = allQuestions;
  if(APP.quizQuestions.length===0) throw new Error('empty');
+ if (APP.quizQuestions.length < selectedNQ) {
+ showToast(`⚠ ${APP.quizQuestions.length}/${selectedNQ} questions générées (le reste a échoué) — quiz lancé quand même`);
+ }
  APP.quizIndex = 0; APP.quizScore = 0; APP.quizAnswers = [];
  launchQuiz();
  } catch(e) {
