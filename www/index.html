@@ -22,11 +22,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.js"></script>
+<!-- Luckysheet (éditeur Excel) est volumineux : il est chargé à la demande via loadLuckysheetAssets(),
+ seulement quand l'utilisateur ouvre réellement Excel, pour ne pas ralentir le démarrage de l'app. -->
 <style>
 :root {
  --bg: #F7F6F2;
@@ -242,61 +243,9 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .doc-tb-tab.active{color:var(--em);border-bottom-color:var(--em)}
 .doc-tb-panel{display:none;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg2);border-radius:10px;padding:8px;margin-bottom:8px}
 .doc-tb-panel.active{display:flex}
-
-/* ── SPLASH SCREEN ── */
-#app-splash{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease,visibility .5s}
-#app-splash.hide{opacity:0;visibility:hidden;pointer-events:none}
-.splash-logo-wrap{position:relative;display:flex;align-items:center;justify-content:center}
-.splash-ring{position:absolute;width:96px;height:96px;border-radius:26px;border:2px solid var(--em);opacity:.5;animation:splashRing 1.8s ease-out infinite}
-.splash-ring2{animation-delay:.6s}
-.splash-logo{width:96px;height:96px;border-radius:26px;background:var(--em);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 34px rgba(0,0,0,.18);animation:splashPop .7s cubic-bezier(.34,1.56,.64,1) both}
-.splash-logo span{font-family:'Fraunces',serif;font-weight:900;font-size:52px;color:#fff;line-height:1}
-@keyframes splashPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
-@keyframes splashRing{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.7);opacity:0}}
-.splash-brand{position:absolute;bottom:max(env(safe-area-inset-bottom,0px) + 36px,48px);display:flex;flex-direction:column;align-items:center;gap:9px;opacity:0;animation:splashBrandIn .6s ease .55s forwards}
-.splash-brand-dots{display:flex;gap:5px}
-.splash-dot{width:5px;height:5px;border-radius:50%;background:var(--em);animation:splashDot 1.2s ease infinite}
-.splash-dot:nth-child(2){animation-delay:.15s}
-.splash-dot:nth-child(3){animation-delay:.3s}
-@keyframes splashDot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.25)}}
-@keyframes splashBrandIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.splash-brand-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;letter-spacing:3px;color:var(--text3);font-weight:700;text-transform:uppercase}
-.sheet-table{border-collapse:collapse;width:100%;font-size:12px}
-.sheet-table th{background:var(--em);color:#fff;font-weight:700;padding:8px 6px;font-size:11px;position:sticky;top:0;border:1px solid rgba(0,0,0,.2)}
-.sheet-table th:first-child{background:var(--bg2);color:var(--text3)}
-.sheet-table td{border:1px solid rgba(150,150,150,.4);padding:8px 10px;min-width:70px;height:16px;background:var(--white)}
-.sheet-table tr:nth-child(even) td{background:var(--bg2)}
-.sheet-table td:focus{outline:2px solid var(--em);outline-offset:-2px;background:rgba(37,99,235,.1)}
-.sheet-cell-selected{outline:2px solid var(--em) !important;background:rgba(37,99,235,.18) !important}
-table.sheet-dragging td{-webkit-user-select:none;user-select:none}
-.doc-loading-bar-wrap{background:var(--bg2);border-radius:12px;overflow:hidden;position:relative;height:46px}
-.doc-loading-bar-fill{position:absolute;inset:0 auto 0 0;width:0%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;transition:width .15s linear;border-radius:12px}
-.doc-loading-bar-fill span{color:#fff;font-size:13px;font-weight:700;white-space:nowrap}
 </style>
 </head>
 <body style="touch-action:manipulation">
-<script>
-// Applique le thème sauvegardé AVANT le premier rendu, pour que le splash
-// s'affiche directement dans la bonne couleur (pas de flash blanc→noir)
-try {
- const p = JSON.parse(localStorage.getItem('studiora_prefs') || '{}');
- document.documentElement.setAttribute('data-theme', p.dark ? 'dark' : 'light');
-} catch(e) {}
-</script>
-
-<!-- ═══════════════════ SPLASH ═══════════════════ -->
-<div id="app-splash">
- <div class="splash-logo-wrap">
- <div class="splash-ring"></div>
- <div class="splash-ring splash-ring2"></div>
- <div class="splash-logo"><span>S</span></div>
- </div>
- <div class="splash-brand">
- <div class="splash-brand-dots"><span class="splash-dot"></span><span class="splash-dot"></span><span class="splash-dot"></span></div>
- <div class="splash-brand-name">Maurdev</div>
- </div>
-</div>
-<script>window.__splashStart = Date.now();</script>
 
 <!-- ═══════════════════ ONBOARDING ═══════════════════ -->
 <div id="screen-onboarding" class="screen">
@@ -367,16 +316,16 @@ try {
  <option value="BTS 2">BTS 2ème année</option>
  <option value="DUT">DUT / BUT</option>
  </optgroup>
- <optgroup label="Licence">
+ <optgroup label="Université — Licence">
  <option value="Licence 1">Licence 1 (L1)</option>
  <option value="Licence 2">Licence 2 (L2)</option>
  <option value="Licence 3">Licence 3 (L3)</option>
  </optgroup>
- <optgroup label="Master">
+ <optgroup label="Université — Master">
  <option value="Master 1">Master 1 (M1)</option>
  <option value="Master 2">Master 2 (M2)</option>
  </optgroup>
- <optgroup label="Doctorat">
+ <optgroup label="Université — Doctorat">
  <option value="Doctorat">Doctorat (PhD)</option>
  </optgroup>
  </select>
@@ -985,7 +934,7 @@ try {
  <div>
  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NIVEAU</div>
  <div style="display:flex;gap:6px;flex-wrap:wrap" id="level-btns">
- <button onclick="setUserLevel('Terminale',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Terminale</button>
+ <button onclick="setUserLevel('Terminal',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Terminal</button>
  <button onclick="setUserLevel('Licence 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 1</button>
  <button onclick="setUserLevel('Licence 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 2</button>
  <button onclick="setUserLevel('Licence 3',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 3</button>
@@ -1409,23 +1358,24 @@ try {
  </div>
  <div class="scroll-body" style="padding:20px 20px 100px">
  <div style="text-align:center;margin-bottom:18px">
- <button id="transcribe-mic-btn" onclick="toggleVoiceInput('transcript-textarea','transcribe-mic-btn')" style="width:72px;height:72px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:var(--shadow)">
+ <button id="transcribe-mic-btn" onclick="toggleMicWhisperTranscription()" style="width:72px;height:72px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:var(--shadow)">
  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
  </button>
- <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour parler · chaque prise de parole ajoute une ligne</div>
+ <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour enregistrer, appuie à nouveau pour arrêter et transcrire</div>
  <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
  </div>
- <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:18px">
- <div style="font-size:13px;font-weight:700;margin-bottom:10px">🎬 Ou transcrire un fichier importé</div>
- <input type="file" id="transcribe-file-input" accept="audio/*,video/*" style="display:none" onchange="handleTranscriptionMediaSelected(this)">
- <button onclick="document.getElementById('transcribe-file-input').click()" class="doc-tb-btn" style="width:100%;padding:12px">Importer un audio ou une vidéo</button>
- <div id="transcribe-media-preview" style="display:none;margin-top:12px">
- <video id="transcribe-media-player" controls playsinline muted style="width:100%;border-radius:10px;background:#000;max-height:220px;display:block"></video>
- <audio id="transcribe-audio-player" style="display:none"></audio>
- <button id="transcribe-playback-btn" onclick="toggleTranscribeDuringPlayback()" style="width:100%;margin-top:10px;padding:12px;background:var(--em);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Transcrire pendant la lecture</button>
- <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
+
+ <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:16px">
+ <div style="font-size:12px;font-weight:700;margin-bottom:8px">🎬 Ou transcrire un fichier importé</div>
+ <input type="file" id="transcribe-media-input" accept="audio/*,video/*" style="display:none" onchange="handleImportMediaFile(this)">
+ <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="width:100%;padding:11px"> Importer un audio ou une vidéo</button>
+ <div id="transcribe-media-preview" style="display:none;margin-top:10px"></div>
+ <div id="transcribe-media-actions" style="display:none;gap:8px;margin-top:10px">
+ <button id="transcribe-media-btn" onclick="toggleMediaTranscription()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Transcrire pendant la lecture</button>
  </div>
+ <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
  </div>
+
  <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
  <div style="display:flex;gap:8px;margin-top:12px">
  <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">📋 Copier</button>
@@ -1495,7 +1445,16 @@ try {
  <div class="scroll-body" style="padding:16px 20px;flex:1;min-height:0" id="sujet-parts-list"></div>
  <div style="flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px">
  <button onclick="restartSujet()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Nouveau sujet</button>
- <button onclick="finishSujet()" class="btn-em" style="flex:1">Terminer</button>
+ <button onclick="gradeSujet()" class="btn-em" id="sujet-finish-btn" style="flex:1">Terminer et corriger</button>
+ </div>
+ </div>
+
+ <!-- Phase 3 : correction IA -->
+ <div id="sujet-results" class="scroll-body" style="display:none;padding:0 20px 20px">
+ <div id="sujet-results-content"></div>
+ <div style="display:flex;gap:8px;margin-top:6px">
+ <button onclick="restartSujet()" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Nouveau sujet</button>
+ <button onclick="showScreen('screen-home')" class="btn-em" style="flex:1">Terminer</button>
  </div>
  </div>
 </div>
@@ -1544,10 +1503,6 @@ try {
  <div style="font-size:14px;font-weight:700;margin-bottom:4px">Ouvrir un fichier</div>
  <div style="font-size:12px;color:var(--text3)">Word (.docx), Excel (.xlsx), texte ou LaTeX (.txt/.tex)</div>
  </div>
- <button onclick="openPasteTextModal()" style="width:100%;background:var(--white);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:12px">
- <div style="font-size:14px;font-weight:700;margin-bottom:2px">📋 Coller un texte</div>
- <div style="font-size:12px;color:var(--text3)">Colle un texte déjà copié — il sera importé dans un nouveau Word</div>
- </button>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
  <button onclick="newBlankDoc('word')" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
  <div style="font-size:13px;font-weight:700">+ Nouveau Word</div>
@@ -1568,7 +1523,6 @@ try {
  </div>
  <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:center">Word, PowerPoint et LaTeX se rédigent et se mettent en forme entièrement dans l'app. Word et LaTeX sont aussi exportables directement en PDF. Excel s'ouvre en plein écran pour l'expérience la plus proche d'un vrai tableur.</div>
  </div>
- <div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px"></div>
  <div id="doceditor-content" style="display:none"></div>
  </div>
 </div>
@@ -1816,6 +1770,8 @@ try {
 <script>
 // ── CONFIGURATION ──
 const MODEL = 'llama-3.1-8b-instant';
+const BUILD_TAG = '2026-07-22-exception-user';
+console.log('[Studiora build]', BUILD_TAG);
 
 // Horodatage de la dernière modification locale réelle des données synchronisées
 // (stats, série, arbre, matières perso). Contrairement à Date.now() calculé au
@@ -2196,43 +2152,29 @@ const ALL_SUBJECTS = [
  { id:'chimiegen', icon:'', name:'Chimie Générale et Organique', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
  { id:'biophysique', icon:'', name:'Biophysique', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
  { id:'methodo', icon:'', name:'Méthodologie & Communication pro', color:'#64748B', soft:'#F1F5F9', border:'rgba(100,116,139,.2)' },
- // Matières collège/lycée additionnelles (pour couvrir les 9 matières réelles par niveau)
- { id:'eps', icon:'', name:'EPS', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
- { id:'edhc', icon:'', name:'EDHC', color:'#64748B', soft:'#F1F5F9', border:'rgba(100,116,139,.2)' },
- { id:'esp', icon:'ES', name:'Espagnol', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
- { id:'arts', icon:'', name:'Arts Plastiques', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
- { id:'all', icon:'DE', name:'Allemand', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
 ];
 
 // Matières par niveau et filière
 const SUBJECTS_BY_LEVEL = {
- // Collège/lycée : 9 matières par niveau (programme ivoirien réel)
- '6ème': ['math','fr','ang','svt','hg','eps','edhc','arts','esp'],
- '5ème': ['math','fr','ang','svt','hg','eps','edhc','arts','esp'],
- '4ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
- '3ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
- '2nde': ['math','physique','svt','fr','ang','hg','eco','eps','edhc'],
- '1ère': {
- 'default': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
- 'A': ['fr','hg','ang','eco','math','eps','edhc','esp','arts'],
- 'C': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
- 'D': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
- 'E': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
- 'F': ['math','physique','fr','ang','info','hg','eps','edhc','esp'],
- 'G': ['gestion','compta','eco','math','fr','ang','eps','edhc','esp'],
+ '3ème': ['math','physique','svt','fr','ang','hg'],
+ '2nde': ['math','physique','svt','fr','ang','hg','eco'],
+ 'Terminal': {
+ 'default': ['math','physique','svt','fr','ang','hg','philo'],
+ 'A': ['fr','philo','hg','ang','eco','math'],
+ 'B': ['math','physique','svt','fr','ang','hg','philo'],
+ 'C': ['math','physique','svt','fr','ang','hg'],
+ 'D': ['math','physique','svt','fr','ang','hg'],
  },
  'Terminale': {
- 'default': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
- 'A': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
- 'A1': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
- 'A2': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
- 'B': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
- 'C': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
- 'D': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
- 'E': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
- 'F': ['math','physique','fr','ang','info','hg','eps','edhc','esp'],
- 'G': ['gestion','compta','eco','math','fr','ang','eps','edhc','esp'],
- 'STMG': ['math','eco','gestion','fr','ang','hg','eps','edhc','esp'],
+ 'default': ['math','physique','svt','fr','ang','hg','philo'],
+ 'A': ['fr','philo','hg','ang','eco','math'],
+ 'A1': ['fr','philo','hg','ang','eco','math'],
+ 'A2': ['fr','philo','hg','ang','eco','math'],
+ 'B': ['math','physique','svt','fr','ang','hg','philo'],
+ 'C': ['math','physique','svt','fr','ang','hg'],
+ 'D': ['math','physique','svt','fr','ang','hg'],
+ 'E': ['math','physique','svt','fr','ang','hg'],
+ 'STMG': ['math','eco','gestion','fr','ang','hg'],
  },
  'Licence 1': {
  'default': ['math','info','ang','eco','fr'],
@@ -2247,10 +2189,9 @@ const SUBJECTS_BY_LEVEL = {
  'Marketing':['marketing','eco','gestion','fr','ang'],
  'Communication':['comm','fr','ang','marketing'],
  'Science Politique':['politiq','droit','eco','ang','fr'],
- // Tronc commun biologie/sciences de la vie, niveau L1
+ // Tronc commun biologie/sciences de la vie, niveau L1 (mène vers la spécialisation
+ // Master "Biologie Médicale" déjà définie plus bas — même logique de programme d'excellence)
  'Biologie': ['biocell','chimiegen','svt','math','fr','ang'],
- // Biologie Médicale : bases pré-cliniques (anatomie, biologie cellulaire, chimie, physiologie)
- 'Biologie Médicale': ['anatomie','biocell','chimiegen','physiohum','svt','ang'],
  },
  'Licence 2': {
  'default': ['math','info','ang','eco','stats'],
@@ -2266,8 +2207,6 @@ const SUBJECTS_BY_LEVEL = {
  'Communication':['comm','marketing','fr','ang','politiq'],
  'Science Politique':['politiq','droitpub','eco','ang','fr'],
  'Biologie': ['physiohum','microbio','biochimie','biophysique','ang'],
- // Biologie Médicale L2 : microbiologie, biochimie clinique, immunologie
- 'Biologie Médicale': ['biochimie','microbio','immuno','physiohum','biophysique','ang'],
  },
  'Licence 3': {
  'default': ['info','math','ang','eco','stats'],
@@ -2278,14 +2217,14 @@ const SUBJECTS_BY_LEVEL = {
  'Droit': ['droit','eco','gestion','ang','fr'],
  'Gestion': ['gestion','compta','eco','droit','ang'],
  'Biologie': ['immuno','hemato','genetiquemed','anapath','ang'],
- // Biologie Médicale L3 : hématologie, génétique médicale, anatomopathologie, pharmacologie
- 'Biologie Médicale': ['hemato','genetiquemed','anapath','pharmaco','immuno','ang'],
  },
  'Master 1': {
- 'default': ['fr','ang','math'],
+ // Programme inspiré des cursus biomédicaux de référence (Harvard Medical
+ // School, Johns Hopkins) adapté au niveau Master 1
+ 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','physiohum','ang'],
  },
  'Master 2': {
- 'default': ['fr','ang','math'],
+ 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','anapath','pharmaco'],
  },
  'BT': {
  'default': ['fr','ang','math','info'],
@@ -2337,34 +2276,6 @@ function synthesizeFiliereSubject(filiere) {
  return { id: slugifyId(filiere), name: filiere, color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF', isFiliereSubject:true };
 }
 
-// Les niveaux 1ère/Terminale se choisissent via une "série" (ex. "Série C — Maths &
-// Physique"), stockée dans APP.user.serie — PAS dans APP.user.filiere (qui reste vide
-// pour ces niveaux). Ces tables font correspondre le libellé affiché à la clé courte
-// utilisée dans SUBJECTS_BY_LEVEL (ex. "Série C — Maths & Physique" -> "C").
-const TERMINALE_SERIE_MAP = {
- 'Série A — Lettres & Philosophie': 'A',
- 'Série B — Sciences Écon. & Soc.': 'B',
- 'Série C — Maths & Physique': 'C',
- 'Série D — Sciences de la Vie': 'D',
- 'Série E — Sciences & Tech.': 'E',
- 'Série F — Techniques Industrielles': 'F',
- 'Série G — Techniques de Gestion': 'G',
-};
-const PREMIERE_SERIE_MAP = {
- '1ère A': 'A',
- '1ère C': 'C',
- '1ère D': 'D',
- '1ère E': 'E',
- '1ère F (Tech. Ind.)': 'F',
- '1ère G (Gestion)': 'G',
-};
-function resolveSerieKey(level, serie) {
- if (!serie) return '';
- if (level === 'Terminale') return TERMINALE_SERIE_MAP[serie] || serie;
- if (level === '1ère') return PREMIERE_SERIE_MAP[serie] || serie;
- return serie;
-}
-
 function getSubjects() {
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
@@ -2379,13 +2290,8 @@ function getSubjects() {
  } else if (byLevel[filiere]) {
  ids = byLevel[filiere];
  } else {
- const serieKey = resolveSerieKey(level, APP.user.serie || '');
- if (serieKey && byLevel[serieKey]) {
- ids = byLevel[serieKey];
- } else {
  ids = byLevel['default'] || ['fr','ang','methodo','info'];
- hasSpecificMapping = false;
- }
+ hasSpecificMapping = false; // pas de matières dédiées connues pour cette filière précise (ex: Master, filière ajoutée)
  }
  let subjects = ids.map(id => ALL_SUBJECTS.find(s => s.id === id)).filter(Boolean);
  if (filiere && !hasSpecificMapping) {
@@ -2551,6 +2457,8 @@ let screenHistory = [];
 // Appelée par MainActivity.java quand l'utilisateur appuie sur le bouton retour physique.
 // Renvoie true si géré en interne (retour à l'écran précédent), false pour laisser Android fermer l'app.
 window.onAndroidBackPressed = function() {
+ const lsOverlay = document.getElementById('luckysheet-overlay');
+ if (lsOverlay) { closeLuckysheetOverlay(); return true; }
  const curr = document.querySelector('.screen:not(.hidden)');
  if (!curr) return false;
  const exitScreens = ['screen-home', 'screen-onboarding', 'screen-login'];
@@ -2605,7 +2513,22 @@ function updateGlobalNav(id) {
 }
 
 function showScreen(id, skipHistory) {
+ // Le calque Luckysheet vit hors de la hiérarchie normale des écrans (il a besoin
+ // d'un espace plein écran fixe) : on le referme systématiquement si on change d'écran.
+ if (id !== 'screen-doceditor') {
+ const lsOverlay = document.getElementById('luckysheet-overlay');
+ if (lsOverlay) { try { closeLuckysheetOverlay(); } catch(e) { lsOverlay.remove(); } }
+ }
  const curr = document.querySelector('.screen:not(.hidden):not(.slide-left)');
+ // Si on quitte l'écran Transcription, on arrête la lecture/transcription en cours :
+ // elle ne doit jamais continuer à tourner (micro + lecture) hors de cet outil.
+ if (curr && curr.id === 'screen-transcription' && id !== 'screen-transcription') {
+ try { stopMediaTranscription(); } catch(e) {}
+ if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
+ }
+ if (curr && curr.id === 'screen-chat' && id !== 'screen-chat') {
+ try { stopSpeaking(); } catch(e) {}
+ }
  if (curr && curr.id !== id) {
  if (!skipHistory) screenHistory.push(curr.id);
  curr.classList.add('slide-left');
@@ -2682,7 +2605,7 @@ function renderHome() {
  renderKnowledgeTreeWidget();
 
  const el = document.getElementById('subjects-list');
- el.innerHTML = SUBJECTS.slice(0,4).map(s=>`
+ el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
  <div class="subject-chip" onclick="openSubjectInfo('${s.id}')">
  <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</div>
  <div style="flex:1">
@@ -3061,7 +2984,7 @@ function renderMsgHTML(m) {
  <div class="msg-bubble ai">${formatAiMsg(cleanText)}${docCard}</div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${m.time || ''}</div>
- <button onclick="speakMessage('${b64}', this)" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <button class="tts-btn" onclick="speakMessage('${b64}', this)" title="Écouter" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
  </button>
  <button onclick="copyMessageText('${b64}')" title="Copier" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
@@ -3139,6 +3062,19 @@ function getSheetCellValue(table, ref) {
 function evalSheetFormula(table, formula) {
  try {
  let expr = formula.slice(1).trim();
+ // SI/IF en formule complète : peut retourner du texte, pas seulement un nombre,
+ // donc traité à part et en priorité (court-circuite le reste si la formule
+ // est exactement un SI(...)/IF(...)).
+ const ifWhole = expr.match(/^(SI|IF)\((.+);(.+);(.+)\)$/i);
+ if (ifWhole) {
+ let cond = ifWhole[2].trim().replace(/\b([A-Z]+\d+)\b/g, m => getSheetCellValue(table, m.toUpperCase()));
+ let condResult;
+ try { condResult = Function('"use strict"; return (' + cond + ')')(); } catch(e2) { condResult = false; }
+ let branch = (condResult ? ifWhole[3] : ifWhole[4]).trim().replace(/^"(.*)"$/, '$1');
+ if (/^[A-Z]+\d+$/i.test(branch)) return getSheetCellValue(table, branch.toUpperCase());
+ const bnum = parseFloat(branch.replace(',','.'));
+ return isNaN(bnum) ? branch : bnum;
+ }
  expr = expr.replace(/(SOMME|SUM)\(([^)]+)\)/gi, (_, fn, range) => {
  const sum = parseCellRange(range.trim()).reduce((acc,r)=>acc+getSheetCellValue(table,r),0);
  return sum;
@@ -3194,6 +3130,7 @@ const SHEET_FORMULAS = [
  {name:'MIN', syntax:'MIN(A1:A5)', desc:'Valeur minimale'},
  {name:'NB', syntax:'NB(A1:A5)', desc:'Compte les cellules numériques'},
  {name:'NB.SI', syntax:'NB.SI(A1:A5;">5")', desc:'Compte selon un critère'},
+ {name:'SI', syntax:'SI(A1>10;"Oui";"Non")', desc:'Condition'},
 ];
 let _activeSheetCell = null;
 
@@ -3296,16 +3233,16 @@ function onSheetCellBlur(td) {
 // Construit le HTML d'une feuille éditable avec en-têtes A,B,C... et 1,2,3...,
 // et des cellules pré-remplies optionnelles (valeurs brutes, ex. depuis un import)
 function buildSheetHTML(sheetName, nRows, nCols, values) {
- const th = (txt) => `<th>${txt}</th>`;
+ const th = (txt) => `<th style="border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3);position:sticky;top:0">${txt}</th>`;
  let html = `<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
- <table class="sheet-table" data-sheet="${escHtml(sheetName)}">
+ <table data-sheet="${escHtml(sheetName)}" style="border-collapse:collapse;width:100%;font-size:12px">
  <tr>${th('')}${Array.from({length:nCols},(_,c)=>th(sheetColLetter(c))).join('')}</tr>`;
  for (let r=0; r<nRows; r++) {
  html += `<tr>${th(r+1)}`;
  for (let c=0; c<nCols; c++) {
  const ref = sheetColLetter(c)+(r+1);
  const val = (values && values[r] && values[r][c] !== undefined) ? values[r][c] : '';
- html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" oninput="onSheetCellInput(this)" onmousedown="onSheetCellTap(this,event);onSheetCellDown(this,event)" ontouchstart="onSheetCellTap(this,event);onSheetCellDown(this,event)">${escHtml(String(val))}</td>`;
+ html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" oninput="onSheetCellInput(this)" style="border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px">${escHtml(String(val))}</td>`;
  }
  html += `</tr>`;
  }
@@ -3401,38 +3338,163 @@ function docInsertDate() {
 }
 
 // ── BARRE D'OUTILS EXCEL (Accueil / Insertion / Données) ──
+// ── Excel complet : x-spreadsheet (bibliothèque libre/MIT, légère ~150 Ko) ──
+// Chargée à la demande depuis un CDN. Si le CDN est indisponible (hors-ligne,
+// réseau instable) ou met plus de 7s à répondre, on bascule automatiquement et
+// silencieusement sur le moteur maison (initExcelTable, sans dépendance externe,
+// toujours disponible) : l'utilisateur n'est jamais bloqué sur un écran de
+// chargement infini comme avec Luckysheet.
+let _xsAssetsPromise = null;
+let xsInstance = null;
+function loadXSpreadsheetAssets() {
+ if (window.x_spreadsheet) return Promise.resolve();
+ if (_xsAssetsPromise) return _xsAssetsPromise;
+ const CSS = 'https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.5/dist/xspreadsheet.css';
+ const JS = 'https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.5/dist/xspreadsheet.js';
+ if (!document.querySelector(`link[href="${CSS}"]`)) {
+ const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = CSS;
+ document.head.appendChild(l);
+ }
+ _xsAssetsPromise = new Promise((resolve, reject) => {
+ if (document.querySelector(`script[src="${JS}"]`)) { resolve(); return; }
+ const s = document.createElement('script'); s.src = JS;
+ s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + JS));
+ document.head.appendChild(s);
+ }).catch(e => { _xsAssetsPromise = null; throw e; });
+ return _xsAssetsPromise;
+}
+function _withTimeout(promise, ms) {
+ return Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+}
+function rowsToXS(name, rows) {
+ const o = { name: (name || 'Feuille1').slice(0,31), rows: {} };
+ (rows || []).forEach((r,i) => {
+ if (!r || !r.length) return;
+ const cells = {};
+ r.forEach((c,j) => { if (c !== undefined && c !== null && c !== '') cells[j] = { text: String(c) }; });
+ if (Object.keys(cells).length) o.rows[i] = { cells };
+ });
+ return o;
+}
+function xsToRows(sheetData) {
+ const rowsObj = (sheetData && sheetData.rows) || {};
+ const keys = Object.keys(rowsObj).map(Number);
+ const maxRow = keys.length ? Math.max(...keys) : -1;
+ const out = [];
+ for (let i=0;i<=maxRow;i++) {
+ const r = rowsObj[i];
+ if (!r || !r.cells) { out.push([]); continue; }
+ const cellKeys = Object.keys(r.cells).map(Number);
+ const maxCol = cellKeys.length ? Math.max(...cellKeys) : -1;
+ const row = [];
+ for (let j=0;j<=maxCol;j++) row.push(r.cells[j] ? (r.cells[j].text || '') : '');
+ out.push(row);
+ }
+ return out;
+}
+async function initExcelXS(sheetsData, filename) {
+ document.getElementById('doceditor-empty').style.display = 'none';
+ const content = document.getElementById('doceditor-content');
+ content.style.display = 'block';
+ content.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px"><div class="spinner"></div><p style="font-size:13px;color:var(--text3);text-align:center">Chargement de l'éditeur...</p></div>`;
+ document.getElementById('doceditor-save-btn').style.display = 'none';
+ document.getElementById('doceditor-pdf-btn').style.display = 'none';
+ try {
+ await _withTimeout(loadXSpreadsheetAssets(), 7000);
+ if (!window.x_spreadsheet) throw new Error('bibliothèque absente après chargement');
+ } catch(e) {
+ initExcelTable(sheetsData, filename); // repli fiable, sans réseau
+ return;
+ }
+ docEditorState = { type: 'excel-xs', filename: filename };
+ content.innerHTML = `<div id="xs-container" style="height:65vh;min-height:360px;border:1px solid var(--border);border-radius:12px"></div>`;
+ // Force un reflow avant de laisser la bibliothèque mesurer le conteneur : sans ça,
+ // clientHeight/clientWidth valent parfois 0 juste après l'injection du HTML (avant
+ // que le navigateur n'ait posé la mise en page), et la barre d'outils/le quadrillage
+ // se retrouvent construits avec une hauteur nulle (invisibles).
+ void content.offsetHeight;
+ await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+ const xsData = (sheetsData || []).map(s => rowsToXS(s.name, s.rows));
+ try {
+ xsInstance = window.x_spreadsheet('#xs-container', {
+ showToolbar: true,
+ showGrid: true,
+ showContextmenu: true,
+ showBottomBar: true,
+ view: {
+ height: () => document.getElementById('xs-container').clientHeight,
+ width: () => document.getElementById('xs-container').clientWidth,
+ },
+ row: { len: 100, height: 26 },
+ col: { len: 26, width: 90, indexWidth: 44 },
+ }).loadData(xsData.length ? xsData : [{ name: 'Feuille1', rows: {} }]);
+ xsInstance.on('cell-edited', (text, ri, ci) => {
+ if (typeof text === 'string' && text.charAt(0) === '=') {
+ const translated = translateFrenchFormula(text);
+ if (translated !== text) xsInstance.cellText(ri, ci, translated);
+ }
+ });
+ } catch(e) {
+ initExcelTable(sheetsData, filename); // repli si l'initialisation plante
+ return;
+ }
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+}
 function currentSheetTable() {
  if (_activeSheetCell) return _activeSheetCell.closest('table');
- const visiblePanel = [...document.querySelectorAll('#doceditor-content .excel-sheet-panel')].find(p => p.style.display !== 'none');
- if (visiblePanel) return visiblePanel.querySelector('table[data-sheet]');
+ const wrap = document.querySelector(`[data-sheet-wrap="${_excelActiveSheetIdx}"]`);
+ if (wrap) { const t = wrap.querySelector('table[data-sheet]'); if (t) return t; }
  return document.querySelector('#doceditor-content table[data-sheet]');
 }
-// Construit l'éditeur Excel complet (barre d'outils + une ou plusieurs feuilles avec
-// onglets) à partir d'une liste de feuilles {name, rows}. Rendu 100% natif (table HTML
-// éditable), sans aucune librairie externe à charger — donc jamais de blocage réseau
-// possible, contrairement à l'ancien éditeur basé sur Luckysheet (retiré : trop lourd,
-// restait parfois bloqué indéfiniment sur son propre écran de chargement interne).
-function docEditorExcelHTML(sheets) {
- sheets = (sheets && sheets.length) ? sheets : [{ name:'Feuille1', rows:[] }];
- let tabsHtml = '', panelsHtml = '';
- sheets.forEach((s, i) => {
- const active = i === 0;
- const name = s.name || ('Feuille' + (i+1));
- if (sheets.length > 1) {
- tabsHtml += `<button class="doc-tb-tab excel-sheet-tab${active?' active':''}" data-sheet-index="${i}" onclick="switchExcelSheetTab(${i})">${escHtml(name)}</button>`;
- }
- const rows = s.rows || [];
- const nRows = Math.max(15, rows.length + 5);
- const nCols = Math.max(8, Math.max(0, ...rows.map(r=>(r||[]).length)) + 2);
- panelsHtml += `<div class="excel-sheet-panel" data-sheet-index="${i}" style="${active?'':'display:none'}">${buildSheetHTML(name, nRows, nCols, rows)}</div>`;
- });
- const tabsBlock = sheets.length > 1 ? `<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">${tabsHtml}</div>` : '';
- return sheetToolbarHTML() + tabsBlock + panelsHtml;
+function sheetToggleBorder() {
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ const on = td.style.border === '2px solid #333333' || td.style.border === '2px solid rgb(51, 51, 51)';
+ td.style.border = on ? '1px solid var(--border)' : '2px solid #333333';
 }
-function switchExcelSheetTab(i) {
- document.querySelectorAll('.excel-sheet-tab').forEach(b => b.classList.toggle('active', Number(b.getAttribute('data-sheet-index'))===i));
- document.querySelectorAll('.excel-sheet-panel').forEach(p => p.style.display = (Number(p.getAttribute('data-sheet-index'))===i) ? '' : 'none');
+// ── Excel léger (tables HTML éditables, sans dépendance externe) ──
+// Remplace Luckysheet (bibliothèque lourde chargée depuis un CDN, qui pouvait
+// rester bloquée en chargement infini sans réseau fiable). Ce moteur maison
+// est plus léger, se charge instantanément, et gère déjà : formules (FR/EN),
+// mise en forme (gras/italique/couleurs/bordures/alignement), tri, plusieurs
+// feuilles, ajout/suppression de lignes et colonnes.
+function xlsxRowsToTableSheet(sheetName, rows) {
+ return { name: (sheetName || 'Feuille1').slice(0,31), rows: rows || [] };
+}
+let _excelSheets = [];
+let _excelActiveSheetIdx = 0;
+function initExcelTable(sheetsData, filename) {
+ _excelSheets = (sheetsData && sheetsData.length) ? sheetsData : [xlsxRowsToTableSheet('Feuille1', [])];
+ _excelActiveSheetIdx = 0;
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = 'none';
+ renderExcelTableEditor();
+}
+function renderExcelTableEditor() {
+ const container = document.getElementById('doceditor-content');
+ const tabsHtml = _excelSheets.length > 1 ? `<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">
+ ${_excelSheets.map((s,i)=>`<button onclick="switchExcelSheet(${i})" style="flex-shrink:0;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:${i===_excelActiveSheetIdx?'700':'600'};cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:${i===_excelActiveSheetIdx?'var(--em-soft)':'var(--bg2)'};border:1.5px solid ${i===_excelActiveSheetIdx?'var(--em)':'var(--border)'};color:${i===_excelActiveSheetIdx?'var(--em)':'var(--text2)'}">${escHtml(s.name)}</button>`).join('')}
+ </div>` : '';
+ container.innerHTML = sheetToolbarHTML() +
+ `<div id="sheet-formula-suggest" style="display:none;gap:6px;overflow-x:auto;margin-bottom:8px"></div>` +
+ tabsHtml +
+ _excelSheets.map((s,i)=>{
+ const nRows = Math.max(20, s.rows.length + 5);
+ const nCols = Math.max(10, Math.max(0, ...s.rows.map(r=>(r||[]).length)) + 3);
+ return `<div data-sheet-wrap="${i}" style="display:${i===_excelActiveSheetIdx?'block':'none'}">${buildSheetHTML(s.name, nRows, nCols, s.rows)}</div>`;
+ }).join('');
  _activeSheetCell = null;
+}
+function switchExcelSheet(i) {
+ _excelActiveSheetIdx = i;
+ renderExcelTableEditor();
+}
+function addExcelSheet() {
+ const n = _excelSheets.length + 1;
+ _excelSheets.push(xlsxRowsToTableSheet('Feuille' + n, []));
+ _excelActiveSheetIdx = _excelSheets.length - 1;
+ renderExcelTableEditor();
 }
 function sheetToolbarHTML() {
  return `<div id="sheet-toolbar" style="margin-bottom:8px">
@@ -3442,8 +3504,6 @@ function sheetToolbarHTML() {
  <button class="doc-tb-tab" onclick="sheetSwitchTab('donnees',this)">Données</button>
  </div>
  <div class="doc-tb-panel active" data-tab="accueil">
- <button id="sheet-multiselect-btn" class="doc-tb-btn" onclick="toggleSheetMultiSelect()" title="Active/désactive la sélection de plusieurs cellules">☐ Sélection multiple</button>
- <button class="doc-tb-btn" onclick="clearSheetSelection()" title="Désélectionner tout">✕ Effacer sélection</button>
  <button class="doc-tb-btn" style="font-weight:800" onclick="sheetToggleStyle('fontWeight','700')" title="Gras">G</button>
  <button class="doc-tb-btn" style="font-style:italic" onclick="sheetToggleStyle('fontStyle','italic')" title="Italique">I</button>
  <button class="doc-tb-btn" style="text-decoration:underline" onclick="sheetToggleStyle('textDecoration','underline')" title="Souligné">S</button>
@@ -3452,8 +3512,8 @@ function sheetToolbarHTML() {
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de fond</span>
  <button class="doc-tb-btn" style="width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('transparent')" title="Aucune">✕</button>
  ${['#fff59d','#a7f3d0','#bfdbfe','#fbcfe8'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('${c}')"></button>`).join('')}
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de bordure</span>
- ${['#000000','#dc2626','#0b6e4f','#1d4ed8','#c47a0b'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px" onclick="sheetSetBorderColor('${c}')"></button>`).join('')}
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Bordures</span>
+ <button class="doc-tb-btn" onclick="sheetToggleBorder()" title="Bordure fine">▦</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Alignement</span>
  <button class="doc-tb-btn" onclick="sheetSetAlign('left')">≡</button>
  <button class="doc-tb-btn" onclick="sheetSetAlign('center')">≣</button>
@@ -3462,7 +3522,7 @@ function sheetToolbarHTML() {
  <div class="doc-tb-panel" data-tab="insertion">
  <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
  <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
- <button class="doc-tb-btn" onclick="insertChartFromSheetSelection()" title="Sélectionne une plage (en-têtes + données) puis appuie ici">📊 Graphique</button>
+ <button class="doc-tb-btn" onclick="addExcelSheet()">+ Feuille</button>
  </div>
  <div class="doc-tb-panel" data-tab="donnees">
  <button class="doc-tb-btn" onclick="sheetDeleteRow()">− Ligne</button>
@@ -3479,155 +3539,22 @@ function sheetSwitchTab(tab, btn) {
  btn.classList.add('active');
  container.querySelectorAll('.doc-tb-panel').forEach(p=>p.classList.toggle('active', p.getAttribute('data-tab')===tab));
 }
-// ── SÉLECTION MULTIPLE DE CELLULES ──
-// En mode normal, taper une cellule l'édite (comportement existant, inchangé).
-// En mode "Sélection multiple", taper des cellules les ajoute/retire d'un ensemble
-// (surlignage visuel via .sheet-cell-selected) sans ouvrir l'édition ; les boutons
-// de mise en forme s'appliquent alors à toutes les cellules sélectionnées d'un coup.
-let _sheetMultiSelectMode = false;
-let _sheetSelectedCells = new Set();
-
-function toggleSheetMultiSelect() {
- _sheetMultiSelectMode = !_sheetMultiSelectMode;
- const btn = document.getElementById('sheet-multiselect-btn');
- if (btn) {
- btn.textContent = _sheetMultiSelectMode ? '☑ Sélection multiple (touche les cellules)' : '☐ Sélection multiple';
- btn.style.background = _sheetMultiSelectMode ? 'var(--em)' : '';
- btn.style.color = _sheetMultiSelectMode ? '#fff' : '';
- }
- if (!_sheetMultiSelectMode) clearSheetSelection();
-}
-function clearSheetSelection() {
- _sheetSelectedCells.forEach(td => td.classList.remove('sheet-cell-selected'));
- _sheetSelectedCells.clear();
-}
-function onSheetCellTap(td, ev) {
- if (!_sheetMultiSelectMode) return; // comportement normal : focus + édition
- ev.preventDefault();
- if (_sheetSelectedCells.has(td)) {
- _sheetSelectedCells.delete(td);
- td.classList.remove('sheet-cell-selected');
- } else {
- _sheetSelectedCells.add(td);
- td.classList.add('sheet-cell-selected');
- }
-}
-function getSheetTargetCells() {
- if (_sheetSelectedCells.size) return Array.from(_sheetSelectedCells);
- return (_activeSheetCell && _activeSheetCell.tagName==='TD') ? [_activeSheetCell] : [];
-}
-
-// ── SÉLECTION PAR APPUI LONG + GLISSEMENT (façon Excel/Google Sheets mobile) ──
-// Un appui court garde le comportement normal (édition de la cellule). Un appui
-// maintenu ~380ms démarre une plage de sélection : on peut ensuite glisser le
-// doigt sur d'autres cellules pour étendre la plage rectangulaire (lignes x
-// colonnes), qui reste surlignée jusqu'à "Effacer sélection" ou une nouvelle
-// sélection. À la fin du geste, le mode "Sélection multiple" est activé
-// automatiquement pour que les boutons de mise en forme s'appliquent à la plage.
-let _sheetLongPressTimer = null;
-let _sheetDragActive = false;
-let _sheetDragStartCell = null;
-let _sheetLongPressStartXY = null;
-
-function onSheetCellDown(td, ev) {
- if (_sheetMultiSelectMode) return; // le tap-pour-cocher existant reste prioritaire dans ce mode
- const pt = ev.touches ? ev.touches[0] : ev;
- _sheetLongPressStartXY = { x: pt.clientX, y: pt.clientY };
- clearTimeout(_sheetLongPressTimer);
- _sheetLongPressTimer = setTimeout(() => {
- _sheetDragActive = true;
- _sheetDragStartCell = td;
- clearSheetSelection();
- td.classList.add('sheet-cell-selected');
- _sheetSelectedCells.add(td);
- const table = td.closest('table');
- if (table) table.classList.add('sheet-dragging');
- if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e) {} }
- showToast('↔ Glisse le doigt pour sélectionner une plage');
- }, 380);
-}
-function _sheetCellUnderPoint(x, y) {
- const el = document.elementFromPoint(x, y);
- return el && el.closest ? el.closest('td[data-cell]') : null;
-}
-function onSheetPointerMove(ev) {
- const pt = ev.touches ? ev.touches[0] : ev;
- if (!pt) return;
- if (!_sheetDragActive) {
- // Un mouvement trop large avant la fin du délai = intention de scroll : on annule
- if (_sheetLongPressStartXY) {
- const dx = Math.abs(pt.clientX - _sheetLongPressStartXY.x), dy = Math.abs(pt.clientY - _sheetLongPressStartXY.y);
- if (dx > 12 || dy > 12) clearTimeout(_sheetLongPressTimer);
- }
- return;
- }
- ev.preventDefault();
- const td = _sheetCellUnderPoint(pt.clientX, pt.clientY);
- if (!td || !_sheetDragStartCell || td.closest('table') !== _sheetDragStartCell.closest('table')) return;
- selectSheetRange(_sheetDragStartCell, td);
-}
-function onSheetPointerUp() {
- clearTimeout(_sheetLongPressTimer);
- _sheetLongPressStartXY = null;
- if (_sheetDragActive) {
- _sheetDragActive = false;
- document.querySelectorAll('table.sheet-dragging').forEach(t => t.classList.remove('sheet-dragging'));
- _sheetMultiSelectMode = true;
- const btn = document.getElementById('sheet-multiselect-btn');
- if (btn) { btn.textContent = '☑ Sélection multiple (touche les cellules)'; btn.style.background = 'var(--em)'; btn.style.color = '#fff'; }
- showToast('✓ Plage sélectionnée (' + _sheetSelectedCells.size + ' cellules)');
- }
- _sheetDragStartCell = null;
-}
-function selectSheetRange(tdA, tdB) {
- const table = tdA.closest('table');
- if (!table) return;
- const posOf = (td) => {
- const tr = td.closest('tr');
- return { rowIdx: Array.from(table.rows).indexOf(tr), colIdx: Array.from(tr.cells).indexOf(td) };
- };
- const a = posOf(tdA), b = posOf(tdB);
- const r0 = Math.min(a.rowIdx, b.rowIdx), r1 = Math.max(a.rowIdx, b.rowIdx);
- const c0 = Math.min(a.colIdx, b.colIdx), c1 = Math.max(a.colIdx, b.colIdx);
- clearSheetSelection();
- for (let r = r0; r <= r1; r++) {
- const row = table.rows[r]; if (!row) continue;
- for (let c = c0; c <= c1; c++) {
- const cell = row.cells[c];
- if (cell && cell.hasAttribute('data-cell')) { cell.classList.add('sheet-cell-selected'); _sheetSelectedCells.add(cell); }
- }
- }
-}
-document.addEventListener('touchmove', onSheetPointerMove, { passive: false });
-document.addEventListener('touchend', onSheetPointerUp);
-document.addEventListener('touchcancel', onSheetPointerUp);
-document.addEventListener('mousemove', onSheetPointerMove);
-document.addEventListener('mouseup', onSheetPointerUp);
 function sheetToggleStyle(prop, val) {
- const cells = getSheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une ou plusieurs cellules d\'abord'); return; }
- const allActive = cells.every(td => td.style[prop] === val);
- cells.forEach(td => { td.style[prop] = allActive ? '' : val; });
+ const td = _activeSheetCell;
+ if (!td || td.tagName!=='TD') { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ td.style[prop] = td.style[prop] === val ? '' : val;
 }
 function sheetSetFontColor(c) {
- const cells = getSheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une ou plusieurs cellules d\'abord'); return; }
- cells.forEach(td => { td.style.color = c; });
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ td.style.color = c;
 }
 function sheetSetFillColor(c) {
- const cells = getSheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une ou plusieurs cellules d\'abord'); return; }
- cells.forEach(td => { td.style.background = c === 'transparent' ? '' : c; });
-}
-function sheetSetBorderColor(c) {
- const cells = getSheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une ou plusieurs cellules d\'abord'); return; }
- cells.forEach(td => { td.style.border = '2px solid ' + c; });
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ td.style.background = c === 'transparent' ? '' : c;
 }
 function sheetSetAlign(al) {
- const cells = getSheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une ou plusieurs cellules d\'abord'); return; }
- cells.forEach(td => { td.style.textAlign = al; });
+ const td = _activeSheetCell; if(!td||td.tagName!=='TD'){showToast('⚠ Sélectionne une cellule d\'abord');return;}
+ td.style.textAlign = al;
 }
 function sheetDeleteRow() {
  const td = _activeSheetCell;
@@ -3906,7 +3833,6 @@ function initWordQuillEditor(initialHTML) {
  <div id="doc-word-extra-toolbar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;background:var(--bg2);border-radius:10px;padding:8px">
  <button class="doc-tb-btn" onclick="quillInsertDate()"> Date</button>
  ${window.QuillTableBetter ? `<button class="doc-tb-btn" onclick="quillInsertTablePrompt()"> Tableau</button>` : ''}
- <button class="doc-tb-btn" onclick="insertChartFromDocTable()" title="Insère un tableau avec des données puis appuie ici">📊 Graphique</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Symboles</span>
  ${DOC_SYMBOLS.map(s => `<button onclick="quillInsertSymbol('${s}')" class="doc-tb-btn" style="width:30px;padding:0;height:30px">${s}</button>`).join('')}
  </div>
@@ -3968,23 +3894,6 @@ function quillInsertSymbol(sym) {
  const range = quillEditor.getSelection(true) || { index: quillEditor.getLength() };
  quillEditor.insertText(range.index, sym, 'user');
 }
-function insertChartFromDocTable() {
- if (!quillEditor) { showToast('⚠ Ouvre un document Word d\'abord'); return; }
- const tables = quillEditor.root.querySelectorAll('table');
- if (!tables.length) { showToast('⚠ Insère d\'abord un tableau (bouton "Tableau") avec des données'); return; }
- const table = tables[tables.length - 1]; // le tableau le plus récent du document
- const rows = Array.from(table.rows).map(tr => Array.from(tr.cells).map(td => td.textContent.trim()));
- const filtered = rows.filter(r => r.some(v => v !== ''));
- if (filtered.length < 2) { showToast('⚠ Le tableau doit avoir un en-tête et au moins une ligne de données'); return; }
- openChartTypeModal(filtered, (chartType) => {
- renderChartToImage(filtered, chartType, (dataUrl) => {
- const range = quillEditor.getSelection(true) || { index: quillEditor.getLength() };
- quillEditor.insertEmbed(range.index, 'image', dataUrl, 'user');
- quillEditor.insertText(range.index + 1, '\n', 'user');
- showToast('✓ Graphique inséré');
- });
- });
-}
 function quillInsertTablePrompt() {
  if (!quillEditor || !quillTableModule) { showToast('⚠ Le module tableau n\'est pas disponible'); return; }
  const rowsStr = prompt('Nombre de lignes ?', '3');
@@ -4001,6 +3910,200 @@ function quillInsertTablePrompt() {
  }
 }
 
+// ── ÉDITEUR EXCEL PROFESSIONNEL (Luckysheet) ──
+// Luckysheet a besoin d'un espace d'affichage fixe (comme un vrai tableur plein
+// écran) : on lui donne donc un calque dédié par-dessus l'app plutôt que de
+// l'insérer dans la zone de défilement normale, qui n'a pas de hauteur fixe.
+function xlsxRowsToLuckysheetSheet(sheetName, rows, index) {
+ const celldata = [];
+ (rows||[]).forEach((row,r) => {
+ (row||[]).forEach((val,c) => {
+ if (val !== undefined && val !== null && val !== '') {
+ celldata.push({ r, c, v: { v: val, m: String(val) } });
+ }
+ });
+ });
+ return {
+ name: (sheetName || 'Feuille1').slice(0,31),
+ index: String(index||0),
+ order: index||0,
+ status: index===0 ? 1 : 0,
+ row: Math.max(50, (rows||[]).length + 20),
+ column: Math.max(26, Math.max(0, ...(rows||[]).map(r=>(r||[]).length)) + 10),
+ celldata,
+ };
+}
+// Luckysheet ne reconnaît que les noms de fonctions en anglais (SUM, IF, ...).
+// On traduit automatiquement les noms de fonctions français les plus courants
+// avant que la formule soit évaluée, pour éviter les erreurs #NAME?.
+const FR_FORMULA_ALIASES = {
+ 'SOMME.SI.ENS':'SUMIFS','SOMME.SI':'SUMIF','SOMME':'SUM',
+ 'MOYENNE.SI.ENS':'AVERAGEIFS','MOYENNE.SI':'AVERAGEIF','MOYENNE':'AVERAGE',
+ 'NB.SI.ENS':'COUNTIFS','NB.SI':'COUNTIF','NB.VIDE':'COUNTBLANK','NBVAL':'COUNTA','NB':'COUNT',
+ 'SIERREUR':'IFERROR','SIOMET':'IFNA','SI':'IF','ET':'AND','OU':'OR','NON':'NOT',
+ 'MAX':'MAX','MIN':'MIN','ARRONDI.SUP':'ROUNDUP','ARRONDI.INF':'ROUNDDOWN','ARRONDI':'ROUND',
+ 'RECHERCHEV':'VLOOKUP','RECHERCHEH':'HLOOKUP','RECHERCHEX':'XLOOKUP','EQUIV':'MATCH','INDEX':'INDEX',
+ 'CONCATENER':'CONCATENATE','GAUCHE':'LEFT','DROITE':'RIGHT','STXT':'MID','NBCAR':'LEN',
+ 'MAJUSCULE':'UPPER','MINUSCULE':'LOWER','NOMPROPRE':'PROPER','SUPPRESPACE':'TRIM',
+ 'AUJOURDHUI':'TODAY','MAINTENANT':'NOW','ANNEE':'YEAR','MOIS':'MONTH','JOUR':'DAY','JOURSEM':'WEEKDAY',
+ 'ESTVIDE':'ISBLANK','ESTNUM':'ISNUMBER','ESTTEXTE':'ISTEXT','PUISSANCE':'POWER','RACINE':'SQRT',
+ 'ENT':'INT','ALEA.ENTRE.BORNES':'RANDBETWEEN','ALEA':'RAND','TRANSPOSE':'TRANSPOSE',
+};
+const FR_FORMULA_KEYS = Object.keys(FR_FORMULA_ALIASES).sort((a,b)=>b.length-a.length);
+function translateFrenchFormula(value) {
+ if (typeof value !== 'string' || value.charAt(0) !== '=') return value;
+ let out = value;
+ FR_FORMULA_KEYS.forEach(fr => {
+ const en = FR_FORMULA_ALIASES[fr];
+ const escaped = fr.replace(/\./g, '\\.');
+ const re = new RegExp('(^|[^A-Za-zÀ-ÿ.])' + escaped + '(\\s*\\()', 'gi');
+ out = out.replace(re, (m, pre, paren) => pre + en + paren);
+ });
+ return out;
+}
+// Charge les CSS/JS de Luckysheet à la demande (pinnés en v2.1.13 pour un cache
+// CDN fiable — "@latest" force une résolution à chaque fois et casse le cache).
+// Chargés une seule fois : les appels suivants réutilisent la même promesse.
+let _luckysheetAssetsPromise = null;
+function loadLuckysheetAssets() {
+ if (window.luckysheet) return Promise.resolve();
+ if (_luckysheetAssetsPromise) return _luckysheetAssetsPromise;
+ const CSS = [
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/plugins.css',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/css/luckysheet.css',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css',
+ ];
+ const JS = [
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js',
+ 'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js',
+ ];
+ CSS.forEach(href => {
+ if (document.querySelector(`link[href="${href}"]`)) return;
+ const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href;
+ document.head.appendChild(l);
+ });
+ const loadScript = src => new Promise((resolve, reject) => {
+ if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+ const s = document.createElement('script'); s.src = src;
+ s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + src));
+ document.head.appendChild(s);
+ });
+ _luckysheetAssetsPromise = JS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve())
+ .catch(e => { _luckysheetAssetsPromise = null; throw e; });
+ return _luckysheetAssetsPromise;
+}
+async function initExcelLuckysheet(sheetsData, filename) {
+ let overlay = document.getElementById('luckysheet-overlay');
+ if (overlay) overlay.remove();
+ overlay = document.createElement('div');
+ overlay.id = 'luckysheet-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#fff;display:flex;flex-direction:column';
+ overlay.innerHTML = `
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(env(safe-area-inset-top,0px) + 10px, 38px) 14px 8px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0">
+ <button onclick="closeLuckysheetOverlay()" class="back-btn">← Retour</button>
+ <button id="luckysheet-save-btn" onclick="saveLuckysheetFile()" style="display:none;background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Enregistrer</button>
+ </div>
+ <div id="luckysheet-container" style="flex:1;position:relative;min-height:0;display:flex;align-items:center;justify-content:center">
+ <div style="text-align:center;color:var(--text3);font-size:13px">
+ <div class="spinner" style="margin:0 auto 12px"></div>
+ Chargement de l'éditeur Excel…
+ </div>
+ </div>
+ `;
+ document.body.appendChild(overlay);
+ try {
+ await loadLuckysheetAssets();
+ } catch(e) {
+ showToast('⚠ L\'éditeur Excel enrichi n\'a pas pu charger (connexion internet requise au premier lancement)');
+ return;
+ }
+ // L'utilisateur a peut-être fermé l'overlay pendant le chargement des librairies
+ if (!document.getElementById('luckysheet-overlay')) return;
+ const container = document.getElementById('luckysheet-container');
+ if (container) { container.style.display = 'block'; container.innerHTML = ''; }
+ const saveBtn = document.getElementById('luckysheet-save-btn');
+ if (saveBtn) saveBtn.style.display = 'block';
+ try {
+ luckysheet.create({
+ container: 'luckysheet-container',
+ lang: 'en',
+ title: (filename||'classeur').replace(/\.[^.]+$/,''),
+ showtoolbarConfig: { chart:false, image:false, link:false, print:false, screenshot:false, postil:false, pivotTable:false, function:false, frozenMode:false, sortAndFilter:false, conditionalFormat:false, dataVerification:false, splitColumn:false, findAndReplace:false, protection:false, exportXlsx:false },
+ data: sheetsData && sheetsData.length ? sheetsData : [xlsxRowsToLuckysheetSheet('Feuille1', [], 0)],
+ hook: {
+ cellUpdateBefore: function(r, c, value, isRefresh) {
+ if (typeof value === 'string' && value.charAt(0) === '=') {
+ const translated = translateFrenchFormula(value);
+ if (translated !== value) {
+ setTimeout(() => { try { luckysheet.setCellValue(r, c, translated); } catch(e) {} }, 0);
+ return false;
+ }
+ }
+ return true;
+ }
+ },
+ });
+ } catch(e) {
+ showToast('⚠ Erreur au chargement de l\'éditeur Excel (' + (e.message||e) + ')');
+ }
+}
+function closeLuckysheetOverlay() {
+ try { if (window.luckysheet && luckysheet.destroy) luckysheet.destroy(); } catch(e) {}
+ const overlay = document.getElementById('luckysheet-overlay');
+ if (overlay) overlay.remove();
+ // Luckysheet injecte parfois des menus/tooltips/dialogues directement dans <body>
+ // (hors de #luckysheet-overlay) et modifie le style inline de body/html. S'ils ne
+ // sont pas nettoyés, ils restent au-dessus de l'app et bloquent le clavier tactile
+ // (nav du bas, éditeur Word, etc.) même une fois l'éditeur Excel fermé.
+ document.querySelectorAll('[id^="luckysheet"], .luckysheet-cell-input, .luckysheet-modal-dialog-slider-wrapper').forEach(el => el.remove());
+ document.body.removeAttribute('style');
+ document.documentElement.style.overflow = 'hidden';
+}
+function collectLuckysheetWorkbookRows() {
+ const sheets = (window.luckysheet && luckysheet.getAllSheets) ? luckysheet.getAllSheets() : [];
+ return sheets.map(sheet => {
+ let rows = [];
+ if (Array.isArray(sheet.data) && sheet.data.length) {
+ rows = sheet.data.map(row => (row||[]).map(cell => {
+ if (cell === null || cell === undefined) return '';
+ if (typeof cell === 'object') return (cell.v !== undefined && cell.v !== null) ? cell.v : (cell.m || '');
+ return cell;
+ }));
+ } else if (Array.isArray(sheet.celldata)) {
+ const maxR = Math.max(0, ...sheet.celldata.map(c=>c.r));
+ const maxC = Math.max(0, ...sheet.celldata.map(c=>c.c));
+ rows = Array.from({length:maxR+1}, () => Array(maxC+1).fill(''));
+ sheet.celldata.forEach(c => {
+ const raw = c.v;
+ const v = raw && typeof raw === 'object' ? ((raw.v !== undefined && raw.v !== null) ? raw.v : raw.m) : raw;
+ rows[c.r][c.c] = v != null ? v : '';
+ });
+ }
+ // retire les lignes/colonnes vides en fin de tableau
+ while (rows.length && rows[rows.length-1].every(v=>v==='')) rows.pop();
+ return { name: sheet.name || 'Feuille', rows };
+ });
+}
+async function saveLuckysheetFile() {
+ const btn = document.getElementById('luckysheet-save-btn');
+ try {
+ const sheets = collectLuckysheetWorkbookRows();
+ const wb = XLSX.utils.book_new();
+ sheets.forEach(s => {
+ const ws = XLSX.utils.aoa_to_sheet(s.rows.length ? s.rows : [['']]);
+ XLSX.utils.book_append_sheet(wb, ws, (s.name||'Feuille').slice(0,31));
+ });
+ const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+ const blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+ const filename = docEditorState.filename || 'classeur.xlsx';
+ await saveFileEverywhere(blob, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+ if (btn) { const old = btn.textContent; btn.textContent = '✓ Enregistré'; setTimeout(()=>{ if(btn) btn.textContent = old; }, 1500); }
+ } catch(e) {
+ if (btn) btn.textContent = '⚠ Erreur';
+ showToast('⚠ Erreur d\'enregistrement (' + (e.message||e) + ')');
+ }
+}
 
 function newBlankDoc(type) {
  if (type === 'latex') {
@@ -4036,176 +4139,9 @@ function newBlankDoc(type) {
  }
  if (type === 'excel') {
  docEditorState = { type: 'excel', filename: 'nouveau_classeur.xlsx' };
- document.getElementById('doceditor-content').innerHTML = docEditorExcelHTML([{ name:'Feuille1', rows:[] }]);
- document.getElementById('doceditor-empty').style.display = 'none';
- document.getElementById('doceditor-content').style.display = 'block';
- document.getElementById('doceditor-save-btn').style.display = 'block';
- document.getElementById('doceditor-pdf-btn').style.display = 'none';
+ initExcelXS([xlsxRowsToTableSheet('Feuille1', [])], docEditorState.filename);
  return;
  }
-}
-
-function insertChartFromSheetSelection() {
- const table = currentSheetTable();
- if (!table) { showToast('⚠ Ouvre ou crée un tableau Excel d\'abord'); return; }
- const cells = getSheetTargetCells();
- let rows;
- if (cells.length >= 2) {
- const tbl = cells[0].closest('table');
- const positions = cells.map(td => { const tr = td.closest('tr'); return { r: Array.from(tbl.rows).indexOf(tr), c: Array.from(tr.cells).indexOf(td) }; });
- const r0 = Math.min(...positions.map(p => p.r)), r1 = Math.max(...positions.map(p => p.r));
- const c0 = Math.min(...positions.map(p => p.c)), c1 = Math.max(...positions.map(p => p.c));
- rows = [];
- for (let r = r0; r <= r1; r++) {
- const tr = tbl.rows[r]; if (!tr) continue;
- const row = [];
- for (let c = c0; c <= c1; c++) { const cell = tr.cells[c]; row.push(cell ? cell.textContent.trim() : ''); }
- rows.push(row);
- }
- } else {
- // Pas de sélection : on prend tout le tableau (sans les lettres de colonnes ni les numéros de ligne)
- rows = Array.from(table.rows).slice(1).map(tr => Array.from(tr.cells).slice(1).map(td => td.textContent.trim()));
- }
- rows = rows.filter(r => r.some(v => v !== ''));
- if (rows.length < 2) { showToast('⚠ Sélectionne au moins un en-tête et une ligne de données (appui long + glissement)'); return; }
- openChartTypeModal(rows, (chartType) => {
- renderChartToImage(rows, chartType, (dataUrl) => {
- const panel = table.closest('.excel-sheet-panel') || document.getElementById('doceditor-content');
- const img = document.createElement('img');
- img.src = dataUrl;
- img.style.cssText = 'max-width:100%;border:1px solid var(--border);border-radius:10px;margin-top:12px;display:block';
- panel.appendChild(img);
- showToast('✓ Graphique inséré');
- });
- });
-}
-
-// ── GRAPHIQUES À PARTIR DE DONNÉES DE TABLEAU (Excel et Word) ──
-// rows[0] = en-têtes (1ère colonne = libellés des catégories, colonnes suivantes = séries),
-// rows[1..] = données. Utilisé aussi bien depuis une sélection de cellules Excel que
-// depuis un tableau inséré dans un document Word.
-function openChartTypeModal(rows, onPick) {
- const overlay = document.createElement('div');
- overlay.id = 'chart-type-overlay';
- overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
- overlay.innerHTML = `
- <div style="background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;animation:slideUp .3s ease">
- <h2 style="font-size:17px;font-weight:800;margin-bottom:14px">Type de graphique</h2>
- <div style="display:flex;flex-direction:column;gap:10px">
- <button onclick="pickChartType('bar')" class="btn-outline">📊 Barres</button>
- <button onclick="pickChartType('line')" class="btn-outline">📈 Courbe</button>
- <button onclick="pickChartType('pie')" class="btn-outline">🥧 Camembert</button>
- </div>
- <button onclick="document.getElementById('chart-type-overlay').remove();window._chartPickCallback=null" style="width:100%;margin-top:14px;padding:13px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg2);font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Annuler</button>
- </div>`;
- document.body.appendChild(overlay);
- window._chartPickCallback = onPick;
-}
-function pickChartType(type) {
- const overlay = document.getElementById('chart-type-overlay');
- if (overlay) overlay.remove();
- const cb = window._chartPickCallback;
- window._chartPickCallback = null;
- if (cb) cb(type);
-}
-function renderChartToImage(rows, chartType, cb) {
- if (typeof Chart === 'undefined') { showToast('⚠ Librairie graphique indisponible hors-ligne.'); return; }
- const header = rows[0];
- const dataRows = rows.slice(1);
- const labels = dataRows.map(r => String(r[0] ?? ''));
- const palette = ['#0B6E4F','#1E40AF','#C47A0B','#D13A3A','#7C3AED','#0891B2','#9333EA','#5B4FCF'];
- const toNum = (v) => parseFloat(String(v ?? '0').replace(',', '.')) || 0;
- const seriesNames = header.slice(1).map((n, i) => n || ('Série ' + (i + 1)));
- const canvas = document.createElement('canvas');
- canvas.width = 640; canvas.height = 400;
- canvas.style.cssText = 'position:fixed;left:-9999px;top:0';
- document.body.appendChild(canvas);
- let chartData;
- if (chartType === 'pie') {
- chartData = { labels, datasets: [{ data: dataRows.map(r => toNum(r[1])), backgroundColor: labels.map((_, i) => palette[i % palette.length]) }] };
- } else {
- chartData = { labels, datasets: seriesNames.map((name, i) => ({
- label: name,
- data: dataRows.map(r => toNum(r[i + 1])),
- backgroundColor: chartType === 'line' ? 'transparent' : palette[i % palette.length],
- borderColor: palette[i % palette.length],
- borderWidth: 2,
- tension: .3
- })) };
- }
- let chart;
- try {
- chart = new Chart(canvas.getContext('2d'), { type: chartType, data: chartData, options: { responsive: false, animation: false, plugins: { legend: { display: true } } } });
- } catch (e) {
- canvas.remove();
- showToast('⚠ Impossible de générer ce graphique');
- return;
- }
- setTimeout(() => {
- const dataUrl = canvas.toDataURL('image/png');
- chart.destroy();
- canvas.remove();
- cb(dataUrl);
- }, 80);
-}
-
-// ── COLLER UN TEXTE (avec chargement animé avant import) ──
-function openPasteTextModal() {
- const overlay = document.createElement('div');
- overlay.id = 'paste-text-overlay';
- overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
- overlay.innerHTML = `
- <div style="background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;animation:slideUp .3s ease">
- <h2 style="font-size:17px;font-weight:800;margin-bottom:12px">Coller un texte</h2>
- <textarea id="paste-text-input" class="input" placeholder="Colle ou écris ton texte ici..." style="width:100%;min-height:220px;resize:vertical;font-size:14px;line-height:1.6;padding:14px;margin-bottom:14px"></textarea>
- <div id="paste-text-loading" style="display:none;margin-bottom:14px">
- <div class="doc-loading-bar-wrap"><div id="paste-text-loading-fill" class="doc-loading-bar-fill"><span id="paste-text-loading-label">Traitement du texte... 0%</span></div></div>
- </div>
- <div style="display:flex;gap:10px">
- <button id="paste-text-cancel-btn" onclick="document.getElementById('paste-text-overlay').remove()" style="flex:1;padding:13px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg2);font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Annuler</button>
- <button id="paste-text-confirm-btn" onclick="confirmPasteText()" class="btn-em" style="flex:1">Valider</button>
- </div>
- </div>`;
- document.body.appendChild(overlay);
- setTimeout(() => { const ta = document.getElementById('paste-text-input'); if (ta) ta.focus(); }, 50);
-}
-function confirmPasteText() {
- const ta = document.getElementById('paste-text-input');
- const text = ta ? ta.value.trim() : '';
- if (!text) { showToast('⚠ Colle ou écris un texte d\'abord'); return; }
- const confirmBtn = document.getElementById('paste-text-confirm-btn');
- const cancelBtn = document.getElementById('paste-text-cancel-btn');
- const loadingWrap = document.getElementById('paste-text-loading');
- const fill = document.getElementById('paste-text-loading-fill');
- const label = document.getElementById('paste-text-loading-label');
- if (confirmBtn) confirmBtn.disabled = true;
- if (cancelBtn) cancelBtn.disabled = true;
- ta.disabled = true;
- loadingWrap.style.display = 'block';
- let pct = 0;
- const timer = setInterval(() => {
- pct = Math.min(100, pct + Math.round(6 + Math.random() * 12));
- fill.style.width = pct + '%';
- label.textContent = 'Traitement du texte... ' + pct + '%';
- if (pct >= 100) {
- clearInterval(timer);
- setTimeout(() => {
- const overlay = document.getElementById('paste-text-overlay');
- if (overlay) overlay.remove();
- createDocFromPastedText(text);
- }, 250);
- }
- }, 140);
-}
-function createDocFromPastedText(text) {
- docEditorState = { type: 'word', filename: 'texte_collé.docx' };
- document.getElementById('doceditor-empty').style.display = 'none';
- document.getElementById('doceditor-content').style.display = 'block';
- document.getElementById('doceditor-save-btn').style.display = 'block';
- document.getElementById('doceditor-pdf-btn').style.display = 'block';
- const html = text.split(/\n{2,}/).map(p => '<p>' + escHtml(p).replace(/\n/g, '<br>') + '</p>').join('');
- initWordQuillEditor(html);
- showToast('✓ Texte importé');
 }
 
 async function handleDocEditorOpen(input) {
@@ -4228,15 +4164,11 @@ async function handleDocEditorOpen(input) {
  const arrayBuffer = await file.arrayBuffer();
  const wb = XLSX.read(arrayBuffer, { type: 'array' });
  docEditorState.type = 'excel';
- const sheets = wb.SheetNames.map(sheetName => {
+ const sheetsData = wb.SheetNames.map((sheetName) => {
  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
- return { name: sheetName, rows };
+ return xlsxRowsToTableSheet(sheetName, rows);
  });
- document.getElementById('doceditor-content').innerHTML = docEditorExcelHTML(sheets);
- document.getElementById('doceditor-empty').style.display = 'none';
- document.getElementById('doceditor-content').style.display = 'block';
- document.getElementById('doceditor-save-btn').style.display = 'block';
- document.getElementById('doceditor-pdf-btn').style.display = 'none';
+ initExcelXS(sheetsData, docEditorState.filename);
  return;
 
  } else if (['txt','tex','md'].includes(ext)) {
@@ -4345,6 +4277,14 @@ async function exportDocEditorToPDF() {
 async function saveDocEditorFile() {
  try {
  let blob, mimeType;
+
+ if (docEditorState.type === 'word') {
+ const currentBase = (docEditorState.filename || 'document').replace(/\.[^.]+$/, '');
+ const chosen = prompt('Titre du fichier :', currentBase);
+ if (chosen === null) return; // annulé
+ const cleanTitle = chosen.trim() || currentBase || 'document';
+ docEditorState.filename = cleanTitle + '.docx';
+ }
  const filename = docEditorState.filename || 'document';
 
  if (docEditorState.type === 'word') {
@@ -4395,6 +4335,21 @@ async function saveDocEditorFile() {
  const docxDoc = new Document({ sections:[{ properties:{}, children: children.length?children:[new Paragraph('')] }] });
  blob = await Packer.toBlob(docxDoc);
  mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+ } else if (docEditorState.type === 'excel-xs') {
+ const wb = XLSX.utils.book_new();
+ const data = xsInstance ? xsInstance.getData() : [];
+ (data.length ? data : [{name:'Feuille1', rows:{}}]).forEach(sheetData => {
+ const rows = xsToRows(sheetData).map(row => row.map(v => {
+ const num = parseFloat(String(v).replace(',', '.'));
+ return (v !== '' && v != null && !isNaN(num)) ? num : v;
+ }));
+ const ws = XLSX.utils.aoa_to_sheet(rows.length ? rows : [[]]);
+ XLSX.utils.book_append_sheet(wb, ws, (sheetData.name || 'Feuille1').substring(0,31));
+ });
+ const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+ blob = new Blob([wbout], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+ mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
  } else if (docEditorState.type === 'excel') {
  const wb = XLSX.utils.book_new();
@@ -4830,98 +4785,333 @@ window.onAndroidSTTStart = function() {
  _voiceSessionStartTs = Date.now();
  _voiceSetMicActive(true);
 };
+// Certains appareils déclenchent le callback natif Android *après* qu'on ait déjà
+// explicitement arrêté l'écoute (navigation vers un autre écran, etc.). Sans ce
+// garde-fou, ce callback tardif relance la boucle ou affiche un toast d'erreur
+// alors que l'utilisateur a quitté l'outil depuis longtemps.
+let _voiceExpectingCallback = false;
 window.onAndroidSTTResult = function(text) {
+ if (!_voiceExpectingCallback) return;
+ _voiceExpectingCallback = false;
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
  if (text) {
  _voiceInsertText(text);
- } else if (!_transcribeContinuous) {
+ } else if (!_mediaTranscribing) {
  showToast('⚠ Rien entendu, réessaie');
  }
- _maybeContinueTranscribePlayback();
+ if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) {
+ _voiceSessionStartTs = Date.now();
+ setTimeout(_runMediaTranscriptionLoop, 300);
+ } else if (_mediaTranscribing) {
+ stopMediaTranscription();
+ }
 };
 window.onAndroidSTTError = function(code) {
+ if (!_voiceExpectingCallback) return;
+ _voiceExpectingCallback = false;
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
- if (!_transcribeContinuous) {
+ if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) {
+ _voiceSessionStartTs = Date.now();
+ setTimeout(_runMediaTranscriptionLoop, 300);
+ return;
+ }
+ if (_mediaTranscribing) stopMediaTranscription();
  if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
  else showToast('⚠ Micro : erreur (' + code + '), réessaie');
- }
- _maybeContinueTranscribePlayback();
 };
 
-// ── Import audio/vidéo + transcription pendant la lecture ──
-// Réutilise le pont STT natif existant (single-shot : une écoute = un résultat),
-// en le relançant automatiquement après chaque segment tant que le média joue
-// encore — ainsi la transcription continue sans que l'utilisateur retape sur le micro.
-let _transcribeMediaObjectUrl = null;
-let _transcribeContinuous = false;
-
-function handleTranscriptionMediaSelected(input) {
- const file = input.files && input.files[0];
+// ── Transcription d'un fichier audio/vidéo importé ──
+// L'API de reconnaissance vocale (native ou navigateur) n'accepte que le micro
+// en direct, pas un fichier. On lit donc le fichier tout en écoutant avec le
+// micro, en boucle continue, pour transcrire au fil de la lecture.
+let importedMediaEl = null;
+let importedMediaFile = null;
+let _mediaTranscribing = false;
+function handleImportMediaFile(input) {
+ const file = input.files[0];
  if (!file) return;
- if (_transcribeMediaObjectUrl) { try { URL.revokeObjectURL(_transcribeMediaObjectUrl); } catch(e) {} }
- _transcribeMediaObjectUrl = URL.createObjectURL(file);
- const player = document.getElementById('transcribe-media-player');
- const audioPlayer = document.getElementById('transcribe-audio-player');
- const preview = document.getElementById('transcribe-media-preview');
- // La vidéo sert seulement de repère visuel (muette) : c'est l'audio extrait qui pilote la transcription
- if (player) { player.src = _transcribeMediaObjectUrl; }
- if (audioPlayer) {
- audioPlayer.src = _transcribeMediaObjectUrl;
- audioPlayer.onended = () => stopTranscribeDuringPlayback();
- }
- if (preview) preview.style.display = 'block';
- stopTranscribeDuringPlayback();
+ // Réinitialise toute lecture/transcription en cours avant de charger le nouveau fichier,
+ // sinon l'ancienne session (micro + lecture) continue en arrière-plan et bloque le changement.
+ if (_mediaTranscribing) stopMediaTranscription();
+ if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
+ importedMediaFile = file;
+ const url = URL.createObjectURL(file);
+ const isVideo = file.type.startsWith('video');
+ const container = document.getElementById('transcribe-media-preview');
+ container.innerHTML = isVideo
+ ? `<video id="transcribe-media-el" src="${url}" controls style="width:100%;border-radius:12px;background:#000;max-height:220px"></video>`
+ : `<audio id="transcribe-media-el" src="${url}" controls style="width:100%"></audio>`;
+ container.style.display = 'block';
+ document.getElementById('transcribe-media-actions').style.display = 'flex';
+ importedMediaEl = document.getElementById('transcribe-media-el');
+ importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
+ input.value = '';
 }
-
-function toggleTranscribeDuringPlayback() {
- if (_transcribeContinuous) { stopTranscribeDuringPlayback(); return; }
- startTranscribeDuringPlayback();
+function stopMediaTranscription() {
+ _mediaTranscribing = false;
+ _voiceExpectingCallback = false;
+ if (importedMediaEl) importedMediaEl.pause();
+ if (voiceRecognition) { try { voiceRecognition.continuous = false; voiceRecognition.onend = null; voiceRecognition.stop(); } catch(e) {} }
+ if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') { try { window.AndroidSTT.stopListening(); } catch(e) {} }
+ const btn = document.getElementById('transcribe-media-btn');
+ if (btn) btn.textContent = ' Transcrire pendant la lecture';
 }
-
-function startTranscribeDuringPlayback() {
- const audioPlayer = document.getElementById('transcribe-audio-player');
- if (!audioPlayer || !audioPlayer.src) return;
+async function toggleMediaTranscription() {
+ if (!importedMediaEl) { showToast('⚠ Importe un fichier audio/vidéo d\'abord'); return; }
+ if (_mediaTranscribing) { stopMediaTranscription(); return; }
  if (!canUseTranscription()) {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
  return;
  }
- _transcribeContinuous = true;
- const btn = document.getElementById('transcribe-playback-btn');
- if (btn) { btn.textContent = '⏹ Arrêter la transcription'; btn.style.background = '#C0392B'; }
- audioPlayer.currentTime = 0;
- const videoPlayer = document.getElementById('transcribe-media-player');
- if (videoPlayer) { videoPlayer.currentTime = 0; videoPlayer.play().catch(()=>{}); }
- audioPlayer.play().catch(()=>{ showToast('⚠ Lecture audio impossible, réessaie'); stopTranscribeDuringPlayback(); });
- toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn');
+ // 1) Transcription réelle du fichier envoyé à l'IA (précise, ne dépend pas du micro/volume).
+ // On extrait d'abord uniquement la piste audio (via captureStream + MediaRecorder) avant
+ // l'envoi : une vidéo peut peser 100+ Mo alors que son audio seul pèse quelques Mo — ça
+ // évite de faire exploser la consommation de données pour une transcription.
+ const handled = await transcribeMediaFileViaAPI();
+ if (handled) return;
+ // 2) Repli si la fonction serveur n'est pas encore déployée : lecture + écoute micro en
+ // direct (moins fiable, dépend du volume et du bruit ambiant).
+ showToast('ℹ Transcription serveur indisponible, écoute en direct pendant la lecture...');
+ _mediaTranscribing = true;
+ _voiceSessionIsTranscription = true;
+ _voiceSessionStartTs = Date.now();
+ document.getElementById('transcribe-media-btn').textContent = '⏸ Arrêter la transcription';
+ importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
+ importedMediaEl.ontimeupdate = null;
+ importedMediaEl.currentTime = 0;
+ importedMediaEl.play().catch(()=>{ showToast('⚠ Lecture impossible'); stopMediaTranscription(); });
+ _runMediaTranscriptionLoop();
 }
-
-function stopTranscribeDuringPlayback() {
- if (!_transcribeContinuous) return;
- _transcribeContinuous = false;
- const audioPlayer = document.getElementById('transcribe-audio-player');
- const videoPlayer = document.getElementById('transcribe-media-player');
- if (audioPlayer) { try { audioPlayer.pause(); } catch(e) {} }
- if (videoPlayer) { try { videoPlayer.pause(); } catch(e) {} }
- if (isListening) {
- if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') window.AndroidSTT.stopListening();
- else if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e) {} }
+// Enregistre uniquement la piste audio du fichier importé (lecture en temps réel via
+// captureStream + MediaRecorder, encodage compact opus/webm à faible débit). Beaucoup
+// plus léger à uploader qu'une vidéo brute, et beaucoup plus fiable que l'écoute par
+// micro-en-direct (capture numérique exacte, pas de bruit ambiant).
+function extractAudioBlobFromMedia(mediaEl, onProgress) {
+ return new Promise((resolve, reject) => {
+ if (typeof mediaEl.captureStream !== 'function' && typeof mediaEl.mozCaptureStream !== 'function') {
+ reject(new Error('captureStream indisponible')); return;
  }
- const btn = document.getElementById('transcribe-playback-btn');
- if (btn) { btn.textContent = 'Transcrire pendant la lecture'; btn.style.background = 'var(--em)'; }
+ if (typeof MediaRecorder === 'undefined') { reject(new Error('MediaRecorder indisponible')); return; }
+ try {
+ const rawStream = mediaEl.captureStream ? mediaEl.captureStream() : mediaEl.mozCaptureStream();
+ const audioTracks = rawStream.getAudioTracks();
+ if (!audioTracks.length) { reject(new Error('pas de piste audio')); return; }
+ const audioStream = new MediaStream(audioTracks);
+ const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/webm';
+ const recorder = new MediaRecorder(audioStream, { mimeType, audioBitsPerSecond: 32000 });
+ const chunks = [];
+ let settled = false;
+ recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+ recorder.onstop = () => { if (!settled) { settled = true; resolve(new Blob(chunks, { type: mimeType })); } };
+ recorder.onerror = (e) => { if (!settled) { settled = true; reject((e && e.error) || new Error('erreur enregistrement')); } };
+ mediaEl.oncanplay = null;
+ mediaEl.onended = () => { try { recorder.stop(); } catch(e) {} };
+ mediaEl.ontimeupdate = () => { if (onProgress && mediaEl.duration) onProgress(mediaEl.currentTime / mediaEl.duration); };
+ mediaEl.currentTime = 0;
+ recorder.start();
+ mediaEl.play().catch(err => { if (!settled) { settled = true; reject(err); } });
+ } catch(e) { reject(e); }
+ });
+}
+// Envoie le fichier importé à la fonction Supabase 'clever-action' (Whisper via Groq).
+// Retourne true si la fonction a répondu (succès, quota atteint, ou fichier vide) — dans
+// ce cas on ne bascule PAS sur le repli micro-en-direct. Retourne false uniquement si la
+// fonction n'est pas déployée/joignable, pour laisser toggleMediaTranscription() basculer.
+async function transcribeMediaFileViaAPI() {
+ if (!importedMediaFile) return false;
+ const btn = document.getElementById('transcribe-media-btn');
+ const oldTxt = btn.textContent;
+ btn.disabled = true;
+
+ // Extraction audio (préférée) — beaucoup plus léger à uploader qu'un fichier vidéo brut.
+ let uploadBlob = importedMediaFile;
+ let uploadName = importedMediaFile.name;
+ let extracted = false;
+ if (importedMediaFile.type.startsWith('video/')) {
+ try {
+ btn.textContent = ' Extraction audio... 0%';
+ const audioBlob = await extractAudioBlobFromMedia(importedMediaEl, (p) => { btn.textContent = ' Extraction audio... ' + Math.round(p*100) + '%'; });
+ importedMediaEl.currentTime = 0;
+ importedMediaEl.onended = null;
+ importedMediaEl.ontimeupdate = null;
+ // Garde-fou : un fichier extrait anormalement petit (silence/piste vide selon le
+ // navigateur) est plus probablement un échec silencieux qu'un vrai résultat —
+ // dans ce cas on préfère envoyer le fichier original plutôt qu'un audio muet.
+ if (audioBlob && audioBlob.size > 2000) {
+ uploadBlob = audioBlob;
+ uploadName = (importedMediaFile.name || 'audio').replace(/\.[^.]+$/, '') + '.webm';
+ extracted = true;
+ }
+ } catch(e) {
+ // L'extraction a échoué (API indisponible) : on envoie le fichier original tel quel,
+ // c'est plus lourd mais ça reste fonctionnel plutôt que de bloquer la transcription.
+ }
+ }
+
+ let result;
+ try {
+ result = await _uploadForTranscription(uploadBlob, uploadName, btn);
+ } catch(e) {
+ btn.disabled = false; btn.textContent = oldTxt;
+ return false; // hors-ligne / fonction indisponible : repli
+ }
+ if (result.notDeployed) { btn.disabled = false; btn.textContent = oldTxt; return false; }
+
+ // Si l'extraction audio n'a rien détecté, on retente une fois avec le fichier vidéo
+ // original avant d'abandonner (l'extraction a pu produire un audio silencieux).
+ if (result.emptyText && extracted) {
+ try {
+ result = await _uploadForTranscription(importedMediaFile, importedMediaFile.name, btn);
+ } catch(e) {}
+ }
+
+ btn.disabled = false; btn.textContent = oldTxt;
+ if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); return true; }
+ if (result.emptyText) { showToast('⚠ Aucun texte détecté dans ce fichier'); return true; }
+ const ta = document.getElementById('transcript-textarea');
+ ta.value = (ta.value ? ta.value + '\n' : '') + result.text;
+ addTranscriptionUsageSec(Math.round(importedMediaEl.duration || 0));
+ showToast('✓ Transcription terminée');
+ return true;
+}
+async function _uploadForTranscription(blob, name, btn) {
+ btn.textContent = ' Envoi pour transcription...';
+ const fd = new FormData();
+ fd.append('file', blob, name);
+ const res = await fetch(SUPABASE_URL + '/functions/v1/clever-action', {
+ method: 'POST',
+ headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+ body: fd
+ });
+ if (res.status === 404) return { notDeployed: true };
+ if (!res.ok) return { error: true };
+ const data = await res.json();
+ const text = (data && (data.text || data.transcript || '')).trim();
+ if (!text) return { emptyText: true };
+ return { text };
 }
 
-function _maybeContinueTranscribePlayback() {
- if (!_transcribeContinuous) return;
- const audioPlayer = document.getElementById('transcribe-audio-player');
- if (!audioPlayer || audioPlayer.paused || audioPlayer.ended) { stopTranscribeDuringPlayback(); return; }
- if (!canUseTranscription()) { stopTranscribeDuringPlayback(); return; }
- setTimeout(() => { if (_transcribeContinuous) toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn'); }, 400);
+// ── Micro direct (bouton "Appuie pour parler" de l'écran Transcription) ──
+// Ancien modèle : on enregistre l'audio réel du micro (MediaRecorder, opus/webm
+// faible débit) puis on l'envoie UNE SEULE FOIS à clever-action (Whisper via Groq)
+// quand l'utilisateur arrête. Plus fiable que l'écoute "live" (Web Speech /
+// AndroidSTT) qui coupe au moindre silence, et beaucoup plus léger en données
+// qu'un flux continu puisqu'un seul envoi a lieu à la fin.
+const _MIC_ICON_SVG = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+const _STOP_ICON_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+let _micRecorder = null;
+let _micStream = null;
+let _micChunks = [];
+let _micRecording = false;
+let _micStartTs = 0;
+
+async function toggleMicWhisperTranscription() {
+ if (_micRecording) { stopMicWhisperRecording(); return; }
+ if (!canUseTranscription()) {
+ showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
+ return;
+ }
+ // Repli automatique si l'environnement ne permet pas d'enregistrer l'audio brut
+ // (ex: WebView restreinte sans getUserMedia/MediaRecorder) : on garde l'ancien
+ // comportement d'écoute live plutôt que de bloquer l'utilisateur.
+ if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+ toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn');
+ return;
+ }
+ try {
+ _micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+ } catch(e) {
+ showToast('⚠ Micro indisponible ou refusé');
+ return;
+ }
+ const mimeType = (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/webm';
+ _micChunks = [];
+ try {
+ _micRecorder = new MediaRecorder(_micStream, { mimeType, audioBitsPerSecond: 32000 });
+ } catch(e) {
+ showToast('⚠ Enregistrement audio indisponible sur cet appareil');
+ _micStream.getTracks().forEach(t=>t.stop());
+ _micStream = null;
+ return;
+ }
+ _micRecorder.ondataavailable = (e) => { if (e.data && e.data.size) _micChunks.push(e.data); };
+ _micRecorder.start();
+ _micRecording = true;
+ _micStartTs = Date.now();
+ const btn = document.getElementById('transcribe-mic-btn');
+ if (btn) { btn.style.background = '#C0392B'; btn.style.color = '#fff'; btn.innerHTML = _STOP_ICON_SVG; }
+ const label = document.getElementById('transcribe-quota-label');
+ if (label) label.textContent = '🔴 Enregistrement en cours... appuie pour arrêter';
+}
+
+async function stopMicWhisperRecording() {
+ if (!_micRecording || !_micRecorder) return;
+ _micRecording = false;
+ const btn = document.getElementById('transcribe-mic-btn');
+ const durationSec = Math.round((Date.now() - _micStartTs) / 1000);
+ const stopped = new Promise(resolve => { _micRecorder.onstop = resolve; });
+ try { _micRecorder.stop(); } catch(e) {}
+ await stopped;
+ if (_micStream) { _micStream.getTracks().forEach(t=>t.stop()); _micStream = null; }
+ const mimeType = (_micRecorder && _micRecorder.mimeType) || 'audio/webm';
+ const blob = new Blob(_micChunks, { type: mimeType });
+ _micChunks = [];
+ if (btn) { btn.disabled = true; btn.style.background = 'var(--white)'; btn.style.color = 'var(--text2)'; btn.innerHTML = _MIC_ICON_SVG; }
+ if (!blob.size) { if (btn) btn.disabled = false; updateTranscriptionQuotaLabel(); return; }
+ let result;
+ try {
+ result = await _uploadForTranscription(blob, 'micro.webm', btn);
+ } catch(e) {
+ if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ showToast('⚠ Erreur réseau, réessaie');
+ updateTranscriptionQuotaLabel();
+ return;
+ }
+ if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ if (result.notDeployed) { showToast('⚠ Fonction de transcription indisponible, réessaie plus tard'); updateTranscriptionQuotaLabel(); return; }
+ if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); updateTranscriptionQuotaLabel(); return; }
+ if (result.emptyText) { showToast('⚠ Aucun texte détecté, parle plus fort ou réessaie'); updateTranscriptionQuotaLabel(); return; }
+ const ta = document.getElementById('transcript-textarea');
+ if (ta) ta.value = (ta.value ? ta.value + '\n' : '') + result.text;
+ addTranscriptionUsageSec(durationSec);
+ showToast('✓ Transcription terminée');
+ updateTranscriptionQuotaLabel();
+}
+function _runMediaTranscriptionLoop() {
+ if (!_mediaTranscribing) return;
+ _voiceTargetId = 'transcript-textarea';
+ _voiceAppendNewline = true;
+ // Pont natif Android (écoute par segments) : on relance en boucle tant que le média joue
+ if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
+ _voiceExpectingCallback = true;
+ try { window.AndroidSTT.startListening(); } catch(e) { _voiceExpectingCallback = false; }
+ return;
+ }
+ // Repli navigateur : mode continu natif de l'API Web Speech
+ const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+ if (!SpeechRecognitionAPI) { showToast('⚠ Reconnaissance vocale indisponible sur cet appareil'); stopMediaTranscription(); return; }
+ voiceRecognition = new SpeechRecognitionAPI();
+ voiceRecognition.lang = 'fr-FR';
+ voiceRecognition.interimResults = false;
+ voiceRecognition.continuous = true;
+ voiceRecognition.maxAlternatives = 1;
+ voiceRecognition.onresult = (event) => {
+ for (let i = event.resultIndex; i < event.results.length; i++) {
+ if (event.results[i].isFinal) _voiceInsertText(event.results[i][0].transcript);
+ }
+ };
+ voiceRecognition.onerror = () => {};
+ voiceRecognition.onend = () => {
+ if (_mediaTranscribing && importedMediaEl && !importedMediaEl.paused) { try { voiceRecognition.start(); } catch(e) {} }
+ else stopMediaTranscription();
+ };
+ try { voiceRecognition.start(); } catch(e) { stopMediaTranscription(); }
 }
 
 async function toggleVoiceInput(targetId, micBtnId) {
@@ -4937,7 +5127,8 @@ async function toggleVoiceInput(targetId, micBtnId) {
 
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- if (isListening) { window.AndroidSTT.stopListening(); return; }
+ if (isListening) { window.AndroidSTT.stopListening(); _voiceExpectingCallback = false; return; }
+ _voiceExpectingCallback = true;
  window.AndroidSTT.startListening();
  return;
  }
@@ -5058,25 +5249,42 @@ function sendTranscriptToEditor() {
 
 const TTS_ICON_PLAY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
 const TTS_ICON_STOP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
-let ttsActiveBtn = null;
+// On identifie le message en cours de lecture par son contenu (b64), pas par une
+// référence au bouton DOM : le chat peut se re-rendre entre le clic "lire" et le
+// clic "arrêter" (nouveau message, sync...), ce qui recrée les boutons et cassait
+// la comparaison par référence — le bouton "Arrêter" relançait alors la lecture
+// au lieu de l'interrompre, donnant l'impression que ça ne s'arrête jamais.
+let ttsActiveKey = null;
+function _resetTTSButtons() {
+ document.querySelectorAll('.tts-btn').forEach(b => { b.innerHTML = TTS_ICON_PLAY; b.title = 'Écouter'; });
+}
 function stopSpeaking() {
+ // AndroidTTS.stop() est désormais exposé côté natif (MainActivity.java) et
+ // appelle TextToSpeech.stop(), qui vide la file d'attente et interrompt
+ // l'énoncé en cours.
  if (window.AndroidTTS && typeof window.AndroidTTS.stop === 'function') {
- try { window.AndroidTTS.stop(); } catch(e) {}
+ try { window.AndroidTTS.stop(); } catch(e) { showToast('⚠ AndroidTTS.stop() a levé une erreur : ' + e); }
+ } else if (window.AndroidTTS) {
+ // DIAGNOSTIC TEMPORAIRE : le pont natif AndroidTTS existe mais n'a pas de
+ // méthode stop() → l'APK installée ne contient pas encore le correctif
+ // MainActivity.java (vérifie le build Codemagic / le commit poussé).
+ showToast('⚠ Diagnostic : AndroidTTS.stop() absent — APK pas à jour');
  }
  if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e) {} }
- if (ttsActiveBtn) { ttsActiveBtn.innerHTML = TTS_ICON_PLAY; ttsActiveBtn.title = 'Écouter'; }
- ttsActiveBtn = null;
+ _resetTTSButtons();
+ ttsActiveKey = null;
 }
 function speakMessage(b64text, btn) {
- // Un second clic sur le bouton en cours de lecture l'arrête simplement
- if (btn && ttsActiveBtn === btn) { stopSpeaking(); return; }
+ // Un second clic sur le message en cours de lecture l'arrête simplement
+ if (ttsActiveKey === b64text) { stopSpeaking(); return; }
  // Un clic sur un autre message coupe la lecture précédente avant de démarrer la nouvelle
  stopSpeaking();
 
  const text = decodeURIComponent(escape(atob(b64text)));
  const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
 
- if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; ttsActiveBtn = btn; }
+ ttsActiveKey = b64text;
+ if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; }
 
  // 1) Priorité au TTS natif Android (plus fiable dans une WebView que l'API Web Speech)
  if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
@@ -5319,9 +5527,9 @@ let selectedSerie = 'D';
 let selectedFiliere = '';
 
 const FILIERES_BY_NIVEAU = {
- 'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
- 'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
- 'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Biologie Médicale', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 1':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 2':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
+ 'Licence 3':['3EA', 'AES', 'Agronomie', 'Anthropologie', 'Archéologie', 'ASSRI', 'Biologie', 'Chimie', 'Communication', 'Comptabilité', 'Droit', 'Droit privé', 'Droit public', 'Électronique', 'Finance', 'Génie Civil', 'Génie Électrique', 'Génie Mécanique', 'Géographie', 'Géologie', 'Géomatique', 'Gestion', 'Histoire', 'Informatique', 'Journalisme', 'Langues Étrangères', 'LEA', 'Marketing', 'Mathématiques', 'Médecine', 'MIAGE', 'Pharmacie', 'Physique', 'Psychologie', 'RIT', 'Sciences de l\'Éducation', 'SEA', 'SEG', 'SES', 'Sociologie', 'STAPS'],
  'Doctorat':['Informatique','Mathématiques','Physique','Chimie','Biologie','Médecine','Économie','Droit','Sociologie'],
  'BT': ['Hôtellerie-Restauration','Électrotechnique','Électronique','Mécanique Auto','Bâtiment','Comptabilité','Secrétariat Bureautique','Structures Métalliques','Froid & Climatisation','Fabrication Mécanique','Génie Civil','Industrie de l\'Habillement','Agriculture'],
  'BTS 1':['Informatique & Réseaux','Comptabilité & Gestion','Commerce','Électrotechnique','Maintenance Industrielle','Logistique','Communication','Banque','Assurance'],
@@ -5339,8 +5547,7 @@ const MASTER_SPECS_BY_LICENCE = {
  'Anthropologie': ['Anthropologie du Développement', 'Anthropologie Sociale et Culturelle', 'Ethnologie', 'Patrimoine et Muséologie'],
  'Archéologie': ['Archéologie Préventive', 'Patrimoine Culturel', 'Muséologie', 'Histoire de l\'Art'],
  'ASSRI': ['Cybersécurité', 'Administration Systèmes & Réseaux', 'Cloud Computing', 'Sécurité des Systèmes d\'Information', 'DevOps & Infrastructure'],
- 'Biologie': ['Biologie Moléculaire et Cellulaire', 'Biotechnologies', 'Microbiologie', 'Écologie et Environnement'],
- 'Biologie Médicale': ['Biologie Clinique', 'Immunologie Clinique', 'Génétique Médicale', 'Recherche Biomédicale', 'Anatomopathologie'],
+ 'Biologie': ['Biologie Moléculaire et Cellulaire', 'Biotechnologies', 'Microbiologie', 'Écologie et Environnement', 'Biologie Médicale'],
  'Chimie': ['Chimie Analytique', 'Chimie Organique', 'Chimie des Matériaux', 'Génie des Procédés', 'Chimie Environnementale'],
  'Communication': ['Communication Digitale', 'Communication des Organisations', 'Relations Publiques', 'Communication Événementielle', 'Marketing Digital'],
  'Comptabilité': ['Comptabilité Contrôle Audit (CCA)', 'Expertise Comptable', 'Fiscalité', 'Audit Financier', 'Contrôle de Gestion'],
@@ -5710,18 +5917,18 @@ async function doRegister() {
 async function researchFiliereSubjects(niveau, filiere) {
  try {
  const prompt = `Tu es un conseiller pédagogique expert des cursus universitaires et professionnels francophones (Côte d'Ivoire, Afrique de l'Ouest).
-Pour la filière "${filiere}" au niveau "${niveau}", liste TOUTES les matières/UE réellement enseignées dans cette filière précise pour cette année précise (la maquette complète, pas une sélection réduite) — cela peut aller de 8 à 30 matières selon la filière, ne te limite pas artificiellement.
+Pour la filière "${filiere}" au niveau "${niveau}", liste les 5 à 8 matières/UE les PLUS représentatives réellement enseignées dans cette filière précise (les vraies matières de la maquette, pas des matières génériques passe-partout).
 Inspire-toi du programme de référence des meilleures universités mondiales dans ce domaine précis (ex: MIT/Stanford pour l'informatique, Harvard/Johns Hopkins pour la médecine, une grande école de référence pour la spécialité concernée) comme fil conducteur pour identifier les matières fondamentales, tout en gardant des intitulés compréhensibles pour un étudiant africain francophone.
 Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après : {"matieres":["Nom matière 1","Nom matière 2","..."]}`;
  const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
  method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
+ body: JSON.stringify({ model: MODEL, max_tokens: 400, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
  });
  const data = await res.json();
  const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
  const jsonMatch = raw.match(/\{[\s\S]*\}/);
  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
- const matieres = (parsed.matieres || []).filter(Boolean).slice(0, 30);
+ const matieres = (parsed.matieres || []).filter(Boolean).slice(0, 8);
  return matieres.length ? matieres : null;
  } catch(e) { return null; }
 }
@@ -6118,6 +6325,17 @@ function showResults() {
  APP.quizQuestions.forEach((q,i) => { if (answers[i] === q.correct) score++; });
  APP.quizScore = score;
  const pct = Math.round(score/total*100);
+
+ // Enregistrement des stats AVANT le rendu de la correction détaillée :
+ // si le rendu plante (contenu généré par l'IA imprévu), le score est déjà
+ // sauvegardé et remonte quand même dans "Ma progression" et l'arbre.
+ try {
+ APP.user.streak++;
+ incrementSessions();
+ incrementQuestions(APP.quizQuestions.length);
+ addSubjectScore(selectedSubjectQuiz, pct);
+ } catch(e) { console.error('Erreur enregistrement stats quiz', e); }
+
  const emojis = pct>=80?'':pct>=60?'':pct>=40?'':'';
  const titles = pct>=80?'Excellent !':pct>=60?'Très bien !':pct>=40?'Pas mal !':'Continue !';
  const msgs = pct>=80?'Tu maîtrises ce sujet !':pct>=60?'Encore un peu de révision.':pct>=40?'Continue, tu progresses !':'La pratique mène à la perfection.';
@@ -6160,11 +6378,6 @@ function showResults() {
  </div>`;
  }).join('')}`;
  renderMathInChat(document.getElementById('result-correction'));
-
- APP.user.streak++;
- incrementSessions();
- incrementQuestions(APP.quizQuestions.length);
- addSubjectScore(selectedSubjectQuiz, pct);
 }
 
 function restartQuiz() {
@@ -6408,6 +6621,8 @@ let selectedSujetSubject = null, selectedSujetType = 'devoir', selectedSujetNPar
 function renderSujetConfig() {
  document.getElementById('sujet-config').style.display = 'block';
  document.getElementById('sujet-workspace').style.display = 'none';
+ const resultsEl = document.getElementById('sujet-results');
+ if (resultsEl) resultsEl.style.display = 'none';
  if (!selectedSujetSubject && SUBJECTS.length) selectedSujetSubject = SUBJECTS[0].id;
  const el = document.getElementById('sujet-subject-btns');
  el.innerHTML = [...SUBJECTS].sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>`
@@ -6532,12 +6747,75 @@ function restartSujet() {
  document.getElementById('sujet-timer-start-btn').disabled = false;
  document.getElementById('sujet-timer-display').textContent = '--:--';
  document.getElementById('sujet-workspace').style.display = 'none';
+ document.getElementById('sujet-results').style.display = 'none';
  renderSujetConfig();
 }
-function finishSujet() {
+async function gradeSujet() {
  clearInterval(sujetTimerInterval);
- showToast('✓ Sujet terminé — bon travail !');
- showScreen('screen-home');
+ const answered = sujetParts.filter(p => (p.reponse||'').trim().length > 0);
+ if (!answered.length) { showToast('! Réponds au moins à une partie avant de terminer'); return; }
+
+ const btn = document.getElementById('sujet-finish-btn');
+ btn.disabled = true; btn.textContent = ' Correction en cours...';
+
+ const subj = SUBJECTS.find(s=>s.id===selectedSujetSubject);
+ const level = APP.user.level || 'Licence 2';
+ const partsBlock = sujetParts.map((p,i) => `Partie ${i+1} (${p.type}, ${p.points||0} points)\nÉnoncé : ${p.enonce}\nRéponse de l'étudiant : ${(p.reponse||'').trim() || '(non répondu)'}`).join('\n\n');
+ const langInstruction = ` Réponds ENTIÈREMENT en ${LANG_NAMES_FOR_AI[APP_LANG] || 'français'}.`;
+ const prompt = `Tu es un correcteur expert en ${subj ? subj.name : 'la matière'} pour le niveau ${level}. Corrige ce devoir/examen partie par partie, avec bienveillance mais rigueur.${langInstruction}\n\n${partsBlock}\n\nPour chaque partie, attribue une note sur le barème indiqué (0 si non répondu), avec un commentaire court et constructif. Calcule aussi le total obtenu et le total maximum (somme des points de toutes les parties).\n\nRéponds UNIQUEMENT avec ce JSON valide, sans texte avant ou après :\n{"parts":[{"note":0,"commentaire":"..."}],"total":0,"total_max":20}`;
+
+ try {
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ method:'POST', headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 2200, system: 'Tu es un correcteur pedagogique. Reponds UNIQUEMENT en JSON valide, sans texte autour.', messages:[{role:'user', content:prompt}] })
+ });
+ if (!res.ok) { const err = await res.text(); throw new Error('HTTP '+res.status+': '+err.slice(0,120)); }
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ let parsed;
+ try { parsed = JSON.parse(raw); }
+ catch(je) { parsed = repairTruncatedJson(raw); }
+
+ const totalMax = parsed.total_max || sujetParts.reduce((a,p)=>a+(p.points||0),0) || 20;
+ const total = typeof parsed.total === 'number' ? parsed.total : (parsed.parts||[]).reduce((a,p)=>a+(p.note||0),0);
+ const pct = totalMax > 0 ? Math.round((total/totalMax)*100) : 0;
+
+ // Enregistrement des stats (progression + arbre de connaissance), comme un quiz noté.
+ try {
+ incrementSessions();
+ incrementQuestions(sujetParts.length);
+ addSubjectScore(selectedSujetSubject, pct);
+ } catch(e) { console.error('Erreur enregistrement stats sujet', e); }
+
+ renderSujetResults(parsed, total, totalMax, pct, subj);
+ } catch(e) {
+ showToast('✕ Erreur de correction : ' + ((e && e.message) || 'réessaie'));
+ }
+ btn.disabled = false; btn.textContent = 'Terminer et corriger';
+}
+function renderSujetResults(parsed, total, totalMax, pct, subj) {
+ document.getElementById('sujet-workspace').style.display = 'none';
+ document.getElementById('sujet-results').style.display = 'block';
+ const partsRes = parsed.parts || [];
+ document.getElementById('sujet-results-content').innerHTML = `
+ <div style="background:linear-gradient(135deg,var(--em),var(--em2));border-radius:var(--r);padding:20px;margin:16px 0 20px;color:#fff;text-align:center">
+ <div style="font-size:11px;opacity:.85;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${subj ? subj.name : ''}</div>
+ <div style="font-size:32px;font-weight:800">${total} / ${totalMax}</div>
+ <div style="font-size:13px;opacity:.9;margin-top:2px">${pct}%</div>
+ </div>
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:10px"> Correction détaillée</h3>
+ ${sujetParts.map((p,i)=>{
+ const r = partsRes[i] || {};
+ return `<div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:3px solid var(--em)">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+ <span style="font-size:12px;font-weight:700">Partie ${i+1}</span>
+ <span style="font-size:12px;font-weight:700;color:var(--em)">${r.note != null ? r.note : '—'} / ${p.points||0}</span>
+ </div>
+ <p style="font-size:12px;color:var(--text3);line-height:1.5">${r.commentaire || ''}</p>
+ </div>`;
+ }).join('')}`;
+ renderMathInChat(document.getElementById('sujet-results-content'));
 }
 
 async function analyzeCourse() {
@@ -7181,11 +7459,11 @@ async function pullCloudSync() {
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 
 // ── Bouton "Passer à l'app" (affiché uniquement en navigateur web/PWA) ──
-// Lien direct codé en dur dans le <a href> du bouton (voir plus bas dans le HTML) —
-// plus simple et plus fiable qu'un fetch() au clic : pas de dépendance au réseau,
-// au CORS cross-domaine, ni à un éventuel cache JS périmé pile au mauvais moment.
-// À mettre à jour manuellement (le href) à chaque nouvelle release, en même temps
-// que version.json.
+// IMPORTANT : remplace cette URL par le vrai lien de téléchargement de ton
+// dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
+// Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
+// "Installer" ouvrira un lien invalide.
+const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.0/app-debug-51.apk';
 
 function isRunningInNativeApp() {
  // Capacitor injecte automatiquement window.Capacitor dans l'app native —
@@ -7202,6 +7480,10 @@ function initWebToAppBanner() {
  } catch(e) {}
 }
 
+function downloadStudioraApk() {
+ window.open(STUDIORA_APK_URL, '_blank');
+}
+
 function dismissWebToAppBanner() {
  localStorage.setItem('studiora_hide_apk_banner', '1');
  const fab = document.getElementById('web-to-app-fab');
@@ -7213,6 +7495,12 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ── SYSTÈME PREMIUM / FREEMIUM ──
 // ══════════════════════════════════════════════
 const ADMIN_EMAIL = 'm16reen@gmail.com';
+// Comptes "exception" : aucune restriction (quotas illimités, accès aux
+// fonctions VIP comme le Quiz Libre) mais SANS les droits d'administration
+// (pas de tableau de bord admin, pas de badge "Admin"). Le plan affiché à
+// l'utilisateur (badge, couleur) reste celui réellement enregistré en base.
+const EXCEPTION_EMAILS = ['manstaki@yahoo.fr'];
+function isExceptionUser() { return EXCEPTION_EMAILS.includes((APP.user.email||'').toLowerCase()); }
 
 const PLANS = {
  free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10, transcription_min_per_day:150 },
@@ -7230,6 +7518,7 @@ function getPlan() {
  return APP.user.plan || 'free';
 }
 function getPlanLimits() {
+ if (isExceptionUser()) return { ...PLANS[getPlan()], ia_per_4h:999, quiz_per_5h:999, fc_per_day:999, transcription_min_per_day:999 };
  const base = PLANS[getPlan()];
  if (APP.user.bonusQuizUntil && APP.user.bonusQuizAmount && Date.now() < new Date(APP.user.bonusQuizUntil).getTime()) {
  return { ...base, quiz_per_5h: base.quiz_per_5h + APP.user.bonusQuizAmount };
@@ -7237,7 +7526,7 @@ function getPlanLimits() {
  return base;
 }
 function isAdmin() { return APP.user.email === ADMIN_EMAIL; }
-function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'; }
+function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'||isExceptionUser(); }
 
 // Repasse l'utilisateur en Gratuit si son plan (essai VIP, Premium, VIP payant)
 // a dépassé sa date d'expiration. À appeler à chaque chargement de session.
@@ -7299,7 +7588,7 @@ function incUsage(type) {
 
 // Check IA (reset toutes les 4h)
 function canUseIA() {
- if (isAdmin()||getPlan()==='vip'||getPlan()==='premium'&&getPlanLimits().ia_per_4h>=999) return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()||getPlan()==='premium'&&getPlanLimits().ia_per_4h>=999) return true;
  const u=getUsage(), today=getTodayKey();
  if (!u[today]) return true;
  const d=u[today];
@@ -7317,7 +7606,7 @@ function iaTimeLeft() {
  return h+'h'+String(m).padStart(2,'0');
 }
 function canUseQuiz() {
- if (isAdmin()||getPlan()==='vip') return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
  const u=getUsage(), today=getTodayKey();
  const d=getUsageToday();
  const elapsed=(Date.now()-(d.quiz_reset||0))/(1000*3600);
@@ -7332,7 +7621,7 @@ function quizTimeLeft() {
  return h+'h'+String(m).padStart(2,'0');
 }
 function canUseFC() {
- if (isAdmin()||getPlan()==='vip') return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
  const d=getUsageToday();
  return (d.fc||0) < getPlanLimits().fc_per_day;
 }
@@ -7344,7 +7633,7 @@ function getTranscriptionQuotaSec() { return (getPlanLimits().transcription_min_
 function getTranscriptionUsedSec() { return getUsageToday().transcribeSec || 0; }
 function getTranscriptionRemainingSec() { return Math.max(0, getTranscriptionQuotaSec() - getTranscriptionUsedSec()); }
 function canUseTranscription() {
- if (isAdmin()||getPlan()==='vip') return true;
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
  return getTranscriptionRemainingSec() > 0;
 }
 function addTranscriptionUsageSec(sec) {
@@ -7358,7 +7647,7 @@ function addTranscriptionUsageSec(sec) {
 function updateTranscriptionQuotaLabel() {
  const el = document.getElementById('transcribe-quota-label');
  if (!el) return;
- if (isAdmin()||getPlan()==='vip') { el.textContent = 'Temps de transcription illimité'; return; }
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) { el.textContent = 'Temps de transcription illimité'; return; }
  const remainingMin = Math.floor(getTranscriptionRemainingSec()/60);
  const quotaMin = Math.round(getTranscriptionQuotaSec()/60);
  el.textContent = 'Temps de transcription restant aujourd\'hui : ' + remainingMin + ' / ' + quotaMin + ' min';
@@ -7812,17 +8101,6 @@ function doLogout() {
 // ── INIT : auto-login si session sauvegardée ──
 // Utilise setTimeout(0) pour s'assurer que la nav (#global-nav) est dans le DOM
 // avant d'appeler showScreen → updateGlobalNav
-function hideSplash() {
- const el = document.getElementById('app-splash');
- if (!el) return;
- const elapsed = Date.now() - (window.__splashStart || 0);
- const wait = Math.max(0, 1400 - elapsed);
- setTimeout(() => {
- el.classList.add('hide');
- setTimeout(() => el.remove(), 600);
- }, wait);
-}
-
 function _runInit() {
  try {
  checkPaymentReturn();
@@ -7841,29 +8119,17 @@ function _runInit() {
  console.error('Init error:', e.message);
  try { showScreen('screen-onboarding'); } catch(e2) {}
  }
- hideSplash();
 }
 // On attend que tout le HTML (dont la nav) soit parsé
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.2'; // fallback web/PWA uniquement — à incrémenter à chaque release (voir version.json)
+const APP_VERSION = '1.0.0'; // à incrémenter à chaque nouvel APK publié (voir version.json)
 
 async function checkForAppUpdate() {
  try {
- // Priorité au plugin officiel @capacitor/app, qui lit la vraie versionName
- // native compilée dans CET APK précis (fiable, pas de pont maison à maintenir).
- // Fallback sur APP_VERSION uniquement pour le web/PWA (où @capacitor/app n'existe
- // pas) ou si le plugin n'a pas encore été synchronisé côté natif.
- let currentVersion = APP_VERSION;
- try {
- if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
- const info = await window.Capacitor.Plugins.App.getInfo();
- if (info && info.version) currentVersion = info.version;
- }
- } catch(e) { /* plugin absent ou pas encore synchronisé : on garde APP_VERSION */ }
  const res = await fetch('https://maureenniamien.github.io/studiora/version.json?t=' + Date.now());
  const data = await res.json();
- if (data.version && data.version !== currentVersion && data.apkUrl) {
+ if (data.version && data.version !== APP_VERSION && data.apkUrl) {
  showUpdateBanner(data.version, data.apkUrl);
  }
  } catch(e) { /* pas de connexion ou version.json absent : silencieux */ }
@@ -9455,12 +9721,9 @@ function mediaExtractAudio() {
 <div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- Bulle flottante "Passer à l'app" — visible uniquement en navigateur web (jamais dans l'app
- Android installée), persiste sur tous les écrans, style bulle façon icône flottante.
- Lien direct en dur (STUDIORA_APK_URL, ci-dessous) plutôt qu'un fetch() au clic : plus robuste,
- aucune dépendance au réseau/cache au moment précis où l'utilisateur appuie. À mettre à jour
- manuellement à chaque nouvelle release, en même temps que version.json. -->
+ Android installée), persiste sur tous les écrans, style bulle façon icône flottante -->
 <div id="web-to-app-fab" style="display:none;position:fixed;right:16px;bottom:96px;z-index:9999">
- <a href="https://maureenniamien.github.io/studiora/downloads/app-debug-56.apk" download aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;text-decoration:none">📲</a>
+ <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer">📲</button>
  <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--text3);color:#fff;border:2px solid var(--white,#fff);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
 </div>
 
