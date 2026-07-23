@@ -22,6 +22,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/quill-table-better@1/dist/quill-table-better.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
@@ -267,6 +268,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .sheet-table tr:nth-child(even) td{background:var(--bg2)}
 .sheet-table td:focus{outline:2px solid var(--em);outline-offset:-2px;background:rgba(37,99,235,.1)}
 .sheet-cell-selected{outline:2px solid var(--em) !important;background:rgba(37,99,235,.18) !important}
+table.sheet-dragging td{-webkit-user-select:none;user-select:none}
+.doc-loading-bar-wrap{background:var(--bg2);border-radius:12px;overflow:hidden;position:relative;height:46px}
+.doc-loading-bar-fill{position:absolute;inset:0 auto 0 0;width:0%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;transition:width .15s linear;border-radius:12px}
+.doc-loading-bar-fill span{color:#fff;font-size:13px;font-weight:700;white-space:nowrap}
 </style>
 </head>
 <body style="touch-action:manipulation">
@@ -980,7 +985,7 @@ try {
  <div>
  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NIVEAU</div>
  <div style="display:flex;gap:6px;flex-wrap:wrap" id="level-btns">
- <button onclick="setUserLevel('Terminal',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Terminal</button>
+ <button onclick="setUserLevel('Terminale',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Terminale</button>
  <button onclick="setUserLevel('Licence 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 1</button>
  <button onclick="setUserLevel('Licence 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 2</button>
  <button onclick="setUserLevel('Licence 3',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 3</button>
@@ -1539,6 +1544,10 @@ try {
  <div style="font-size:14px;font-weight:700;margin-bottom:4px">Ouvrir un fichier</div>
  <div style="font-size:12px;color:var(--text3)">Word (.docx), Excel (.xlsx), texte ou LaTeX (.txt/.tex)</div>
  </div>
+ <button onclick="openPasteTextModal()" style="width:100%;background:var(--white);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:12px">
+ <div style="font-size:14px;font-weight:700;margin-bottom:2px">📋 Coller un texte</div>
+ <div style="font-size:12px;color:var(--text3)">Colle un texte déjà copié — il sera importé dans un nouveau Word</div>
+ </button>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
  <button onclick="newBlankDoc('word')" style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
  <div style="font-size:13px;font-weight:700">+ Nouveau Word</div>
@@ -2191,14 +2200,19 @@ const ALL_SUBJECTS = [
 
 // Matières par niveau et filière
 const SUBJECTS_BY_LEVEL = {
+ '6ème': ['math','fr','ang','svt','hg'],
+ '5ème': ['math','fr','ang','svt','hg'],
+ '4ème': ['math','physique','svt','fr','ang','hg'],
  '3ème': ['math','physique','svt','fr','ang','hg'],
  '2nde': ['math','physique','svt','fr','ang','hg','eco'],
- 'Terminal': {
- 'default': ['math','physique','svt','fr','ang','hg','philo'],
- 'A': ['fr','philo','hg','ang','eco','math'],
- 'B': ['math','physique','svt','fr','ang','hg','philo'],
+ '1ère': {
+ 'default': ['math','physique','svt','fr','ang','hg'],
+ 'A': ['fr','hg','ang','eco','math'],
  'C': ['math','physique','svt','fr','ang','hg'],
  'D': ['math','physique','svt','fr','ang','hg'],
+ 'E': ['math','physique','svt','fr','ang','hg'],
+ 'F': ['math','physique','fr','ang','info'],
+ 'G': ['gestion','compta','eco','math','fr','ang'],
  },
  'Terminale': {
  'default': ['math','physique','svt','fr','ang','hg','philo'],
@@ -2209,6 +2223,8 @@ const SUBJECTS_BY_LEVEL = {
  'C': ['math','physique','svt','fr','ang','hg'],
  'D': ['math','physique','svt','fr','ang','hg'],
  'E': ['math','physique','svt','fr','ang','hg'],
+ 'F': ['math','physique','fr','ang','info'],
+ 'G': ['gestion','compta','eco','math','fr','ang'],
  'STMG': ['math','eco','gestion','fr','ang','hg'],
  },
  'Licence 1': {
@@ -2314,6 +2330,34 @@ function synthesizeFiliereSubject(filiere) {
  return { id: slugifyId(filiere), name: filiere, color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF', isFiliereSubject:true };
 }
 
+// Les niveaux 1ère/Terminale se choisissent via une "série" (ex. "Série C — Maths &
+// Physique"), stockée dans APP.user.serie — PAS dans APP.user.filiere (qui reste vide
+// pour ces niveaux). Ces tables font correspondre le libellé affiché à la clé courte
+// utilisée dans SUBJECTS_BY_LEVEL (ex. "Série C — Maths & Physique" -> "C").
+const TERMINALE_SERIE_MAP = {
+ 'Série A — Lettres & Philosophie': 'A',
+ 'Série B — Sciences Écon. & Soc.': 'B',
+ 'Série C — Maths & Physique': 'C',
+ 'Série D — Sciences de la Vie': 'D',
+ 'Série E — Sciences & Tech.': 'E',
+ 'Série F — Techniques Industrielles': 'F',
+ 'Série G — Techniques de Gestion': 'G',
+};
+const PREMIERE_SERIE_MAP = {
+ '1ère A': 'A',
+ '1ère C': 'C',
+ '1ère D': 'D',
+ '1ère E': 'E',
+ '1ère F (Tech. Ind.)': 'F',
+ '1ère G (Gestion)': 'G',
+};
+function resolveSerieKey(level, serie) {
+ if (!serie) return '';
+ if (level === 'Terminale') return TERMINALE_SERIE_MAP[serie] || serie;
+ if (level === '1ère') return PREMIERE_SERIE_MAP[serie] || serie;
+ return serie;
+}
+
 function getSubjects() {
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
@@ -2328,8 +2372,13 @@ function getSubjects() {
  } else if (byLevel[filiere]) {
  ids = byLevel[filiere];
  } else {
+ const serieKey = resolveSerieKey(level, APP.user.serie || '');
+ if (serieKey && byLevel[serieKey]) {
+ ids = byLevel[serieKey];
+ } else {
  ids = byLevel['default'] || ['fr','ang','methodo','info'];
- hasSpecificMapping = false; // pas de matières dédiées connues pour cette filière précise (ex: Master, filière ajoutée)
+ hasSpecificMapping = false;
+ }
  }
  let subjects = ids.map(id => ALL_SUBJECTS.find(s => s.id === id)).filter(Boolean);
  if (filiere && !hasSpecificMapping) {
@@ -3249,7 +3298,7 @@ function buildSheetHTML(sheetName, nRows, nCols, values) {
  for (let c=0; c<nCols; c++) {
  const ref = sheetColLetter(c)+(r+1);
  const val = (values && values[r] && values[r][c] !== undefined) ? values[r][c] : '';
- html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" oninput="onSheetCellInput(this)" onmousedown="onSheetCellTap(this,event)" ontouchstart="onSheetCellTap(this,event)">${escHtml(String(val))}</td>`;
+ html += `<td contenteditable="true" data-cell="${ref}" onfocus="onSheetCellFocus(this)" onblur="onSheetCellBlur(this)" oninput="onSheetCellInput(this)" onmousedown="onSheetCellTap(this,event);onSheetCellDown(this,event)" ontouchstart="onSheetCellTap(this,event);onSheetCellDown(this,event)">${escHtml(String(val))}</td>`;
  }
  html += `</tr>`;
  }
@@ -3406,6 +3455,7 @@ function sheetToolbarHTML() {
  <div class="doc-tb-panel" data-tab="insertion">
  <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
  <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
+ <button class="doc-tb-btn" onclick="insertChartFromSheetSelection()" title="Sélectionne une plage (en-têtes + données) puis appuie ici">📊 Graphique</button>
  </div>
  <div class="doc-tb-panel" data-tab="donnees">
  <button class="doc-tb-btn" onclick="sheetDeleteRow()">− Ligne</button>
@@ -3459,6 +3509,93 @@ function getSheetTargetCells() {
  if (_sheetSelectedCells.size) return Array.from(_sheetSelectedCells);
  return (_activeSheetCell && _activeSheetCell.tagName==='TD') ? [_activeSheetCell] : [];
 }
+
+// ── SÉLECTION PAR APPUI LONG + GLISSEMENT (façon Excel/Google Sheets mobile) ──
+// Un appui court garde le comportement normal (édition de la cellule). Un appui
+// maintenu ~380ms démarre une plage de sélection : on peut ensuite glisser le
+// doigt sur d'autres cellules pour étendre la plage rectangulaire (lignes x
+// colonnes), qui reste surlignée jusqu'à "Effacer sélection" ou une nouvelle
+// sélection. À la fin du geste, le mode "Sélection multiple" est activé
+// automatiquement pour que les boutons de mise en forme s'appliquent à la plage.
+let _sheetLongPressTimer = null;
+let _sheetDragActive = false;
+let _sheetDragStartCell = null;
+let _sheetLongPressStartXY = null;
+
+function onSheetCellDown(td, ev) {
+ if (_sheetMultiSelectMode) return; // le tap-pour-cocher existant reste prioritaire dans ce mode
+ const pt = ev.touches ? ev.touches[0] : ev;
+ _sheetLongPressStartXY = { x: pt.clientX, y: pt.clientY };
+ clearTimeout(_sheetLongPressTimer);
+ _sheetLongPressTimer = setTimeout(() => {
+ _sheetDragActive = true;
+ _sheetDragStartCell = td;
+ clearSheetSelection();
+ td.classList.add('sheet-cell-selected');
+ _sheetSelectedCells.add(td);
+ const table = td.closest('table');
+ if (table) table.classList.add('sheet-dragging');
+ if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e) {} }
+ showToast('↔ Glisse le doigt pour sélectionner une plage');
+ }, 380);
+}
+function _sheetCellUnderPoint(x, y) {
+ const el = document.elementFromPoint(x, y);
+ return el && el.closest ? el.closest('td[data-cell]') : null;
+}
+function onSheetPointerMove(ev) {
+ const pt = ev.touches ? ev.touches[0] : ev;
+ if (!pt) return;
+ if (!_sheetDragActive) {
+ // Un mouvement trop large avant la fin du délai = intention de scroll : on annule
+ if (_sheetLongPressStartXY) {
+ const dx = Math.abs(pt.clientX - _sheetLongPressStartXY.x), dy = Math.abs(pt.clientY - _sheetLongPressStartXY.y);
+ if (dx > 12 || dy > 12) clearTimeout(_sheetLongPressTimer);
+ }
+ return;
+ }
+ ev.preventDefault();
+ const td = _sheetCellUnderPoint(pt.clientX, pt.clientY);
+ if (!td || !_sheetDragStartCell || td.closest('table') !== _sheetDragStartCell.closest('table')) return;
+ selectSheetRange(_sheetDragStartCell, td);
+}
+function onSheetPointerUp() {
+ clearTimeout(_sheetLongPressTimer);
+ _sheetLongPressStartXY = null;
+ if (_sheetDragActive) {
+ _sheetDragActive = false;
+ document.querySelectorAll('table.sheet-dragging').forEach(t => t.classList.remove('sheet-dragging'));
+ _sheetMultiSelectMode = true;
+ const btn = document.getElementById('sheet-multiselect-btn');
+ if (btn) { btn.textContent = '☑ Sélection multiple (touche les cellules)'; btn.style.background = 'var(--em)'; btn.style.color = '#fff'; }
+ showToast('✓ Plage sélectionnée (' + _sheetSelectedCells.size + ' cellules)');
+ }
+ _sheetDragStartCell = null;
+}
+function selectSheetRange(tdA, tdB) {
+ const table = tdA.closest('table');
+ if (!table) return;
+ const posOf = (td) => {
+ const tr = td.closest('tr');
+ return { rowIdx: Array.from(table.rows).indexOf(tr), colIdx: Array.from(tr.cells).indexOf(td) };
+ };
+ const a = posOf(tdA), b = posOf(tdB);
+ const r0 = Math.min(a.rowIdx, b.rowIdx), r1 = Math.max(a.rowIdx, b.rowIdx);
+ const c0 = Math.min(a.colIdx, b.colIdx), c1 = Math.max(a.colIdx, b.colIdx);
+ clearSheetSelection();
+ for (let r = r0; r <= r1; r++) {
+ const row = table.rows[r]; if (!row) continue;
+ for (let c = c0; c <= c1; c++) {
+ const cell = row.cells[c];
+ if (cell && cell.hasAttribute('data-cell')) { cell.classList.add('sheet-cell-selected'); _sheetSelectedCells.add(cell); }
+ }
+ }
+}
+document.addEventListener('touchmove', onSheetPointerMove, { passive: false });
+document.addEventListener('touchend', onSheetPointerUp);
+document.addEventListener('touchcancel', onSheetPointerUp);
+document.addEventListener('mousemove', onSheetPointerMove);
+document.addEventListener('mouseup', onSheetPointerUp);
 function sheetToggleStyle(prop, val) {
  const cells = getSheetTargetCells();
  if (!cells.length) { showToast('⚠ Sélectionne une ou plusieurs cellules d\'abord'); return; }
@@ -3762,6 +3899,7 @@ function initWordQuillEditor(initialHTML) {
  <div id="doc-word-extra-toolbar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;background:var(--bg2);border-radius:10px;padding:8px">
  <button class="doc-tb-btn" onclick="quillInsertDate()"> Date</button>
  ${window.QuillTableBetter ? `<button class="doc-tb-btn" onclick="quillInsertTablePrompt()"> Tableau</button>` : ''}
+ <button class="doc-tb-btn" onclick="insertChartFromDocTable()" title="Insère un tableau avec des données puis appuie ici">📊 Graphique</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Symboles</span>
  ${DOC_SYMBOLS.map(s => `<button onclick="quillInsertSymbol('${s}')" class="doc-tb-btn" style="width:30px;padding:0;height:30px">${s}</button>`).join('')}
  </div>
@@ -3823,6 +3961,23 @@ function quillInsertSymbol(sym) {
  const range = quillEditor.getSelection(true) || { index: quillEditor.getLength() };
  quillEditor.insertText(range.index, sym, 'user');
 }
+function insertChartFromDocTable() {
+ if (!quillEditor) { showToast('⚠ Ouvre un document Word d\'abord'); return; }
+ const tables = quillEditor.root.querySelectorAll('table');
+ if (!tables.length) { showToast('⚠ Insère d\'abord un tableau (bouton "Tableau") avec des données'); return; }
+ const table = tables[tables.length - 1]; // le tableau le plus récent du document
+ const rows = Array.from(table.rows).map(tr => Array.from(tr.cells).map(td => td.textContent.trim()));
+ const filtered = rows.filter(r => r.some(v => v !== ''));
+ if (filtered.length < 2) { showToast('⚠ Le tableau doit avoir un en-tête et au moins une ligne de données'); return; }
+ openChartTypeModal(filtered, (chartType) => {
+ renderChartToImage(filtered, chartType, (dataUrl) => {
+ const range = quillEditor.getSelection(true) || { index: quillEditor.getLength() };
+ quillEditor.insertEmbed(range.index, 'image', dataUrl, 'user');
+ quillEditor.insertText(range.index + 1, '\n', 'user');
+ showToast('✓ Graphique inséré');
+ });
+ });
+}
 function quillInsertTablePrompt() {
  if (!quillEditor || !quillTableModule) { showToast('⚠ Le module tableau n\'est pas disponible'); return; }
  const rowsStr = prompt('Nombre de lignes ?', '3');
@@ -3881,6 +4036,169 @@ function newBlankDoc(type) {
  document.getElementById('doceditor-pdf-btn').style.display = 'none';
  return;
  }
+}
+
+function insertChartFromSheetSelection() {
+ const table = currentSheetTable();
+ if (!table) { showToast('⚠ Ouvre ou crée un tableau Excel d\'abord'); return; }
+ const cells = getSheetTargetCells();
+ let rows;
+ if (cells.length >= 2) {
+ const tbl = cells[0].closest('table');
+ const positions = cells.map(td => { const tr = td.closest('tr'); return { r: Array.from(tbl.rows).indexOf(tr), c: Array.from(tr.cells).indexOf(td) }; });
+ const r0 = Math.min(...positions.map(p => p.r)), r1 = Math.max(...positions.map(p => p.r));
+ const c0 = Math.min(...positions.map(p => p.c)), c1 = Math.max(...positions.map(p => p.c));
+ rows = [];
+ for (let r = r0; r <= r1; r++) {
+ const tr = tbl.rows[r]; if (!tr) continue;
+ const row = [];
+ for (let c = c0; c <= c1; c++) { const cell = tr.cells[c]; row.push(cell ? cell.textContent.trim() : ''); }
+ rows.push(row);
+ }
+ } else {
+ // Pas de sélection : on prend tout le tableau (sans les lettres de colonnes ni les numéros de ligne)
+ rows = Array.from(table.rows).slice(1).map(tr => Array.from(tr.cells).slice(1).map(td => td.textContent.trim()));
+ }
+ rows = rows.filter(r => r.some(v => v !== ''));
+ if (rows.length < 2) { showToast('⚠ Sélectionne au moins un en-tête et une ligne de données (appui long + glissement)'); return; }
+ openChartTypeModal(rows, (chartType) => {
+ renderChartToImage(rows, chartType, (dataUrl) => {
+ const panel = table.closest('.excel-sheet-panel') || document.getElementById('doceditor-content');
+ const img = document.createElement('img');
+ img.src = dataUrl;
+ img.style.cssText = 'max-width:100%;border:1px solid var(--border);border-radius:10px;margin-top:12px;display:block';
+ panel.appendChild(img);
+ showToast('✓ Graphique inséré');
+ });
+ });
+}
+
+// ── GRAPHIQUES À PARTIR DE DONNÉES DE TABLEAU (Excel et Word) ──
+// rows[0] = en-têtes (1ère colonne = libellés des catégories, colonnes suivantes = séries),
+// rows[1..] = données. Utilisé aussi bien depuis une sélection de cellules Excel que
+// depuis un tableau inséré dans un document Word.
+function openChartTypeModal(rows, onPick) {
+ const overlay = document.createElement('div');
+ overlay.id = 'chart-type-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ overlay.innerHTML = `
+ <div style="background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;animation:slideUp .3s ease">
+ <h2 style="font-size:17px;font-weight:800;margin-bottom:14px">Type de graphique</h2>
+ <div style="display:flex;flex-direction:column;gap:10px">
+ <button onclick="pickChartType('bar')" class="btn-outline">📊 Barres</button>
+ <button onclick="pickChartType('line')" class="btn-outline">📈 Courbe</button>
+ <button onclick="pickChartType('pie')" class="btn-outline">🥧 Camembert</button>
+ </div>
+ <button onclick="document.getElementById('chart-type-overlay').remove();window._chartPickCallback=null" style="width:100%;margin-top:14px;padding:13px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg2);font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Annuler</button>
+ </div>`;
+ document.body.appendChild(overlay);
+ window._chartPickCallback = onPick;
+}
+function pickChartType(type) {
+ const overlay = document.getElementById('chart-type-overlay');
+ if (overlay) overlay.remove();
+ const cb = window._chartPickCallback;
+ window._chartPickCallback = null;
+ if (cb) cb(type);
+}
+function renderChartToImage(rows, chartType, cb) {
+ if (typeof Chart === 'undefined') { showToast('⚠ Librairie graphique indisponible hors-ligne.'); return; }
+ const header = rows[0];
+ const dataRows = rows.slice(1);
+ const labels = dataRows.map(r => String(r[0] ?? ''));
+ const palette = ['#0B6E4F','#1E40AF','#C47A0B','#D13A3A','#7C3AED','#0891B2','#9333EA','#5B4FCF'];
+ const toNum = (v) => parseFloat(String(v ?? '0').replace(',', '.')) || 0;
+ const seriesNames = header.slice(1).map((n, i) => n || ('Série ' + (i + 1)));
+ const canvas = document.createElement('canvas');
+ canvas.width = 640; canvas.height = 400;
+ canvas.style.cssText = 'position:fixed;left:-9999px;top:0';
+ document.body.appendChild(canvas);
+ let chartData;
+ if (chartType === 'pie') {
+ chartData = { labels, datasets: [{ data: dataRows.map(r => toNum(r[1])), backgroundColor: labels.map((_, i) => palette[i % palette.length]) }] };
+ } else {
+ chartData = { labels, datasets: seriesNames.map((name, i) => ({
+ label: name,
+ data: dataRows.map(r => toNum(r[i + 1])),
+ backgroundColor: chartType === 'line' ? 'transparent' : palette[i % palette.length],
+ borderColor: palette[i % palette.length],
+ borderWidth: 2,
+ tension: .3
+ })) };
+ }
+ let chart;
+ try {
+ chart = new Chart(canvas.getContext('2d'), { type: chartType, data: chartData, options: { responsive: false, animation: false, plugins: { legend: { display: true } } } });
+ } catch (e) {
+ canvas.remove();
+ showToast('⚠ Impossible de générer ce graphique');
+ return;
+ }
+ setTimeout(() => {
+ const dataUrl = canvas.toDataURL('image/png');
+ chart.destroy();
+ canvas.remove();
+ cb(dataUrl);
+ }, 80);
+}
+
+// ── COLLER UN TEXTE (avec chargement animé avant import) ──
+function openPasteTextModal() {
+ const overlay = document.createElement('div');
+ overlay.id = 'paste-text-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ overlay.innerHTML = `
+ <div style="background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;animation:slideUp .3s ease">
+ <h2 style="font-size:17px;font-weight:800;margin-bottom:12px">Coller un texte</h2>
+ <textarea id="paste-text-input" class="input" placeholder="Colle ou écris ton texte ici..." style="width:100%;min-height:220px;resize:vertical;font-size:14px;line-height:1.6;padding:14px;margin-bottom:14px"></textarea>
+ <div id="paste-text-loading" style="display:none;margin-bottom:14px">
+ <div class="doc-loading-bar-wrap"><div id="paste-text-loading-fill" class="doc-loading-bar-fill"><span id="paste-text-loading-label">Traitement du texte... 0%</span></div></div>
+ </div>
+ <div style="display:flex;gap:10px">
+ <button id="paste-text-cancel-btn" onclick="document.getElementById('paste-text-overlay').remove()" style="flex:1;padding:13px;border-radius:14px;border:1.5px solid var(--border);background:var(--bg2);font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text2)">Annuler</button>
+ <button id="paste-text-confirm-btn" onclick="confirmPasteText()" class="btn-em" style="flex:1">Valider</button>
+ </div>
+ </div>`;
+ document.body.appendChild(overlay);
+ setTimeout(() => { const ta = document.getElementById('paste-text-input'); if (ta) ta.focus(); }, 50);
+}
+function confirmPasteText() {
+ const ta = document.getElementById('paste-text-input');
+ const text = ta ? ta.value.trim() : '';
+ if (!text) { showToast('⚠ Colle ou écris un texte d\'abord'); return; }
+ const confirmBtn = document.getElementById('paste-text-confirm-btn');
+ const cancelBtn = document.getElementById('paste-text-cancel-btn');
+ const loadingWrap = document.getElementById('paste-text-loading');
+ const fill = document.getElementById('paste-text-loading-fill');
+ const label = document.getElementById('paste-text-loading-label');
+ if (confirmBtn) confirmBtn.disabled = true;
+ if (cancelBtn) cancelBtn.disabled = true;
+ ta.disabled = true;
+ loadingWrap.style.display = 'block';
+ let pct = 0;
+ const timer = setInterval(() => {
+ pct = Math.min(100, pct + Math.round(6 + Math.random() * 12));
+ fill.style.width = pct + '%';
+ label.textContent = 'Traitement du texte... ' + pct + '%';
+ if (pct >= 100) {
+ clearInterval(timer);
+ setTimeout(() => {
+ const overlay = document.getElementById('paste-text-overlay');
+ if (overlay) overlay.remove();
+ createDocFromPastedText(text);
+ }, 250);
+ }
+ }, 140);
+}
+function createDocFromPastedText(text) {
+ docEditorState = { type: 'word', filename: 'texte_collé.docx' };
+ document.getElementById('doceditor-empty').style.display = 'none';
+ document.getElementById('doceditor-content').style.display = 'block';
+ document.getElementById('doceditor-save-btn').style.display = 'block';
+ document.getElementById('doceditor-pdf-btn').style.display = 'block';
+ const html = text.split(/\n{2,}/).map(p => '<p>' + escHtml(p).replace(/\n/g, '<br>') + '</p>').join('');
+ initWordQuillEditor(html);
+ showToast('✓ Texte importé');
 }
 
 async function handleDocEditorOpen(input) {
