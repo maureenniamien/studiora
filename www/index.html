@@ -2196,36 +2196,43 @@ const ALL_SUBJECTS = [
  { id:'chimiegen', icon:'', name:'Chimie Générale et Organique', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
  { id:'biophysique', icon:'', name:'Biophysique', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
  { id:'methodo', icon:'', name:'Méthodologie & Communication pro', color:'#64748B', soft:'#F1F5F9', border:'rgba(100,116,139,.2)' },
+ // Matières collège/lycée additionnelles (pour couvrir les 9 matières réelles par niveau)
+ { id:'eps', icon:'', name:'EPS', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'edhc', icon:'', name:'EDHC', color:'#64748B', soft:'#F1F5F9', border:'rgba(100,116,139,.2)' },
+ { id:'esp', icon:'ES', name:'Espagnol', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'arts', icon:'', name:'Arts Plastiques', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'all', icon:'DE', name:'Allemand', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
 ];
 
 // Matières par niveau et filière
 const SUBJECTS_BY_LEVEL = {
- '6ème': ['math','fr','ang','svt','hg'],
- '5ème': ['math','fr','ang','svt','hg'],
- '4ème': ['math','physique','svt','fr','ang','hg'],
- '3ème': ['math','physique','svt','fr','ang','hg'],
- '2nde': ['math','physique','svt','fr','ang','hg','eco'],
+ // Collège/lycée : 9 matières par niveau (programme ivoirien réel)
+ '6ème': ['math','fr','ang','svt','hg','eps','edhc','arts','esp'],
+ '5ème': ['math','fr','ang','svt','hg','eps','edhc','arts','esp'],
+ '4ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ '3ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ '2nde': ['math','physique','svt','fr','ang','hg','eco','eps','edhc'],
  '1ère': {
- 'default': ['math','physique','svt','fr','ang','hg'],
- 'A': ['fr','hg','ang','eco','math'],
- 'C': ['math','physique','svt','fr','ang','hg'],
- 'D': ['math','physique','svt','fr','ang','hg'],
- 'E': ['math','physique','svt','fr','ang','hg'],
- 'F': ['math','physique','fr','ang','info'],
- 'G': ['gestion','compta','eco','math','fr','ang'],
+ 'default': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'A': ['fr','hg','ang','eco','math','eps','edhc','esp','arts'],
+ 'C': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'D': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'E': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
+ 'F': ['math','physique','fr','ang','info','hg','eps','edhc','esp'],
+ 'G': ['gestion','compta','eco','math','fr','ang','eps','edhc','esp'],
  },
  'Terminale': {
- 'default': ['math','physique','svt','fr','ang','hg','philo'],
- 'A': ['fr','philo','hg','ang','eco','math'],
- 'A1': ['fr','philo','hg','ang','eco','math'],
- 'A2': ['fr','philo','hg','ang','eco','math'],
- 'B': ['math','physique','svt','fr','ang','hg','philo'],
- 'C': ['math','physique','svt','fr','ang','hg'],
- 'D': ['math','physique','svt','fr','ang','hg'],
- 'E': ['math','physique','svt','fr','ang','hg'],
- 'F': ['math','physique','fr','ang','info'],
- 'G': ['gestion','compta','eco','math','fr','ang'],
- 'STMG': ['math','eco','gestion','fr','ang','hg'],
+ 'default': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
+ 'A': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
+ 'A1': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
+ 'A2': ['fr','philo','hg','ang','eco','math','eps','edhc','esp'],
+ 'B': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
+ 'C': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
+ 'D': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
+ 'E': ['math','physique','svt','fr','ang','hg','philo','eps','edhc'],
+ 'F': ['math','physique','fr','ang','info','hg','eps','edhc','esp'],
+ 'G': ['gestion','compta','eco','math','fr','ang','eps','edhc','esp'],
+ 'STMG': ['math','eco','gestion','fr','ang','hg','eps','edhc','esp'],
  },
  'Licence 1': {
  'default': ['math','info','ang','eco','fr'],
@@ -2675,7 +2682,7 @@ function renderHome() {
  renderKnowledgeTreeWidget();
 
  const el = document.getElementById('subjects-list');
- el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
+ el.innerHTML = SUBJECTS.slice(0,4).map(s=>`
  <div class="subject-chip" onclick="openSubjectInfo('${s.id}')">
  <div style="width:40px;height:40px;border-radius:12px;background:${s.soft};border:1px solid ${s.border};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${s.color};flex-shrink:0">${s.icon || subjInitials(s.name)}</div>
  <div style="flex:1">
@@ -5703,18 +5710,18 @@ async function doRegister() {
 async function researchFiliereSubjects(niveau, filiere) {
  try {
  const prompt = `Tu es un conseiller pédagogique expert des cursus universitaires et professionnels francophones (Côte d'Ivoire, Afrique de l'Ouest).
-Pour la filière "${filiere}" au niveau "${niveau}", liste les 5 à 8 matières/UE les PLUS représentatives réellement enseignées dans cette filière précise (les vraies matières de la maquette, pas des matières génériques passe-partout).
+Pour la filière "${filiere}" au niveau "${niveau}", liste TOUTES les matières/UE réellement enseignées dans cette filière précise pour cette année précise (la maquette complète, pas une sélection réduite) — cela peut aller de 8 à 30 matières selon la filière, ne te limite pas artificiellement.
 Inspire-toi du programme de référence des meilleures universités mondiales dans ce domaine précis (ex: MIT/Stanford pour l'informatique, Harvard/Johns Hopkins pour la médecine, une grande école de référence pour la spécialité concernée) comme fil conducteur pour identifier les matières fondamentales, tout en gardant des intitulés compréhensibles pour un étudiant africain francophone.
 Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après : {"matieres":["Nom matière 1","Nom matière 2","..."]}`;
  const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
  method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 400, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
+ body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
  });
  const data = await res.json();
  const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
  const jsonMatch = raw.match(/\{[\s\S]*\}/);
  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
- const matieres = (parsed.matieres || []).filter(Boolean).slice(0, 8);
+ const matieres = (parsed.matieres || []).filter(Boolean).slice(0, 30);
  return matieres.length ? matieres : null;
  } catch(e) { return null; }
 }

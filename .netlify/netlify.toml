@@ -8,7 +8,7 @@ redirects = []
 
 [build]
 publish = "/data/data/com.termux/files/home/studiora"
-publishOrigin = "ui"
+publishOrigin = "default"
 
 [build.environment]
 
