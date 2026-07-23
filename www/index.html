@@ -3891,6 +3891,36 @@ async function initExcelLuckysheet(sheetsData, filename) {
  if (container) { container.style.display = 'block'; container.innerHTML = ''; }
  const saveBtn = document.getElementById('luckysheet-save-btn');
  if (saveBtn) saveBtn.style.display = 'block';
+
+ // Bug connu de Luckysheet : il mesure la hauteur de son conteneur au moment
+ // exact de l'init. Avec un conteneur en flex:1, cette hauteur peut encore
+ // valoir 0 si le navigateur n'a pas fini son calcul de mise en page — Luckysheet
+ // reste alors bloqué indéfiniment sur son propre écran "Loading...". On fige
+ // donc la hauteur réelle en pixels, et on laisse deux frames s'écouler avant
+ // d'initialiser, pour être sûr que le layout est stabilisé.
+ if (container) {
+ const h = container.getBoundingClientRect().height;
+ if (h > 0) container.style.height = h + 'px';
+ }
+ await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+ if (!document.getElementById('luckysheet-overlay')) return; // fermé pendant l'attente
+
+ // Filet de sécurité : si Luckysheet reste bloqué en interne (jamais rencontré
+ // en pratique depuis le fix de hauteur ci-dessus, mais on ne veut plus jamais
+ // laisser quelqu'un fixer un écran "Loading..." figé sans recours) — on propose
+ // de réessayer ou de fermer après 8s si l'init ne s'est toujours pas terminée.
+ let luckysheetReady = false;
+ const watchdog = setTimeout(() => {
+ if (luckysheetReady) return;
+ const c = document.getElementById('luckysheet-container');
+ if (!c) return;
+ c.innerHTML = `<div style="text-align:center;color:var(--text3);font-size:13px;padding:0 24px">
+ L'éditeur met plus de temps que prévu à démarrer.<br><br>
+ <button onclick="closeLuckysheetOverlay();initExcelLuckysheet(${JSON.stringify(sheetsData).replace(/"/g,'&quot;')},${JSON.stringify(filename).replace(/"/g,'&quot;')})" style="background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px">Réessayer</button>
+ <button onclick="closeLuckysheetOverlay()" style="background:var(--white);border:1px solid var(--border);border-radius:9px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Fermer</button>
+ </div>`;
+ }, 8000);
+
  try {
  luckysheet.create({
  container: 'luckysheet-container',
@@ -3908,10 +3938,15 @@ async function initExcelLuckysheet(sheetsData, filename) {
  }
  }
  return true;
+ },
+ workbookCreateAfter: function() {
+ luckysheetReady = true;
+ clearTimeout(watchdog);
  }
  },
  });
  } catch(e) {
+ clearTimeout(watchdog);
  showToast('⚠ Erreur au chargement de l\'éditeur Excel (' + (e.message||e) + ')');
  }
 }

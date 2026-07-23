@@ -1405,6 +1405,16 @@ try {
  <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour parler · chaque prise de parole ajoute une ligne</div>
  <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
  </div>
+ <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:18px">
+ <div style="font-size:13px;font-weight:700;margin-bottom:10px">🎬 Ou transcrire un fichier importé</div>
+ <input type="file" id="transcribe-file-input" accept="audio/*,video/*" style="display:none" onchange="handleTranscriptionMediaSelected(this)">
+ <button onclick="document.getElementById('transcribe-file-input').click()" class="doc-tb-btn" style="width:100%;padding:12px">Importer un audio ou une vidéo</button>
+ <div id="transcribe-media-preview" style="display:none;margin-top:12px">
+ <video id="transcribe-media-player" controls playsinline style="width:100%;border-radius:10px;background:#000;max-height:220px;display:block"></video>
+ <button id="transcribe-playback-btn" onclick="toggleTranscribeDuringPlayback()" style="width:100%;margin-top:10px;padding:12px;background:var(--em);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Transcrire pendant la lecture</button>
+ <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
+ </div>
+ </div>
  <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
  <div style="display:flex;gap:8px;margin-top:12px">
  <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">📋 Copier</button>
@@ -3820,10 +3830,20 @@ function loadLuckysheetAssets() {
  'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js',
  'https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js',
  ];
- CSS.forEach(href => {
- if (document.querySelector(`link[href="${href}"]`)) return;
+ // Avant : les <link> CSS étaient ajoutées sans onload/onerror, donc si l'une d'elles
+ // échouait ou traînait sur un réseau lent, rien ne le détectait — luckysheet.create()
+ // s'exécutait quand même dès que les JS étaient prêts, créant une grille 100%
+ // fonctionnelle mais totalement sans style (d'où la grille "nue" observée). On attend
+ // désormais chaque CSS explicitement, avec un timeout de sécurité par fichier.
+ const loadCss = href => new Promise((resolve) => {
+ if (document.querySelector(`link[href="${href}"]`)) { resolve(true); return; }
  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href;
+ let done = false;
+ const finish = ok => { if (done) return; done = true; resolve(ok); };
+ l.onload = () => finish(true);
+ l.onerror = () => finish(false);
  document.head.appendChild(l);
+ setTimeout(() => finish(false), 8000); // sécurité si le navigateur ne déclenche ni onload ni onerror
  });
  const loadScript = src => new Promise((resolve, reject) => {
  if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
@@ -3831,7 +3851,12 @@ function loadLuckysheetAssets() {
  s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + src));
  document.head.appendChild(s);
  });
- _luckysheetAssetsPromise = JS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve())
+ _luckysheetAssetsPromise = Promise.all(CSS.map(loadCss))
+ .then(results => {
+ const failed = results.filter(ok => !ok).length;
+ if (failed > 0) throw new Error(failed + ' feuille(s) de style Excel n\'ont pas pu charger (réseau)');
+ })
+ .then(() => JS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve()))
  .catch(e => { _luckysheetAssetsPromise = null; throw e; });
  return _luckysheetAssetsPromise;
 }
@@ -3866,6 +3891,36 @@ async function initExcelLuckysheet(sheetsData, filename) {
  if (container) { container.style.display = 'block'; container.innerHTML = ''; }
  const saveBtn = document.getElementById('luckysheet-save-btn');
  if (saveBtn) saveBtn.style.display = 'block';
+
+ // Bug connu de Luckysheet : il mesure la hauteur de son conteneur au moment
+ // exact de l'init. Avec un conteneur en flex:1, cette hauteur peut encore
+ // valoir 0 si le navigateur n'a pas fini son calcul de mise en page — Luckysheet
+ // reste alors bloqué indéfiniment sur son propre écran "Loading...". On fige
+ // donc la hauteur réelle en pixels, et on laisse deux frames s'écouler avant
+ // d'initialiser, pour être sûr que le layout est stabilisé.
+ if (container) {
+ const h = container.getBoundingClientRect().height;
+ if (h > 0) container.style.height = h + 'px';
+ }
+ await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+ if (!document.getElementById('luckysheet-overlay')) return; // fermé pendant l'attente
+
+ // Filet de sécurité : si Luckysheet reste bloqué en interne (jamais rencontré
+ // en pratique depuis le fix de hauteur ci-dessus, mais on ne veut plus jamais
+ // laisser quelqu'un fixer un écran "Loading..." figé sans recours) — on propose
+ // de réessayer ou de fermer après 8s si l'init ne s'est toujours pas terminée.
+ let luckysheetReady = false;
+ const watchdog = setTimeout(() => {
+ if (luckysheetReady) return;
+ const c = document.getElementById('luckysheet-container');
+ if (!c) return;
+ c.innerHTML = `<div style="text-align:center;color:var(--text3);font-size:13px;padding:0 24px">
+ L'éditeur met plus de temps que prévu à démarrer.<br><br>
+ <button onclick="closeLuckysheetOverlay();initExcelLuckysheet(${JSON.stringify(sheetsData).replace(/"/g,'&quot;')},${JSON.stringify(filename).replace(/"/g,'&quot;')})" style="background:var(--em);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px">Réessayer</button>
+ <button onclick="closeLuckysheetOverlay()" style="background:var(--white);border:1px solid var(--border);border-radius:9px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Fermer</button>
+ </div>`;
+ }, 8000);
+
  try {
  luckysheet.create({
  container: 'luckysheet-container',
@@ -3883,10 +3938,15 @@ async function initExcelLuckysheet(sheetsData, filename) {
  }
  }
  return true;
+ },
+ workbookCreateAfter: function() {
+ luckysheetReady = true;
+ clearTimeout(watchdog);
  }
  },
  });
  } catch(e) {
+ clearTimeout(watchdog);
  showToast('⚠ Erreur au chargement de l\'éditeur Excel (' + (e.message||e) + ')');
  }
 }
@@ -4611,18 +4671,85 @@ window.onAndroidSTTResult = function(text) {
  _voiceSessionStartTs = 0;
  if (text) {
  _voiceInsertText(text);
- } else {
+ } else if (!_transcribeContinuous) {
  showToast('⚠ Rien entendu, réessaie');
  }
+ _maybeContinueTranscribePlayback();
 };
 window.onAndroidSTTError = function(code) {
  isListening = false;
  _voiceSetMicActive(false);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
+ if (!_transcribeContinuous) {
  if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
  else showToast('⚠ Micro : erreur (' + code + '), réessaie');
+ }
+ _maybeContinueTranscribePlayback();
 };
+
+// ── Import audio/vidéo + transcription pendant la lecture ──
+// Réutilise le pont STT natif existant (single-shot : une écoute = un résultat),
+// en le relançant automatiquement après chaque segment tant que le média joue
+// encore — ainsi la transcription continue sans que l'utilisateur retape sur le micro.
+let _transcribeMediaObjectUrl = null;
+let _transcribeContinuous = false;
+
+function handleTranscriptionMediaSelected(input) {
+ const file = input.files && input.files[0];
+ if (!file) return;
+ if (_transcribeMediaObjectUrl) { try { URL.revokeObjectURL(_transcribeMediaObjectUrl); } catch(e) {} }
+ _transcribeMediaObjectUrl = URL.createObjectURL(file);
+ const player = document.getElementById('transcribe-media-player');
+ const preview = document.getElementById('transcribe-media-preview');
+ if (player) {
+ player.src = _transcribeMediaObjectUrl;
+ player.onended = () => stopTranscribeDuringPlayback();
+ }
+ if (preview) preview.style.display = 'block';
+ stopTranscribeDuringPlayback();
+}
+
+function toggleTranscribeDuringPlayback() {
+ if (_transcribeContinuous) { stopTranscribeDuringPlayback(); return; }
+ startTranscribeDuringPlayback();
+}
+
+function startTranscribeDuringPlayback() {
+ const player = document.getElementById('transcribe-media-player');
+ if (!player || !player.src) return;
+ if (!canUseTranscription()) {
+ showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
+ return;
+ }
+ _transcribeContinuous = true;
+ const btn = document.getElementById('transcribe-playback-btn');
+ if (btn) { btn.textContent = '⏹ Arrêter la transcription'; btn.style.background = '#C0392B'; }
+ player.currentTime = 0;
+ player.play().catch(()=>{ showToast('⚠ Lecture impossible, réessaie'); stopTranscribeDuringPlayback(); });
+ toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn');
+}
+
+function stopTranscribeDuringPlayback() {
+ if (!_transcribeContinuous) return;
+ _transcribeContinuous = false;
+ const player = document.getElementById('transcribe-media-player');
+ if (player) { try { player.pause(); } catch(e) {} }
+ if (isListening) {
+ if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') window.AndroidSTT.stopListening();
+ else if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e) {} }
+ }
+ const btn = document.getElementById('transcribe-playback-btn');
+ if (btn) { btn.textContent = 'Transcrire pendant la lecture'; btn.style.background = 'var(--em)'; }
+}
+
+function _maybeContinueTranscribePlayback() {
+ if (!_transcribeContinuous) return;
+ const player = document.getElementById('transcribe-media-player');
+ if (!player || player.paused || player.ended) { stopTranscribeDuringPlayback(); return; }
+ if (!canUseTranscription()) { stopTranscribeDuringPlayback(); return; }
+ setTimeout(() => { if (_transcribeContinuous) toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn'); }, 400);
+}
 
 async function toggleVoiceInput(targetId, micBtnId) {
  _voiceTargetId = targetId || 'chat-input';
