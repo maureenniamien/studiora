@@ -2403,8 +2403,16 @@ function showManageSubjects() {
  </div>
 
  <button onclick="document.getElementById('manage-subjects-overlay').remove()" style="width:100%;padding:12px;background:var(--bg2);border:none;border-radius:12px;color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Fermer</button>
+ <button onclick="resetSubjectCustomizations()" style="width:100%;padding:10px;background:none;border:none;color:var(--text3);font-weight:600;font-size:11px;cursor:pointer;margin-top:8px;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:underline">Réinitialiser la liste (retrouver toutes les matières de base de ma filière)</button>
  </div>`;
  document.body.appendChild(overlay);
+}
+function resetSubjectCustomizations() {
+ saveSubjectCustomizations({ added: [], removed: [], customNames: {} });
+ SUBJECTS = getSubjects();
+ showManageSubjects();
+ renderHome();
+ showToast('✓ Liste réinitialisée');
 }
 
 // SUBJECTS - initialisé après APP
@@ -3171,6 +3179,7 @@ function insertSheetFormulaName(name) {
 }
 
 function sheetAddRow(table) {
+ _sheetSnapshot();
  const nCols = table.querySelector('tr').children.length - 1;
  const nRows = table.querySelectorAll('tr').length - 1;
  const tr = document.createElement('tr');
@@ -3198,6 +3207,7 @@ function sheetAddRow(table) {
 }
 
 function sheetAddCol(table) {
+ _sheetSnapshot();
  const rows = table.querySelectorAll('tr');
  const nCols = rows[0].children.length - 1;
  rows.forEach((tr, r) => {
@@ -3235,6 +3245,7 @@ function recalcSheet(table) {
 
 function onSheetCellFocus(td) {
  _activeSheetCell = td;
+ _sheetSnapshot(); // capture l'état avant modification, pour permettre d'annuler
  if (td.hasAttribute('data-formula')) td.textContent = td.getAttribute('data-formula');
 }
 
@@ -3272,6 +3283,39 @@ function buildSheetHTML(sheetName, nRows, nCols, values) {
  <button onclick="sheetAddCol(this.closest('div').previousElementSibling.querySelector('table'))" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Colonne</button>
  </div>`;
  return html;
+}
+
+// ── ANNULER / RÉTABLIR ──
+// Instantané complet du <table> avant chaque action modifiante (édition, style,
+// bordure, ligne/colonne). Simple et fiable, largement suffisant pour une feuille.
+let _sheetUndoStack = [];
+let _sheetRedoStack = [];
+function _sheetSnapshot() {
+ const table = currentSheetTable();
+ if (!table) return;
+ const last = _sheetUndoStack[_sheetUndoStack.length-1];
+ if (last === table.outerHTML) return; // rien de changé depuis le dernier snapshot
+ _sheetUndoStack.push(table.outerHTML);
+ if (_sheetUndoStack.length > 40) _sheetUndoStack.shift();
+ _sheetRedoStack = [];
+}
+function sheetUndo() {
+ const table = currentSheetTable();
+ if (!table || !_sheetUndoStack.length) { showToast('Rien à annuler'); return; }
+ _sheetRedoStack.push(table.outerHTML);
+ const prev = _sheetUndoStack.pop();
+ const tmp = document.createElement('div'); tmp.innerHTML = prev;
+ table.replaceWith(tmp.firstElementChild);
+ _activeSheetCell = null; _sheetSelAnchor = null; _sheetSelEnd = null;
+}
+function sheetRedo() {
+ const table = currentSheetTable();
+ if (!table || !_sheetRedoStack.length) { showToast('Rien à rétablir'); return; }
+ _sheetUndoStack.push(table.outerHTML);
+ const next = _sheetRedoStack.pop();
+ const tmp = document.createElement('div'); tmp.innerHTML = next;
+ table.replaceWith(tmp.firstElementChild);
+ _activeSheetCell = null; _sheetSelAnchor = null; _sheetSelEnd = null;
 }
 
 // ── SÉLECTION MULTI-CELLULES ──
@@ -3743,11 +3787,53 @@ function currentSheetTable() {
  if (wrap) { const t = wrap.querySelector('table[data-sheet]'); if (t) return t; }
  return document.querySelector('#doceditor-content table[data-sheet]');
 }
-function sheetToggleBorder() {
+const SHEET_PALETTE = ['#000000','#374151','#dc2626','#ea580c','#c47a0b','#65a30d','#0b6e4f','#0891b2','#1d4ed8','#4338ca','#7c3aed','#a21caf','#db2777','#fff59d','#a7f3d0','#bfdbfe','#fbcfe8','#fed7aa','#e5e7eb','#ffffff'];
+let _sheetBorderColor = '#000000';
+function sheetSetBorderColor(c, btn) {
+ _sheetBorderColor = c;
+ if (btn) { const row = btn.parentElement; row.querySelectorAll('.doc-tb-btn').forEach(b=>b.style.outline=''); btn.style.outline = '2px solid var(--em)'; }
+}
+function sheetApplyBorderStyle(style, width) {
  const cells = _sheetTargetCells();
  if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
- const on = cells[0].style.border === '2px solid #333333' || cells[0].style.border === '2px solid rgb(51, 51, 51)';
- cells.forEach(td => { td.style.border = on ? '1px solid var(--border)' : '2px solid #333333'; });
+ _sheetSnapshot();
+ cells.forEach(td => { td.style.border = style === 'none' ? '1px solid var(--border)' : (width + 'px ' + style + ' ' + _sheetBorderColor); });
+}
+function sheetClearCells() {
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ _sheetSnapshot();
+ cells.forEach(td => { td.textContent = ''; td.removeAttribute('style'); td.removeAttribute('data-formula'); td.style.border = '1px solid var(--border)'; td.style.padding='8px 10px'; td.style.minWidth='70px'; td.style.height='16px'; });
+ const table = cells[0].closest('table');
+ if (table) recalcSheet(table);
+}
+function sheetToggleBorder() {
+ sheetApplyBorderStyle('solid', 1);
+}
+function sheetToggleStyle(prop, val) {
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ _sheetSnapshot();
+ const on = cells[0].style[prop] === val;
+ cells.forEach(td => { td.style[prop] = on ? '' : val; });
+}
+function sheetSetFontColor(c) {
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ _sheetSnapshot();
+ cells.forEach(td => { td.style.color = c; });
+}
+function sheetSetFillColor(c) {
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ _sheetSnapshot();
+ cells.forEach(td => { td.style.background = c === 'transparent' ? '' : c; });
+}
+function sheetSetAlign(al) {
+ const cells = _sheetTargetCells();
+ if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ _sheetSnapshot();
+ cells.forEach(td => { td.style.textAlign = al; });
 }
 // ── Excel léger (tables HTML éditables, sans dépendance externe) ──
 // Remplace Luckysheet (bibliothèque lourde chargée depuis un CDN, qui pouvait
@@ -3804,17 +3890,29 @@ function sheetToolbarHTML() {
  <button class="doc-tb-tab" onclick="sheetSwitchTab('donnees',this)">Données</button>
  </div>
  <div class="doc-tb-panel active" data-tab="accueil">
+ <button class="doc-tb-btn" onclick="sheetUndo()" title="Annuler">↶ Annuler</button>
+ <button class="doc-tb-btn" onclick="sheetRedo()" title="Rétablir">↷ Rétablir</button>
+ <button class="doc-tb-btn" onclick="sheetClearCells()" title="Effacer contenu et mise en forme">🧹 Effacer</button>
  <button class="doc-tb-btn" style="font-weight:800" onclick="sheetToggleStyle('fontWeight','700')" title="Gras">G</button>
  <button class="doc-tb-btn" style="font-style:italic" onclick="sheetToggleStyle('fontStyle','italic')" title="Italique">I</button>
  <button class="doc-tb-btn" style="text-decoration:underline" onclick="sheetToggleStyle('textDecoration','underline')" title="Souligné">S</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de police</span>
- ${['#000000','#dc2626','#0b6e4f','#1d4ed8','#c47a0b'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px" onclick="sheetSetFontColor('${c}')"></button>`).join('')}
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Couleur de fond</span>
- <button class="doc-tb-btn" style="width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('transparent')" title="Aucune">✕</button>
- ${['#fff59d','#a7f3d0','#bfdbfe','#fbcfe8'].map(c=>`<button class="doc-tb-btn" style="background:${c};width:26px;padding:0;height:26px;border:1px solid var(--border)" onclick="sheetSetFillColor('${c}')"></button>`).join('')}
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Bordures</span>
- <button class="doc-tb-btn" onclick="sheetToggleBorder()" title="Bordure fine">▦</button>
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Alignement</span>
+ ${SHEET_PALETTE.map(c=>`<button class="doc-tb-btn" style="background:${c};width:24px;padding:0;height:24px;border:1px solid var(--border)" onclick="sheetSetFontColor('${c}')"></button>`).join('')}
+ <input type="color" onchange="sheetSetFontColor(this.value)" title="Autre couleur" style="width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:6px;background:none">
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Couleur de fond</span>
+ <button class="doc-tb-btn" style="width:24px;padding:0;height:24px;border:1px solid var(--border)" onclick="sheetSetFillColor('transparent')" title="Aucune">✕</button>
+ ${SHEET_PALETTE.map(c=>`<button class="doc-tb-btn" style="background:${c};width:24px;padding:0;height:24px;border:1px solid var(--border)" onclick="sheetSetFillColor('${c}')"></button>`).join('')}
+ <input type="color" onchange="sheetSetFillColor(this.value)" title="Autre couleur" style="width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:6px;background:none">
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Couleur de bordure</span>
+ ${SHEET_PALETTE.slice(0,12).map(c=>`<button class="doc-tb-btn" style="background:${c};width:24px;padding:0;height:24px;border:1px solid var(--border)${c===_sheetBorderColor?';outline:2px solid var(--em)':''}" onclick="sheetSetBorderColor('${c}',this)"></button>`).join('')}
+ <input type="color" onchange="sheetSetBorderColor(this.value,this)" title="Autre couleur" style="width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:6px;background:none">
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Type de bordure</span>
+ <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('solid',1)" title="Fine">▭ Fine</button>
+ <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('solid',3)" title="Épaisse">▬ Épaisse</button>
+ <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('dashed',2)" title="Tirets">┅ Tirets</button>
+ <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('dotted',2)" title="Pointillés">┈ Pointillés</button>
+ <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('none',0)" title="Aucune bordure">✕ Aucune</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:6px">Alignement</span>
  <button class="doc-tb-btn" onclick="sheetSetAlign('left')">≡</button>
  <button class="doc-tb-btn" onclick="sheetSetAlign('center')">≣</button>
  <button class="doc-tb-btn" onclick="sheetSetAlign('right')">≡→</button>
@@ -3841,32 +3939,12 @@ function sheetSwitchTab(tab, btn) {
  btn.classList.add('active');
  container.querySelectorAll('.doc-tb-panel').forEach(p=>p.classList.toggle('active', p.getAttribute('data-tab')===tab));
 }
-function sheetToggleStyle(prop, val) {
- const cells = _sheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
- const on = cells[0].style[prop] === val;
- cells.forEach(td => { td.style[prop] = on ? '' : val; });
-}
-function sheetSetFontColor(c) {
- const cells = _sheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
- cells.forEach(td => { td.style.color = c; });
-}
-function sheetSetFillColor(c) {
- const cells = _sheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
- cells.forEach(td => { td.style.background = c === 'transparent' ? '' : c; });
-}
-function sheetSetAlign(al) {
- const cells = _sheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
- cells.forEach(td => { td.style.textAlign = al; });
-}
 function sheetDeleteRow() {
  const td = _activeSheetCell;
  if (!td || td.tagName!=='TD') { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
  const table = td.closest('table');
  if (table.querySelectorAll('tr').length <= 2) { showToast('⚠ Impossible de supprimer la dernière ligne'); return; }
+ _sheetSnapshot();
  td.closest('tr').remove();
  [...table.querySelectorAll('tr')].slice(1).forEach((r,i) => {
  const th = r.querySelector('th'); if (th) th.textContent = i+1;
@@ -3884,6 +3962,7 @@ function sheetDeleteCol() {
  const table = td.closest('table');
  const colIdx = td.getAttribute('data-cell').replace(/\d+$/,'').charCodeAt(0)-65;
  if (table.querySelectorAll('tr')[0].children.length <= 2) { showToast('⚠ Impossible de supprimer la dernière colonne'); return; }
+ _sheetSnapshot();
  table.querySelectorAll('tr').forEach(tr => {
  const cell = tr.children[colIdx+1];
  if (cell) cell.remove();
@@ -3901,6 +3980,7 @@ function sheetSortColumn(dir) {
  const table = currentSheetTable();
  if (!table) { showToast('⚠ Aucune feuille active'); return; }
  if (!_activeSheetCell) { showToast('⚠ Clique dans une cellule de la colonne à trier'); return; }
+ _sheetSnapshot();
  const colRef = _activeSheetCell.getAttribute('data-cell').replace(/\d+$/,'');
  const rows = [...table.querySelectorAll('tr')].slice(1);
  rows.sort((a,b) => {
@@ -8478,7 +8558,7 @@ function _runInit() {
 // On attend que tout le HTML (dont la nav) soit parsé
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.0'; // à incrémenter à chaque nouvel APK publié (voir version.json)
+const APP_VERSION = '1.0.2'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
 
 async function checkForAppUpdate() {
  try {
