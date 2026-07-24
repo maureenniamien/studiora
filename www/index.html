@@ -3292,11 +3292,75 @@ const SHEET_FORMULAS = [
  {name:'SI', syntax:'SI(A1>10;"Oui";"Non")', desc:'Condition'},
 ];
 let _activeSheetCell = null;
+// ── SÉLECTION DE CELLULES POUR CONSTRUIRE UNE FORMULE (mode "point", comme
+// Excel/Sheets) : quand la cellule éditée commence par "=", taper sur une
+// autre cellule insère sa référence dans la formule au lieu de déplacer le
+// focus ; glisser le doigt après avoir touché une cellule transforme cette
+// référence en plage (A2 → A2:A5), et se répète pour insérer plusieurs
+// références (avec virgule automatique) à la suite.
+let _sheetFormulaTd = null;
+let _sheetFormulaPicking = false;
+let _sheetFormulaPickAnchor = null;
+let _sheetFormulaInsertStart = null, _sheetFormulaInsertEnd = null;
+
+function _sheetGetCaretOffset(td) {
+ const sel = window.getSelection();
+ if (!sel || !sel.rangeCount) return td.textContent.length;
+ const range = sel.getRangeAt(0);
+ if (!td.contains(range.startContainer)) return td.textContent.length;
+ const pre = range.cloneRange();
+ pre.selectNodeContents(td);
+ pre.setEnd(range.startContainer, range.startOffset);
+ return pre.toString().length;
+}
+function _sheetSetCaretOffset(td, offset) {
+ const sel = window.getSelection();
+ if (!sel) return;
+ let node = td.firstChild;
+ if (!node) { td.appendChild(document.createTextNode('')); node = td.firstChild; }
+ const len = node.textContent.length;
+ const off = Math.max(0, Math.min(offset, len));
+ const range = document.createRange();
+ range.setStart(node, off);
+ range.collapse(true);
+ sel.removeAllRanges();
+ sel.addRange(range);
+}
+function _sheetRangeRefString(a, b) {
+ if (!a || !b) return '';
+ if (a.r===b.r && a.c===b.c) return sheetColLetter(a.c)+(a.r+1);
+ const r0=Math.min(a.r,b.r), r1=Math.max(a.r,b.r), c0=Math.min(a.c,b.c), c1=Math.max(a.c,b.c);
+ return sheetColLetter(c0)+(r0+1)+':'+sheetColLetter(c1)+(r1+1);
+}
+// Insère refText dans la formule en cours d'édition, au curseur. isLiveUpdate
+// remplace la dernière référence insérée (utile pendant un glissement, pour
+// que A2 devienne A2:A5 au lieu de s'accumuler en A2A2:A5) ; sinon, une
+// virgule est ajoutée automatiquement si le curseur suit déjà une référence.
+function _sheetInsertRefIntoFormula(refText, isLiveUpdate) {
+ const td = _sheetFormulaTd;
+ if (!td) return;
+ const text = td.textContent;
+ const caret = (isLiveUpdate && _sheetFormulaInsertStart != null) ? _sheetFormulaInsertStart : _sheetGetCaretOffset(td);
+ const endCaret = (isLiveUpdate && _sheetFormulaInsertEnd != null) ? _sheetFormulaInsertEnd : caret;
+ let prefix = '';
+ if (!isLiveUpdate) {
+ const before = text.slice(0, caret);
+ if (/[A-Za-z0-9:)]$/.test(before)) prefix = ',';
+ }
+ td.textContent = text.slice(0, caret) + prefix + refText + text.slice(endCaret);
+ const newCaret = caret + prefix.length + refText.length;
+ _sheetFormulaInsertStart = caret + prefix.length;
+ _sheetFormulaInsertEnd = newCaret;
+ td.focus();
+ _sheetSetCaretOffset(td, newCaret);
+}
 
 function onSheetCellInput(td) {
  _activeSheetCell = td;
  const table = td.closest('table');
  if (table) refreshLinkedCharts(table); // les graphiques liés suivent la saisie en direct
+ const text0 = td.textContent.trim();
+ _sheetFormulaTd = text0.startsWith('=') ? td : (_sheetFormulaTd === td ? null : _sheetFormulaTd);
  const box = document.getElementById('sheet-formula-suggest');
  if (!box) return;
  const text = td.textContent.trim();
@@ -3391,6 +3455,8 @@ function onSheetCellFocus(td) {
  _activeSheetCell = td;
  _sheetSnapshot(); // capture l'état avant modification, pour permettre d'annuler
  if (td.hasAttribute('data-formula')) td.textContent = td.getAttribute('data-formula');
+ _sheetFormulaTd = td.textContent.trim().startsWith('=') ? td : null;
+ _sheetFormulaInsertStart = null; _sheetFormulaInsertEnd = null;
 }
 
 function onSheetCellBlur(td) {
@@ -3402,6 +3468,7 @@ function onSheetCellBlur(td) {
  } else {
  td.removeAttribute('data-formula');
  }
+ if (_sheetFormulaTd === td) { _sheetFormulaTd = null; _sheetFormulaInsertStart = null; _sheetFormulaInsertEnd = null; }
  recalcSheet(table);
 }
 
@@ -3504,21 +3571,43 @@ function updateSheetSelectionHighlight(table) {
 }
 
 function sheetCellMouseDown(e, td) {
+ if (_sheetFormulaTd && td !== _sheetFormulaTd) {
+ e.preventDefault();
+ _sheetFormulaPicking = true;
+ _sheetFormulaPickAnchor = _sheetCellPos(td);
+ _sheetInsertRefIntoFormula(td.getAttribute('data-cell'), false);
+ return;
+ }
  const pos = _sheetCellPos(td);
  if (!pos) return;
  _sheetSelAnchor = pos; _sheetSelEnd = pos; _sheetSelecting = true;
  updateSheetSelectionHighlight(td.closest('table'));
 }
 function sheetCellMouseEnter(td) {
+ if (_sheetFormulaTd && _sheetFormulaPicking) {
+ const b = _sheetCellPos(td);
+ if (!b || !_sheetFormulaPickAnchor) return;
+ _sheetInsertRefIntoFormula(_sheetRangeRefString(_sheetFormulaPickAnchor, b), true);
+ return;
+ }
  if (!_sheetSelecting) return;
  const pos = _sheetCellPos(td);
  if (!pos) return;
  _sheetSelEnd = pos;
  updateSheetSelectionHighlight(td.closest('table'));
 }
-document.addEventListener('mouseup', () => { _sheetSelecting = false; });
+document.addEventListener('mouseup', () => { _sheetSelecting = false; _sheetFormulaPicking = false; });
 
 function sheetCellTouchStart(e, td) {
+ if (_sheetFormulaTd && td !== _sheetFormulaTd) {
+ // En mode formule, pas besoin d'appui long : un tap insère la cellule
+ // tout de suite, et glisser le doigt la transforme en plage (A2 → A2:A5).
+ e.preventDefault();
+ _sheetFormulaPicking = true;
+ _sheetFormulaPickAnchor = _sheetCellPos(td);
+ _sheetInsertRefIntoFormula(td.getAttribute('data-cell'), false);
+ return;
+ }
  const touch = e.touches[0];
  _sheetTouchStartXY = { x: touch.clientX, y: touch.clientY };
  _sheetTouchActive = false;
@@ -3533,6 +3622,17 @@ function sheetCellTouchStart(e, td) {
  }, 450);
 }
 function sheetCellTouchMove(e) {
+ if (_sheetFormulaTd && _sheetFormulaPicking) {
+ e.preventDefault();
+ const touch = e.touches[0];
+ const el = document.elementFromPoint(touch.clientX, touch.clientY);
+ const td = el && el.closest ? el.closest('td[data-cell]') : null;
+ if (!td) return;
+ const b = _sheetCellPos(td);
+ if (!b || !_sheetFormulaPickAnchor) return;
+ _sheetInsertRefIntoFormula(_sheetRangeRefString(_sheetFormulaPickAnchor, b), true);
+ return;
+ }
  if (!_sheetTouchActive) {
  const touch = e.touches[0];
  if (_sheetTouchStartXY && (Math.abs(touch.clientX-_sheetTouchStartXY.x)>8 || Math.abs(touch.clientY-_sheetTouchStartXY.y)>8)) {
@@ -3553,6 +3653,7 @@ function sheetCellTouchMove(e) {
 function sheetCellTouchEnd() {
  clearTimeout(_sheetTouchTimer);
  _sheetTouchActive = false;
+ _sheetFormulaPicking = false;
 }
 
 // Renvoie les cellules ciblées par les boutons de mise en forme : la plage
@@ -3920,35 +4021,51 @@ function refreshLinkedCharts(table) {
 
 // Rend une carte-graphique déplaçable au doigt (ou à la souris) par sa
 // poignée : elle reste positionnée par-dessus la grille, où l'utilisateur
-// la laisse, sans jamais interférer avec le défilement/l'édition des cellules
-// en-dessous (pointer-events limité à la carte elle-même).
+// la laisse. On réutilise ici exactement le même schéma tactile que le
+// redimensionnement des colonnes/lignes (touchstart/touchmove/touchend +
+// mousedown/mousemove/mouseup), déjà éprouvé sur mobile dans cette feuille,
+// plutôt que les Pointer Events qui se sont révélés peu fiables sur certains
+// WebView Android.
 function makeChartDraggable(card, handle, wrap) {
- let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
- handle.addEventListener('pointerdown', (e) => {
- if (e.target.closest('button')) return;
- dragging = true;
- try { handle.setPointerCapture(e.pointerId); } catch(err) {}
- startX = e.clientX; startY = e.clientY;
+ function getStart(clientX, clientY) {
  const rect = card.getBoundingClientRect(), wrapRect = wrap.getBoundingClientRect();
- origLeft = rect.left - wrapRect.left; origTop = rect.top - wrapRect.top;
- card.style.right = 'auto';
- card.style.left = origLeft + 'px';
- card.style.top = origTop + 'px';
- });
- handle.addEventListener('pointermove', (e) => {
- if (!dragging) return;
- e.preventDefault();
- const dx = e.clientX - startX, dy = e.clientY - startY;
+ return { x: clientX, y: clientY, left: rect.left - wrapRect.left, top: rect.top - wrapRect.top };
+ }
+ function applyMove(start, clientX, clientY) {
+ const dx = clientX - start.x, dy = clientY - start.y;
  const wrapRect = wrap.getBoundingClientRect();
- let nl = origLeft + dx, nt = origTop + dy;
+ let nl = start.left + dx, nt = start.top + dy;
  nl = Math.max(0, Math.min(nl, Math.max(0, wrapRect.width - card.offsetWidth)));
  nt = Math.max(0, Math.min(nt, Math.max(0, wrapRect.height - card.offsetHeight)));
+ card.style.right = 'auto';
  card.style.left = nl + 'px';
  card.style.top = nt + 'px';
+ }
+ let touchStart = null, touchMoved = false;
+ handle.addEventListener('touchstart', (e) => {
+ if (e.target.closest('button')) return;
+ const t = e.touches[0];
+ touchStart = getStart(t.clientX, t.clientY);
+ touchMoved = false;
+ }, { passive: true });
+ handle.addEventListener('touchmove', (e) => {
+ if (!touchStart) return;
+ e.preventDefault();
+ touchMoved = true;
+ const t = e.touches[0];
+ applyMove(touchStart, t.clientX, t.clientY);
+ }, { passive: false });
+ handle.addEventListener('touchend', () => { touchStart = null; touchMoved = false; });
+ handle.addEventListener('touchcancel', () => { touchStart = null; touchMoved = false; });
+ handle.addEventListener('mousedown', (e) => {
+ if (e.target.closest('button')) return;
+ e.preventDefault();
+ const start = getStart(e.clientX, e.clientY);
+ const onMove = (ev) => applyMove(start, ev.clientX, ev.clientY);
+ const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+ document.addEventListener('mousemove', onMove);
+ document.addEventListener('mouseup', onUp);
  });
- const endDrag = (e) => { dragging = false; try { handle.releasePointerCapture(e.pointerId); } catch(err) {} };
- handle.addEventListener('pointerup', endDrag);
- handle.addEventListener('pointercancel', endDrag);
 }
 
 function downloadSheetChart(id, label) {
@@ -4611,7 +4728,7 @@ function sheetToolbarHTML() {
  <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
  <button class="doc-tb-btn" onclick="addExcelSheet()">+ Feuille</button>
  <button class="doc-tb-btn" onclick="openChartTypeModal()" style="background:var(--em-soft);color:var(--em);border-color:var(--em-mid)">Graphique</button>
- <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Astuce : appui long sur une cellule puis glisse le doigt pour sélectionner une plage</span>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Astuce : appui long sur une cellule puis glisse le doigt pour sélectionner une plage. Dans une formule (=...), tape directement sur les cellules pour insérer leur référence.</span>
  </div>
  <div class="doc-tb-panel" data-tab="donnees">
  <button class="doc-tb-btn" onclick="sheetDeleteRow()">− Ligne</button>
