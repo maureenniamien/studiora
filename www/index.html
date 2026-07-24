@@ -2360,6 +2360,9 @@ function colorForSubjectId(id) {
 // répétaient de façon inégale (ex. orange réutilisé 6 fois). Résultat : deux
 // matières voisines dans une liste ont rarement la même couleur, et chaque
 // matière garde toujours la même couleur d'une session à l'autre.
+// Couleur par défaut à l'enregistrement (utile pour colorForSubjectId / cas
+// isolés) — mais l'ordre visuel réel est recalculé dans getSubjects(), juste
+// en dessous, car c'est LUI qui reflète l'ordre réellement affiché à l'écran.
 ALL_SUBJECTS.forEach((s, i) => {
  const p = SUBJECT_COLOR_PALETTE[i % SUBJECT_COLOR_PALETTE.length];
  s.color = p.color; s.soft = p.soft; s.border = p.border;
@@ -2393,7 +2396,16 @@ function getSubjects() {
  if (filiere && !hasSpecificMapping) {
  subjects = [synthesizeFiliereSubject(filiere), ...subjects];
  }
- return applySubjectCustomizations(subjects).sort((a,b) => a.name.localeCompare(b.name, 'fr', { sensitivity:'base' }));
+ subjects = applySubjectCustomizations(subjects).sort((a,b) => a.name.localeCompare(b.name, 'fr', { sensitivity:'base' }));
+ // La couleur suit l'ordre d'affichage réel (position dans CETTE liste triée),
+ // pas l'ordre caché dans ALL_SUBJECTS : deux matières voisines à l'écran
+ // n'ont donc jamais la même couleur, et la palette de 10 couleurs se répète
+ // seulement tous les 10 rangs, dans un ordre visible et prévisible.
+ subjects.forEach((s, i) => {
+ const p = SUBJECT_COLOR_PALETTE[i % SUBJECT_COLOR_PALETTE.length];
+ s.color = p.color; s.soft = p.soft; s.border = p.border;
+ });
+ return subjects;
 }
 
 // ── Ajout / retrait manuel de matières (par utilisateur, en local) ──
@@ -3283,6 +3295,8 @@ let _activeSheetCell = null;
 
 function onSheetCellInput(td) {
  _activeSheetCell = td;
+ const table = td.closest('table');
+ if (table) refreshLinkedCharts(table); // les graphiques liés suivent la saisie en direct
  const box = document.getElementById('sheet-formula-suggest');
  if (!box) return;
  const text = td.textContent.trim();
@@ -3370,6 +3384,7 @@ function recalcSheet(table) {
  td.textContent = evalSheetFormula(table, td.getAttribute('data-formula'));
  }
  });
+ refreshLinkedCharts(table);
 }
 
 function onSheetCellFocus(td) {
@@ -3440,8 +3455,10 @@ function sheetUndo() {
  _sheetRedoStack.push(table.outerHTML);
  const prev = _sheetUndoStack.pop();
  const tmp = document.createElement('div'); tmp.innerHTML = prev;
- table.replaceWith(tmp.firstElementChild);
+ const newTable = tmp.firstElementChild;
+ table.replaceWith(newTable);
  _activeSheetCell = null; _sheetSelAnchor = null; _sheetSelEnd = null;
+ recalcSheet(newTable);
 }
 function sheetRedo() {
  const table = currentSheetTable();
@@ -3449,8 +3466,10 @@ function sheetRedo() {
  _sheetUndoStack.push(table.outerHTML);
  const next = _sheetRedoStack.pop();
  const tmp = document.createElement('div'); tmp.innerHTML = next;
- table.replaceWith(tmp.firstElementChild);
+ const newTable = tmp.firstElementChild;
+ table.replaceWith(newTable);
  _activeSheetCell = null; _sheetSelAnchor = null; _sheetSelEnd = null;
+ recalcSheet(newTable);
 }
 
 // ── SÉLECTION MULTI-CELLULES ──
@@ -3554,11 +3573,20 @@ function _sheetTargetCells() {
  return (_activeSheetCell && _activeSheetCell.tagName==='TD') ? [_activeSheetCell] : [];
 }
 
-function getSheetSelectionData() {
- const table = currentSheetTable();
- if (!table || !_sheetSelAnchor || !_sheetSelEnd) return null;
+function getSheetSelectionRange() {
+ if (!_sheetSelAnchor || !_sheetSelEnd) return null;
  const r0=Math.min(_sheetSelAnchor.r,_sheetSelEnd.r), r1=Math.max(_sheetSelAnchor.r,_sheetSelEnd.r);
  const c0=Math.min(_sheetSelAnchor.c,_sheetSelEnd.c), c1=Math.max(_sheetSelAnchor.c,_sheetSelEnd.c);
+ return { r0, r1, c0, c1 };
+}
+
+// Lit les valeurs d'une plage de cellules (par position, pas par valeur figée) :
+// utilisée à la fois pour créer un graphique et pour le rafraîchir plus tard,
+// exactement comme une formule relit A1 à chaque recalcul au lieu de garder
+// l'ancien résultat.
+function getGridFromRange(table, range) {
+ if (!table || !range) return null;
+ const { r0, r1, c0, c1 } = range;
  const grid = [];
  for (let r=r0;r<=r1;r++) {
  const row = [];
@@ -3570,6 +3598,13 @@ function getSheetSelectionData() {
  grid.push(row);
  }
  return grid;
+}
+
+function getSheetSelectionData() {
+ const table = currentSheetTable();
+ const range = getSheetSelectionRange();
+ if (!table || !range) return null;
+ return getGridFromRange(table, range);
 }
 
 // ── GRAPHIQUES (maison, dessinés sur <canvas>, sans dépendance externe) ──
@@ -3606,6 +3641,14 @@ function buildChartSeriesFromGrid(grid) {
 }
 
 const SHEET_CHART_COLORS = ['#0b6e4f','#1d4ed8','#dc2626','#c47a0b','#7c3aed','#0891b2','#db2777'];
+// Au-delà des 7 couleurs de base, on génère des teintes supplémentaires par
+// rotation d'angle doré (évite que les séries/catégories excédentaires ne
+// répètent exactement les mêmes couleurs que les premières).
+function sheetChartColor(i) {
+ if (i < SHEET_CHART_COLORS.length) return SHEET_CHART_COLORS[i];
+ const hue = (i * 137.508) % 360;
+ return `hsl(${hue.toFixed(0)},62%,42%)`;
+}
 
 function drawChartOnCanvas(canvas, type, data) {
  const ctx = canvas.getContext('2d');
@@ -3658,7 +3701,7 @@ function drawChartOnCanvas(canvas, type, data) {
  const n2 = stats.length, slotW = plotW/n2, boxW = Math.min(40, slotW*0.5);
  stats.forEach((s,i) => {
  const cx = padL + i*slotW + slotW/2;
- const color = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length];
+ const color = sheetChartColor(i);
  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
  ctx.beginPath(); ctx.moveTo(cx,yFor(s.min)); ctx.lineTo(cx,yFor(s.q1)); ctx.moveTo(cx,yFor(s.q3)); ctx.lineTo(cx,yFor(s.max)); ctx.stroke();
  ctx.beginPath(); ctx.moveTo(cx-boxW/4,yFor(s.min)); ctx.lineTo(cx+boxW/4,yFor(s.min)); ctx.moveTo(cx-boxW/4,yFor(s.max)); ctx.lineTo(cx+boxW/4,yFor(s.max)); ctx.stroke();
@@ -3682,12 +3725,12 @@ function drawChartOnCanvas(canvas, type, data) {
  const angle = (v/total)*Math.PI;
  ctx.beginPath(); ctx.moveTo(cx,cy);
  ctx.arc(cx,cy,radius,start,start+angle); ctx.closePath();
- ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fill();
+ ctx.fillStyle = sheetChartColor(i); ctx.fill();
  start += angle;
  });
  let lx = 10, ly = 14;
  labels.forEach((lab,i) => {
- ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fillRect(lx, ly, 9, 9);
+ ctx.fillStyle = sheetChartColor(i); ctx.fillRect(lx, ly, 9, 9);
  ctx.fillStyle = '#333'; ctx.font = '10px sans-serif'; ctx.fillText(String(lab).slice(0,10), lx+12, ly+8);
  lx += 78; if (lx > W-70) { lx = 10; ly += 14; }
  });
@@ -3709,7 +3752,7 @@ function drawChartOnCanvas(canvas, type, data) {
  });
  for (let i=0;i<n;i++) { const a=angleFor(i); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*radius, cy+Math.sin(a)*radius); ctx.stroke(); }
  series.forEach((s,si) => {
- ctx.strokeStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length]; ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length] + '33'; ctx.lineWidth = 2;
+ ctx.strokeStyle = sheetChartColor(si); ctx.fillStyle = sheetChartColor(si) + '33'; ctx.lineWidth = 2;
  ctx.beginPath();
  s.values.forEach((v,i) => { const a=angleFor(i), r=(v/maxV)*radius, x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
  ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -3730,7 +3773,7 @@ function drawChartOnCanvas(canvas, type, data) {
  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
  const yFor = v => padT + plotH - ((v-minV)/((maxV-minV)||1))*plotH;
  series.forEach((s,si) => {
- ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ ctx.fillStyle = sheetChartColor(si);
  s.values.forEach((v,i) => {
  const x = padL + (n>1 ? (i/(n-1))*plotW : plotW/2), y = yFor(v);
  ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
@@ -3747,13 +3790,13 @@ function drawChartOnCanvas(canvas, type, data) {
  const angle = (v/total)*Math.PI*2;
  ctx.beginPath(); ctx.moveTo(cx,cy);
  ctx.arc(cx,cy,radius,start,start+angle); ctx.closePath();
- ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fill();
+ ctx.fillStyle = sheetChartColor(i); ctx.fill();
  start += angle;
  });
  if (type === 'donut') { ctx.beginPath(); ctx.arc(cx,cy,radius*0.55,0,Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill(); }
  let lx = 10, ly = H - 22;
  labels.forEach((lab,i) => {
- ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fillRect(lx, ly, 9, 9);
+ ctx.fillStyle = sheetChartColor(i); ctx.fillRect(lx, ly, 9, 9);
  ctx.fillStyle = '#333'; ctx.font = '10px sans-serif'; ctx.fillText(String(lab).slice(0,10), lx+12, ly+8);
  lx += 78; if (lx > W-70) { lx = 10; ly += 14; }
  });
@@ -3769,7 +3812,7 @@ function drawChartOnCanvas(canvas, type, data) {
  const yFor = v => padT + plotH - ((v-minV)/((maxV-minV)||1))*plotH;
  if (type === 'line' || type === 'area') {
  series.forEach((s,si) => {
- const color = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ const color = sheetChartColor(si);
  ctx.strokeStyle = color; ctx.lineWidth = 2;
  ctx.beginPath();
  s.values.forEach((v,i) => {
@@ -3800,7 +3843,7 @@ function drawChartOnCanvas(canvas, type, data) {
  series.forEach((s,si) => {
  const v = s.values[i]||0, y = yFor(v), y0 = yFor(Math.max(0,minV));
  const x = padL + i*groupW + groupW*0.15 + si*barW;
- ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ ctx.fillStyle = sheetChartColor(si);
  ctx.fillRect(x, Math.min(y,y0), barW, Math.abs(y0-y) || 1);
  });
  });
@@ -3814,7 +3857,7 @@ function drawChartOnCanvas(canvas, type, data) {
  if (series.length > 1) {
  let lx = padL, ly = 6;
  series.forEach((s,si) => {
- ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length]; ctx.fillRect(lx,ly,8,8);
+ ctx.fillStyle = sheetChartColor(si); ctx.fillRect(lx,ly,8,8);
  ctx.fillStyle = '#333'; ctx.font = '9px sans-serif'; ctx.fillText(s.name.slice(0,9), lx+10, ly+8);
  lx += 62;
  });
@@ -3853,29 +3896,112 @@ function openChartTypeModal() {
 }
 
 let _sheetChartCount = 0;
+
+// Redessine tous les graphiques liés d'une feuille à partir de leur plage
+// d'origine (mémorisée par position, pas par valeur) — appelé à chaque fois
+// que les données de la feuille changent, comme un recalcul de formule.
+function refreshLinkedCharts(table) {
+ if (!table) return;
+ const wrap = table.closest('[data-sheet-wrap]');
+ if (!wrap) return;
+ const chartsArea = wrap.querySelector('.sheet-charts-area');
+ if (!chartsArea) return;
+ chartsArea.querySelectorAll('.sheet-chart-card').forEach(card => {
+ const r0 = parseInt(card.dataset.r0,10), r1 = parseInt(card.dataset.r1,10);
+ const c0 = parseInt(card.dataset.c0,10), c1 = parseInt(card.dataset.c1,10);
+ const type = card.dataset.chartType;
+ const canvas = card.querySelector('canvas');
+ if (!canvas || isNaN(r0) || isNaN(c0)) return;
+ const grid = getGridFromRange(table, { r0, r1, c0, c1 });
+ const data = grid ? buildChartSeriesFromGrid(grid) : null;
+ if (data && data.series.length) drawChartOnCanvas(canvas, type, data);
+ });
+}
+
+// Rend une carte-graphique déplaçable au doigt (ou à la souris) par sa
+// poignée : elle reste positionnée par-dessus la grille, où l'utilisateur
+// la laisse, sans jamais interférer avec le défilement/l'édition des cellules
+// en-dessous (pointer-events limité à la carte elle-même).
+function makeChartDraggable(card, handle, wrap) {
+ let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+ handle.addEventListener('pointerdown', (e) => {
+ if (e.target.closest('button')) return;
+ dragging = true;
+ try { handle.setPointerCapture(e.pointerId); } catch(err) {}
+ startX = e.clientX; startY = e.clientY;
+ const rect = card.getBoundingClientRect(), wrapRect = wrap.getBoundingClientRect();
+ origLeft = rect.left - wrapRect.left; origTop = rect.top - wrapRect.top;
+ card.style.right = 'auto';
+ card.style.left = origLeft + 'px';
+ card.style.top = origTop + 'px';
+ });
+ handle.addEventListener('pointermove', (e) => {
+ if (!dragging) return;
+ e.preventDefault();
+ const dx = e.clientX - startX, dy = e.clientY - startY;
+ const wrapRect = wrap.getBoundingClientRect();
+ let nl = origLeft + dx, nt = origTop + dy;
+ nl = Math.max(0, Math.min(nl, Math.max(0, wrapRect.width - card.offsetWidth)));
+ nt = Math.max(0, Math.min(nt, Math.max(0, wrapRect.height - card.offsetHeight)));
+ card.style.left = nl + 'px';
+ card.style.top = nt + 'px';
+ });
+ const endDrag = (e) => { dragging = false; try { handle.releasePointerCapture(e.pointerId); } catch(err) {} };
+ handle.addEventListener('pointerup', endDrag);
+ handle.addEventListener('pointercancel', endDrag);
+}
+
+function downloadSheetChart(id, label) {
+ const canvas = document.getElementById(id);
+ if (!canvas) { showToast('⚠ Graphique introuvable'); return; }
+ const link = document.createElement('a');
+ link.download = (label || 'graphique').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_') + '.png';
+ link.href = canvas.toDataURL('image/png');
+ document.body.appendChild(link);
+ link.click();
+ link.remove();
+ showToast('✓ Image téléchargée');
+}
+
 function insertChartFromSelection(type) {
  const modal = document.getElementById('chart-type-modal');
  if (modal) modal.remove();
- const grid = getSheetSelectionData();
+ const table = currentSheetTable();
+ const range = getSheetSelectionRange();
+ const grid = (table && range) ? getGridFromRange(table, range) : null;
  const data = grid ? buildChartSeriesFromGrid(grid) : null;
  if (!data || !data.series.length) { showToast('⚠ Sélection invalide pour un graphique'); return; }
  const wrap = document.querySelector(`[data-sheet-wrap="${_excelActiveSheetIdx}"]`);
  if (!wrap) return;
+ wrap.style.position = 'relative';
  let chartsArea = wrap.querySelector('.sheet-charts-area');
- if (!chartsArea) { chartsArea = document.createElement('div'); chartsArea.className = 'sheet-charts-area'; wrap.appendChild(chartsArea); }
+ if (!chartsArea) {
+ chartsArea = document.createElement('div');
+ chartsArea.className = 'sheet-charts-area';
+ chartsArea.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
+ wrap.appendChild(chartsArea);
+ }
  const id = 'chart-' + (++_sheetChartCount);
+ const offset = ((_sheetChartCount - 1) % 6) * 22;
  const card = document.createElement('div');
  card.className = 'sheet-chart-card';
- card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
- <span style="font-size:12px;font-weight:700;color:var(--text2)">${SHEET_CHART_LABELS[type]}</span>
- <button onclick="this.closest('.sheet-chart-card').remove()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer">✕</button>
- </div><canvas id="${id}" width="320" height="220" style="width:100%;max-width:420px;height:auto;display:block"></canvas>`;
+ card.dataset.chartType = type;
+ card.dataset.r0 = range.r0; card.dataset.r1 = range.r1;
+ card.dataset.c0 = range.c0; card.dataset.c1 = range.c1;
+ card.style.cssText = `position:absolute;top:${10+offset}px;right:${10+offset}px;width:260px;max-width:80vw;pointer-events:auto;background:var(--white);box-shadow:0 4px 16px rgba(0,0,0,.22);z-index:${20+_sheetChartCount};border:1px solid var(--border);border-radius:12px;padding:10px;margin-top:0`;
+ card.innerHTML = `<div class="sheet-chart-drag" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:grab;touch-action:none">
+ <span style="font-size:11px;font-weight:700;color:var(--text2)">⠿ ${SHEET_CHART_LABELS[type]}</span>
+ <span style="display:flex;gap:10px;align-items:center">
+ <button onclick="downloadSheetChart('${id}','${SHEET_CHART_LABELS[type]}')" title="Télécharger" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;line-height:1">⬇</button>
+ <button onclick="this.closest('.sheet-chart-card').remove()" title="Supprimer" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;line-height:1">✕</button>
+ </span>
+ </div><canvas id="${id}" width="320" height="220" style="width:100%;max-width:100%;height:auto;display:block;background:var(--white)"></canvas>`;
  chartsArea.appendChild(card);
  drawChartOnCanvas(document.getElementById(id), type, data);
+ makeChartDraggable(card, card.querySelector('.sheet-chart-drag'), wrap);
  // Retour visible : sans ça, le graphique est ajouté en bas de la feuille et
  // rien à l'écran ne signale que l'appui a été pris en compte.
- showToast('✓ Graphique inséré : ' + SHEET_CHART_LABELS[type]);
- card.scrollIntoView({ behavior:'smooth', block:'center' });
+ showToast('✓ Graphique lié aux données — glisse-le par sa poignée ⠿ pour le déplacer');
 }
 
 // ── BARRE D'OUTILS WORD (Accueil / Insertion) ──
@@ -4410,7 +4536,7 @@ function renderExcelTableEditor() {
  _excelSheets.map((s,i)=>{
  const nRows = Math.max(20, s.rows.length + 5);
  const nCols = Math.max(10, Math.max(0, ...s.rows.map(r=>(r||[]).length)) + 3);
- return `<div data-sheet-wrap="${i}" style="display:${i===_excelActiveSheetIdx?'block':'none'}">${buildSheetHTML(s.name, nRows, nCols, s.rows)}</div>`;
+ return `<div data-sheet-wrap="${i}" style="display:${i===_excelActiveSheetIdx?'block':'none'};position:relative">${buildSheetHTML(s.name, nRows, nCols, s.rows)}</div>`;
  }).join('');
  _activeSheetCell = null;
  _sheetSelAnchor = null; _sheetSelEnd = null;
@@ -9352,6 +9478,13 @@ function startAppUpdate(apkUrl) {
  }
 }
 
+// L'appui long sur une cellule (contenteditable) déclenchait aussi le menu
+// contextuel natif du téléphone (copier/coller/sélectionner), qui masquait ou
+// coupait court à la sélection multi-cellules avant qu'elle soit visible :
+// on le bloque uniquement à l'intérieur des feuilles de calcul.
+document.addEventListener('contextmenu', (e) => {
+ if (e.target.closest && e.target.closest('table[data-sheet]')) e.preventDefault();
+});
 document.addEventListener('DOMContentLoaded', _runInit);
 setTimeout(checkForAppUpdate, 2500);
 } else {
