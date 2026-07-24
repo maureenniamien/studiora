@@ -244,6 +244,8 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .doc-tb-panel{display:none;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg2);border-radius:10px;padding:8px;margin-bottom:8px}
 .doc-tb-panel.active{display:flex}
 .sheet-cell-sel{background:var(--em-soft) !important}
+table[data-sheet] td{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
 .sheet-charts-area{display:flex;flex-direction:column;gap:12px}
 .sheet-chart-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px;background:var(--white)}
 .sheet-dropdown{display:none;flex-wrap:wrap;gap:6px;padding:10px;margin-top:6px;background:var(--white);border:1px solid var(--border);border-radius:10px;width:100%}
@@ -1376,24 +1378,24 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  </div>
 
  <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:16px">
- <div style="font-size:12px;font-weight:700;margin-bottom:8px">🎬 Ou transcrire un fichier importé</div>
+ <div style="font-size:12px;font-weight:700;margin-bottom:8px">Ou transcrire un fichier importé</div>
  <input type="file" id="transcribe-media-input" accept="audio/*,video/*" style="display:none" onchange="handleImportMediaFile(this)">
  <div style="display:flex;gap:8px">
- <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="flex:1;padding:11px"> Importer un audio ou une vidéo</button>
- <button id="transcribe-media-remove-btn" onclick="clearImportedMedia()" class="doc-tb-btn" style="display:none;padding:11px 14px" title="Retirer le fichier">🗑</button>
+ <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="flex:1;padding:11px">Importer un audio ou une vidéo</button>
+ <button id="transcribe-media-remove-btn" onclick="clearImportedMedia()" class="doc-tb-btn" style="display:none;padding:11px 14px" title="Retirer le fichier">Retirer</button>
  </div>
  <div id="transcribe-media-preview" style="display:none;margin-top:10px"></div>
  <div id="transcribe-media-actions" style="display:none;gap:8px;margin-top:10px">
- <button id="transcribe-media-btn" onclick="toggleMediaTranscription()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Transcrire pendant la lecture</button>
- <button id="transcribe-media-cancel-btn" onclick="cancelMediaTranscription()" style="display:none;background:#C0392B;color:#fff;border:none;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">⏹ Stop</button>
+ <button id="transcribe-media-btn" onclick="toggleMediaTranscription()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Transcrire pendant la lecture</button>
+ <button id="transcribe-media-cancel-btn" onclick="cancelMediaTranscription()" style="display:none;background:#C0392B;color:#fff;border:none;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Stop</button>
  </div>
  <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
  </div>
 
  <textarea id="transcript-textarea" class="input" placeholder="Ta transcription apparaît ici... tu peux aussi écrire ou corriger directement" style="width:100%;min-height:260px;resize:vertical;font-size:14px;line-height:1.6;padding:14px"></textarea>
  <div style="display:flex;gap:8px;margin-top:12px">
- <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">📋 Copier</button>
- <button onclick="clearTranscript()" class="doc-tb-btn" style="flex:1;padding:11px"> Effacer</button>
+ <button onclick="copyTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">Copier</button>
+ <button onclick="clearTranscript()" class="doc-tb-btn" style="flex:1;padding:11px">Effacer</button>
  </div>
  <div style="display:flex;gap:8px;margin-top:8px">
  <button onclick="saveTranscriptAsFile()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Enregistrer en .txt</button>
@@ -3771,16 +3773,16 @@ function openChartTypeModal() {
  modal.innerHTML = `<div style="background:var(--white);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px">
  <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Insérer un graphique</h3>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
- <button onclick="insertChartFromSelection('bar')" class="doc-tb-btn" style="padding:14px">📊 Barres</button>
- <button onclick="insertChartFromSelection('line')" class="doc-tb-btn" style="padding:14px">📈 Lignes</button>
- <button onclick="insertChartFromSelection('area')" class="doc-tb-btn" style="padding:14px">🏔 Aires</button>
- <button onclick="insertChartFromSelection('pie')" class="doc-tb-btn" style="padding:14px">🥧 Camembert</button>
- <button onclick="insertChartFromSelection('donut')" class="doc-tb-btn" style="padding:14px">🍩 Anneau</button>
- <button onclick="insertChartFromSelection('semi')" class="doc-tb-btn" style="padding:14px">◐ Semi-circulaire</button>
- <button onclick="insertChartFromSelection('radar')" class="doc-tb-btn" style="padding:14px">🕸 Radar</button>
- <button onclick="insertChartFromSelection('scatter')" class="doc-tb-btn" style="padding:14px">⁘ Nuage de points</button>
- <button onclick="insertChartFromSelection('histogram')" class="doc-tb-btn" style="padding:14px">📶 Histogramme</button>
- <button onclick="insertChartFromSelection('boxplot')" class="doc-tb-btn" style="padding:14px">📦 Boîte à moustaches</button>
+ <button onclick="insertChartFromSelection('bar')" class="doc-tb-btn" style="padding:14px">Barres</button>
+ <button onclick="insertChartFromSelection('line')" class="doc-tb-btn" style="padding:14px">Lignes</button>
+ <button onclick="insertChartFromSelection('area')" class="doc-tb-btn" style="padding:14px">Aires</button>
+ <button onclick="insertChartFromSelection('pie')" class="doc-tb-btn" style="padding:14px">Camembert</button>
+ <button onclick="insertChartFromSelection('donut')" class="doc-tb-btn" style="padding:14px">Anneau</button>
+ <button onclick="insertChartFromSelection('semi')" class="doc-tb-btn" style="padding:14px">Semi-circulaire</button>
+ <button onclick="insertChartFromSelection('radar')" class="doc-tb-btn" style="padding:14px">Radar</button>
+ <button onclick="insertChartFromSelection('scatter')" class="doc-tb-btn" style="padding:14px">Nuage de points</button>
+ <button onclick="insertChartFromSelection('histogram')" class="doc-tb-btn" style="padding:14px">Histogramme</button>
+ <button onclick="insertChartFromSelection('boxplot')" class="doc-tb-btn" style="padding:14px">Boîte à moustaches</button>
  </div>
  <button onclick="document.getElementById('chart-type-modal').remove()" style="margin-top:14px;width:100%;background:var(--bg2);border:none;border-radius:10px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
  </div>`;
@@ -4008,15 +4010,64 @@ function toggleSheetDropdown(id) {
  if (el) el.classList.toggle('open');
 }
 let _sheetBorderColor = '#000000';
+let _sheetBorderSide = 'all'; // 'all' (tous les traits) | 'outer' (contour) | 'left' | 'right' | 'top' | 'bottom'
 function sheetSetBorderColor(c, btn) {
  _sheetBorderColor = c;
  if (btn) { const row = btn.parentElement; row.querySelectorAll('.doc-tb-btn').forEach(b=>b.style.outline=''); btn.style.outline = '2px solid var(--em)'; }
 }
+function sheetSetBorderSide(side, btn) {
+ _sheetBorderSide = side;
+ if (btn) { const row = btn.closest('#sheet-dd-border'); if (row) row.querySelectorAll('.sheet-border-side-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+}
+// Renvoie les cellules ciblées avec leur position (r,c) ainsi que le rectangle englobant
+// de la sélection, pour pouvoir n'appliquer une bordure qu'à certains côtés (contour, gauche, etc.)
+function _sheetTargetCellsInfo() {
+ const table = currentSheetTable();
+ if (!table) return { cells: [], r0:0, r1:0, c0:0, c1:0 };
+ if (_sheetSelAnchor && _sheetSelEnd && (_sheetSelAnchor.r!==_sheetSelEnd.r || _sheetSelAnchor.c!==_sheetSelEnd.c)) {
+ const r0=Math.min(_sheetSelAnchor.r,_sheetSelEnd.r), r1=Math.max(_sheetSelAnchor.r,_sheetSelEnd.r);
+ const c0=Math.min(_sheetSelAnchor.c,_sheetSelEnd.c), c1=Math.max(_sheetSelAnchor.c,_sheetSelEnd.c);
+ const cells = [];
+ for (let r=r0;r<=r1;r++) for (let c=c0;c<=c1;c++) {
+ const td = table.querySelector(`td[data-cell="${sheetColLetter(c)}${r+1}"]`);
+ if (td) cells.push({ td, r, c });
+ }
+ return { cells, r0, r1, c0, c1 };
+ }
+ if (_activeSheetCell && _activeSheetCell.tagName==='TD') {
+ const pos = _sheetCellPos(_activeSheetCell) || { r:0, c:0 };
+ return { cells: [{ td:_activeSheetCell, r:pos.r, c:pos.c }], r0:pos.r, r1:pos.r, c0:pos.c, c1:pos.c };
+ }
+ return { cells: [], r0:0, r1:0, c0:0, c1:0 };
+}
 function sheetApplyBorderStyle(style, width) {
- const cells = _sheetTargetCells();
- if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
+ const info = _sheetTargetCellsInfo();
+ if (!info.cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
  _sheetSnapshot();
- cells.forEach(td => { td.style.border = style === 'none' ? '1px solid var(--border)' : (width + 'px ' + style + ' ' + _sheetBorderColor); });
+ if (style === 'none') {
+ info.cells.forEach(({td}) => { td.style.border = '1px solid var(--border)'; });
+ return;
+ }
+ const val = width + 'px ' + style + ' ' + _sheetBorderColor;
+ const side = _sheetBorderSide;
+ info.cells.forEach(({td, r, c}) => {
+ if (side === 'all') {
+ td.style.border = val;
+ } else if (side === 'outer') {
+ if (r === info.r0) td.style.borderTop = val;
+ if (r === info.r1) td.style.borderBottom = val;
+ if (c === info.c0) td.style.borderLeft = val;
+ if (c === info.c1) td.style.borderRight = val;
+ } else if (side === 'left' && c === info.c0) {
+ td.style.borderLeft = val;
+ } else if (side === 'right' && c === info.c1) {
+ td.style.borderRight = val;
+ } else if (side === 'top' && r === info.r0) {
+ td.style.borderTop = val;
+ } else if (side === 'bottom' && r === info.r1) {
+ td.style.borderBottom = val;
+ }
+ });
 }
 function sheetClearCells() {
  const cells = _sheetTargetCells();
@@ -4104,6 +4155,7 @@ function addExcelSheet() {
  renderExcelTableEditor();
 }
 function sheetToolbarHTML() {
+ _sheetBorderSide = 'all'; // ré-aligne l'état JS sur le bouton "Tous les traits" mis en surbrillance par défaut à chaque (re)rendu
  return `<div id="sheet-toolbar" style="margin-bottom:8px">
  <div class="doc-tb-tabs">
  <button class="doc-tb-tab active" onclick="sheetSwitchTab('accueil',this)">Accueil</button>
@@ -4135,6 +4187,13 @@ function sheetToolbarHTML() {
  <span style="font-size:11px;color:var(--text3);width:100%">Couleur</span>
  ${SHEET_PALETTE.slice(0,12).map(c=>`<button class="doc-tb-btn" style="background:${c};width:24px;padding:0;height:24px;border:1px solid var(--border)${c===_sheetBorderColor?';outline:2px solid var(--em)':''}" onclick="sheetSetBorderColor('${c}',this)"></button>`).join('')}
  <input type="color" onchange="sheetSetBorderColor(this.value,this)" title="Autre couleur" style="width:24px;height:24px;padding:0;border:1px solid var(--border);border-radius:6px;background:none">
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:4px">Zone</span>
+ <button class="doc-tb-btn sheet-border-side-btn active" onclick="sheetSetBorderSide('all',this)" title="Toutes les lignes">▦ Tous les traits</button>
+ <button class="doc-tb-btn sheet-border-side-btn" onclick="sheetSetBorderSide('outer',this)" title="Contour seulement">▢ Contour</button>
+ <button class="doc-tb-btn sheet-border-side-btn" onclick="sheetSetBorderSide('left',this)" title="Bordure à gauche">▏Gauche</button>
+ <button class="doc-tb-btn sheet-border-side-btn" onclick="sheetSetBorderSide('right',this)" title="Bordure à droite">▕ Droite</button>
+ <button class="doc-tb-btn sheet-border-side-btn" onclick="sheetSetBorderSide('top',this)" title="Bordure en haut">▔ Haut</button>
+ <button class="doc-tb-btn sheet-border-side-btn" onclick="sheetSetBorderSide('bottom',this)" title="Bordure en bas">▁ Bas</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:4px">Type</span>
  <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('solid',1)" title="Fine">▭ Fine</button>
  <button class="doc-tb-btn" onclick="sheetApplyBorderStyle('solid',3)" title="Épaisse">▬ Épaisse</button>
@@ -4152,7 +4211,7 @@ function sheetToolbarHTML() {
  <button class="doc-tb-btn" onclick="sheetAddRow(currentSheetTable())">+ Ligne</button>
  <button class="doc-tb-btn" onclick="sheetAddCol(currentSheetTable())">+ Colonne</button>
  <button class="doc-tb-btn" onclick="addExcelSheet()">+ Feuille</button>
- <button class="doc-tb-btn" onclick="openChartTypeModal()" style="background:var(--em-soft);color:var(--em);border-color:var(--em-mid)">📊 Graphique</button>
+ <button class="doc-tb-btn" onclick="openChartTypeModal()" style="background:var(--em-soft);color:var(--em);border-color:var(--em-mid)">Graphique</button>
  <span style="font-size:11px;color:var(--text3);width:100%;margin-top:2px">Astuce : appui long sur une cellule puis glisse le doigt pour sélectionner une plage</span>
  </div>
  <div class="doc-tb-panel" data-tab="donnees">
@@ -5386,6 +5445,7 @@ function _voiceInsertText(text) {
  el.value = (el.value ? el.value + ' ' : '') + text;
  }
  if (typeof autoResize === 'function') { try { autoResize(el); } catch(e) {} }
+ el.scrollTop = el.scrollHeight; // garde toujours le texte fraîchement ajouté visible
  el.dispatchEvent(new Event('input', { bubbles:true }));
 }
 function _voiceSetMicActive(active) {
@@ -5499,7 +5559,7 @@ function cancelMediaTranscription() {
  if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
  const btn = document.getElementById('transcribe-media-btn');
  const cancelBtn = document.getElementById('transcribe-media-cancel-btn');
- if (btn) { btn.disabled = false; btn.textContent = ' Transcrire pendant la lecture'; btn.style.display = ''; }
+ if (btn) { btn.disabled = false; btn.textContent = 'Transcrire pendant la lecture'; btn.style.display = ''; }
  if (cancelBtn) cancelBtn.style.display = 'none';
  showToast('Transcription annulée');
 }
@@ -5510,7 +5570,7 @@ function stopMediaTranscription() {
  if (voiceRecognition) { try { voiceRecognition.continuous = false; voiceRecognition.onend = null; voiceRecognition.stop(); } catch(e) {} }
  if (window.AndroidSTT && typeof window.AndroidSTT.stopListening === 'function') { try { window.AndroidSTT.stopListening(); } catch(e) {} }
  const btn = document.getElementById('transcribe-media-btn');
- if (btn) btn.textContent = ' Transcrire pendant la lecture';
+ if (btn) btn.textContent = 'Transcrire pendant la lecture';
 }
 async function toggleMediaTranscription() {
  if (!importedMediaEl) { showToast('⚠ Importe un fichier audio/vidéo d\'abord'); return; }
@@ -5531,7 +5591,7 @@ async function toggleMediaTranscription() {
  _mediaTranscribing = true;
  _voiceSessionIsTranscription = true;
  _voiceSessionStartTs = Date.now();
- document.getElementById('transcribe-media-btn').textContent = '⏸ Arrêter la transcription';
+ document.getElementById('transcribe-media-btn').textContent = 'Arrêter la transcription';
  importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
  importedMediaEl.ontimeupdate = null;
  importedMediaEl.currentTime = 0;
@@ -5589,8 +5649,8 @@ async function transcribeMediaFileViaAPI() {
  let extracted = false;
  if (importedMediaFile.type.startsWith('video/')) {
  try {
- btn.textContent = ' Extraction audio... 0%';
- const audioBlob = await extractAudioBlobFromMedia(importedMediaEl, (p) => { btn.textContent = ' Extraction audio... ' + Math.round(p*100) + '%'; });
+ btn.textContent = 'Extraction audio... 0%';
+ const audioBlob = await extractAudioBlobFromMedia(importedMediaEl, (p) => { btn.textContent = 'Extraction audio... ' + Math.round(p*100) + '%'; });
  importedMediaEl.currentTime = 0;
  importedMediaEl.onended = null;
  importedMediaEl.ontimeupdate = null;
@@ -5641,12 +5701,13 @@ async function transcribeMediaFileViaAPI() {
  if (result.emptyText) { showToast('⚠ Aucun texte détecté dans ce fichier'); return true; }
  const ta = document.getElementById('transcript-textarea');
  ta.value = (ta.value ? ta.value + '\n' : '') + result.text;
+ ta.scrollTop = ta.scrollHeight; // garde toujours le texte fraîchement ajouté visible
  addTranscriptionUsageSec(Math.round(importedMediaEl.duration || 0));
  showToast('✓ Transcription terminée');
  return true;
 }
 async function _uploadForTranscription(blob, name, btn) {
- btn.textContent = ' Envoi pour transcription...';
+ btn.textContent = 'Envoi pour transcription...';
  const fd = new FormData();
  fd.append('file', blob, name);
  _transcribeAbortController = new AbortController();
@@ -5750,7 +5811,7 @@ async function stopMicWhisperRecording() {
  if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); updateTranscriptionQuotaLabel(); return; }
  if (result.emptyText) { showToast('⚠ Aucun texte détecté, parle plus fort ou réessaie'); updateTranscriptionQuotaLabel(); return; }
  const ta = document.getElementById('transcript-textarea');
- if (ta) ta.value = (ta.value ? ta.value + '\n' : '') + result.text;
+ if (ta) { ta.value = (ta.value ? ta.value + '\n' : '') + result.text; ta.scrollTop = ta.scrollHeight; }
  addTranscriptionUsageSec(durationSec);
  showToast('✓ Transcription terminée');
  updateTranscriptionQuotaLabel();
