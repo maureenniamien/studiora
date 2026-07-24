@@ -4069,6 +4069,132 @@ function sheetApplyBorderStyle(style, width) {
  }
  });
 }
+
+// ── FUSIONNER / DÉFUSIONNER DES CELLULES ──
+function sheetMergeCells() {
+ const info = _sheetTargetCellsInfo();
+ if (info.cells.length < 2) { showToast('⚠ Sélectionne au moins 2 cellules (appui long puis glisse le doigt)'); return; }
+ const table = currentSheetTable();
+ if (!table) return;
+ _sheetSnapshot();
+ const { r0, r1, c0, c1 } = info;
+ const topLeft = table.querySelector(`td[data-cell="${sheetColLetter(c0)}${r0+1}"]`);
+ if (!topLeft) return;
+ const parts = [];
+ for (let r=r0;r<=r1;r++) for (let c=c0;c<=c1;c++) {
+ if (r===r0 && c===c0) continue;
+ const td = table.querySelector(`td[data-cell="${sheetColLetter(c)}${r+1}"]`);
+ if (td && td.textContent.trim()) parts.push(td.textContent.trim());
+ if (td) td.remove();
+ }
+ if (parts.length) topLeft.textContent = (topLeft.textContent.trim() ? topLeft.textContent.trim()+' ' : '') + parts.join(' ');
+ topLeft.setAttribute('colspan', c1-c0+1);
+ topLeft.setAttribute('rowspan', r1-r0+1);
+ if (!topLeft.style.textAlign) topLeft.style.textAlign = 'center';
+ topLeft.setAttribute('data-merged', `${r0},${c0},${r1},${c1}`);
+ _sheetSelAnchor = null; _sheetSelEnd = null;
+ showToast('✓ Cellules fusionnées');
+}
+function sheetUnmergeCells() {
+ const table = currentSheetTable();
+ const td = _activeSheetCell;
+ if (!table || !td || !td.hasAttribute || !td.hasAttribute('data-merged')) { showToast('⚠ Sélectionne une cellule fusionnée à défusionner'); return; }
+ _sheetSnapshot();
+ const [r0,c0,r1,c1] = td.getAttribute('data-merged').split(',').map(Number);
+ td.removeAttribute('colspan'); td.removeAttribute('rowspan'); td.removeAttribute('data-merged');
+ const rows = table.querySelectorAll('tr');
+ for (let r=r0;r<=r1;r++) {
+ const tr = rows[r+1];
+ if (!tr) continue;
+ for (let c=c0;c<=c1;c++) {
+ if (r===r0 && c===c0) continue;
+ const ref = sheetColLetter(c)+(r+1);
+ const newTd = document.createElement('td');
+ newTd.setAttribute('contenteditable','true');
+ newTd.setAttribute('data-cell', ref);
+ newTd.setAttribute('onfocus','onSheetCellFocus(this)');
+ newTd.setAttribute('onblur','onSheetCellBlur(this)');
+ newTd.setAttribute('oninput','onSheetCellInput(this)');
+ newTd.setAttribute('onmousedown','sheetCellMouseDown(event,this)');
+ newTd.setAttribute('onmouseenter','sheetCellMouseEnter(this)');
+ newTd.setAttribute('ontouchstart','sheetCellTouchStart(event,this)');
+ newTd.setAttribute('ontouchmove','sheetCellTouchMove(event)');
+ newTd.setAttribute('ontouchend','sheetCellTouchEnd()');
+ newTd.style.cssText = 'border:1px solid var(--border);padding:8px 10px;min-width:70px;height:16px';
+ const prevRef = sheetColLetter(c-1)+(r+1);
+ const prevTd = tr.querySelector(`[data-cell="${prevRef}"]`);
+ if (prevTd && prevTd.nextSibling) tr.insertBefore(newTd, prevTd.nextSibling);
+ else if (prevTd) tr.appendChild(newTd);
+ else if (tr.children[0]) tr.insertBefore(newTd, tr.children[1] || null);
+ else tr.appendChild(newTd);
+ }
+ }
+ showToast('✓ Cellules défusionnées');
+}
+
+// ── LARGEUR DE COLONNE / HAUTEUR DE LIGNE ──
+function sheetSetColumnWidth() {
+ const info = _sheetTargetCellsInfo();
+ if (!info.cells.length) { showToast('⚠ Sélectionne une cellule dans la colonne à redimensionner'); return; }
+ const w = prompt('Largeur de colonne (en pixels) :', '90');
+ if (w === null) return;
+ const px = parseInt(w, 10);
+ if (!px || px < 20) { showToast('⚠ Largeur invalide (minimum 20px)'); return; }
+ _sheetSnapshot();
+ const table = currentSheetTable();
+ if (!table) return;
+ const rows = table.querySelectorAll('tr');
+ for (let c = info.c0; c <= info.c1; c++) {
+ rows.forEach(tr => {
+ const cell = tr.children[c+1]; // +1 : la 1re cellule de chaque ligne est l'en-tête (numéro de ligne ou lettre de colonne)
+ if (cell) { cell.style.width = px+'px'; cell.style.minWidth = px+'px'; cell.style.maxWidth = px+'px'; }
+ });
+ }
+ showToast('✓ Largeur appliquée');
+}
+function sheetSetRowHeight() {
+ const info = _sheetTargetCellsInfo();
+ if (!info.cells.length) { showToast('⚠ Sélectionne une cellule dans la ligne à redimensionner'); return; }
+ const h = prompt('Hauteur de ligne (en pixels) :', '32');
+ if (h === null) return;
+ const px = parseInt(h, 10);
+ if (!px || px < 10) { showToast('⚠ Hauteur invalide (minimum 10px)'); return; }
+ _sheetSnapshot();
+ const table = currentSheetTable();
+ if (!table) return;
+ const rows = table.querySelectorAll('tr');
+ for (let r = info.r0; r <= info.r1; r++) {
+ const tr = rows[r+1]; // +1 : la 1re <tr> est la ligne d'en-tête des lettres de colonnes
+ if (tr) [...tr.children].forEach(cell => { cell.style.height = px+'px'; });
+ }
+ showToast('✓ Hauteur appliquée');
+}
+
+// ── FORMAT DES CELLULES (nombre, pourcentage, devise…) ──
+// Transforme directement le texte affiché plutôt que de garder une valeur brute
+// séparée : plus simple et fiable pour une feuille faite maison, au prix de ne
+// pas pouvoir "annuler" le format sans annuler la frappe (Annuler le fait très bien).
+function sheetFormatCells(kind) {
+ const info = _sheetTargetCellsInfo();
+ if (!info.cells.length) { showToast('⚠ Sélectionne une ou plusieurs cellules'); return; }
+ _sheetSnapshot();
+ info.cells.forEach(({td}) => {
+ const raw = td.textContent.trim();
+ if (kind === 'texte') { td.style.textAlign = 'left'; return; }
+ if (!raw) return;
+ const wasPercent = /%/.test(raw);
+ const num = parseFloat(raw.replace(/[^\d,.\-]/g,'').replace(',','.'));
+ if (isNaN(num)) return;
+ switch(kind) {
+ case 'nombre': td.textContent = num.toLocaleString('fr-FR', {maximumFractionDigits:2}); break;
+ case 'entier': td.textContent = String(Math.round(num)); break;
+ case 'pourcentage': { const pct = wasPercent ? num : num*100; td.textContent = (Math.round(pct*100)/100) + ' %'; break; }
+ case 'devise': td.textContent = num.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' FCFA'; break;
+ }
+ onSheetCellInput(td);
+ });
+ showToast('✓ Format appliqué');
+}
 function sheetClearCells() {
  const cells = _sheetTargetCells();
  if (!cells.length) { showToast('⚠ Sélectionne une cellule d\'abord'); return; }
@@ -4161,6 +4287,7 @@ function sheetToolbarHTML() {
  <button class="doc-tb-tab active" onclick="sheetSwitchTab('accueil',this)">Accueil</button>
  <button class="doc-tb-tab" onclick="sheetSwitchTab('insertion',this)">Insertion</button>
  <button class="doc-tb-tab" onclick="sheetSwitchTab('donnees',this)">Données</button>
+ <button class="doc-tb-tab" onclick="sheetSwitchTab('format',this)">Format</button>
  </div>
  <div class="doc-tb-panel active" data-tab="accueil">
  <button class="doc-tb-btn" onclick="sheetUndo()" title="Annuler">↶</button>
@@ -4219,6 +4346,20 @@ function sheetToolbarHTML() {
  <button class="doc-tb-btn" onclick="sheetDeleteCol()">− Colonne</button>
  <button class="doc-tb-btn" onclick="sheetSortColumn('asc')">Trier ↑</button>
  <button class="doc-tb-btn" onclick="sheetSortColumn('desc')">Trier ↓</button>
+ </div>
+ <div class="doc-tb-panel" data-tab="format">
+ <span style="font-size:11px;color:var(--text3);width:100%">Cellules</span>
+ <button class="doc-tb-btn" onclick="sheetMergeCells()">⬜ Fusionner</button>
+ <button class="doc-tb-btn" onclick="sheetUnmergeCells()">▦ Défusionner</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:4px">Dimensions</span>
+ <button class="doc-tb-btn" onclick="sheetSetColumnWidth()">↔ Largeur colonne</button>
+ <button class="doc-tb-btn" onclick="sheetSetRowHeight()">↕ Hauteur ligne</button>
+ <span style="font-size:11px;color:var(--text3);width:100%;margin-top:4px">Format des cellules</span>
+ <button class="doc-tb-btn" onclick="sheetFormatCells('texte')">Texte</button>
+ <button class="doc-tb-btn" onclick="sheetFormatCells('nombre')">Nombre</button>
+ <button class="doc-tb-btn" onclick="sheetFormatCells('entier')">Entier</button>
+ <button class="doc-tb-btn" onclick="sheetFormatCells('pourcentage')">Pourcentage</button>
+ <button class="doc-tb-btn" onclick="sheetFormatCells('devise')">Devise (FCFA)</button>
  </div>
  </div>`;
 }
@@ -5640,7 +5781,7 @@ async function transcribeMediaFileViaAPI() {
  const btn = document.getElementById('transcribe-media-btn');
  const cancelBtn = document.getElementById('transcribe-media-cancel-btn');
  const oldTxt = btn.textContent;
- btn.style.display = 'none';
+ btn.disabled = true; // reste visible (contrairement à avant) : l'utilisateur voit toujours l'avancement se mettre à jour
  if (cancelBtn) cancelBtn.style.display = '';
 
  // Extraction audio (préférée) — beaucoup plus léger à uploader qu'un fichier vidéo brut.
