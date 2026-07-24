@@ -808,10 +808,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 
 <!-- ═══════════════════ PROGRESSION ═══════════════════ -->
 <div id="screen-progress" class="screen hidden">
- <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:center;gap:10px">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <div>
- <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px">Ma progression</h2>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Ma progression</h2>
  <div style="display:flex;align-items:center;gap:8px">
  <button onclick="changeProgressWeek(-1)" style="background:none;border:1px solid var(--border);border-radius:8px;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--text2)">‹</button>
  <p style="color:var(--text3);font-size:12px;margin:0" id="progress-week-label">Cette semaine · <span style="color:var(--em);font-weight:600" id="week-sessions-count">0 sessions</span></p>
@@ -2158,7 +2158,7 @@ const ALL_SUBJECTS = [
  { id:'physiohum', icon:'', name:'Physiologie Humaine', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
  { id:'physique',icon:'', name:'Physique-Chimie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
  { id:'svt', icon:'', name:'SVT', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
- { id:'fr', icon:'', name:'Français', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'fr', icon:'', name:'Français', color:'#C0605C', soft:'#F5E9E8', border:'rgba(192,96,92,.2)' },
  { id:'info', icon:'', name:'Informatique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
  { id:'eco', icon:'', name:'Économie', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
  { id:'ang', icon:'EN', name:'Anglais', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
@@ -2327,8 +2327,33 @@ function hydrateCurriculumFromCache(niveau, filiere) {
 // utilisée quand on n'a pas de liste de matières précise pour elle (Master,
 // filière ajoutée via "Autre", etc.) — pour que les quiz/flashcards portent
 // vraiment sur son domaine plutôt que sur des matières génériques seules.
+// Palette variée pour les matières sans couleur prédéfinie (ajoutées manuellement,
+// ou filière sans mapping connu) : couleur choisie de façon déterministe à partir
+// du nom, pour que chaque matière garde toujours la même couleur d'une session à
+// l'autre, sans que tout retombe sur le même vert.
+const SUBJECT_COLOR_PALETTE = [
+ { color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { color:'#7C3AED', soft:'#EFE7FC', border:'#DCC9F8' },
+ { color:'#C47A0B', soft:'#FBF0DE', border:'#F3DBA8' },
+ { color:'#DB2777', soft:'#FBE5EF', border:'#F5BFD8' },
+ { color:'#0891B2', soft:'#E0F3F7', border:'#B9E4EE' },
+ { color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { color:'#EA580C', soft:'#FCEAE0', border:'#F7C7A8' },
+ { color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+];
+function colorForSubjectId(id) {
+ let h = 0;
+ for (let i=0;i<id.length;i++) h = (h*31 + id.charCodeAt(i)) >>> 0;
+ return SUBJECT_COLOR_PALETTE[h % SUBJECT_COLOR_PALETTE.length].color;
+}
 function synthesizeFiliereSubject(filiere) {
- return { id: slugifyId(filiere), name: filiere, color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF', isFiliereSubject:true };
+ const id = slugifyId(filiere);
+ let h = 0;
+ for (let i=0;i<id.length;i++) h = (h*31 + id.charCodeAt(i)) >>> 0;
+ const p = SUBJECT_COLOR_PALETTE[h % SUBJECT_COLOR_PALETTE.length];
+ return { id, name: filiere, color:p.color, soft:p.soft, border:p.border, isFiliereSubject:true };
 }
 
 function getSubjects() {
@@ -3522,6 +3547,132 @@ function drawChartOnCanvas(canvas, type, data) {
  const W = canvas.width, H = canvas.height;
  ctx.clearRect(0,0,W,H);
  const { labels, series } = data;
+ if (type === 'histogram') {
+ // Regroupe toutes les valeurs numériques de la série en intervalles (bins),
+ // pour visualiser une distribution plutôt qu'une simple comparaison de points.
+ const vals = series.flatMap(s => s.values);
+ if (!vals.length) return;
+ const min = Math.min(...vals), max = Math.max(...vals);
+ const nBins = Math.min(10, Math.max(4, Math.round(Math.sqrt(vals.length))));
+ const span = (max - min) || 1;
+ const bins = new Array(nBins).fill(0);
+ vals.forEach(v => { let idx = Math.floor(((v-min)/span) * nBins); if (idx>=nBins) idx = nBins-1; if (idx<0) idx = 0; bins[idx]++; });
+ const padL = 30, padB = 26, padT = 18, padR = 8;
+ const plotW = W-padL-padR, plotH = H-padT-padB;
+ const maxCount = Math.max(1, ...bins);
+ ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+ ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+ const binW = plotW / nBins;
+ bins.forEach((count,i) => {
+ const h = (count/maxCount)*plotH;
+ ctx.fillStyle = SHEET_CHART_COLORS[0];
+ ctx.fillRect(padL + i*binW + 2, padT+plotH-h, binW-4, h || 0);
+ });
+ ctx.fillStyle = '#666'; ctx.font = '8px sans-serif'; ctx.textAlign = 'center';
+ bins.forEach((_,i) => {
+ const from = min + (i/nBins)*span, to = min + ((i+1)/nBins)*span;
+ ctx.fillText(from.toFixed(0)+'-'+to.toFixed(0), padL + i*binW + binW/2, padT+plotH+11);
+ });
+ ctx.textAlign = 'left';
+ return;
+ }
+ if (type === 'boxplot') {
+ // Une boîte par série : min, Q1, médiane, Q3, max (méthode des quartiles classique).
+ const padL = 30, padB = 22, padT = 14, padR = 8;
+ const plotW = W-padL-padR, plotH = H-padT-padB;
+ const stats = series.map(s => {
+ const v = [...s.values].sort((a,b)=>a-b);
+ const q = p => { const idx=(v.length-1)*p; const lo=Math.floor(idx), hi=Math.ceil(idx); return v[lo]+(v[hi]-v[lo])*(idx-lo); };
+ return { name:s.name, min:v[0], q1:q(0.25), med:q(0.5), q3:q(0.75), max:v[v.length-1] };
+ });
+ const allVals = stats.flatMap(s=>[s.min,s.max]);
+ const gMin = Math.min(...allVals), gMax = Math.max(...allVals);
+ const yFor = v => padT + plotH - ((v-gMin)/((gMax-gMin)||1))*plotH;
+ ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+ ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+ const n2 = stats.length, slotW = plotW/n2, boxW = Math.min(40, slotW*0.5);
+ stats.forEach((s,i) => {
+ const cx = padL + i*slotW + slotW/2;
+ const color = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length];
+ ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+ ctx.beginPath(); ctx.moveTo(cx,yFor(s.min)); ctx.lineTo(cx,yFor(s.q1)); ctx.moveTo(cx,yFor(s.q3)); ctx.lineTo(cx,yFor(s.max)); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(cx-boxW/4,yFor(s.min)); ctx.lineTo(cx+boxW/4,yFor(s.min)); ctx.moveTo(cx-boxW/4,yFor(s.max)); ctx.lineTo(cx+boxW/4,yFor(s.max)); ctx.stroke();
+ ctx.fillStyle = color + '33';
+ ctx.fillRect(cx-boxW/2, yFor(s.q3), boxW, Math.max(1,yFor(s.q1)-yFor(s.q3)));
+ ctx.strokeRect(cx-boxW/2, yFor(s.q3), boxW, Math.max(1,yFor(s.q1)-yFor(s.q3)));
+ ctx.beginPath(); ctx.moveTo(cx-boxW/2,yFor(s.med)); ctx.lineTo(cx+boxW/2,yFor(s.med)); ctx.stroke();
+ ctx.fillStyle = '#666'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+ ctx.fillText(String(s.name).slice(0,10), cx, padT+plotH+13);
+ });
+ ctx.textAlign = 'left';
+ return;
+ }
+ if (type === 'semi') {
+ // Camembert coupé en demi-cercle (jauge) — utile pour une répartition en 2-4 parts.
+ const vals = series[0] ? series[0].values : [];
+ const total = vals.reduce((a,b)=>a+b,0) || 1;
+ const cx = W/2, cy = H-30, radius = Math.min(W/2-20, H-50);
+ let start = Math.PI;
+ vals.forEach((v,i) => {
+ const angle = (v/total)*Math.PI;
+ ctx.beginPath(); ctx.moveTo(cx,cy);
+ ctx.arc(cx,cy,radius,start,start+angle); ctx.closePath();
+ ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fill();
+ start += angle;
+ });
+ let lx = 10, ly = 14;
+ labels.forEach((lab,i) => {
+ ctx.fillStyle = SHEET_CHART_COLORS[i%SHEET_CHART_COLORS.length]; ctx.fillRect(lx, ly, 9, 9);
+ ctx.fillStyle = '#333'; ctx.font = '10px sans-serif'; ctx.fillText(String(lab).slice(0,10), lx+12, ly+8);
+ lx += 78; if (lx > W-70) { lx = 10; ly += 14; }
+ });
+ return;
+ }
+ if (type === 'radar') {
+ // Une valeur par label, sur des axes disposés en cercle (comparaison multi-critères).
+ const cx = W/2, cy = H/2 - 6, radius = Math.min(W,H)/2 - 34;
+ const n = labels.length || 1;
+ const allVals = series.flatMap(s=>s.values);
+ const maxV = Math.max(1, ...allVals);
+ const angleFor = i => -Math.PI/2 + (i/n)*Math.PI*2;
+ // toile de fond
+ ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+ [0.25,0.5,0.75,1].forEach(f => {
+ ctx.beginPath();
+ for (let i=0;i<=n;i++) { const a=angleFor(i%n), r=radius*f, x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+ ctx.stroke();
+ });
+ for (let i=0;i<n;i++) { const a=angleFor(i); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*radius, cy+Math.sin(a)*radius); ctx.stroke(); }
+ series.forEach((s,si) => {
+ ctx.strokeStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length]; ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length] + '33'; ctx.lineWidth = 2;
+ ctx.beginPath();
+ s.values.forEach((v,i) => { const a=angleFor(i), r=(v/maxV)*radius, x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+ ctx.closePath(); ctx.fill(); ctx.stroke();
+ });
+ ctx.fillStyle = '#666'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+ labels.forEach((lab,i) => { const a=angleFor(i), x=cx+Math.cos(a)*(radius+12), y=cy+Math.sin(a)*(radius+12); ctx.fillText(String(lab).slice(0,8), x, y); });
+ ctx.textAlign = 'left';
+ return;
+ }
+ if (type === 'scatter') {
+ // Chaque série = un nuage de points (index de la ligne en X, valeur en Y).
+ const padL = 30, padB = 22, padT = 14, padR = 8;
+ const plotW = W-padL-padR, plotH = H-padT-padB;
+ const n = labels.length || 1;
+ const allVals = series.flatMap(s=>s.values);
+ const maxV = Math.max(1, ...allVals), minV = Math.min(0, ...allVals);
+ ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+ ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+ const yFor = v => padT + plotH - ((v-minV)/((maxV-minV)||1))*plotH;
+ series.forEach((s,si) => {
+ ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ s.values.forEach((v,i) => {
+ const x = padL + (n>1 ? (i/(n-1))*plotW : plotW/2), y = yFor(v);
+ ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+ });
+ });
+ return;
+ }
  if (type === 'pie' || type === 'donut') {
  const vals = series[0] ? series[0].values : [];
  const total = vals.reduce((a,b)=>a+b,0) || 1;
@@ -3551,18 +3702,30 @@ function drawChartOnCanvas(canvas, type, data) {
  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
  const yFor = v => padT + plotH - ((v-minV)/((maxV-minV)||1))*plotH;
- if (type === 'line') {
+ if (type === 'line' || type === 'area') {
  series.forEach((s,si) => {
- ctx.strokeStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length]; ctx.lineWidth = 2;
+ const color = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ ctx.strokeStyle = color; ctx.lineWidth = 2;
  ctx.beginPath();
  s.values.forEach((v,i) => {
  const x = padL + (n>1 ? (i/(n-1))*plotW : plotW/2), y = yFor(v);
  if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
  });
+ if (type === 'area') {
+ ctx.lineTo(padL + plotW, yFor(Math.max(0,minV)));
+ ctx.lineTo(padL, yFor(Math.max(0,minV)));
+ ctx.closePath();
+ ctx.fillStyle = color + '33'; ctx.fill();
+ ctx.beginPath();
+ s.values.forEach((v,i) => {
+ const x = padL + (n>1 ? (i/(n-1))*plotW : plotW/2), y = yFor(v);
+ if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+ });
+ }
  ctx.stroke();
  s.values.forEach((v,i) => {
  const x = padL + (n>1 ? (i/(n-1))*plotW : plotW/2), y = yFor(v);
- ctx.fillStyle = SHEET_CHART_COLORS[si%SHEET_CHART_COLORS.length];
+ ctx.fillStyle = color;
  ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
  });
  });
@@ -3579,7 +3742,7 @@ function drawChartOnCanvas(canvas, type, data) {
  }
  ctx.fillStyle = '#666'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
  labels.forEach((lab,i) => {
- const x = padL + (type==='line' ? (n>1?(i/(n-1))*plotW:plotW/2) : i*(plotW/n)+(plotW/n)/2);
+ const x = padL + ((type==='line'||type==='area') ? (n>1?(i/(n-1))*plotW:plotW/2) : i*(plotW/n)+(plotW/n)/2);
  ctx.fillText(String(lab).slice(0,7), x, padT+plotH+12);
  });
  ctx.textAlign = 'left';
@@ -3593,7 +3756,7 @@ function drawChartOnCanvas(canvas, type, data) {
  }
 }
 
-const SHEET_CHART_LABELS = { bar:'Graphique en barres', line:'Graphique en lignes', pie:'Camembert', donut:'Anneau' };
+const SHEET_CHART_LABELS = { bar:'Graphique en barres', line:'Graphique en lignes', area:'Graphique en aires', pie:'Camembert', donut:'Anneau', semi:'Semi-circulaire', radar:'Radar', scatter:'Nuage de points', histogram:'Histogramme', boxplot:'Boîte à moustaches' };
 
 function openChartTypeModal() {
  const grid = getSheetSelectionData();
@@ -3610,8 +3773,14 @@ function openChartTypeModal() {
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
  <button onclick="insertChartFromSelection('bar')" class="doc-tb-btn" style="padding:14px">📊 Barres</button>
  <button onclick="insertChartFromSelection('line')" class="doc-tb-btn" style="padding:14px">📈 Lignes</button>
+ <button onclick="insertChartFromSelection('area')" class="doc-tb-btn" style="padding:14px">🏔 Aires</button>
  <button onclick="insertChartFromSelection('pie')" class="doc-tb-btn" style="padding:14px">🥧 Camembert</button>
  <button onclick="insertChartFromSelection('donut')" class="doc-tb-btn" style="padding:14px">🍩 Anneau</button>
+ <button onclick="insertChartFromSelection('semi')" class="doc-tb-btn" style="padding:14px">◐ Semi-circulaire</button>
+ <button onclick="insertChartFromSelection('radar')" class="doc-tb-btn" style="padding:14px">🕸 Radar</button>
+ <button onclick="insertChartFromSelection('scatter')" class="doc-tb-btn" style="padding:14px">⁘ Nuage de points</button>
+ <button onclick="insertChartFromSelection('histogram')" class="doc-tb-btn" style="padding:14px">📶 Histogramme</button>
+ <button onclick="insertChartFromSelection('boxplot')" class="doc-tb-btn" style="padding:14px">📦 Boîte à moustaches</button>
  </div>
  <button onclick="document.getElementById('chart-type-modal').remove()" style="margin-top:14px;width:100%;background:var(--bg2);border:none;border-radius:10px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
  </div>`;
@@ -6612,6 +6781,7 @@ async function startQuizLibre(topic) {
  APP.quizIndex=0; APP.quizScore=0; APP.quizAnswers=[];
  APP.currentSubject='quiz-libre';
  APP.currentSubjectName=topic;
+ selectedSubjectQuiz='quiz-libre'; // pas de matière imposée : ne doit pas s'attribuer à "math" par défaut
  launchQuiz();
  } catch(e) {
  showToast(' Erreur quiz libre: '+(e.message||'Réessaie'));
@@ -6898,7 +7068,7 @@ function showResults() {
  document.getElementById('result-details').innerHTML=`
  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
  <span style="color:var(--text2);font-size:13px">Matière</span>
- <span style="font-weight:600;font-size:13px">${(function(){var _f=SUBJECTS.find(function(s){return s.id===selectedSubjectQuiz});return _f?_f.name:""})()}</span>
+ <span style="font-weight:600;font-size:13px">${(function(){if(selectedSubjectQuiz==='quiz-libre') return APP.currentSubjectName||'Sujet libre'; var _f=SUBJECTS.find(function(s){return s.id===selectedSubjectQuiz});return _f?_f.name:""})()}</span>
  </div>
  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
  <span style="color:var(--text2);font-size:13px">Difficulté</span>
@@ -7522,11 +7692,11 @@ function renderProgress() {
  // une matière quizzée mais pas dans ce sous-ensemble n'apparaissait jamais
  // — ce qui donnait un "score moyen" non nul mais une carte vide.
  const rawScores = getSubjectScores() || {};
- const scores = Object.keys(rawScores).map(id => {
+ const scores = Object.keys(rawScores).filter(id => id !== 'quiz-libre').map(id => {
  const arr = rawScores[id] || [];
  const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
  const known = SUBJECTS.find(x=>x.id===id) || ALL_SUBJECTS.find(x=>x.id===id);
- return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : 'var(--em)' };
+ return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : colorForSubjectId(id) };
  }).filter(x => x.pct > 0).sort((a,b) => b.pct - a.pct);
  document.getElementById('subject-scores').innerHTML = scores.length ? scores.map(({name,pct,color})=>`
  <div style="margin-bottom:12px">
@@ -7637,11 +7807,11 @@ function renderProfile() {
  const pScoresEl = document.getElementById('profile-subject-scores');
  if (pScoresEl) {
  const rawScores = getSubjectScores() || {};
- const scores = Object.keys(rawScores).map(id => {
+ const scores = Object.keys(rawScores).filter(id => id !== 'quiz-libre').map(id => {
  const arr = rawScores[id] || [];
  const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
  const known = SUBJECTS.find(x=>x.id===id) || ALL_SUBJECTS.find(x=>x.id===id);
- return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : 'var(--em)' };
+ return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : colorForSubjectId(id) };
  }).filter(x => x.pct > 0).sort((a,b) => b.pct - a.pct).slice(0, 3);
  pScoresEl.innerHTML = scores.length ? scores.map(({name,pct,color})=>`
  <div style="margin-bottom:10px">
