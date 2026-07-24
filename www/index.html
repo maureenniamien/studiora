@@ -558,7 +558,7 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  <button onclick="document.getElementById('chat-file-input').click()" title="Joindre un fichier" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
  </button>
- <button onclick="generateImageFromChat()" title="Générer une image" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
+ <button onclick="openImageGenMenu()" title="Générer une image ou un schéma" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
  </button>
  <button id="mic-btn" onclick="toggleVoiceInput()" title="Parler" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
@@ -2206,6 +2206,10 @@ const ALL_SUBJECTS = [
  { id:'chimiegen', icon:'', name:'Chimie Générale et Organique', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
  { id:'biophysique', icon:'', name:'Biophysique', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
  { id:'methodo', icon:'', name:'Méthodologie & Communication pro', color:'#64748B', soft:'#F1F5F9', border:'rgba(100,116,139,.2)' },
+ { id:'artplast', icon:'', name:'Art plastique', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'musique', icon:'', name:'Musique', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'danse', icon:'', name:'Danse', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'cuisine', icon:'', name:'Cuisine', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
 ];
 
 // Matières par niveau et filière
@@ -2350,6 +2354,16 @@ function colorForSubjectId(id) {
  for (let i=0;i<id.length;i++) h = (h*31 + id.charCodeAt(i)) >>> 0;
  return SUBJECT_COLOR_PALETTE[h % SUBJECT_COLOR_PALETTE.length].color;
 }
+// Ordre de couleur précis et cyclique pour les matières prédéfinies : chaque
+// matière reçoit sa couleur selon sa position dans ALL_SUBJECTS (index % 10
+// couleurs de la palette), au lieu des couleurs choisies à la main qui se
+// répétaient de façon inégale (ex. orange réutilisé 6 fois). Résultat : deux
+// matières voisines dans une liste ont rarement la même couleur, et chaque
+// matière garde toujours la même couleur d'une session à l'autre.
+ALL_SUBJECTS.forEach((s, i) => {
+ const p = SUBJECT_COLOR_PALETTE[i % SUBJECT_COLOR_PALETTE.length];
+ s.color = p.color; s.soft = p.soft; s.border = p.border;
+});
 function synthesizeFiliereSubject(filiere) {
  const id = slugifyId(filiere);
  let h = 0;
@@ -3040,9 +3054,52 @@ function regenerateImageFromPrompt(promptB64) {
  generateImageFromChat();
 }
 
+// Bulle de schéma vectoriel (SVG) généré par IA — pendant complètement séparé
+// de renderImageMsgHTML : le SVG est injecté directement dans le DOM (pas de
+// balise <img>) puisque c'est du balisage, pas un fichier à charger.
+function renderSvgMsgHTML(svgMarkup, prompt, time) {
+ const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
+ const svgB64 = btoa(unescape(encodeURIComponent(svgMarkup||'')));
+ return `<div>
+ <div class="msg-bubble ai" style="padding:10px;background:#fff">
+ <div style="width:100%;max-width:420px;margin:0 auto">${svgMarkup}</div>
+ </div>
+ <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+ <div class="msg-time" style="margin-top:0">${time || ''}</div>
+ <button onclick="regenerateSvgFromPrompt('${promptB64}')" title="Régénérer" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+ </button>
+ <button onclick="downloadGeneratedSvg('${svgB64}','${promptB64}')" title="Télécharger (.svg)" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+ </button>
+ </div>
+ </div>`;
+}
+function regenerateSvgFromPrompt(promptB64) {
+ const prompt = decodeURIComponent(escape(atob(promptB64)));
+ const input = document.getElementById('chat-input');
+ input.value = prompt;
+ generateSvgDiagramFromChat();
+}
+function downloadGeneratedSvg(svgB64, promptB64) {
+ try {
+ const svg = decodeURIComponent(escape(atob(svgB64)));
+ const name = (decodeURIComponent(escape(atob(promptB64))).slice(0,40).replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')) || 'schema';
+ const blob = new Blob([svg], { type:'image/svg+xml' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url; a.download = name + '.svg';
+ document.body.appendChild(a); a.click(); a.remove();
+ setTimeout(() => URL.revokeObjectURL(url), 5000);
+ } catch(e) { showToast('! Téléchargement impossible'); }
+}
+
 function renderMsgHTML(m) {
  if (m.role === 'assistant' && m.content && typeof m.content === 'object' && m.content.type === 'image') {
  return `<div class="msg-row">${renderImageMsgHTML(m.content.url, m.content.prompt, m.time)}</div>`;
+ }
+ if (m.role === 'assistant' && m.content && typeof m.content === 'object' && m.content.type === 'svg') {
+ return `<div class="msg-row">${renderSvgMsgHTML(m.content.svg, m.content.prompt, m.time)}</div>`;
  }
  if (m.role === 'user') {
  if (m.content && typeof m.content === 'object' && m.content.imagePreview) {
@@ -3336,12 +3393,18 @@ function onSheetCellBlur(td) {
 // Construit le HTML d'une feuille éditable avec en-têtes A,B,C... et 1,2,3...,
 // et des cellules pré-remplies optionnelles (valeurs brutes, ex. depuis un import)
 function buildSheetHTML(sheetName, nRows, nCols, values) {
- const th = (txt) => `<th style="border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3);position:sticky;top:0">${txt}</th>`;
+ const cornerTh = `<th style="border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3);position:sticky;top:0">${''}</th>`;
+ // En-têtes de colonne/ligne : la bordure droite (colonne) ou basse (ligne) de
+ // chaque en-tête sert de poignée. Un appui long sur cette bordure puis un
+ // glissement redimensionne en direct, sans avoir à connaître ou taper une
+ // valeur en pixels.
+ const colTh = (c) => `<th data-col-idx="${c}" style="border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3);position:sticky;top:0;cursor:default" onmousedown="sheetHeaderMouseDown(event,this,'col',${c})" onmousemove="sheetHeaderHoverCursor(event,this,'col')" ontouchstart="sheetHeaderTouchStart(event,this,'col',${c})" ontouchmove="sheetHeaderTouchMove(event)" ontouchend="sheetHeaderTouchEnd()" ontouchcancel="sheetHeaderTouchEnd()">${sheetColLetter(c)}</th>`;
+ const rowTh = (r) => `<th data-row-idx="${r}" style="border:1px solid var(--border);background:var(--bg2);padding:6px 8px;font-size:11px;color:var(--text3);cursor:default" onmousedown="sheetHeaderMouseDown(event,this,'row',${r})" onmousemove="sheetHeaderHoverCursor(event,this,'row')" ontouchstart="sheetHeaderTouchStart(event,this,'row',${r})" ontouchmove="sheetHeaderTouchMove(event)" ontouchend="sheetHeaderTouchEnd()" ontouchcancel="sheetHeaderTouchEnd()">${r+1}</th>`;
  let html = `<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
  <table data-sheet="${escHtml(sheetName)}" style="border-collapse:collapse;width:100%;font-size:12px">
- <tr>${th('')}${Array.from({length:nCols},(_,c)=>th(sheetColLetter(c))).join('')}</tr>`;
+ <tr>${cornerTh}${Array.from({length:nCols},(_,c)=>colTh(c)).join('')}</tr>`;
  for (let r=0; r<nRows; r++) {
- html += `<tr>${th(r+1)}`;
+ html += `<tr>${rowTh(r)}`;
  for (let c=0; c<nCols; c++) {
  const ref = sheetColLetter(c)+(r+1);
  const val = (values && values[r] && values[r][c] !== undefined) ? values[r][c] : '';
@@ -3809,6 +3872,10 @@ function insertChartFromSelection(type) {
  </div><canvas id="${id}" width="320" height="220" style="width:100%;max-width:420px;height:auto;display:block"></canvas>`;
  chartsArea.appendChild(card);
  drawChartOnCanvas(document.getElementById(id), type, data);
+ // Retour visible : sans ça, le graphique est ajouté en bas de la feuille et
+ // rien à l'écran ne signale que l'appui a été pris en compte.
+ showToast('✓ Graphique inséré : ' + SHEET_CHART_LABELS[type]);
+ card.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
 // ── BARRE D'OUTILS WORD (Accueil / Insertion) ──
@@ -4168,6 +4235,85 @@ function sheetSetRowHeight() {
  if (tr) [...tr.children].forEach(cell => { cell.style.height = px+'px'; });
  }
  showToast('✓ Hauteur appliquée');
+}
+
+// ── REDIMENSIONNER PAR APPUI LONG + GLISSEMENT (sans taper de pixels) ──
+// La zone sensible est la bordure droite d'un en-tête de colonne (frontière
+// avec la colonne suivante) ou la bordure basse d'un en-tête de ligne. Sur
+// tactile : appui long (350ms) sans bouger pour armer le glissement, puis on
+// bouge le doigt ; ça évite de déclencher un redimensionnement par accident
+// pendant un simple scroll. Sur souris : le curseur change au survol de la
+// bordure et le glissement démarre directement au clic.
+const SHEET_RESIZE_EDGE = 14;
+let _sheetResizeStart = null, _sheetResizeActive = false, _sheetResizeTimer = null;
+
+function _sheetResizeApplyColWidth(idx, px) {
+ const table = currentSheetTable(); if (!table) return;
+ table.querySelectorAll('tr').forEach(tr => {
+ const cell = tr.children[idx+1]; // +1 : en-tête de ligne en 1re colonne
+ if (cell) { cell.style.width = px+'px'; cell.style.minWidth = px+'px'; cell.style.maxWidth = px+'px'; }
+ });
+}
+function _sheetResizeApplyRowHeight(idx, px) {
+ const table = currentSheetTable(); if (!table) return;
+ const tr = table.querySelectorAll('tr')[idx+1]; // +1 : ligne d'en-tête des lettres
+ if (tr) [...tr.children].forEach(cell => { cell.style.height = px+'px'; });
+}
+function sheetHeaderTouchStart(e, th, kind, idx) {
+ const t = e.touches[0];
+ const rect = th.getBoundingClientRect();
+ const nearEdge = kind==='col' ? (rect.right - t.clientX) <= SHEET_RESIZE_EDGE : (rect.bottom - t.clientY) <= SHEET_RESIZE_EDGE;
+ if (!nearEdge) return; // pas sur la bordure : on laisse le scroll normal se produire
+ _sheetResizeStart = { kind, idx, x:t.clientX, y:t.clientY, startSize: kind==='col'?rect.width:rect.height };
+ _sheetResizeActive = false;
+ clearTimeout(_sheetResizeTimer);
+ _sheetResizeTimer = setTimeout(() => {
+ if (!_sheetResizeStart) return;
+ _sheetResizeActive = true;
+ _sheetSnapshot();
+ if (navigator.vibrate) navigator.vibrate(15);
+ showToast(kind==='col' ? '↔ Glisse le doigt pour ajuster la largeur' : '↕ Glisse le doigt pour ajuster la hauteur');
+ }, 350);
+}
+function sheetHeaderTouchMove(e) {
+ if (!_sheetResizeStart) return;
+ const t = e.touches[0];
+ const dx = t.clientX - _sheetResizeStart.x, dy = t.clientY - _sheetResizeStart.y;
+ if (!_sheetResizeActive) {
+ // Le doigt a bougé avant la fin de l'appui long : on annule et on laisse
+ // le geste devenir un scroll normal, comme pour la sélection de cellules.
+ if (Math.abs(dx) > 8 || Math.abs(dy) > 8) { clearTimeout(_sheetResizeTimer); _sheetResizeStart = null; }
+ return;
+ }
+ e.preventDefault();
+ if (_sheetResizeStart.kind === 'col') _sheetResizeApplyColWidth(_sheetResizeStart.idx, Math.max(30, Math.round(_sheetResizeStart.startSize + dx)));
+ else _sheetResizeApplyRowHeight(_sheetResizeStart.idx, Math.max(16, Math.round(_sheetResizeStart.startSize + dy)));
+}
+function sheetHeaderTouchEnd() {
+ clearTimeout(_sheetResizeTimer);
+ if (_sheetResizeActive) showToast('✓ Taille ajustée');
+ _sheetResizeStart = null; _sheetResizeActive = false;
+}
+function sheetHeaderHoverCursor(e, th, kind) {
+ const rect = th.getBoundingClientRect();
+ const nearEdge = kind==='col' ? (rect.right - e.clientX) <= SHEET_RESIZE_EDGE : (rect.bottom - e.clientY) <= SHEET_RESIZE_EDGE;
+ th.style.cursor = nearEdge ? (kind==='col' ? 'col-resize' : 'row-resize') : 'default';
+}
+function sheetHeaderMouseDown(e, th, kind, idx) {
+ const rect = th.getBoundingClientRect();
+ const nearEdge = kind==='col' ? (rect.right - e.clientX) <= SHEET_RESIZE_EDGE : (rect.bottom - e.clientY) <= SHEET_RESIZE_EDGE;
+ if (!nearEdge) return;
+ e.preventDefault();
+ _sheetSnapshot();
+ const start = { x:e.clientX, y:e.clientY, startSize: kind==='col'?rect.width:rect.height };
+ const onMove = (ev) => {
+ const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+ if (kind === 'col') _sheetResizeApplyColWidth(idx, Math.max(30, Math.round(start.startSize + dx)));
+ else _sheetResizeApplyRowHeight(idx, Math.max(16, Math.round(start.startSize + dy)));
+ };
+ const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); showToast('✓ Taille ajustée'); };
+ document.addEventListener('mousemove', onMove);
+ document.addEventListener('mouseup', onUp);
 }
 
 // ── FORMAT DES CELLULES (nombre, pourcentage, devise…) ──
@@ -6176,6 +6322,110 @@ function speakMessage(b64text, btn) {
 }
 
 
+// ── MENU DE CHOIX : image photo (raster) ou schéma vectoriel ──
+// Un menu plutôt qu'un 2e bouton dans la barre : ça évite de surcharger la
+// zone de saisie, et ça garde generateImageFromChat() totalement inchangée —
+// le nouveau mode "schéma" est un chemin additionnel, jamais un remplacement.
+function openImageGenMenu() {
+ const input = document.getElementById('chat-input');
+ if (!input.value.trim()) { showToast('! Décris d\'abord ce que tu veux dans le champ de texte'); return; }
+ const modal = document.createElement('div');
+ modal.id = 'imggen-menu-modal';
+ modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+ modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+ modal.innerHTML = `<div style="background:var(--white);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px">
+ <h3 style="font-size:15px;font-weight:700;margin-bottom:4px">Quel type de visuel ?</h3>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Choisis selon ce que tu veux obtenir.</p>
+ <button onclick="document.getElementById('imggen-menu-modal').remove();generateImageFromChat()" class="doc-tb-btn" style="width:100%;padding:14px;margin-bottom:10px;text-align:left;display:block">
+ 🖼 <b>Image / photo</b><br><span style="font-size:11px;color:var(--text3);font-weight:400">Rendu réaliste (portrait, scène, objet, texture...)</span>
+ </button>
+ <button onclick="document.getElementById('imggen-menu-modal').remove();generateSvgDiagramFromChat()" class="doc-tb-btn" style="width:100%;padding:14px;text-align:left;display:block">
+ ◇ <b>Schéma / diagramme (vecteur)</b><br><span style="font-size:11px;color:var(--text3);font-weight:400">Net à tout zoom — organigramme, carte mentale, coupe simplifiée, cycle...</span>
+ </button>
+ <button onclick="document.getElementById('imggen-menu-modal').remove()" style="margin-top:14px;width:100%;background:var(--bg2);border:none;border-radius:10px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
+ </div>`;
+ document.body.appendChild(modal);
+}
+
+// ── SCHÉMA VECTORIEL (SVG) : canal texte de l'IA avec une consigne système dédiée ──
+// Volontairement un chemin de code séparé de generateImageFromChat/Pollinations,
+// avec son propre appel et son propre system prompt, pour ne rien changer au
+// comportement du générateur d'image existant.
+const SVG_DIAGRAM_SYSTEM_PROMPT = "Tu es un générateur de schémas vectoriels pédagogiques pour des étudiants. "
+ + "Réponds UNIQUEMENT avec un seul bloc <svg>...</svg> valide et autonome (attribut viewBox défini, sans balise <script>, sans lien externe, sans markdown, sans texte avant ou après). "
+ + "Utilise des formes simples (rect, circle, ellipse, path, line, polygon, text) et des libellés courts en français, lisibles à petite taille. "
+ + "Vise un viewBox proportionné au contenu (ex. \"0 0 800 600\"). "
+ + "Si la demande décrit une scène réaliste, une photo, une texture ou un rendu artistique détaillé (portrait, paysage, objet photoréaliste, illustration complexe) plutôt qu'un schéma, un diagramme, un organigramme, une carte mentale, un cycle ou une coupe simplifiée, ne produis AUCUN SVG : réponds uniquement par le mot NOT_SUITABLE suivi de \": \" puis d'une courte raison en français (une phrase).";
+
+async function generateSvgDiagramFromChat() {
+ const input = document.getElementById('chat-input');
+ const prompt = input.value.trim();
+ if (!prompt) { showToast('! Décris le schéma que tu veux dans le champ de texte'); return; }
+ if (!canUseIA()) {
+ showUpgradeModal("Tu as utilisé tes " + getPlanLimits().ia_per_4h + " questions IA. Reset dans " + iaTimeLeft() + ".");
+ return;
+ }
+ incUsage('ia');
+ input.value = ''; autoResize(input);
+
+ const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+ const displayText = '◇ Génère un schéma (vecteur) : ' + prompt;
+ APP.chatHistory.push({ role:'user', content:displayText, time });
+
+ const el = document.getElementById('chat-messages');
+ if(el.querySelector('.display')) el.innerHTML = '';
+ el.innerHTML += renderMsgHTML({ role:'user', content:displayText });
+
+ const genId = 'svggen-' + Date.now();
+ el.innerHTML += `<div id="${genId}" class="msg-row">
+ <div class="msg-bubble ai" style="padding:12px 16px">
+ <div style="display:flex;gap:5px;align-items:center">
+ <div class="typing-dot"></div><div class="typing-dot"></div> ◇ Génération du schéma...
+ </div>
+ </div>
+ </div>`;
+ scrollChat();
+
+ const container = document.getElementById(genId);
+ try {
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ method:'POST',
+ headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ model:MODEL, max_tokens:2000, system:SVG_DIAGRAM_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}] })
+ });
+ const data = await res.json();
+ if (!res.ok) throw new Error((data.error && data.error.message) || ('Erreur ' + res.status));
+ const raw = stripThinkTags((data.content && data.content[0] ? data.content[0].text : '') || '');
+
+ if (/^\s*NOT_SUITABLE/i.test(raw)) {
+ const reason = raw.replace(/^\s*NOT_SUITABLE:?/i,'').trim();
+ const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
+ container.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px">
+ <div style="font-size:13px;color:var(--text2);margin-bottom:8px">◇ Pas adapté à un schéma vectoriel${reason ? ' : '+escHtml(reason) : ''}. Essaie plutôt la génération d'image photo.</div>
+ <button onclick="document.getElementById('chat-input').value=decodeURIComponent(escape(atob('${promptB64}')));generateImageFromChat()" style="background:var(--em);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🖼 Générer une image photo</button>
+ </div>`;
+ scrollChat();
+ return;
+ }
+
+ const svgMatch = raw.match(/<svg[\s\S]*?<\/svg>/i);
+ if (!svgMatch) throw new Error('no-svg');
+ // Nettoyage minimal de sécurité avant d'injecter le SVG tel quel dans la page.
+ const cleanSvg = svgMatch[0].replace(/<script[\s\S]*?<\/script>/gi,'').replace(/\son\w+="[^"]*"/gi,'').replace(/\son\w+='[^']*'/gi,'');
+
+ container.innerHTML = renderSvgMsgHTML(cleanSvg, prompt, time);
+ APP.chatHistory.push({ role:'assistant', content:{ type:'svg', svg:cleanSvg, prompt }, time });
+ saveChatHistory(APP.currentSubject);
+ } catch(e) {
+ const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
+ container.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px">
+ <div style="font-size:13px;color:var(--text2);margin-bottom:8px">✕ Schéma indisponible pour le moment.</div>
+ <button onclick="document.getElementById('chat-input').value=decodeURIComponent(escape(atob('${promptB64}')));generateSvgDiagramFromChat()" style="background:var(--em);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Réessayer</button>
+ </div>`;
+ }
+ scrollChat();
+}
+
 async function generateImageFromChat() {
  const input = document.getElementById('chat-input');
  const prompt = input.value.trim();
@@ -6317,7 +6567,7 @@ async function sendMessage() {
  // de l'app. Comme la génération d'image ne nécessite pas de contexte IA, on
  // peut simplement l'omettre sans rien perdre.
  const messages = APP.chatHistory.slice(0,-1)
- .filter(m => !(m.content && typeof m.content === 'object' && m.content.type === 'image'))
+ .filter(m => !(m.content && typeof m.content === 'object' && (m.content.type === 'image' || m.content.type === 'svg')))
  .map(m=>{
  let content = m.content;
  if (content && typeof content === 'object' && content.imagePreview) content = content.caption || '';
