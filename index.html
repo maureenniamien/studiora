@@ -812,7 +812,11 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <div>
  <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px">Ma progression</h2>
- <p style="color:var(--text3);font-size:12px">Cette semaine · <span style="color:var(--em);font-weight:600" id="week-sessions-count">0 sessions</span></p>
+ <div style="display:flex;align-items:center;gap:8px">
+ <button onclick="changeProgressWeek(-1)" style="background:none;border:1px solid var(--border);border-radius:8px;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--text2)">‹</button>
+ <p style="color:var(--text3);font-size:12px;margin:0" id="progress-week-label">Cette semaine · <span style="color:var(--em);font-weight:600" id="week-sessions-count">0 sessions</span></p>
+ <button id="progress-week-next" onclick="changeProgressWeek(1)" style="background:none;border:1px solid var(--border);border-radius:8px;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--text2)">›</button>
+ </div>
  </div>
  </div>
  <div class="scroll-body" style="padding:0 20px 100px">
@@ -1374,10 +1378,14 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
  <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:16px">
  <div style="font-size:12px;font-weight:700;margin-bottom:8px">🎬 Ou transcrire un fichier importé</div>
  <input type="file" id="transcribe-media-input" accept="audio/*,video/*" style="display:none" onchange="handleImportMediaFile(this)">
- <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="width:100%;padding:11px"> Importer un audio ou une vidéo</button>
+ <div style="display:flex;gap:8px">
+ <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="flex:1;padding:11px"> Importer un audio ou une vidéo</button>
+ <button id="transcribe-media-remove-btn" onclick="clearImportedMedia()" class="doc-tb-btn" style="display:none;padding:11px 14px" title="Retirer le fichier">🗑</button>
+ </div>
  <div id="transcribe-media-preview" style="display:none;margin-top:10px"></div>
  <div id="transcribe-media-actions" style="display:none;gap:8px;margin-top:10px">
  <button id="transcribe-media-btn" onclick="toggleMediaTranscription()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"> Transcrire pendant la lecture</button>
+ <button id="transcribe-media-cancel-btn" onclick="cancelMediaTranscription()" style="display:none;background:#C0392B;color:#fff;border:none;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">⏹ Stop</button>
  </div>
  <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
  </div>
@@ -1850,6 +1858,12 @@ function incrementSessions() {
  const day = new Date().getDay();
  if (!s.weekData) s.weekData = [0,0,0,0,0,0,0];
  s.weekData[day] = (s.weekData[day] || 0) + 1;
+ // Historique par semaine ISO (en plus du compteur ci-dessus, gardé pour compat),
+ // pour pouvoir consulter les semaines précédentes dans "Ma progression".
+ const wk = getISOWeekKey(new Date());
+ if (!s.weeklyData) s.weeklyData = {};
+ if (!s.weeklyData[wk]) s.weeklyData[wk] = [0,0,0,0,0,0,0];
+ s.weeklyData[wk][day] = (s.weeklyData[wk][day] || 0) + 1;
  saveStats(s);
 }
 function incrementQuestions(n) {
@@ -1876,9 +1890,37 @@ function getAvgScore() {
  if (!all.length) return 0;
  return Math.round(all.reduce((a,b)=>a+b,0)/all.length);
 }
-function getWeekData() {
+// Clé de semaine ISO (ex: "2026-W04"), pour indexer l'historique par semaine.
+function getISOWeekKey(d) {
+ const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+ const day = (date.getUTCDay() + 6) % 7;
+ date.setUTCDate(date.getUTCDate() - day + 3);
+ const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+ const week = 1 + Math.round(((date - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay()+6)%7)) / 7);
+ return date.getUTCFullYear() + '-W' + String(week).padStart(2,'0');
+}
+// Lundi de la semaine courante + offset semaines (offset négatif = semaines passées).
+function getWeekStartDate(offset) {
+ const now = new Date();
+ const day = (now.getDay() + 6) % 7;
+ const monday = new Date(now);
+ monday.setDate(now.getDate() - day + (offset||0)*7);
+ monday.setHours(0,0,0,0);
+ return monday;
+}
+function getWeekData(offset) {
+ offset = offset || 0;
  const s = getStats();
- const raw = s.weekData || [0,0,0,0,0,0,0];
+ const wk = getISOWeekKey(getWeekStartDate(offset));
+ let raw;
+ if (offset === 0) {
+ // Semaine courante : l'historique par semaine peut être vide si les sessions ont
+ // été comptabilisées avant l'ajout de ce suivi — dans ce cas on retombe sur
+ // l'ancien compteur non daté, pour ne pas perdre les données déjà là.
+ raw = (s.weeklyData && s.weeklyData[wk]) || s.weekData || [0,0,0,0,0,0,0];
+ } else {
+ raw = (s.weeklyData && s.weeklyData[wk]) || [0,0,0,0,0,0,0];
+ }
  return [raw[1],raw[2],raw[3],raw[4],raw[5],raw[6],raw[0]];
 }
 
@@ -2590,7 +2632,7 @@ function onScreenEnter(id) {
  if(id==='screen-quiz') renderQuizConfig();
  if(id==='screen-flashcards') renderFCConfig();
  if(id==='screen-sujet') renderSujetConfig();
- if(id==='screen-progress') renderProgress();
+ if(id==='screen-progress') { _progressWeekOffset = 0; renderProgress(); }
  if(id==='screen-profile') renderProfile();
  if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); renderSharedDocs(); }
  if(id==='screen-library') { renderLibraryImports(); renderLibraryDownloads(); }
@@ -5255,9 +5297,42 @@ function handleImportMediaFile(input) {
  : `<audio id="transcribe-media-el" src="${url}" controls style="width:100%"></audio>`;
  container.style.display = 'block';
  document.getElementById('transcribe-media-actions').style.display = 'flex';
+ document.getElementById('transcribe-media-remove-btn').style.display = 'inline-flex';
  importedMediaEl = document.getElementById('transcribe-media-el');
  importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
  input.value = '';
+}
+// Retire le fichier importé (sans toucher à la logique de transcription elle-même) :
+// stoppe une éventuelle transcription en cours, libère l'URL objet, réinitialise l'UI.
+function clearImportedMedia() {
+ if (_mediaTranscribing || _transcribeAbortController) cancelMediaTranscription();
+ if (importedMediaEl) { try { importedMediaEl.pause(); importedMediaEl.removeAttribute('src'); } catch(e) {} }
+ const container = document.getElementById('transcribe-media-preview');
+ if (container) { container.innerHTML = ''; container.style.display = 'none'; }
+ const actions = document.getElementById('transcribe-media-actions');
+ if (actions) actions.style.display = 'none';
+ const removeBtn = document.getElementById('transcribe-media-remove-btn');
+ if (removeBtn) removeBtn.style.display = 'none';
+ importedMediaEl = null;
+ importedMediaFile = null;
+}
+// Arrête une transcription de fichier en cours (extraction audio ou envoi au serveur).
+// Le texte déjà présent dans la zone de transcription n'est pas touché : comme le
+// résultat n'arrive qu'en une fois à la toute fin, annuler avant la fin revient
+// simplement à ne rien ajouter — ce qui était déjà transcrit avant reste tel quel.
+let _transcribeAbortController = null;
+let _transcribeActiveRecorder = null;
+let _transcribeCancelled = false;
+function cancelMediaTranscription() {
+ _transcribeCancelled = true;
+ if (_transcribeAbortController) { try { _transcribeAbortController.abort(); } catch(e) {} }
+ if (_transcribeActiveRecorder) { try { _transcribeActiveRecorder.stop(); } catch(e) {} _transcribeActiveRecorder = null; }
+ if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
+ const btn = document.getElementById('transcribe-media-btn');
+ const cancelBtn = document.getElementById('transcribe-media-cancel-btn');
+ if (btn) { btn.disabled = false; btn.textContent = ' Transcrire pendant la lecture'; btn.style.display = ''; }
+ if (cancelBtn) cancelBtn.style.display = 'none';
+ showToast('Transcription annulée');
 }
 function stopMediaTranscription() {
  _mediaTranscribing = false;
@@ -5314,13 +5389,14 @@ function extractAudioBlobFromMedia(mediaEl, onProgress) {
  const chunks = [];
  let settled = false;
  recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
- recorder.onstop = () => { if (!settled) { settled = true; resolve(new Blob(chunks, { type: mimeType })); } };
+ recorder.onstop = () => { if (!settled) { settled = true; _transcribeActiveRecorder = null; if (_transcribeCancelled) reject(new Error('cancelled')); else resolve(new Blob(chunks, { type: mimeType })); } };
  recorder.onerror = (e) => { if (!settled) { settled = true; reject((e && e.error) || new Error('erreur enregistrement')); } };
  mediaEl.oncanplay = null;
  mediaEl.onended = () => { try { recorder.stop(); } catch(e) {} };
  mediaEl.ontimeupdate = () => { if (onProgress && mediaEl.duration) onProgress(mediaEl.currentTime / mediaEl.duration); };
  mediaEl.currentTime = 0;
  recorder.start();
+ _transcribeActiveRecorder = recorder;
  mediaEl.play().catch(err => { if (!settled) { settled = true; reject(err); } });
  } catch(e) { reject(e); }
  });
@@ -5331,9 +5407,12 @@ function extractAudioBlobFromMedia(mediaEl, onProgress) {
 // fonction n'est pas déployée/joignable, pour laisser toggleMediaTranscription() basculer.
 async function transcribeMediaFileViaAPI() {
  if (!importedMediaFile) return false;
+ _transcribeCancelled = false;
  const btn = document.getElementById('transcribe-media-btn');
+ const cancelBtn = document.getElementById('transcribe-media-cancel-btn');
  const oldTxt = btn.textContent;
- btn.disabled = true;
+ btn.style.display = 'none';
+ if (cancelBtn) cancelBtn.style.display = '';
 
  // Extraction audio (préférée) — beaucoup plus léger à uploader qu'un fichier vidéo brut.
  let uploadBlob = importedMediaFile;
@@ -5355,29 +5434,40 @@ async function transcribeMediaFileViaAPI() {
  extracted = true;
  }
  } catch(e) {
+ if (_transcribeCancelled || (e && e.message === 'cancelled')) {
+ btn.style.display = ''; btn.disabled = false; btn.textContent = oldTxt; if (cancelBtn) cancelBtn.style.display = 'none';
+ return true; // annulé volontairement : pas de repli micro, texte déjà présent conservé tel quel
+ }
  // L'extraction a échoué (API indisponible) : on envoie le fichier original tel quel,
  // c'est plus lourd mais ça reste fonctionnel plutôt que de bloquer la transcription.
  }
+ }
+ if (_transcribeCancelled) {
+ btn.style.display = ''; btn.disabled = false; btn.textContent = oldTxt; if (cancelBtn) cancelBtn.style.display = 'none';
+ return true;
  }
 
  let result;
  try {
  result = await _uploadForTranscription(uploadBlob, uploadName, btn);
  } catch(e) {
- btn.disabled = false; btn.textContent = oldTxt;
+ btn.style.display = ''; btn.disabled = false; btn.textContent = oldTxt; if (cancelBtn) cancelBtn.style.display = 'none';
+ if (_transcribeCancelled || (e && e.name === 'AbortError')) return true; // annulé : pas de repli
  return false; // hors-ligne / fonction indisponible : repli
  }
- if (result.notDeployed) { btn.disabled = false; btn.textContent = oldTxt; return false; }
+ if (result.notDeployed) { btn.style.display = ''; btn.disabled = false; btn.textContent = oldTxt; if (cancelBtn) cancelBtn.style.display = 'none'; return false; }
 
  // Si l'extraction audio n'a rien détecté, on retente une fois avec le fichier vidéo
  // original avant d'abandonner (l'extraction a pu produire un audio silencieux).
- if (result.emptyText && extracted) {
+ if (result.emptyText && extracted && !_transcribeCancelled) {
  try {
  result = await _uploadForTranscription(importedMediaFile, importedMediaFile.name, btn);
  } catch(e) {}
  }
 
- btn.disabled = false; btn.textContent = oldTxt;
+ btn.style.display = ''; btn.disabled = false; btn.textContent = oldTxt;
+ if (cancelBtn) cancelBtn.style.display = 'none';
+ if (_transcribeCancelled) return true;
  if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); return true; }
  if (result.emptyText) { showToast('⚠ Aucun texte détecté dans ce fichier'); return true; }
  const ta = document.getElementById('transcript-textarea');
@@ -5390,11 +5480,18 @@ async function _uploadForTranscription(blob, name, btn) {
  btn.textContent = ' Envoi pour transcription...';
  const fd = new FormData();
  fd.append('file', blob, name);
- const res = await fetch(SUPABASE_URL + '/functions/v1/clever-action', {
+ _transcribeAbortController = new AbortController();
+ let res;
+ try {
+ res = await fetch(SUPABASE_URL + '/functions/v1/clever-action', {
  method: 'POST',
  headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
- body: fd
+ body: fd,
+ signal: _transcribeAbortController.signal
  });
+ } finally {
+ _transcribeAbortController = null;
+ }
  if (res.status === 404) return { notDeployed: true };
  if (!res.ok) return { error: true };
  const data = await res.json();
@@ -7386,18 +7483,39 @@ function continueInChat() {
 }
 
 // ── PROGRESS ──
+let _progressWeekOffset = 0;
+function changeProgressWeek(delta) {
+ const next = _progressWeekOffset + delta;
+ if (next > 0) return; // pas de semaines futures
+ _progressWeekOffset = next;
+ renderProgress();
+}
+function _weekLabel(offset) {
+ if (offset === 0) return 'Cette semaine';
+ if (offset === -1) return 'Semaine dernière';
+ const start = getWeekStartDate(offset);
+ const end = new Date(start); end.setDate(start.getDate()+6);
+ const fmt = (d) => d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
+ return 'Semaine du ' + fmt(start) + ' au ' + fmt(end);
+}
 function renderProgress() {
  // Streak réel
  const streakEl = document.getElementById('progress-streak');
  if(streakEl) streakEl.textContent = computeStreak();
 
- // Graphe semaine
- const wData = getWeekData();
+ // Graphe semaine (navigable)
+ const wData = getWeekData(_progressWeekOffset);
  const max=Math.max(...wData,1);
+ const isCurrentWeek = _progressWeekOffset === 0;
  document.getElementById('week-chart').innerHTML = wData.map((v,i)=>`
  <div style="flex:1;display:flex;align-items:flex-end;justify-content:center">
- <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)||4}px;background:${v>0?(i===new Date().getDay()-1?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
+ <div class="week-bar" style="width:100%;max-width:32px;height:${Math.round((v/max)*80)||4}px;background:${v>0?(isCurrentWeek && i===new Date().getDay()-1?'var(--em)':'var(--em-mid)'):'var(--bg2)'}"></div>
  </div>`).join('');
+ const weekLabelEl = document.getElementById('progress-week-label');
+ const weekTotal = wData.reduce((a,b)=>a+b,0);
+ if (weekLabelEl) weekLabelEl.innerHTML = _weekLabel(_progressWeekOffset) + ' · <span style="color:var(--em);font-weight:600" id="week-sessions-count">' + weekTotal + ' session' + (weekTotal>1?'s':'') + '</span>';
+ const nextBtn = document.getElementById('progress-week-next');
+ if (nextBtn) { nextBtn.disabled = isCurrentWeek; nextBtn.style.opacity = isCurrentWeek ? '.35' : '1'; nextBtn.style.cursor = isCurrentWeek ? 'default' : 'pointer'; }
 
  // Scores par matière : on part de TOUTES les matières qui ont réellement
  // un score enregistré (et non des 5 premières de la liste "active"), sinon
@@ -7418,11 +7536,6 @@ function renderProgress() {
  </div>
  <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${color}"></div></div>
  </div>`).join('') : '<div style="font-size:12px;color:var(--text3)">Termine un quiz pour voir tes scores apparaître ici.</div>';
-
- // Sessions semaine
- const weekTotal = getWeekData().reduce((a,b)=>a+b,0);
- const wsEl = document.getElementById('week-sessions-count');
- if(wsEl) wsEl.textContent = weekTotal + ' session' + (weekTotal>1?'s':'');
 
  // Score moyen
  const avg = getAvgScore();
