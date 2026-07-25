@@ -3259,6 +3259,15 @@ function insertDocSymbol(sym) {
 function sheetColLetter(i) { return String.fromCharCode(65+i); }
 
 function parseCellRange(ref) {
+ ref = ref.trim();
+ // Liste de plusieurs cellules/plages séparées par ; ou , (ex. "C1;C2" ou
+ // "C1,C2:C4") : on éclate et on résout chaque partie récursivement, sinon
+ // la chaîne entière était traitée comme une seule référence introuvable
+ // (donc silencieusement égale à 0 — le vrai contenu des cellules n'était
+ // jamais lu).
+ if (/[;,]/.test(ref)) {
+ return ref.split(/[;,]/).map(r=>r.trim()).filter(Boolean).flatMap(r=>parseCellRange(r));
+ }
  const m = ref.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
  if (!m) return [ref.toUpperCase()];
  const c1 = m[1].toUpperCase().charCodeAt(0)-65, r1 = parseInt(m[2])-1;
@@ -6719,8 +6728,8 @@ const SVG_DIAGRAM_SYSTEM_PROMPT = "Tu es un générateur de schémas vectoriels 
  + "Réponds UNIQUEMENT avec un seul bloc <svg>...</svg> valide et autonome (attribut viewBox défini, sans balise <script>, sans lien externe, sans markdown, sans texte avant ou après). "
  + "Utilise des formes simples (rect, circle, ellipse, path, line, polygon, text) et des libellés courts en français, lisibles à petite taille. "
  + "Vise un viewBox proportionné au contenu (ex. \"0 0 800 600\"). "
- + "LISIBILITÉ (priorité absolue) : chaque légende doit être en texte noir ou très foncé sur fond clair (jamais du texte sur une zone colorée sans halo/fond blanc derrière), avec une taille de police d'au moins 1/35e de la largeur du viewBox. Relie chaque légende à l'élément qu'elle décrit par une petite ligne fine (leader line) plutôt que de poser le texte directement sur le dessin. Espace les légendes pour qu'aucune ne chevauche une autre forme ou un autre texte. Laisse une marge autour du schéma pour que rien ne soit coupé. "
- + "Un schéma anatomique simplifié (silhouette stylisée ou coupe avec légendes, formes géométriques de base) est un cas normal et accepté, y compris pour un corps humain : ne réponds JAMAIS NOT_SUITABLE pour ce type de demande tant qu'aucun rendu réaliste (peau, textures, ombrage photoréaliste) n'est explicitement demandé. "
+ + "Légendes lisibles : texte foncé sur fond clair, taille suffisante, sans chevauchement avec les formes ni entre elles. "
+ + "Un schéma anatomique simplifié (silhouette ou coupe avec légendes) est un cas normal et accepté, y compris pour un corps humain : ne réponds JAMAIS NOT_SUITABLE pour ce type de demande tant qu'aucun rendu réaliste (peau, textures, ombrage photoréaliste) n'est explicitement demandé. "
  + "Si la demande décrit une scène réaliste, une photo, une texture ou un rendu artistique détaillé (portrait, paysage, objet photoréaliste, illustration complexe) plutôt qu'un schéma, un diagramme, un organigramme, une carte mentale, un cycle ou une coupe simplifiée, ne produis AUCUN SVG : réponds uniquement par le mot NOT_SUITABLE suivi de \": \" puis d'une courte raison en français (une phrase).";
 
 async function generateSvgDiagramFromChat() {
@@ -6757,7 +6766,7 @@ async function generateSvgDiagramFromChat() {
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
  method:'POST',
  headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model:MODEL, max_tokens:2000, system:SVG_DIAGRAM_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}] })
+ body: JSON.stringify({ model:MODEL, max_tokens:3200, system:SVG_DIAGRAM_SYSTEM_PROMPT, messages:[{role:'user',content:prompt}] })
  });
  const data = await res.json();
  if (!res.ok) throw new Error((data.error && data.error.message) || ('Erreur ' + res.status));
