@@ -2234,6 +2234,17 @@ const ALL_SUBJECTS = [
  { id:'biocell', icon:'', name:'Biologie Cellulaire et Moléculaire', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
  { id:'chimiegen', icon:'', name:'Chimie Générale et Organique', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
  { id:'biophysique', icon:'', name:'Biophysique', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'histo', icon:'', name:'Histologie et Embryologie', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'biostat', icon:'', name:'Biostatistiques', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'parasito', icon:'', name:'Parasitologie-Mycologie', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'virologie', icon:'', name:'Virologie', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'toxico', icon:'', name:'Toxicologie', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'semio', icon:'', name:'Sémiologie Médicale', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'hemostase', icon:'', name:'Hémostase et Transfusion Sanguine', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'bioreprod', icon:'', name:'Biologie de la Reproduction', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'epidemio', icon:'', name:'Épidémiologie et Santé Publique', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'qualitelab', icon:'', name:'Assurance Qualité en Laboratoire', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'biomol', icon:'', name:'Biologie Moléculaire Avancée', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
  { id:'methodo', icon:'', name:'Méthodologie & Communication pro', color:'#64748B', soft:'#F1F5F9', border:'rgba(100,116,139,.2)' },
  { id:'artplast', icon:'', name:'Art plastique', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
  { id:'musique', icon:'', name:'Musique', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
@@ -2281,7 +2292,7 @@ const SUBJECTS_BY_LEVEL = {
  'Science Politique':['politiq','droit','eco','ang','fr'],
  // Tronc commun biologie/sciences de la vie, niveau L1 (mène vers la spécialisation
  // Master "Biologie Médicale" déjà définie plus bas — même logique de programme d'excellence)
- 'Biologie': ['biocell','chimiegen','svt','math','fr','ang'],
+ 'Biologie': ['biocell','chimiegen','anatomie','biophysique','math','methodo','ang'],
  },
  'Licence 2': {
  'default': ['math','info','ang','eco','stats'],
@@ -2296,7 +2307,7 @@ const SUBJECTS_BY_LEVEL = {
  'Marketing':['marketing','comm','eco','gestion','stats','ang'],
  'Communication':['comm','marketing','fr','ang','politiq'],
  'Science Politique':['politiq','droitpub','eco','ang','fr'],
- 'Biologie': ['physiohum','microbio','biochimie','biophysique','ang'],
+ 'Biologie': ['physiohum','microbio','biochimie','histo','biostat','ang'],
  },
  'Licence 3': {
  'default': ['info','math','ang','eco','stats'],
@@ -2306,15 +2317,15 @@ const SUBJECTS_BY_LEVEL = {
  'Économie':['eco','stats','compta','gestion','droit'],
  'Droit': ['droit','eco','gestion','ang','fr'],
  'Gestion': ['gestion','compta','eco','droit','ang'],
- 'Biologie': ['immuno','hemato','genetiquemed','anapath','ang'],
+ 'Biologie': ['immuno','hemato','genetiquemed','anapath','parasito','virologie','ang'],
  },
  'Master 1': {
  // Programme inspiré des cursus biomédicaux de référence (Harvard Medical
  // School, Johns Hopkins) adapté au niveau Master 1
- 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','physiohum','ang'],
+ 'Biologie Médicale': ['pharmaco','toxico','semio','hemostase','biochimie','immuno','ang'],
  },
  'Master 2': {
- 'Biologie Médicale': ['biochimie','immuno','microbio','hemato','genetiquemed','anapath','pharmaco'],
+ 'Biologie Médicale': ['bioreprod','epidemio','qualitelab','biomol','anapath','hemato','pharmaco'],
  },
  'BT': {
  'default': ['fr','ang','math','info'],
@@ -7416,18 +7427,18 @@ async function doRegister() {
 async function researchFiliereSubjects(niveau, filiere) {
  try {
  const prompt = `Tu es un conseiller pédagogique expert des cursus universitaires et professionnels francophones (Côte d'Ivoire, Afrique de l'Ouest).
-Pour la filière "${filiere}" au niveau "${niveau}", liste les 5 à 8 matières/UE les PLUS représentatives réellement enseignées dans cette filière précise (les vraies matières de la maquette, pas des matières génériques passe-partout).
+Pour la filière "${filiere}" au niveau "${niveau}", liste TOUTES les matières/UE réellement enseignées dans cette filière précise à ce niveau (la vraie maquette complète de l'année, pas un résumé ni des matières génériques passe-partout) — généralement entre 8 et 18 matières selon la filière, jamais moins de 6.
 Inspire-toi du programme de référence des meilleures universités mondiales dans ce domaine précis (ex: MIT/Stanford pour l'informatique, Harvard/Johns Hopkins pour la médecine, une grande école de référence pour la spécialité concernée) comme fil conducteur pour identifier les matières fondamentales, tout en gardant des intitulés compréhensibles pour un étudiant africain francophone.
 Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après : {"matieres":["Nom matière 1","Nom matière 2","..."]}`;
  const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
  method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 400, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
+ body: JSON.stringify({ model: MODEL, max_tokens: 900, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
  });
  const data = await res.json();
  const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
  const jsonMatch = raw.match(/\{[\s\S]*\}/);
  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
- const matieres = (parsed.matieres || []).filter(Boolean).slice(0, 8);
+ const matieres = (parsed.matieres || []).filter(Boolean).slice(0, 18);
  return matieres.length ? matieres : null;
  } catch(e) { return null; }
 }
@@ -7845,13 +7856,15 @@ function showQuestion() {
 // on enregistre juste le choix (ou -1 si non répondu / temps écoulé), on
 // avance à la question suivante, et TOUTE la correction (bonnes réponses,
 // explications, score détaillé) n'apparaît qu'à la toute fin.
+// La réponse reste modifiable tant que "Question suivante" n'a pas été
+// pressé : on ne désactive plus les boutons au premier tap, on se contente
+// de déplacer le surlignage "selected" sur le choix le plus récent.
 function answerQ(idx) {
  clearInterval(timerInterval);
  if (!APP.quizAnswers) APP.quizAnswers = [];
  APP.quizAnswers[APP.quizIndex] = idx;
  document.querySelectorAll('.quiz-option').forEach((btn,i)=>{
- btn.onclick = null;
- if (i === idx) btn.classList.add('selected');
+ btn.classList.toggle('selected', i === idx);
  });
  document.getElementById('next-q-wrapper').style.display='block';
  document.getElementById('next-q-btn').textContent = APP.quizIndex<APP.quizQuestions.length-1 ? 'Question suivante →' : 'Voir la correction →';
