@@ -1170,18 +1170,24 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
 
  <!-- Panel création d'image (canvas vierge : formes, texte, symboles) -->
  <div id="media-panel-canvas" style="display:none">
- <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Formes</div>
- <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
- <button onclick="canvasAddShape('rect')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">▭ Rectangle</button>
- <button onclick="canvasAddShape('roundrect')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">▢ Rect. arrondi</button>
- <button onclick="canvasAddShape('circle')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">○ Cercle</button>
- <button onclick="canvasAddShape('triangle')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">△ Triangle</button>
- <button onclick="canvasAddShape('star')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">☆ Étoile</button>
- <button onclick="canvasAddShape('arrow')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">➔ Flèche</button>
- <button onclick="canvasAddShape('line')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">╱ Ligne</button>
+ <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Ajouter</div>
+ <div style="position:relative;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+ <button id="canvas-shapes-toggle-btn" onclick="toggleShapesPopover()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:5px">▭ Formes <span style="font-size:9px">▾</span></button>
  <button onclick="canvasAddText()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">T Texte</button>
  <button onclick="document.getElementById('canvas-image-input').click()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🖼 Image</button>
  <input type="file" id="canvas-image-input" accept="image/*" style="display:none" onchange="canvasAddImage(this)">
+ <!-- Popover groupant toutes les formes (cercle, triangle, rectangle...) au lieu
+ d'une longue rangée de boutons séparés qui poussait le reste de l'éditeur
+ vers le bas. -->
+ <div id="canvas-shapes-popover" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:20;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:10px;grid-template-columns:repeat(4,1fr);gap:6px;width:236px">
+ <button onclick="canvasAddShape('rect');toggleShapesPopover(false)" title="Rectangle" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px;font-size:18px;cursor:pointer">▭</button>
+ <button onclick="canvasAddShape('roundrect');toggleShapesPopover(false)" title="Rect. arrondi" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px;font-size:18px;cursor:pointer">▢</button>
+ <button onclick="canvasAddShape('circle');toggleShapesPopover(false)" title="Cercle" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px;font-size:18px;cursor:pointer">○</button>
+ <button onclick="canvasAddShape('triangle');toggleShapesPopover(false)" title="Triangle" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px;font-size:18px;cursor:pointer">△</button>
+ <button onclick="canvasAddShape('star');toggleShapesPopover(false)" title="Étoile" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px;font-size:18px;cursor:pointer">☆</button>
+ <button onclick="canvasAddShape('arrow');toggleShapesPopover(false)" title="Flèche" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px;font-size:18px;cursor:pointer">➔</button>
+ <button onclick="canvasAddShape('line');toggleShapesPopover(false)" title="Ligne" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 4px;font-size:18px;cursor:pointer">╱</button>
+ </div>
  </div>
  <details style="margin-bottom:10px">
  <summary style="font-size:11px;color:var(--text3);cursor:pointer;list-style:none">Symboles ▾</summary>
@@ -2370,6 +2376,228 @@ const ALL_SUBJECTS = [
  { id:'methodetravail', icon:'', name:'Methode de travail', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
  { id:'initrecherche', icon:'', name:'Initiation de la recherche', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
  { id:'soininfirmier', icon:'', name:'Soin infirmier', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ // --- 221 matières supplémentaires ajoutées pour atteindre 40 matières par catégorie ---
+ { id:'algebre', icon:'', name:'Algèbre', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'analysemathematique', icon:'', name:'Analyse Mathématique', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'geometrie', icon:'', name:'Géométrie', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'probabilites', icon:'', name:'Probabilités', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'mecaniqueclassique', icon:'', name:'Mécanique Classique', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'thermodynamique', icon:'', name:'Thermodynamique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'optique', icon:'', name:'Optique', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'electromagnetisme', icon:'', name:'Électromagnétisme', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'astronomie', icon:'', name:'Astronomie', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'astrophysique', icon:'', name:'Astrophysique', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'geologie', icon:'', name:'Géologie', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'cristallographie', icon:'', name:'Cristallographie', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'chimieorganique', icon:'', name:'Chimie Organique', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'chimieminerale', icon:'', name:'Chimie Minérale', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'chimieanalytique', icon:'', name:'Chimie Analytique', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'chimiephysique', icon:'', name:'Chimie Physique', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'biologievegetale', icon:'', name:'Biologie Végétale', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'biologieanimale', icon:'', name:'Biologie Animale', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'zoologie', icon:'', name:'Zoologie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'botanique', icon:'', name:'Botanique', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'genetiquedespopulations', icon:'', name:'Génétique des Populations', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'biologiemarine', icon:'', name:'Biologie Marine', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'sciencesdelaterre', icon:'', name:'Sciences de la Terre', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'meteorologie', icon:'', name:'Météorologie', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'mecaniquequantique', icon:'', name:'Mécanique Quantique', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'calculdifferentiel', icon:'', name:'Calcul Différentiel', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'calculintegral', icon:'', name:'Calcul Intégral', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'theoriedesnombres', icon:'', name:'Théorie des Nombres', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'logiquemathematique', icon:'', name:'Logique Mathématique', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'python', icon:'', name:'Python', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'javascript', icon:'', name:'JavaScript', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'c', icon:'', name:'C++', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'developpementweb', icon:'', name:'Développement Web', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'developpementfrontend', icon:'', name:'Développement Frontend', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'developpementbackend', icon:'', name:'Développement Backend', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'devops', icon:'', name:'DevOps', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'cybersecurite', icon:'', name:'Cybersécurité', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'cryptographie', icon:'', name:'Cryptographie', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'cloudcomputing', icon:'', name:'Cloud Computing', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'bigdata', icon:'', name:'Big Data', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'datascience', icon:'', name:'Data Science', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'machinelearning', icon:'', name:'Machine Learning', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'deeplearning', icon:'', name:'Deep Learning', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'visionparordinateur', icon:'', name:'Vision par Ordinateur', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'traitementdulangagenatur', icon:'', name:'Traitement du Langage Naturel', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'systemesdexploitation', icon:'', name:'Systèmes d\'Exploitation', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'architecturedesordinateu', icon:'', name:'Architecture des Ordinateurs', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'compilation', icon:'', name:'Compilation', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'structuresdedonnees', icon:'', name:'Structures de Données', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'genielogiciel', icon:'', name:'Génie Logiciel', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'testslogiciels', icon:'', name:'Tests Logiciels', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'administrationsystemes', icon:'', name:'Administration Systèmes', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'securitereseaux', icon:'', name:'Sécurité Réseaux', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'blockchain', icon:'', name:'Blockchain', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'internetdesobjets', icon:'', name:'Internet des Objets', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'robotique', icon:'', name:'Robotique', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'realitevirtuelle', icon:'', name:'Réalité Virtuelle', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'realiteaugmentee', icon:'', name:'Réalité Augmentée', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'uxuidesign', icon:'', name:'UX/UI Design', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'kinesitherapie', icon:'', name:'Kinésithérapie', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'microeconomie', icon:'', name:'Microéconomie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'macroeconomie', icon:'', name:'Macroéconomie', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'econometrie', icon:'', name:'Économétrie', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'financedentreprise', icon:'', name:'Finance d\'Entreprise', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'financeinternationale', icon:'', name:'Finance Internationale', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'banqueassurance', icon:'', name:'Banque & Assurance', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'fiscalite', icon:'', name:'Fiscalité', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'droitdesaffaires', icon:'', name:'Droit des Affaires', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'droitdutravail', icon:'', name:'Droit du Travail', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'droitinternational', icon:'', name:'Droit International', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'droitconstitutionnel', icon:'', name:'Droit Constitutionnel', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'droitpenal', icon:'', name:'Droit Pénal', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'droitdessocietes', icon:'', name:'Droit des Sociétés', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'droitfiscal', icon:'', name:'Droit Fiscal', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'controledegestion', icon:'', name:'Contrôle de Gestion', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'gestiondeprojet', icon:'', name:'Gestion de Projet', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'entrepreneuriat', icon:'', name:'Entrepreneuriat', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'commerceinternational', icon:'', name:'Commerce International', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'logistiquesupplychain', icon:'', name:'Logistique & Supply Chain', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'management', icon:'', name:'Management', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'gestiondesrisques', icon:'', name:'Gestion des Risques', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'economiedudeveloppement', icon:'', name:'Économie du Développement', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'economieinternationale', icon:'', name:'Économie Internationale', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'relationsinternationales', icon:'', name:'Relations Internationales', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'sciencessocialesapplique', icon:'', name:'Sciences Sociales Appliquées', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'italien', icon:'', name:'Italien', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'portugais', icon:'', name:'Portugais', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'arabe', icon:'', name:'Arabe', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'chinois', icon:'', name:'Chinois', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'japonais', icon:'', name:'Japonais', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'russe', icon:'', name:'Russe', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'coreen', icon:'', name:'Coréen', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'neerlandais', icon:'', name:'Néerlandais', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'latin', icon:'', name:'Latin', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'grecancien', icon:'', name:'Grec Ancien', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'linguistique', icon:'', name:'Linguistique', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'traduction', icon:'', name:'Traduction', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'litteraturefrancaise', icon:'', name:'Littérature Française', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'litteratureanglaise', icon:'', name:'Littérature Anglaise', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'litteraturecomparee', icon:'', name:'Littérature Comparée', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'phonetique', icon:'', name:'Phonétique', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'grammaire', icon:'', name:'Grammaire', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'expressionecrite', icon:'', name:'Expression Écrite', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'expressionorale', icon:'', name:'Expression Orale', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'civilisationanglophone', icon:'', name:'Civilisation Anglophone', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'civilisationhispanophone', icon:'', name:'Civilisation Hispanophone', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'civilisationgermanique', icon:'', name:'Civilisation Germanique', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'civilisationarabophone', icon:'', name:'Civilisation Arabophone', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'anglaisdesaffaires', icon:'', name:'Anglais des Affaires', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'espagnoldesaffaires', icon:'', name:'Espagnol des Affaires', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'anglaisscientifique', icon:'', name:'Anglais Scientifique', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'anglaismedical', icon:'', name:'Anglais Médical', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'flefrancaislangueetrange', icon:'', name:'FLE - Français Langue Étrangère', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'wolof', icon:'', name:'Wolof', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'bambara', icon:'', name:'Bambara', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'peulfulfulde', icon:'', name:'Peul - Fulfulde', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'dioula', icon:'', name:'Dioula', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'baoule', icon:'', name:'Baoulé', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'swahili', icon:'', name:'Swahili', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'portugaisdesaffaires', icon:'', name:'Portugais des Affaires', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'histoire', icon:'', name:'Histoire', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'geographie', icon:'', name:'Géographie', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'sociologie', icon:'', name:'Sociologie', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'psychologie', icon:'', name:'Psychologie', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'anthropologie', icon:'', name:'Anthropologie', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'sciencesdeleducation', icon:'', name:'Sciences de l\'Éducation', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'educationcivique', icon:'', name:'Éducation Civique', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'culturegenerale', icon:'', name:'Culture Générale', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'actualitegeopolitique', icon:'', name:'Actualité & Géopolitique', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'histoiredelart', icon:'', name:'Histoire de l\'Art', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'archeologie', icon:'', name:'Archéologie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'ethnologie', icon:'', name:'Ethnologie', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'demographie', icon:'', name:'Démographie', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'sciencesdesreligions', icon:'', name:'Sciences des Religions', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'ethique', icon:'', name:'Éthique', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'logique', icon:'', name:'Logique', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'rhetorique', icon:'', name:'Rhétorique', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'epistemologie', icon:'', name:'Épistémologie', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'sciencesdelacommunicatio', icon:'', name:'Sciences de la Communication', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'journalisme', icon:'', name:'Journalisme', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'sciencespolitiquesappliq', icon:'', name:'Sciences Politiques Appliquées', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'developpementpersonnel', icon:'', name:'Développement Personnel', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'prisedeparoleenpublic', icon:'', name:'Prise de Parole en Public', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'techniquesderecherchedoc', icon:'', name:'Techniques de Recherche Documentaire', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'methodologieuniversitair', icon:'', name:'Méthodologie Universitaire', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'gestiondutemps', icon:'', name:'Gestion du Temps', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'orientationprofessionnel', icon:'', name:'Orientation Professionnelle', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'histoiredescivilisations', icon:'', name:'Histoire des Civilisations Africaines', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'histoirecontemporaine', icon:'', name:'Histoire Contemporaine', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'geopolitiqueafricaine', icon:'', name:'Géopolitique Africaine', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'droitsdelhomme', icon:'', name:'Droits de l\'Homme', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'citoyennete', icon:'', name:'Citoyenneté', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'scienceshumainesapplique', icon:'', name:'Sciences Humaines Appliquées', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'plomberie', icon:'', name:'Plomberie', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'menuiserie', icon:'', name:'Menuiserie', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'soudure', icon:'', name:'Soudure', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'maconnerie', icon:'', name:'Maçonnerie', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'peintureenbatiment', icon:'', name:'Peinture en Bâtiment', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'froidclimatisation', icon:'', name:'Froid & Climatisation', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'mecaniqueindustrielle', icon:'', name:'Mécanique Industrielle', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'chaudronnerie', icon:'', name:'Chaudronnerie', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'topographie', icon:'', name:'Topographie', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'geniecivil', icon:'', name:'Génie Civil', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'geniemecanique', icon:'', name:'Génie Mécanique', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'genieelectrique', icon:'', name:'Génie Électrique', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'automatismeindustriel', icon:'', name:'Automatisme Industriel', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'maintenanceindustrielle', icon:'', name:'Maintenance Industrielle', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'dessinindustriel', icon:'', name:'Dessin Industriel', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'coupecouture', icon:'', name:'Coupe & Couture', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'coiffure', icon:'', name:'Coiffure', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'esthetiquecosmetologie', icon:'', name:'Esthétique & Cosmétologie', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'agriculture', icon:'', name:'Agriculture', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'elevage', icon:'', name:'Élevage', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'agroalimentaire', icon:'', name:'Agroalimentaire', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'mecaniqueaeronautique', icon:'', name:'Mécanique Aéronautique', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'transportlogistique', icon:'', name:'Transport & Logistique', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'conduitedevehicules', icon:'', name:'Conduite de Véhicules', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'securiteindustrielle', icon:'', name:'Sécurité Industrielle', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'cadastrefoncier', icon:'', name:'Cadastre & Foncier', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'charpente', icon:'', name:'Charpente', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'carrelage', icon:'', name:'Carrelage', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'installationsanitaire', icon:'', name:'Installation Sanitaire', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'refrigeration', icon:'', name:'Réfrigération', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'electricitebatiment', icon:'', name:'Électricité Bâtiment', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'patisserie', icon:'', name:'Pâtisserie', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'theatre', icon:'', name:'Théâtre', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'cinema', icon:'', name:'Cinéma', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'photographie', icon:'', name:'Photographie', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'dessin', icon:'', name:'Dessin', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'peinture', icon:'', name:'Peinture', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'sculpture', icon:'', name:'Sculpture', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'designgraphique', icon:'', name:'Design Graphique', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'modestylisme', icon:'', name:'Mode & Stylisme', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'bijouterie', icon:'', name:'Bijouterie', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'poterieceramique', icon:'', name:'Poterie & Céramique', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'calligraphie', icon:'', name:'Calligraphie', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'bandedessinee', icon:'', name:'Bande Dessinée', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'animation3d', icon:'', name:'Animation 3D', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'montagevideo', icon:'', name:'Montage Vidéo', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'compositionmusicale', icon:'', name:'Composition Musicale', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'chant', icon:'', name:'Chant', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'guitare', icon:'', name:'Guitare', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'piano', icon:'', name:'Piano', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'percussion', icon:'', name:'Percussion', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'theatredimprovisation', icon:'', name:'Théâtre d\'Improvisation', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'ecriturecreative', icon:'', name:'Écriture Créative', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'poesie', icon:'', name:'Poésie', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ { id:'jardinage', icon:'', name:'Jardinage', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'jeuxvideo', icon:'', name:'Jeux Vidéo', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'echecs', icon:'', name:'Échecs', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'yoga', icon:'', name:'Yoga', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'bienetrerelaxation', icon:'', name:'Bien-être & Relaxation', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'nologie', icon:'', name:'Œnologie', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'patisserieartistique', icon:'', name:'Pâtisserie Artistique', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'decorationdinterieur', icon:'', name:'Décoration d\'Intérieur', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'artisanat', icon:'', name:'Artisanat', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'broderie', icon:'', name:'Broderie', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'tissage', icon:'', name:'Tissage', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'couturecreative', icon:'', name:'Couture Créative', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'artsnumeriques', icon:'', name:'Arts Numériques', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'slam', icon:'', name:'Slam', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
 ];
 
 // Garde-fou définitif contre les doublons (même id OU même nom, accents/casse
@@ -2421,6 +2649,53 @@ const SUBJECT_CATEGORY = {
  resto:'Techniques & Métiers', hotel:'Techniques & Métiers', nutrition:'Techniques & Métiers', electrotec:'Techniques & Métiers',
  electron:'Techniques & Métiers', mecaauto:'Techniques & Métiers', batiment:'Techniques & Métiers', secretariat:'Techniques & Métiers',
  artplast:'Arts & Loisirs', musique:'Arts & Loisirs', danse:'Arts & Loisirs', cuisine:'Arts & Loisirs',
+ algebre:'Sciences & Maths', analysemathematique:'Sciences & Maths', geometrie:'Sciences & Maths', probabilites:'Sciences & Maths', mecaniqueclassique:'Sciences & Maths',
+ thermodynamique:'Sciences & Maths', optique:'Sciences & Maths', electromagnetisme:'Sciences & Maths', astronomie:'Sciences & Maths', astrophysique:'Sciences & Maths',
+ geologie:'Sciences & Maths', cristallographie:'Sciences & Maths', chimieorganique:'Sciences & Maths', chimieminerale:'Sciences & Maths', chimieanalytique:'Sciences & Maths',
+ chimiephysique:'Sciences & Maths', biologievegetale:'Sciences & Maths', biologieanimale:'Sciences & Maths', zoologie:'Sciences & Maths', botanique:'Sciences & Maths',
+ genetiquedespopulations:'Sciences & Maths', biologiemarine:'Sciences & Maths', sciencesdelaterre:'Sciences & Maths', meteorologie:'Sciences & Maths', mecaniquequantique:'Sciences & Maths',
+ calculdifferentiel:'Sciences & Maths', calculintegral:'Sciences & Maths', theoriedesnombres:'Sciences & Maths', logiquemathematique:'Sciences & Maths',
+ python:'Informatique & Numérique', javascript:'Informatique & Numérique', c:'Informatique & Numérique', developpementweb:'Informatique & Numérique', developpementfrontend:'Informatique & Numérique',
+ developpementbackend:'Informatique & Numérique', devops:'Informatique & Numérique', cybersecurite:'Informatique & Numérique', cryptographie:'Informatique & Numérique', cloudcomputing:'Informatique & Numérique',
+ bigdata:'Informatique & Numérique', datascience:'Informatique & Numérique', machinelearning:'Informatique & Numérique', deeplearning:'Informatique & Numérique', visionparordinateur:'Informatique & Numérique',
+ traitementdulangagenatur:'Informatique & Numérique', systemesdexploitation:'Informatique & Numérique', architecturedesordinateu:'Informatique & Numérique', compilation:'Informatique & Numérique', structuresdedonnees:'Informatique & Numérique',
+ genielogiciel:'Informatique & Numérique', testslogiciels:'Informatique & Numérique', administrationsystemes:'Informatique & Numérique', securitereseaux:'Informatique & Numérique', blockchain:'Informatique & Numérique',
+ internetdesobjets:'Informatique & Numérique', robotique:'Informatique & Numérique', realitevirtuelle:'Informatique & Numérique', realiteaugmentee:'Informatique & Numérique', uxuidesign:'Informatique & Numérique',
+ kinesitherapie:'Santé & Médecine',
+ microeconomie:'Économie, Gestion & Droit', macroeconomie:'Économie, Gestion & Droit', econometrie:'Économie, Gestion & Droit', financedentreprise:'Économie, Gestion & Droit', financeinternationale:'Économie, Gestion & Droit',
+ banqueassurance:'Économie, Gestion & Droit', fiscalite:'Économie, Gestion & Droit', droitdesaffaires:'Économie, Gestion & Droit', droitdutravail:'Économie, Gestion & Droit', droitinternational:'Économie, Gestion & Droit',
+ droitconstitutionnel:'Économie, Gestion & Droit', droitpenal:'Économie, Gestion & Droit', droitdessocietes:'Économie, Gestion & Droit', droitfiscal:'Économie, Gestion & Droit', controledegestion:'Économie, Gestion & Droit',
+ gestiondeprojet:'Économie, Gestion & Droit', entrepreneuriat:'Économie, Gestion & Droit', commerceinternational:'Économie, Gestion & Droit', logistiquesupplychain:'Économie, Gestion & Droit', management:'Économie, Gestion & Droit',
+ gestiondesrisques:'Économie, Gestion & Droit', economiedudeveloppement:'Économie, Gestion & Droit', economieinternationale:'Économie, Gestion & Droit', relationsinternationales:'Économie, Gestion & Droit', sciencessocialesapplique:'Économie, Gestion & Droit',
+ italien:'Langues', portugais:'Langues', arabe:'Langues', chinois:'Langues', japonais:'Langues',
+ russe:'Langues', coreen:'Langues', neerlandais:'Langues', latin:'Langues', grecancien:'Langues',
+ linguistique:'Langues', traduction:'Langues', litteraturefrancaise:'Langues', litteratureanglaise:'Langues', litteraturecomparee:'Langues',
+ phonetique:'Langues', grammaire:'Langues', expressionecrite:'Langues', expressionorale:'Langues', civilisationanglophone:'Langues',
+ civilisationhispanophone:'Langues', civilisationgermanique:'Langues', civilisationarabophone:'Langues', anglaisdesaffaires:'Langues', espagnoldesaffaires:'Langues',
+ anglaisscientifique:'Langues', anglaismedical:'Langues', flefrancaislangueetrange:'Langues', wolof:'Langues', bambara:'Langues',
+ peulfulfulde:'Langues', dioula:'Langues', baoule:'Langues', swahili:'Langues', portugaisdesaffaires:'Langues',
+ histoire:'Sciences humaines & Culture générale', geographie:'Sciences humaines & Culture générale', sociologie:'Sciences humaines & Culture générale', psychologie:'Sciences humaines & Culture générale', anthropologie:'Sciences humaines & Culture générale',
+ sciencesdeleducation:'Sciences humaines & Culture générale', educationcivique:'Sciences humaines & Culture générale', culturegenerale:'Sciences humaines & Culture générale', actualitegeopolitique:'Sciences humaines & Culture générale', histoiredelart:'Sciences humaines & Culture générale',
+ archeologie:'Sciences humaines & Culture générale', ethnologie:'Sciences humaines & Culture générale', demographie:'Sciences humaines & Culture générale', sciencesdesreligions:'Sciences humaines & Culture générale', ethique:'Sciences humaines & Culture générale',
+ logique:'Sciences humaines & Culture générale', rhetorique:'Sciences humaines & Culture générale', epistemologie:'Sciences humaines & Culture générale', sciencesdelacommunicatio:'Sciences humaines & Culture générale', journalisme:'Sciences humaines & Culture générale',
+ sciencespolitiquesappliq:'Sciences humaines & Culture générale', developpementpersonnel:'Sciences humaines & Culture générale', prisedeparoleenpublic:'Sciences humaines & Culture générale', techniquesderecherchedoc:'Sciences humaines & Culture générale', methodologieuniversitair:'Sciences humaines & Culture générale',
+ gestiondutemps:'Sciences humaines & Culture générale', orientationprofessionnel:'Sciences humaines & Culture générale', histoiredescivilisations:'Sciences humaines & Culture générale', histoirecontemporaine:'Sciences humaines & Culture générale', geopolitiqueafricaine:'Sciences humaines & Culture générale',
+ droitsdelhomme:'Sciences humaines & Culture générale', citoyennete:'Sciences humaines & Culture générale', scienceshumainesapplique:'Sciences humaines & Culture générale',
+ plomberie:'Techniques & Métiers', menuiserie:'Techniques & Métiers', soudure:'Techniques & Métiers', maconnerie:'Techniques & Métiers', peintureenbatiment:'Techniques & Métiers',
+ froidclimatisation:'Techniques & Métiers', mecaniqueindustrielle:'Techniques & Métiers', chaudronnerie:'Techniques & Métiers', topographie:'Techniques & Métiers', geniecivil:'Techniques & Métiers',
+ geniemecanique:'Techniques & Métiers', genieelectrique:'Techniques & Métiers', automatismeindustriel:'Techniques & Métiers', maintenanceindustrielle:'Techniques & Métiers', dessinindustriel:'Techniques & Métiers',
+ coupecouture:'Techniques & Métiers', coiffure:'Techniques & Métiers', esthetiquecosmetologie:'Techniques & Métiers', agriculture:'Techniques & Métiers', elevage:'Techniques & Métiers',
+ agroalimentaire:'Techniques & Métiers', mecaniqueaeronautique:'Techniques & Métiers', transportlogistique:'Techniques & Métiers', conduitedevehicules:'Techniques & Métiers', securiteindustrielle:'Techniques & Métiers',
+ cadastrefoncier:'Techniques & Métiers', charpente:'Techniques & Métiers', carrelage:'Techniques & Métiers', installationsanitaire:'Techniques & Métiers', refrigeration:'Techniques & Métiers',
+ electricitebatiment:'Techniques & Métiers', patisserie:'Techniques & Métiers',
+ theatre:'Arts & Loisirs', cinema:'Arts & Loisirs', photographie:'Arts & Loisirs', dessin:'Arts & Loisirs', peinture:'Arts & Loisirs',
+ sculpture:'Arts & Loisirs', designgraphique:'Arts & Loisirs', modestylisme:'Arts & Loisirs', bijouterie:'Arts & Loisirs', poterieceramique:'Arts & Loisirs',
+ calligraphie:'Arts & Loisirs', bandedessinee:'Arts & Loisirs', animation3d:'Arts & Loisirs', montagevideo:'Arts & Loisirs', compositionmusicale:'Arts & Loisirs',
+ chant:'Arts & Loisirs', guitare:'Arts & Loisirs', piano:'Arts & Loisirs', percussion:'Arts & Loisirs', theatredimprovisation:'Arts & Loisirs',
+ ecriturecreative:'Arts & Loisirs', poesie:'Arts & Loisirs', jardinage:'Arts & Loisirs', jeuxvideo:'Arts & Loisirs', echecs:'Arts & Loisirs',
+ yoga:'Arts & Loisirs', bienetrerelaxation:'Arts & Loisirs', nologie:'Arts & Loisirs', patisserieartistique:'Arts & Loisirs', decorationdinterieur:'Arts & Loisirs',
+ artisanat:'Arts & Loisirs', broderie:'Arts & Loisirs', tissage:'Arts & Loisirs', couturecreative:'Arts & Loisirs', artsnumeriques:'Arts & Loisirs',
+ slam:'Arts & Loisirs',
 };
 function categoryForSubject(id) { return SUBJECT_CATEGORY[id] || 'Autres'; }
 
@@ -3381,14 +3656,14 @@ function renderImageMsgHTML(url, prompt, time) {
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
- <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block;cursor:pointer" onclick="openImageLightbox('${url}')" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
+ <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block;cursor:pointer" onclick="openImageLightbox(decodeURIComponent('${encodeURIComponent(url)}'))" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
  </div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${time || ''}</div>
  <button onclick="regenerateImageFromPrompt('${promptB64}')" title="Régénérer" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
  </button>
- <button onclick="downloadGeneratedImage('${url}','${promptB64}')" title="Télécharger" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <button onclick="downloadGeneratedImage(decodeURIComponent('${encodeURIComponent(url)}'),'${promptB64}')" title="Télécharger" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
  </button>
  </div>
@@ -3458,7 +3733,7 @@ function renderMsgHTML(m, idx) {
  if (m.role === 'user') {
  if (m.content && typeof m.content === 'object' && m.content.imagePreview) {
  return `<div class="msg-row user"><div class="msg-bubble user" style="padding:6px">
- <img src="${m.content.imagePreview}" style="width:100%;max-width:220px;border-radius:10px;display:block;cursor:pointer;margin-bottom:${m.content.caption ? '6px':'0'}" onclick="openImageLightbox('${m.content.imagePreview}')">
+ <img src="${m.content.imagePreview}" style="width:100%;max-width:220px;border-radius:10px;display:block;cursor:pointer;margin-bottom:${m.content.caption ? '6px':'0'}" onclick="openImageLightbox(decodeURIComponent('${encodeURIComponent(m.content.imagePreview)}'))">
  ${m.content.caption ? `<div style="padding:0 6px 4px">${escHtml(m.content.caption)}</div>` : ''}
  </div></div>`;
  }
@@ -6313,7 +6588,7 @@ function formatAiMsg(text) {
  return html;
 }
 
-function escHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function scrollChat() {
  const el = document.getElementById('chat-messages');
@@ -11544,6 +11819,24 @@ function canvasDuplicate() {
  _canvasSelected = copy;
  redrawCanvas();
 }
+
+// Ouvre/ferme le menu groupant toutes les formes (cercle, triangle, rectangle...)
+// derrière un seul bouton "Formes", plutôt que d'afficher 7 boutons séparés en
+// permanence. force=false ferme toujours, force=true ouvre toujours, sinon bascule.
+function toggleShapesPopover(force) {
+ const pop = document.getElementById('canvas-shapes-popover');
+ if (!pop) return;
+ const shouldOpen = (force !== undefined) ? force : (pop.style.display !== 'grid');
+ pop.style.display = shouldOpen ? 'grid' : 'none';
+}
+document.addEventListener('click', function(e) {
+ const pop = document.getElementById('canvas-shapes-popover');
+ const btn = document.getElementById('canvas-shapes-toggle-btn');
+ if (!pop || pop.style.display !== 'grid') return;
+ if (!pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+ toggleShapesPopover(false);
+ }
+});
 
 function canvasAddShape(type) {
  initMediaCanvas(); _canvasPushUndo();
