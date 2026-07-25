@@ -1085,7 +1085,7 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  <button id="media-tab-av" onclick="switchMediaTab('av')" style="flex:1;padding:10px;border-radius:10px 10px 0 0;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--em);border-bottom:2px solid var(--em)">Audio / Vidéo</button>
  <button id="media-tab-canvas" onclick="switchMediaTab('canvas')" style="flex:1;padding:10px;border-radius:10px 10px 0 0;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text3);border-bottom:2px solid transparent">Créer une image</button>
  </div>
- <div class="scroll-body" style="padding:16px 20px 100px;flex:1">
+ <div class="scroll-body" style="padding:16px 20px 140px;flex:1">
  <div id="media-panel-av">
 
  <!-- Zone d'import -->
@@ -1170,9 +1170,14 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
 
  <!-- Panel création d'image (canvas vierge : formes, texte, symboles) -->
  <div id="media-panel-canvas" style="display:none">
+ <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Formes</div>
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
  <button onclick="canvasAddShape('rect')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">▭ Rectangle</button>
+ <button onclick="canvasAddShape('roundrect')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">▢ Rect. arrondi</button>
  <button onclick="canvasAddShape('circle')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">○ Cercle</button>
+ <button onclick="canvasAddShape('triangle')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">△ Triangle</button>
+ <button onclick="canvasAddShape('star')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">☆ Étoile</button>
+ <button onclick="canvasAddShape('arrow')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">➔ Flèche</button>
  <button onclick="canvasAddShape('line')" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">╱ Ligne</button>
  <button onclick="canvasAddText()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">T Texte</button>
  <button onclick="document.getElementById('canvas-image-input').click()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🖼 Image</button>
@@ -1194,22 +1199,55 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  <span style="font-size:11px;color:var(--text3);width:100%">Couleur</span>
  <button class="canvas-color-swatch" data-color="#1B5E42" onclick="canvasSetColor('#1B5E42')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#1B5E42;cursor:pointer;outline:2px solid #0EA5E9"></button>
  <button class="canvas-color-swatch" data-color="#D13A3A" onclick="canvasSetColor('#D13A3A')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#D13A3A;cursor:pointer"></button>
- <button class="canvas-color-swatch" data-color="#1E40AF" onclick="canvasSetColor('#1E40AF')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#1E40AF;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#EA580C" onclick="canvasSetColor('#EA580C')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#EA580C;cursor:pointer"></button>
  <button class="canvas-color-swatch" data-color="#C47A0B" onclick="canvasSetColor('#C47A0B')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#C47A0B;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#65A30D" onclick="canvasSetColor('#65A30D')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#65A30D;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#0D9488" onclick="canvasSetColor('#0D9488')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#0D9488;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#0891B2" onclick="canvasSetColor('#0891B2')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#0891B2;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#1E40AF" onclick="canvasSetColor('#1E40AF')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#1E40AF;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#4F46E5" onclick="canvasSetColor('#4F46E5')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#4F46E5;cursor:pointer"></button>
  <button class="canvas-color-swatch" data-color="#7C3AED" onclick="canvasSetColor('#7C3AED')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#7C3AED;cursor:pointer"></button>
  <button class="canvas-color-swatch" data-color="#DB2777" onclick="canvasSetColor('#DB2777')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#DB2777;cursor:pointer"></button>
  <button class="canvas-color-swatch" data-color="#111111" onclick="canvasSetColor('#111111')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#111111;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#ffffff" onclick="canvasSetColor('#ffffff')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#ffffff;cursor:pointer"></button>
  <input type="color" onchange="canvasSetColor(this.value)" title="Autre couleur" style="width:26px;height:26px;padding:0;border:1px solid var(--border);border-radius:50%;cursor:pointer;background:none">
  <button id="canvas-fill-btn" onclick="canvasToggleFill()" style="margin-left:4px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">◻ Contour</button>
  </div>
  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
- <span style="font-size:11px;color:var(--text3);width:100%">Taille / calque / historique</span>
+ <span style="font-size:11px;color:var(--text3);width:100%">Fond du canevas</span>
+ <button class="canvas-bg-swatch" data-bg="#ffffff" onclick="canvasSetBackground('#ffffff')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#ffffff;cursor:pointer;outline:2px solid #0EA5E9"></button>
+ <button class="canvas-bg-swatch" data-bg="#F4F1EA" onclick="canvasSetBackground('#F4F1EA')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#F4F1EA;cursor:pointer"></button>
+ <button class="canvas-bg-swatch" data-bg="#0F172A" onclick="canvasSetBackground('#0F172A')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#0F172A;cursor:pointer"></button>
+ <button class="canvas-bg-swatch" data-bg="#E3F2EB" onclick="canvasSetBackground('#E3F2EB')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#E3F2EB;cursor:pointer"></button>
+ <button class="canvas-bg-swatch" data-bg="#DBEAFE" onclick="canvasSetBackground('#DBEAFE')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#DBEAFE;cursor:pointer"></button>
+ <button class="canvas-bg-swatch" data-bg="#FDEAEA" onclick="canvasSetBackground('#FDEAEA')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#FDEAEA;cursor:pointer"></button>
+ <input type="color" onchange="canvasSetBackground(this.value)" title="Autre fond" value="#ffffff" style="width:26px;height:26px;padding:0;border:1px solid var(--border);border-radius:50%;cursor:pointer;background:none">
+ </div>
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+ <span style="font-size:11px;color:var(--text3);width:100%">Taille / rotation / calque</span>
  <button onclick="canvasResize(-0.2)" title="Réduire" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">－</button>
  <button onclick="canvasResize(0.2)" title="Agrandir" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">＋</button>
+ <button onclick="canvasRotate(-15)" title="Tourner à gauche" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">⟲</button>
+ <button onclick="canvasRotate(15)" title="Tourner à droite" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">⟳</button>
+ <button onclick="canvasDuplicate()" title="Dupliquer" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:13px">⧉</button>
  <button onclick="canvasSendToBack()" title="Envoyer derrière" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:13px">⬇</button>
  <button onclick="canvasBringToFront()" title="Amener devant" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:13px">⬆</button>
  <button onclick="canvasUndo()" title="Annuler" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">↶</button>
  <button onclick="canvasRedo()" title="Rétablir" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">↷</button>
+ </div>
+ <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+ <div style="flex:1">
+ <span style="font-size:11px;color:var(--text3)">Épaisseur du trait</span>
+ <div style="display:flex;gap:6px;margin-top:4px">
+ <button onclick="canvasSetStrokeWidth(2)" style="flex:1;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;padding:6px;font-size:11px">Fin</button>
+ <button onclick="canvasSetStrokeWidth(4)" style="flex:1;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;padding:6px;font-size:11px">Moyen</button>
+ <button onclick="canvasSetStrokeWidth(8)" style="flex:1;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;padding:6px;font-size:11px">Épais</button>
+ </div>
+ </div>
+ </div>
+ <div style="margin-bottom:10px">
+ <span style="font-size:11px;color:var(--text3)">Opacité</span>
+ <input type="range" id="canvas-opacity-range" min="0.1" max="1" step="0.05" value="1" oninput="canvasSetOpacity(this.value)" style="width:100%;accent-color:var(--em)">
  </div>
  <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;touch-action:none">
  <canvas id="media-canvas" width="600" height="600" style="width:100%;display:block;touch-action:none"></canvas>
@@ -1218,7 +1256,7 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  <button onclick="canvasDeleteSelected()" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Supprimer la sélection</button>
  <button onclick="canvasClearAll()" style="flex:1;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Tout effacer</button>
  </div>
- <button onclick="canvasSaveImage()" style="width:100%;margin-top:10px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Enregistrer l'image</button>
+ <button onclick="canvasSaveImage()" style="width:100%;margin-top:10px;margin-bottom:24px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Enregistrer l'image</button>
  </div>
 
  </div>
@@ -2298,6 +2336,29 @@ const ALL_SUBJECTS = [
  { id:'musique', icon:'', name:'Musique', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
  { id:'danse', icon:'', name:'Danse', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
  { id:'cuisine', icon:'', name:'Cuisine', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ // Liste fournie par l'utilisateur pour une filière santé/paramédicale — les
+ // 4 matières déjà présentes à l'identique dans le catalogue (Anglais,
+ // Informatique, Immunologie, Anatomie) ne sont pas dupliquées.
+ { id:'hematologiegen', icon:'', name:'Hematologie', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'physiqueseule', icon:'', name:'Physique', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'ecologie', icon:'', name:'Ecologie', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'toxico', icon:'', name:'Toxicologie', color:'#C47A0B', soft:'#FBF0DE', border:'#F3DBA8' },
+ { id:'gestionlog', icon:'', name:'Gestion logistique', color:'#DB2777', soft:'#FBE5EF', border:'#F5BFD8' },
+ { id:'biotech', icon:'', name:'Biotechnologie', color:'#0891B2', soft:'#E0F3F7', border:'#B9E4EE' },
+ { id:'hygienehosp', icon:'', name:'Hygiene hospitalière', color:'#EA580C', soft:'#FCEAE0', border:'#F7C7A8' },
+ { id:'bromato', icon:'', name:'Bromatologie', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'chimieseule', icon:'', name:'Chimie', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'cytogenetique', icon:'', name:'Cytogenetique', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'mathematiqueseule', icon:'', name:'Mathematique', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'techexpression', icon:'', name:'Technique d\'expression', color:'#7C3AED', soft:'#EFE7FC', border:'#DCC9F8' },
+ { id:'santepublique', icon:'', name:'Sante publique', color:'#C47A0B', soft:'#FBF0DE', border:'#F3DBA8' },
+ { id:'politiquehosp', icon:'', name:'Politique hospitalière', color:'#DB2777', soft:'#FBE5EF', border:'#F5BFD8' },
+ { id:'biochimiegen', icon:'', name:'Biochimie', color:'#0891B2', soft:'#E0F3F7', border:'#B9E4EE' },
+ { id:'entomologie', icon:'', name:'Entomologie', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'parasitologie', icon:'', name:'Parasitologie', color:'#EA580C', soft:'#FCEAE0', border:'#F7C7A8' },
+ { id:'methodetravail', icon:'', name:'Methode de travail', color:'#4338CA', soft:'#E6E5FA', border:'#C7C4F0' },
+ { id:'initrecherche', icon:'', name:'Initiation de la recherche', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
+ { id:'soininfirmier', icon:'', name:'Soin infirmier', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
 ];
 
 // Matières par niveau et filière
@@ -11132,7 +11193,7 @@ function switchMediaTab(tab) {
 // ── Moteur de canvas : formes, texte, symboles, images, déplacement au doigt ──
 let _canvasEl = null, _canvasCtx = null, _canvasObjects = [], _canvasSelected = null;
 let _canvasDrag = null, _canvasInit = false;
-let _canvasColor = '#1B5E42', _canvasFill = false;
+let _canvasColor = '#1B5E42', _canvasFill = false, _canvasBg = '#ffffff', _canvasStrokeWidth = 4;
 let _canvasUndoStack = [], _canvasRedoStack = [];
 // Redimensionnement au doigt via une poignée sur l'élément sélectionné (en plus
 // des boutons +/-), et suivi du "vrai" déplacement pendant un drag : sans ça,
@@ -11180,7 +11241,7 @@ function _canvasAutoSave() {
  if (copy.img) { copy.imgSrc = copy.img.src; delete copy.img; }
  return copy;
  });
- localStorage.setItem(CANVAS_AUTOSAVE_KEY, JSON.stringify({ objects: data, ts: Date.now() }));
+ localStorage.setItem(CANVAS_AUTOSAVE_KEY, JSON.stringify({ objects: data, bg:_canvasBg, ts: Date.now() }));
  } catch(e) {}
  }, 400);
 }
@@ -11191,6 +11252,7 @@ function _canvasRestoreAutosave() {
  const saved = JSON.parse(raw);
  if (!saved || !Array.isArray(saved.objects) || !saved.objects.length) return;
  const objects = saved.objects.map(o => ({ ...o }));
+ if (saved.bg) _canvasBg = saved.bg;
  let pending = 0;
  objects.forEach((o, idx) => {
  if (o.imgSrc) {
@@ -11284,43 +11346,85 @@ function initMediaCanvas() {
 function redrawCanvas() {
  const ctx = _canvasCtx;
  ctx.clearRect(0,0,_canvasEl.width,_canvasEl.height);
- ctx.fillStyle = '#fff';
+ ctx.fillStyle = _canvasBg || '#fff';
  ctx.fillRect(0,0,_canvasEl.width,_canvasEl.height);
 
  _canvasObjects.forEach(o => {
  ctx.save();
  const sz = o.size || 1;
  const col = o.color || '#1B5E42';
+ ctx.globalAlpha = (o.opacity != null) ? o.opacity : 1;
+ // Rotation : on translate au centre de l'objet puis on tourne le repère —
+ // toutes les formes ci-dessous sont donc dessinées relativement à (0,0).
+ ctx.translate(o.x, o.y);
+ if (o.rotation) ctx.rotate(o.rotation * Math.PI / 180);
+ const lw = o.strokeWidth || 3;
  if (o.type === 'rect') {
  const w = 80*sz, h = 60*sz;
- ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
- if (o.fill) ctx.fillRect(o.x-w/2, o.y-h/2, w, h); else ctx.strokeRect(o.x-w/2, o.y-h/2, w, h);
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw;
+ if (o.fill) ctx.fillRect(-w/2, -h/2, w, h); else ctx.strokeRect(-w/2, -h/2, w, h);
+ } else if (o.type === 'roundrect') {
+ const w = 80*sz, h = 60*sz, r = Math.min(14*sz, w/2, h/2);
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw;
+ ctx.beginPath();
+ ctx.moveTo(-w/2+r,-h/2);
+ ctx.arcTo(w/2,-h/2, w/2,h/2, r);
+ ctx.arcTo(w/2,h/2, -w/2,h/2, r);
+ ctx.arcTo(-w/2,h/2, -w/2,-h/2, r);
+ ctx.arcTo(-w/2,-h/2, w/2,-h/2, r);
+ ctx.closePath();
+ if (o.fill) ctx.fill(); else ctx.stroke();
  } else if (o.type === 'circle') {
  const r = 35*sz;
- ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
- ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, Math.PI*2);
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw;
+ ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2);
  if (o.fill) ctx.fill(); else ctx.stroke();
+ } else if (o.type === 'triangle') {
+ const r = 40*sz;
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw;
+ ctx.beginPath();
+ ctx.moveTo(0,-r); ctx.lineTo(r*0.87,r*0.6); ctx.lineTo(-r*0.87,r*0.6); ctx.closePath();
+ if (o.fill) ctx.fill(); else ctx.stroke();
+ } else if (o.type === 'star') {
+ const rOut = 38*sz, rIn = rOut*0.42;
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw;
+ ctx.beginPath();
+ for (let i=0;i<10;i++) {
+ const rad = i%2===0 ? rOut : rIn;
+ const ang = -Math.PI/2 + i*Math.PI/5;
+ const px = Math.cos(ang)*rad, py = Math.sin(ang)*rad;
+ if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+ }
+ ctx.closePath();
+ if (o.fill) ctx.fill(); else ctx.stroke();
+ } else if (o.type === 'arrow') {
+ const len = 45*sz;
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round';
+ ctx.beginPath(); ctx.moveTo(-len,0); ctx.lineTo(len*0.55,0); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(len*0.55-10*sz, -12*sz); ctx.lineTo(len, 0); ctx.lineTo(len*0.55-10*sz, 12*sz); ctx.closePath();
+ ctx.fill();
  } else if (o.type === 'line') {
  const len = 40*sz;
- ctx.strokeStyle = col; ctx.lineWidth = 3;
- ctx.beginPath(); ctx.moveTo(o.x-len,o.y); ctx.lineTo(o.x+len,o.y); ctx.stroke();
+ ctx.strokeStyle = col; ctx.lineWidth = lw;
+ ctx.beginPath(); ctx.moveTo(-len,0); ctx.lineTo(len,0); ctx.stroke();
  } else if (o.type === 'text' || o.type === 'symbol') {
  ctx.fillStyle = col;
- ctx.font = Math.round((o.type==='symbol' ? 32 : 18) * sz) + "px 'Plus Jakarta Sans', sans-serif";
+ ctx.font = (o.bold ? 'bold ' : '') + Math.round((o.type==='symbol' ? 32 : 18) * sz) + "px 'Plus Jakarta Sans', sans-serif";
  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
- ctx.fillText(o.text, o.x, o.y);
+ ctx.fillText(o.text, 0, 0);
  } else if (o.type === 'image' && o.img) {
  const w = 100*sz, h = 100*sz * (o.img.height/o.img.width);
- ctx.drawImage(o.img, o.x-w/2, o.y-h/2, w, h);
+ ctx.drawImage(o.img, -w/2, -h/2, w, h);
  }
+ ctx.globalAlpha = 1;
  if (o === _canvasSelected) {
  ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
  const boxHalf = 45*sz;
- ctx.strokeRect(o.x-boxHalf, o.y-boxHalf, boxHalf*2, boxHalf*2);
+ ctx.strokeRect(-boxHalf, -boxHalf, boxHalf*2, boxHalf*2);
  ctx.setLineDash([]);
  // Poignée de redimensionnement (coin bas-droit) : glisser dessus agrandit
  // ou réduit l'élément au doigt, en plus des boutons +/-.
- ctx.beginPath(); ctx.arc(o.x+boxHalf, o.y+boxHalf, 12, 0, Math.PI*2);
+ ctx.beginPath(); ctx.arc(boxHalf, boxHalf, 12, 0, Math.PI*2);
  ctx.fillStyle = '#0EA5E9'; ctx.fill();
  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
  }
@@ -11329,9 +11433,40 @@ function redrawCanvas() {
  _canvasAutoSave();
 }
 
+function canvasSetBackground(hex) {
+ _canvasBg = hex;
+ document.querySelectorAll('.canvas-bg-swatch').forEach(el => {
+ el.style.outline = el.dataset.bg === hex ? '2px solid #0EA5E9' : 'none';
+ });
+ redrawCanvas();
+}
+function canvasRotate(deltaDeg) {
+ if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasPushUndo();
+ _canvasSelected.rotation = ((_canvasSelected.rotation||0) + deltaDeg) % 360;
+ redrawCanvas();
+}
+function canvasSetOpacity(val) {
+ if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasSelected.opacity = parseFloat(val);
+ redrawCanvas();
+}
+function canvasSetStrokeWidth(px) {
+ _canvasStrokeWidth = px;
+ if (_canvasSelected) { _canvasPushUndo(); _canvasSelected.strokeWidth = px; redrawCanvas(); }
+}
+function canvasDuplicate() {
+ if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasPushUndo();
+ const copy = { ..._canvasSelected, x: _canvasSelected.x + 20, y: _canvasSelected.y + 20 };
+ _canvasObjects.push(copy);
+ _canvasSelected = copy;
+ redrawCanvas();
+}
+
 function canvasAddShape(type) {
  initMediaCanvas(); _canvasPushUndo();
- _canvasObjects.push({ type, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, fill:_canvasFill, size:1 });
+ _canvasObjects.push({ type, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, fill:_canvasFill, size:1, strokeWidth:_canvasStrokeWidth, opacity:1, rotation:0 });
  _canvasSelected = _canvasObjects[_canvasObjects.length-1];
  redrawCanvas();
 }
@@ -11341,14 +11476,14 @@ function canvasAddText() {
  const text = prompt('Texte à ajouter :');
  if (!text) return;
  _canvasPushUndo();
- _canvasObjects.push({ type:'text', text, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, size:1 });
+ _canvasObjects.push({ type:'text', text, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, size:1, opacity:1, rotation:0 });
  _canvasSelected = _canvasObjects[_canvasObjects.length-1];
  redrawCanvas();
 }
 
 function canvasAddSymbol(sym) {
  initMediaCanvas(); _canvasPushUndo();
- _canvasObjects.push({ type:'symbol', text: sym, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, size:1 });
+ _canvasObjects.push({ type:'symbol', text: sym, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, size:1, opacity:1, rotation:0 });
  _canvasSelected = _canvasObjects[_canvasObjects.length-1];
  redrawCanvas();
 }
@@ -11362,7 +11497,7 @@ function canvasAddImage(input) {
  const img = new Image();
  img.onload = () => {
  _canvasPushUndo();
- const obj = { type:'image', img, x:_canvasEl.width/2, y:_canvasEl.height/2, size:1 };
+ const obj = { type:'image', img, x:_canvasEl.width/2, y:_canvasEl.height/2, size:1, opacity:1, rotation:0 };
  _canvasObjects.push(obj);
  _canvasSelected = obj;
  redrawCanvas();
@@ -11388,7 +11523,7 @@ function canvasToggleFill() {
  _canvasFill = !_canvasFill;
  const btn = document.getElementById('canvas-fill-btn');
  if (btn) { btn.textContent = _canvasFill ? '◼ Rempli' : '◻ Contour'; btn.style.background = _canvasFill ? 'var(--em-soft)' : 'var(--white)'; }
- if (_canvasSelected && (_canvasSelected.type === 'rect' || _canvasSelected.type === 'circle')) {
+ if (_canvasSelected && ['rect','roundrect','circle','triangle','star'].includes(_canvasSelected.type)) {
  _canvasPushUndo(); _canvasSelected.fill = _canvasFill; redrawCanvas();
  }
 }
