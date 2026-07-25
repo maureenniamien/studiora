@@ -1225,8 +1225,8 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  </div>
  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
  <span style="font-size:11px;color:var(--text3);width:100%">Taille / rotation / calque</span>
- <button onclick="canvasResize(-0.2)" title="Réduire" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">－</button>
- <button onclick="canvasResize(0.2)" title="Agrandir" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">＋</button>
+ <button onclick="canvasResize(0.82)" title="Réduire" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">－</button>
+ <button onclick="canvasResize(1.22)" title="Agrandir" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">＋</button>
  <button onclick="canvasRotate(-15)" title="Tourner à gauche" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">⟲</button>
  <button onclick="canvasRotate(15)" title="Tourner à droite" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">⟳</button>
  <button onclick="canvasDuplicate()" title="Dupliquer" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:13px">⧉</button>
@@ -2342,7 +2342,6 @@ const ALL_SUBJECTS = [
  { id:'hematologiegen', icon:'', name:'Hematologie', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
  { id:'physiqueseule', icon:'', name:'Physique', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
  { id:'ecologie', icon:'', name:'Ecologie', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
- { id:'toxico', icon:'', name:'Toxicologie', color:'#C47A0B', soft:'#FBF0DE', border:'#F3DBA8' },
  { id:'gestionlog', icon:'', name:'Gestion logistique', color:'#DB2777', soft:'#FBE5EF', border:'#F5BFD8' },
  { id:'biotech', icon:'', name:'Biotechnologie', color:'#0891B2', soft:'#E0F3F7', border:'#B9E4EE' },
  { id:'hygienehosp', icon:'', name:'Hygiene hospitalière', color:'#EA580C', soft:'#FCEAE0', border:'#F7C7A8' },
@@ -2360,6 +2359,58 @@ const ALL_SUBJECTS = [
  { id:'initrecherche', icon:'', name:'Initiation de la recherche', color:'#0D9488', soft:'#DFF3F0', border:'#B9E4DE' },
  { id:'soininfirmier', icon:'', name:'Soin infirmier', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
 ];
+
+// Garde-fou définitif contre les doublons (même id OU même nom, accents/casse
+// ignorés) : si un futur ajout recrée par erreur une matière déjà présente
+// (ce qui vient d'arriver avec "Toxicologie"), un seul exemplaire est gardé —
+// le catalogue ne peut plus jamais afficher deux fois la même matière.
+(function dedupeAllSubjects() {
+ const norm = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ const seenIds = new Set(), seenNames = new Set(), kept = [];
+ ALL_SUBJECTS.forEach(s => {
+ const nn = norm(s.name);
+ if (seenIds.has(s.id) || seenNames.has(nn)) return;
+ seenIds.add(s.id); seenNames.add(nn); kept.push(s);
+ });
+ ALL_SUBJECTS.length = 0;
+ ALL_SUBJECTS.push(...kept);
+})();
+
+// Catégorie de chaque matière prédéfinie, pour regrouper "Ajouter une matière
+// existante" en sections repliables plutôt qu'une longue liste plate. Toute
+// matière absente de cette table (ajoutée plus tard, ou ajoutée librement par
+// un·e utilisateur·rice) tombe simplement dans "Autres".
+const SUBJECT_CATEGORY_ORDER = ['Sciences & Maths','Informatique & Numérique','Santé & Médecine','Économie, Gestion & Droit','Langues','Sciences humaines & Culture générale','Techniques & Métiers','Arts & Loisirs','Autres'];
+const SUBJECT_CATEGORY = {
+ math:'Sciences & Maths', physique:'Sciences & Maths', svt:'Sciences & Maths', stats:'Sciences & Maths',
+ chimiegen:'Sciences & Maths', biophysique:'Sciences & Maths', biostat:'Sciences & Maths',
+ physiqueseule:'Sciences & Maths', ecologie:'Sciences & Maths', chimieseule:'Sciences & Maths', mathematiqueseule:'Sciences & Maths',
+ info:'Informatique & Numérique', algo:'Informatique & Numérique', bdd:'Informatique & Numérique', si:'Informatique & Numérique',
+ java:'Informatique & Numérique', uml:'Informatique & Numérique', mobile:'Informatique & Numérique', ia:'Informatique & Numérique',
+ reseau:'Informatique & Numérique', poo:'Informatique & Numérique',
+ biochimie:'Santé & Médecine', immuno:'Santé & Médecine', microbio:'Santé & Médecine', hemato:'Santé & Médecine',
+ genetiquemed:'Santé & Médecine', anapath:'Santé & Médecine', pharmaco:'Santé & Médecine', physiohum:'Santé & Médecine',
+ anatomie:'Santé & Médecine', biocell:'Santé & Médecine', histo:'Santé & Médecine', parasito:'Santé & Médecine',
+ virologie:'Santé & Médecine', toxico:'Santé & Médecine', semio:'Santé & Médecine', hemostase:'Santé & Médecine',
+ bioreprod:'Santé & Médecine', epidemio:'Santé & Médecine', qualitelab:'Santé & Médecine', biomol:'Santé & Médecine',
+ genetique:'Santé & Médecine', bacterio:'Santé & Médecine', terminomed:'Santé & Médecine', ethiquesante:'Santé & Médecine',
+ hygielab:'Santé & Médecine', endocrino:'Santé & Médecine', enzymo:'Santé & Médecine', legislationsante:'Santé & Médecine',
+ stagelab:'Santé & Médecine', hematologiegen:'Santé & Médecine', biotech:'Santé & Médecine', hygienehosp:'Santé & Médecine',
+ bromato:'Santé & Médecine', cytogenetique:'Santé & Médecine', santepublique:'Santé & Médecine', politiquehosp:'Santé & Médecine',
+ biochimiegen:'Santé & Médecine', entomologie:'Santé & Médecine', parasitologie:'Santé & Médecine', soininfirmier:'Santé & Médecine',
+ eco:'Économie, Gestion & Droit', gestion:'Économie, Gestion & Droit', compta:'Économie, Gestion & Droit', droit:'Économie, Gestion & Droit',
+ marketing:'Économie, Gestion & Droit', comm:'Économie, Gestion & Droit', politiq:'Économie, Gestion & Droit', droitpub:'Économie, Gestion & Droit',
+ droitpriv:'Économie, Gestion & Droit', rh:'Économie, Gestion & Droit', finance:'Économie, Gestion & Droit', audit:'Économie, Gestion & Droit',
+ seg:'Économie, Gestion & Droit', sjap:'Économie, Gestion & Droit', gestionlog:'Économie, Gestion & Droit',
+ fr:'Langues', ang:'Langues', esp:'Langues', de:'Langues', techexpression:'Langues',
+ eps:'Sciences humaines & Culture générale', edhc:'Sciences humaines & Culture générale', hg:'Sciences humaines & Culture générale',
+ philo:'Sciences humaines & Culture générale', methodo:'Sciences humaines & Culture générale', methodetravail:'Sciences humaines & Culture générale',
+ initrecherche:'Sciences humaines & Culture générale',
+ resto:'Techniques & Métiers', hotel:'Techniques & Métiers', nutrition:'Techniques & Métiers', electrotec:'Techniques & Métiers',
+ electron:'Techniques & Métiers', mecaauto:'Techniques & Métiers', batiment:'Techniques & Métiers', secretariat:'Techniques & Métiers',
+ artplast:'Arts & Loisirs', musique:'Arts & Loisirs', danse:'Arts & Loisirs', cuisine:'Arts & Loisirs',
+};
+function categoryForSubject(id) { return SUBJECT_CATEGORY[id] || 'Autres'; }
 
 // Matières par niveau et filière
 const SUBJECTS_BY_LEVEL = {
@@ -2612,15 +2663,50 @@ function addUserSubject(id) {
  showManageSubjects();
  renderHome();
 }
+// Matières ajoutées librement ("Ou ajouter une matière absente de la liste"),
+// persistées à part pour être re-fusionnées dans ALL_SUBJECTS à chaque
+// chargement — sans ça, une matière tapée à la main réapparaissait dans "Mes
+// matières" mais disparaissait de "Ajouter une matière existante" après un
+// rechargement, ALL_SUBJECTS repartant de sa liste figée dans le code.
+const CUSTOM_CATALOG_KEY = 'studiora_custom_catalog_subjects';
+function getCustomCatalogSubjects() {
+ try { return JSON.parse(localStorage.getItem(CUSTOM_CATALOG_KEY)||'[]'); } catch(e) { return []; }
+}
+function mergeCustomCatalogSubjects() {
+ const norm = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ getCustomCatalogSubjects().forEach(cs => {
+ if (!cs || !cs.id) return;
+ const dup = ALL_SUBJECTS.find(s => s.id === cs.id || norm(s.name) === norm(cs.name));
+ if (!dup) ALL_SUBJECTS.push(cs);
+ });
+}
+mergeCustomCatalogSubjects();
+
 function addCustomUserSubject() {
  const input = document.getElementById('manage-subj-custom-input');
  const name = (input.value||'').trim();
  if (!name) { showToast('! Écris le nom de la matière'); return; }
  const id = slugifyId(name);
+ const norm = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ const existing = ALL_SUBJECTS.find(s => s.id === id || norm(s.name) === norm(name));
+ const finalId = existing ? existing.id : id;
+ if (!existing) {
+ let h = 0;
+ for (let i=0;i<id.length;i++) h = (h*31 + id.charCodeAt(i)) >>> 0;
+ const p = SUBJECT_COLOR_PALETTE[h % SUBJECT_COLOR_PALETTE.length];
+ const entry = { id, name, color:p.color, soft:p.soft, border:p.border };
+ // Ajoutée au catalogue partagé (ALL_SUBJECTS) tout de suite, et persistée
+ // pour survivre au rechargement — elle réapparaît ensuite dans "Ajouter
+ // une matière existante" (y compris après un Réinitialiser).
+ ALL_SUBJECTS.push(entry);
+ const list = getCustomCatalogSubjects();
+ list.push(entry);
+ localStorage.setItem(CUSTOM_CATALOG_KEY, JSON.stringify(list));
+ }
  const c = getSubjectCustomizations();
- c.customNames[id] = name;
- if (!c.added.includes(id)) c.added.push(id);
- c.removed = c.removed.filter(x=>x!==id);
+ c.customNames[finalId] = name;
+ if (!c.added.includes(finalId)) c.added.push(finalId);
+ c.removed = c.removed.filter(x=>x!==finalId);
  saveSubjectCustomizations(c);
  input.value = '';
  SUBJECTS = getSubjects();
@@ -2649,6 +2735,25 @@ function showManageSubjects() {
  const current = SUBJECTS;
  const currentIds = current.map(s=>s.id);
  const available = ALL_SUBJECTS.filter(s => !currentIds.includes(s.id)).sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'}));
+ // Regroupées par catégorie (repliable) plutôt qu'en une longue liste plate —
+ // avec ~100 matières dans le catalogue, tout afficher à plat rendait l'écran
+ // difficile à parcourir.
+ const byCategory = {};
+ available.forEach(s => {
+ const cat = categoryForSubject(s.id);
+ (byCategory[cat] = byCategory[cat] || []).push(s);
+ });
+ const categoriesHTML = SUBJECT_CATEGORY_ORDER
+ .filter(cat => byCategory[cat] && byCategory[cat].length)
+ .map(cat => `
+ <details style="margin-bottom:8px;border:1px solid var(--border);border-radius:12px;overflow:hidden">
+ <summary style="padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;background:var(--bg2)">
+ <span>${cat}</span><span style="font-size:11px;color:var(--text3);font-weight:600">${byCategory[cat].length}</span>
+ </summary>
+ <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px">
+ ${byCategory[cat].map(s=>`<button onclick="addUserSubject('${s.id}')" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);border:1.5px solid var(--border);color:var(--text2)">+ ${s.name}</button>`).join('')}
+ </div>
+ </details>`).join('');
 
  overlay.innerHTML = `
  <div style="background:var(--white);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;animation:slideUp .3s ease">
@@ -2665,9 +2770,8 @@ function showManageSubjects() {
  </div>
 
  <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Ajouter une matière existante</h4>
- <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
- ${available.map(s=>`
- <button onclick="addUserSubject('${s.id}')" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">+ ${s.name}</button>`).join('') || '<div style="font-size:12px;color:var(--text3)">Toutes les matières connues sont déjà dans ta liste.</div>'}
+ <div style="margin-bottom:18px">
+ ${categoriesHTML || '<div style="font-size:12px;color:var(--text3)">Toutes les matières connues sont déjà dans ta liste.</div>'}
  </div>
 
  <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Ou ajouter une matière absente de la liste</h4>
@@ -11318,7 +11422,7 @@ function initMediaCanvas() {
  if (_canvasResizeDrag) {
  const p = getPos(e);
  const dist = Math.max(1, Math.hypot(p.x-_canvasResizeDrag.obj.x, p.y-_canvasResizeDrag.obj.y));
- _canvasResizeDrag.obj.size = Math.max(0.3, Math.min(4, _canvasResizeDrag.startSize * (dist / _canvasResizeDrag.startDist)));
+ _canvasResizeDrag.obj.size = Math.max(0.3, Math.min(15, _canvasResizeDrag.startSize * (dist / _canvasResizeDrag.startDist)));
  redrawCanvas();
  e.preventDefault();
  return;
@@ -11530,10 +11634,14 @@ function canvasToggleFill() {
 
 // Agrandit/réduit l'élément sélectionné (forme, texte, symbole ou image),
 // borné entre 30% et 400% de sa taille de base.
-function canvasResize(delta) {
+// Agrandit/réduit l'élément sélectionné (forme, texte, symbole ou image),
+// borné entre 30% et 1500% de sa taille de base. Pas proportionnel (×facteur)
+// plutôt qu'un delta fixe : sans ça, avec un plafond relevé à 15, atteindre
+// les grandes tailles aurait demandé des dizaines d'appuis sur ＋.
+function canvasResize(factor) {
  if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
  _canvasPushUndo();
- _canvasSelected.size = Math.max(0.3, Math.min(4, (_canvasSelected.size||1) + delta));
+ _canvasSelected.size = Math.max(0.3, Math.min(15, (_canvasSelected.size||1) * factor));
  redrawCanvas();
 }
 
