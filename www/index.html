@@ -1174,6 +1174,27 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  <button onclick="canvasAddSymbol('☀')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">☀</button>
  <button onclick="canvasAddSymbol('☁')" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">☁</button>
  </div>
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+ <span style="font-size:11px;color:var(--text3);width:100%">Couleur</span>
+ <button class="canvas-color-swatch" data-color="#1B5E42" onclick="canvasSetColor('#1B5E42')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#1B5E42;cursor:pointer;outline:2px solid #0EA5E9"></button>
+ <button class="canvas-color-swatch" data-color="#D13A3A" onclick="canvasSetColor('#D13A3A')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#D13A3A;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#1E40AF" onclick="canvasSetColor('#1E40AF')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#1E40AF;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#C47A0B" onclick="canvasSetColor('#C47A0B')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#C47A0B;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#7C3AED" onclick="canvasSetColor('#7C3AED')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#7C3AED;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#DB2777" onclick="canvasSetColor('#DB2777')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#DB2777;cursor:pointer"></button>
+ <button class="canvas-color-swatch" data-color="#111111" onclick="canvasSetColor('#111111')" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:#111111;cursor:pointer"></button>
+ <input type="color" onchange="canvasSetColor(this.value)" title="Autre couleur" style="width:26px;height:26px;padding:0;border:1px solid var(--border);border-radius:50%;cursor:pointer;background:none">
+ <button id="canvas-fill-btn" onclick="canvasToggleFill()" style="margin-left:4px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">◻ Contour</button>
+ </div>
+ <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+ <span style="font-size:11px;color:var(--text3);width:100%">Taille / calque / historique</span>
+ <button onclick="canvasResize(-0.2)" title="Réduire" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">－</button>
+ <button onclick="canvasResize(0.2)" title="Agrandir" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:15px;font-weight:700">＋</button>
+ <button onclick="canvasSendToBack()" title="Envoyer derrière" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:13px">⬇</button>
+ <button onclick="canvasBringToFront()" title="Amener devant" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:13px">⬆</button>
+ <button onclick="canvasUndo()" title="Annuler" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">↶</button>
+ <button onclick="canvasRedo()" title="Rétablir" style="width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:var(--white);cursor:pointer;font-size:14px">↷</button>
+ </div>
  <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;touch-action:none">
  <canvas id="media-canvas" width="600" height="600" style="width:100%;display:block;touch-action:none"></canvas>
  </div>
@@ -6961,10 +6982,18 @@ async function sendMessage() {
  });
  messages.push({role:'user',content:userContent});
 
+ // MODEL (llama-3.1-8b-instant, via Groq) est un modèle texte seul : il ne
+ // sait pas exploiter les blocs image/document, donc un PDF ou une image
+ // joints étaient envoyés mais jamais réellement lus par l'IA. On bascule
+ // sur un modèle Claude (déjà utilisé avec succès ailleurs dans l'app pour
+ // l'extraction de PDF) uniquement pour les messages avec pièce jointe
+ // multimodale, sans changer le modèle par défaut pour le texte simple.
+ const chatModel = Array.isArray(userContent) ? 'claude-haiku-4-5-20251001' : MODEL;
+
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
  headers:{'Content-Type':'application/json',},
- body: JSON.stringify({ model:MODEL, max_tokens:1024, system:SYSTEM_PROMPT, messages })
+ body: JSON.stringify({ model:chatModel, max_tokens:1024, system:SYSTEM_PROMPT, messages })
  });
  const data = await res.json();
 
@@ -7617,9 +7646,18 @@ async function startQuizLibre(topic) {
  APP.quizQuestions=parsed.questions||[];
  if(APP.quizQuestions.length===0) throw new Error('empty');
  APP.quizIndex=0; APP.quizScore=0; APP.quizAnswers=[];
- APP.currentSubject='quiz-libre';
- APP.currentSubjectName=topic;
- selectedSubjectQuiz='quiz-libre'; // pas de matière imposée : ne doit pas s'attribuer à "math" par défaut
+ // Clé stable par sujet de quiz libre (au lieu du seul id générique
+ // "quiz-libre" partagé par tous les thèmes) : chaque thème garde son
+ // propre historique de score et apparaît sous son vrai nom dans
+ // "Ma progression", au lieu d'être noyé dans un bloc anonyme exclu de
+ // l'affichage par matière tout en comptant quand même dans le score moyen.
+ const qlId = 'ql' + slugifyId(topic);
+ if (!ALL_SUBJECTS.find(s=>s.id===qlId)) {
+ ALL_SUBJECTS.push({ id: qlId, name: topic, color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' });
+ }
+ APP.currentSubject = qlId;
+ APP.currentSubjectName = topic;
+ selectedSubjectQuiz = qlId; // pas de matière imposée : ne doit pas s'attribuer à "math" par défaut
  launchQuiz();
  } catch(e) {
  showToast(' Erreur quiz libre: '+(e.message||'Réessaie'));
@@ -7908,7 +7946,7 @@ function showResults() {
  document.getElementById('result-details').innerHTML=`
  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
  <span style="color:var(--text2);font-size:13px">Matière</span>
- <span style="font-weight:600;font-size:13px">${(function(){if(selectedSubjectQuiz==='quiz-libre') return APP.currentSubjectName||'Sujet libre'; var _f=SUBJECTS.find(function(s){return s.id===selectedSubjectQuiz});return _f?_f.name:""})()}</span>
+ <span style="font-weight:600;font-size:13px">${(function(){if(selectedSubjectQuiz==='quiz-libre') return APP.currentSubjectName||'Sujet libre'; var _f=SUBJECTS.find(function(s){return s.id===selectedSubjectQuiz})||ALL_SUBJECTS.find(function(s){return s.id===selectedSubjectQuiz}); return _f?_f.name:(APP.currentSubjectName||"")})()}</span>
  </div>
  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
  <span style="color:var(--text2);font-size:13px">Difficulté</span>
@@ -8532,11 +8570,12 @@ function renderProgress() {
  // une matière quizzée mais pas dans ce sous-ensemble n'apparaissait jamais
  // — ce qui donnait un "score moyen" non nul mais une carte vide.
  const rawScores = getSubjectScores() || {};
- const scores = Object.keys(rawScores).filter(id => id !== 'quiz-libre').map(id => {
+ const scores = Object.keys(rawScores).map(id => {
  const arr = rawScores[id] || [];
  const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
  const known = SUBJECTS.find(x=>x.id===id) || ALL_SUBJECTS.find(x=>x.id===id);
- return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : colorForSubjectId(id) };
+ const name = known ? known.name : (id === 'quiz-libre' ? 'Quiz libre' : id);
+ return { id, pct: avg, name, color: known ? known.color : colorForSubjectId(id) };
  }).filter(x => x.pct > 0).sort((a,b) => b.pct - a.pct);
  document.getElementById('subject-scores').innerHTML = scores.length ? scores.map(({name,pct,color})=>`
  <div style="margin-bottom:12px">
@@ -8647,11 +8686,12 @@ function renderProfile() {
  const pScoresEl = document.getElementById('profile-subject-scores');
  if (pScoresEl) {
  const rawScores = getSubjectScores() || {};
- const scores = Object.keys(rawScores).filter(id => id !== 'quiz-libre').map(id => {
+ const scores = Object.keys(rawScores).map(id => {
  const arr = rawScores[id] || [];
  const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
  const known = SUBJECTS.find(x=>x.id===id) || ALL_SUBJECTS.find(x=>x.id===id);
- return { id, pct: avg, name: known ? known.name : id, color: known ? known.color : colorForSubjectId(id) };
+ const name = known ? known.name : (id === 'quiz-libre' ? 'Quiz libre' : id);
+ return { id, pct: avg, name, color: known ? known.color : colorForSubjectId(id) };
  }).filter(x => x.pct > 0).sort((a,b) => b.pct - a.pct).slice(0, 3);
  pScoresEl.innerHTML = scores.length ? scores.map(({name,pct,color})=>`
  <div style="margin-bottom:10px">
@@ -11023,6 +11063,32 @@ function switchMediaTab(tab) {
 // ── Moteur de canvas : formes, texte, symboles, images, déplacement au doigt ──
 let _canvasEl = null, _canvasCtx = null, _canvasObjects = [], _canvasSelected = null;
 let _canvasDrag = null, _canvasInit = false;
+let _canvasColor = '#1B5E42', _canvasFill = false;
+let _canvasUndoStack = [], _canvasRedoStack = [];
+
+// Empile un instantané AVANT toute modification (ajout, suppression, déplacement,
+// couleur, taille, ordre des calques...) pour permettre d'annuler/rétablir —
+// copie superficielle de chaque objet (les <img> ne sont jamais mutées en place,
+// une référence partagée suffit donc), 30 étapes d'historique max.
+function _canvasPushUndo() {
+ _canvasUndoStack.push(_canvasObjects.map(o=>({...o})));
+ if (_canvasUndoStack.length > 30) _canvasUndoStack.shift();
+ _canvasRedoStack = [];
+}
+function canvasUndo() {
+ if (!_canvasUndoStack.length) { showToast('⚠ Rien à annuler'); return; }
+ _canvasRedoStack.push(_canvasObjects.map(o=>({...o})));
+ _canvasObjects = _canvasUndoStack.pop();
+ _canvasSelected = null;
+ redrawCanvas();
+}
+function canvasRedo() {
+ if (!_canvasRedoStack.length) { showToast('⚠ Rien à rétablir'); return; }
+ _canvasUndoStack.push(_canvasObjects.map(o=>({...o})));
+ _canvasObjects = _canvasRedoStack.pop();
+ _canvasSelected = null;
+ redrawCanvas();
+}
 
 function initMediaCanvas() {
  if (_canvasInit) return;
@@ -11039,7 +11105,8 @@ function initMediaCanvas() {
  const hitTest = (x,y) => {
  for (let i = _canvasObjects.length-1; i >= 0; i--) {
  const o = _canvasObjects[i];
- if (x >= o.x-40 && x <= o.x+40 && y >= o.y-40 && y <= o.y+40) return o;
+ const r = 40*(o.size||1);
+ if (x >= o.x-r && x <= o.x+r && y >= o.y-r && y <= o.y+r) return o;
  }
  return null;
  };
@@ -11047,7 +11114,7 @@ function initMediaCanvas() {
  const p = getPos(e);
  const hit = hitTest(p.x, p.y);
  _canvasSelected = hit;
- if (hit) { _canvasDrag = { obj:hit, offX:p.x-hit.x, offY:p.y-hit.y }; e.preventDefault(); }
+ if (hit) { _canvasPushUndo(); _canvasDrag = { obj:hit, offX:p.x-hit.x, offY:p.y-hit.y }; e.preventDefault(); }
  redrawCanvas();
  };
  const onMove = (e) => {
@@ -11078,35 +11145,41 @@ function redrawCanvas() {
 
  _canvasObjects.forEach(o => {
  ctx.save();
+ const sz = o.size || 1;
+ const col = o.color || '#1B5E42';
  if (o.type === 'rect') {
- ctx.strokeStyle = '#1B5E42'; ctx.lineWidth = 3;
- ctx.strokeRect(o.x-40, o.y-30, 80, 60);
+ const w = 80*sz, h = 60*sz;
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+ if (o.fill) ctx.fillRect(o.x-w/2, o.y-h/2, w, h); else ctx.strokeRect(o.x-w/2, o.y-h/2, w, h);
  } else if (o.type === 'circle') {
- ctx.strokeStyle = '#1B5E42'; ctx.lineWidth = 3;
- ctx.beginPath(); ctx.arc(o.x, o.y, 35, 0, Math.PI*2); ctx.stroke();
+ const r = 35*sz;
+ ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+ ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, Math.PI*2);
+ if (o.fill) ctx.fill(); else ctx.stroke();
  } else if (o.type === 'line') {
- ctx.strokeStyle = '#1B5E42'; ctx.lineWidth = 3;
- ctx.beginPath(); ctx.moveTo(o.x-40,o.y); ctx.lineTo(o.x+40,o.y); ctx.stroke();
+ const len = 40*sz;
+ ctx.strokeStyle = col; ctx.lineWidth = 3;
+ ctx.beginPath(); ctx.moveTo(o.x-len,o.y); ctx.lineTo(o.x+len,o.y); ctx.stroke();
  } else if (o.type === 'text' || o.type === 'symbol') {
- ctx.fillStyle = '#111';
- ctx.font = (o.type==='symbol' ? '32px' : '18px') + " 'Plus Jakarta Sans', sans-serif";
+ ctx.fillStyle = col;
+ ctx.font = Math.round((o.type==='symbol' ? 32 : 18) * sz) + "px 'Plus Jakarta Sans', sans-serif";
  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
  ctx.fillText(o.text, o.x, o.y);
  } else if (o.type === 'image' && o.img) {
- const w = 100, h = 100 * (o.img.height/o.img.width);
+ const w = 100*sz, h = 100*sz * (o.img.height/o.img.width);
  ctx.drawImage(o.img, o.x-w/2, o.y-h/2, w, h);
  }
  if (o === _canvasSelected) {
  ctx.strokeStyle = '#0EA5E9'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
- ctx.strokeRect(o.x-45, o.y-45, 90, 90);
+ ctx.strokeRect(o.x-45*sz, o.y-45*sz, 90*sz, 90*sz);
  }
  ctx.restore();
  });
 }
 
 function canvasAddShape(type) {
- initMediaCanvas();
- _canvasObjects.push({ type, x: _canvasEl.width/2, y: _canvasEl.height/2 });
+ initMediaCanvas(); _canvasPushUndo();
+ _canvasObjects.push({ type, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, fill:_canvasFill, size:1 });
  _canvasSelected = _canvasObjects[_canvasObjects.length-1];
  redrawCanvas();
 }
@@ -11115,14 +11188,15 @@ function canvasAddText() {
  initMediaCanvas();
  const text = prompt('Texte à ajouter :');
  if (!text) return;
- _canvasObjects.push({ type:'text', text, x: _canvasEl.width/2, y: _canvasEl.height/2 });
+ _canvasPushUndo();
+ _canvasObjects.push({ type:'text', text, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, size:1 });
  _canvasSelected = _canvasObjects[_canvasObjects.length-1];
  redrawCanvas();
 }
 
 function canvasAddSymbol(sym) {
- initMediaCanvas();
- _canvasObjects.push({ type:'symbol', text: sym, x: _canvasEl.width/2, y: _canvasEl.height/2 });
+ initMediaCanvas(); _canvasPushUndo();
+ _canvasObjects.push({ type:'symbol', text: sym, x: _canvasEl.width/2, y: _canvasEl.height/2, color:_canvasColor, size:1 });
  _canvasSelected = _canvasObjects[_canvasObjects.length-1];
  redrawCanvas();
 }
@@ -11135,7 +11209,8 @@ function canvasAddImage(input) {
  reader.onload = (e) => {
  const img = new Image();
  img.onload = () => {
- const obj = { type:'image', img, x:_canvasEl.width/2, y:_canvasEl.height/2 };
+ _canvasPushUndo();
+ const obj = { type:'image', img, x:_canvasEl.width/2, y:_canvasEl.height/2, size:1 };
  _canvasObjects.push(obj);
  _canvasSelected = obj;
  redrawCanvas();
@@ -11145,14 +11220,62 @@ function canvasAddImage(input) {
  reader.readAsDataURL(file);
 }
 
+// Couleur : sert de couleur par défaut pour les prochains ajouts, et se
+// réapplique en direct à l'élément sélectionné s'il y en a un.
+function canvasSetColor(hex) {
+ _canvasColor = hex;
+ document.querySelectorAll('.canvas-color-swatch').forEach(el => {
+ el.style.outline = el.dataset.color === hex ? '2px solid #0EA5E9' : 'none';
+ });
+ if (_canvasSelected) { _canvasPushUndo(); _canvasSelected.color = hex; redrawCanvas(); }
+}
+
+// Contour / rempli : bascule le style par défaut, et l'applique à la forme
+// sélectionnée si elle en supporte le remplissage (rectangle, cercle).
+function canvasToggleFill() {
+ _canvasFill = !_canvasFill;
+ const btn = document.getElementById('canvas-fill-btn');
+ if (btn) { btn.textContent = _canvasFill ? '◼ Rempli' : '◻ Contour'; btn.style.background = _canvasFill ? 'var(--em-soft)' : 'var(--white)'; }
+ if (_canvasSelected && (_canvasSelected.type === 'rect' || _canvasSelected.type === 'circle')) {
+ _canvasPushUndo(); _canvasSelected.fill = _canvasFill; redrawCanvas();
+ }
+}
+
+// Agrandit/réduit l'élément sélectionné (forme, texte, symbole ou image),
+// borné entre 30% et 400% de sa taille de base.
+function canvasResize(delta) {
+ if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasPushUndo();
+ _canvasSelected.size = Math.max(0.3, Math.min(4, (_canvasSelected.size||1) + delta));
+ redrawCanvas();
+}
+
+// Ordre d'affichage (calques) : utile dès que deux éléments se chevauchent.
+function canvasBringToFront() {
+ if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasPushUndo();
+ _canvasObjects = _canvasObjects.filter(o => o !== _canvasSelected);
+ _canvasObjects.push(_canvasSelected);
+ redrawCanvas();
+}
+function canvasSendToBack() {
+ if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasPushUndo();
+ _canvasObjects = _canvasObjects.filter(o => o !== _canvasSelected);
+ _canvasObjects.unshift(_canvasSelected);
+ redrawCanvas();
+}
+
 function canvasDeleteSelected() {
  if (!_canvasSelected) { showToast('⚠ Touche un élément pour le sélectionner'); return; }
+ _canvasPushUndo();
  _canvasObjects = _canvasObjects.filter(o => o !== _canvasSelected);
  _canvasSelected = null;
  redrawCanvas();
 }
 
 function canvasClearAll() {
+ if (_canvasObjects.length) _canvasPushUndo();
  _canvasObjects = []; _canvasSelected = null;
  redrawCanvas();
 }
