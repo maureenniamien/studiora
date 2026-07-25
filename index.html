@@ -3021,9 +3021,14 @@ function showManageSubjects() {
 
  const current = SUBJECTS;
  const currentIds = current.map(s=>s.id);
- const available = ALL_SUBJECTS.filter(s => !currentIds.includes(s.id)).sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'}));
+ // Catalogue complet : on affiche désormais TOUTES les matières de l'app, même
+ // celles déjà attribuées à l'utilisateur·rice (utile pour retrouver une
+ // matière hors de son propre domaine/filière, ou pour parcourir tout ce qui
+ // existe) — celles déjà ajoutées sont juste marquées différemment (✓) et
+ // permettent de les retirer directement depuis cette même liste.
+ const available = ALL_SUBJECTS.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'}));
  // Regroupées par catégorie (repliable) plutôt qu'en une longue liste plate —
- // avec ~100 matières dans le catalogue, tout afficher à plat rendait l'écran
+ // avec ~300 matières dans le catalogue, tout afficher à plat rendait l'écran
  // difficile à parcourir.
  const byCategory = {};
  available.forEach(s => {
@@ -3038,7 +3043,12 @@ function showManageSubjects() {
  <span>${cat}</span><span style="font-size:11px;color:var(--text3);font-weight:600">${byCategory[cat].length}</span>
  </summary>
  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px">
- ${byCategory[cat].map(s=>`<button onclick="addUserSubject('${s.id}')" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);border:1.5px solid var(--border);color:var(--text2)">+ ${s.name}</button>`).join('')}
+ ${byCategory[cat].map(s=>{
+ const already = currentIds.includes(s.id);
+ return already
+ ? `<button onclick="removeUserSubject('${s.id}')" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:${s.soft};border:1.5px solid ${s.border};color:${s.color}">✓ ${s.name}</button>`
+ : `<button onclick="addUserSubject('${s.id}')" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--white);border:1.5px solid var(--border);color:var(--text2)">+ ${s.name}</button>`;
+ }).join('')}
  </div>
  </details>`).join('');
 
@@ -3059,7 +3069,7 @@ function showManageSubjects() {
  <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Ajouter une matière existante</h4>
  <input id="manage-subj-search" class="input" placeholder="Rechercher une matière..." oninput="filterManageSubjectsList(this.value)" style="margin-bottom:10px">
  <div id="manage-subj-categories" style="margin-bottom:18px">
- ${categoriesHTML || '<div style="font-size:12px;color:var(--text3)">Toutes les matières connues sont déjà dans ta liste.</div>'}
+ ${categoriesHTML || '<div style="font-size:12px;color:var(--text3)">Aucune matière trouvée.</div>'}
  </div>
 
  <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Ou ajouter une matière absente de la liste</h4>
@@ -3656,14 +3666,14 @@ function renderImageMsgHTML(url, prompt, time) {
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
- <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block;cursor:pointer" onclick="openImageLightbox(decodeURIComponent('${encodeURIComponent(url)}'))" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
+ <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}'))" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
  </div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${time || ''}</div>
  <button onclick="regenerateImageFromPrompt('${promptB64}')" title="Régénérer" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
  </button>
- <button onclick="downloadGeneratedImage(decodeURIComponent('${encodeURIComponent(url)}'),'${promptB64}')" title="Télécharger" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
+ <button onclick="downloadGeneratedImage(atob('${btoa(url)}'),'${promptB64}')" title="Télécharger" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:2px;display:flex;align-items:center">
  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
  </button>
  </div>
@@ -3733,7 +3743,7 @@ function renderMsgHTML(m, idx) {
  if (m.role === 'user') {
  if (m.content && typeof m.content === 'object' && m.content.imagePreview) {
  return `<div class="msg-row user"><div class="msg-bubble user" style="padding:6px">
- <img src="${m.content.imagePreview}" style="width:100%;max-width:220px;border-radius:10px;display:block;cursor:pointer;margin-bottom:${m.content.caption ? '6px':'0'}" onclick="openImageLightbox(decodeURIComponent('${encodeURIComponent(m.content.imagePreview)}'))">
+ <img src="${m.content.imagePreview}" style="width:100%;max-width:220px;border-radius:10px;display:block;cursor:pointer;margin-bottom:${m.content.caption ? '6px':'0'}" onclick="openImageLightbox(atob('${btoa(m.content.imagePreview)}'))">
  ${m.content.caption ? `<div style="padding:0 6px 4px">${escHtml(m.content.caption)}</div>` : ''}
  </div></div>`;
  }
@@ -7301,7 +7311,7 @@ function openImageGenMenu() {
 function buildImageGenPrompt(userPrompt) {
  const isDiagram = /(sch[ée]ma|diagramme|annot[ée]|coupe|cycle|organigramme|carte mentale|croquis|l[ée]gend|frise|processus)/i.test(userPrompt);
  if (!isDiagram) return userPrompt;
- return userPrompt + ', style illustration pédagogique de manuel scolaire, schéma plat et net avec légendes claires, fond blanc uni, sans décor ni mise en scène artistique, vue didactique de face';
+ return userPrompt + ', educational textbook diagram, flat 2D scientific illustration, black text labels in French written directly next to each part with thin pointer lines, numbered labels, white background, no artistic shading, no photorealism, top-down didactic infographic style like a biology textbook page';
 }
 
 async function generateImageFromChat() {
