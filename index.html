@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io https://wsrv.nl; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -7500,34 +7500,32 @@ async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
  const sysPrompt = `Tu regardes une image et tu identifies 8 à 14 éléments visibles pertinents pour le sujet donné, du plus important au moins important. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}","x":nombre,"y":nombre}]. x et y sont la position du CENTRE de cet élément sur l'image, en pourcentage de la largeur/hauteur (0 = bord gauche/haut, 100 = bord droit/bas). Base-toi uniquement sur ce que tu vois réellement dans l'image fournie.`;
- // On essaie d'abord de passer l'URL de l'image directement au modèle de
- // vision (le serveur la récupère lui-même, sans restriction CORS) plutôt que
- // de la re-télécharger nous-mêmes en base64 depuis le navigateur : les CDN
- // d'images publics (pollinations.ai...) n'autorisent en général pas la
- // lecture cross-origin en JS, donc ce fetch() échouait systématiquement
- // ("Failed to fetch"), faisant croire à une "analyse vision" alors qu'elle
- // n'était en réalité JAMAIS tentée — d'où l'absence totale de numéros sur
- // l'image, à chaque génération, sans exception.
- const imageBlock = attempt === 1
- ? { type:'image', source:{ type:'url', url: imgUrl } }
- : await (async () => {
- const resp = await fetch(imgUrl);
+ // Les CDN d'images publics (pollinations.ai...) n'envoient pas d'en-têtes
+ // CORS, donc fetch(imgUrl) échoue TOUJOURS depuis le navigateur ("Failed to
+ // fetch") — c'est pour ça qu'aucune position n'était jamais détectée. On
+ // passe par wsrv.nl, un proxy d'image public qui, lui, autorise la lecture
+ // cross-origin (Access-Control-Allow-Origin: *), pour récupérer les vrais
+ // octets de l'image et les convertir en base64 — exactement le même format
+ // qui fonctionne déjà pour l'analyse d'une photo de cours envoyée par
+ // l'utilisateur (voir plus bas dans ce fichier).
+ const proxiedUrl = 'https://wsrv.nl/?url=' + encodeURIComponent(imgUrl) + '&output=jpg';
+ const resp = await fetch(proxiedUrl);
+ if (!resp.ok) throw new Error('proxy-http-'+resp.status);
  const blob = await resp.blob();
+ if (!blob || blob.size < 500) throw new Error('proxy-empty'); // réponse vide/erreur déguisée en image
  const base64 = await new Promise((resolve, reject) => {
  const r = new FileReader();
  r.onload = () => resolve(r.result.split(',')[1]);
  r.onerror = reject;
  r.readAsDataURL(blob);
  });
- return { type:'image', source:{ type:'base64', media_type: blob.type || 'image/jpeg', data: base64 } };
- })();
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
  method:'POST',
  headers:{'Content-Type':'application/json'},
  body: JSON.stringify({
  model: MODEL, max_tokens: 1400, system: sysPrompt,
  messages:[{ role:'user', content:[
- imageBlock,
+ { type:'image', source:{ type:'base64', media_type: blob.type || 'image/jpeg', data: base64 } },
  { type:'text', text: 'Sujet du schéma : ' + userPrompt }
  ]}]
  })
@@ -7551,10 +7549,6 @@ async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  // Une transcription/erreur réseau ponctuelle ne doit pas priver l'utilisateur
  // de légende positionnée : deux essais supplémentaires (3 au total) avant
  // d'abandonner cette approche pour le repli texte seul (sans positions).
- // Le 2e essai bascule automatiquement sur la conversion base64 (voir
- // imageBlock ci-dessus) au cas où le passage par URL échouerait pour une
- // autre raison (image expirée, service de vision qui ne supporte pas les
- // URL externes, etc.).
  if (attempt < 3) return generateDiagramLegendVision(imgUrl, userPrompt, attempt+1);
  return null;
  }
