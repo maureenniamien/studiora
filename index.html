@@ -3781,9 +3781,9 @@ function renderSvgMsgHTML(svgMarkup, prompt, time) {
  </div>
  </div>`;
 }
-// Les anciens schémas SVG enregistrés avant le retour à un générateur unique
-// gardent leur bouton "régénérer" fonctionnel, mais redirigent maintenant
-// vers l'unique générateur d'image restant.
+// Bouton "régénérer" d'un schéma SVG existant : relance la même demande via
+// l'entrée unique generateImageFromChat, qui re-détectera qu'il s'agit d'un
+// schéma et repassera par le générateur SVG (texte lisible).
 function regenerateSvgFromPrompt(promptB64) {
  const prompt = decodeURIComponent(escape(atob(promptB64)));
  const input = document.getElementById('chat-input');
@@ -3865,7 +3865,11 @@ function renderMsgHTML(m, idx) {
 }
 
 function copyMessageText(b64text) {
- const text = decodeURIComponent(escape(atob(b64text)));
+ let text = decodeURIComponent(escape(atob(b64text)));
+ // Le préfixe "◆ Génère une image : " est ajouté par l'app pour afficher
+ // clairement l'action dans la conversation — l'utilisateur ne l'a pas tapé
+ // lui-même, donc on ne le copie pas : seule sa description d'origine l'est.
+ text = text.replace(/^◆\s*Génère une image\s*:\s*/i, '');
  if (navigator.clipboard && navigator.clipboard.writeText) {
  navigator.clipboard.writeText(text).then(
  () => showToast('✓ Texte copié'),
@@ -7378,10 +7382,42 @@ function openImageGenMenu() {
 // par défaut du modèle (décors, textures, mise en scène — inadapté à un
 // contenu qu'on doit pouvoir lire et annoter). N'affecte pas le prompt
 // affiché dans l'historique, seulement celui envoyé au générateur.
+function isDiagramRequest(userPrompt) {
+ return /(sch[ée]ma|diagramme|annot[ée]|coupe|cycle|organigramme|carte mentale|croquis|l[ée]gend|frise|processus)/i.test(userPrompt);
+}
 function buildImageGenPrompt(userPrompt) {
- const isDiagram = /(sch[ée]ma|diagramme|annot[ée]|coupe|cycle|organigramme|carte mentale|croquis|l[ée]gend|frise|processus)/i.test(userPrompt);
- if (!isDiagram) return userPrompt;
+ if (!isDiagramRequest(userPrompt)) return userPrompt;
  return userPrompt + ', educational textbook diagram, flat 2D scientific illustration, black text labels in French written directly next to each part with thin pointer lines, numbered labels, white background, no artistic shading, no photorealism, top-down didactic infographic style like a biology textbook page';
+}
+
+// Génère un vrai schéma vectoriel (SVG) via l'IA plutôt qu'une image photo :
+// un modèle de génération d'image (Pollinations/Flux) ne sait PAS écrire de
+// texte lisible — il ne fait qu'imiter visuellement des lettres, illisibles
+// même en zoomant. Un SVG contient de vrais éléments <text>, donc les
+// légendes sont toujours nettes et lisibles, quel que soit le zoom.
+async function generateSvgDiagramFromChat(prompt, genId) {
+ const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const langInstruction = APP_LANG && APP_LANG !== 'fr' ? (' Écris tous les libellés en ' + (langNames[APP_LANG]||'français') + '.') : ' Écris tous les libellés en français.';
+ const sysPrompt = 'Tu es un générateur de schémas pédagogiques en SVG. Réponds UNIQUEMENT avec un unique élément <svg>...</svg> valide et complet, sans balise <script>, sans image externe (<image>/href vers une URL), sans markdown, sans texte avant ou après.' +
+ ' Utilise viewBox="0 0 700 700", un rectangle de fond blanc, des formes simples (cercles, rectangles, lignes, chemins) pour représenter les éléments, et de VRAIS éléments <text> (jamais de texte dessiné en chemin) pour chaque légende, avec des lignes fines (<line>) reliant chaque légende à la partie qu\'elle désigne. Utilise des couleurs sobres et contrastées, une mise en page claire et aérée, en évitant que les textes se chevauchent.' + langInstruction;
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ method:'POST',
+ headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 3500, system: sysPrompt, messages:[{ role:'user', content: 'Schéma demandé : ' + prompt }] })
+ });
+ if (!res.ok) { const err = await res.text(); throw new Error('HTTP ' + res.status + ': ' + err.slice(0,120)); }
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
+ // Retire d'éventuelles balises de code markdown (```svg ... ```) autour du SVG.
+ raw = raw.replace(/```(?:svg|xml)?/gi, '').trim();
+ const match = raw.match(/<svg[\s\S]*<\/svg>/i);
+ if (!match) throw new Error('svg-invalide');
+ const svg = match[0];
+ const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+ const container = document.getElementById(genId);
+ if (container) container.innerHTML = renderSvgMsgHTML(svg, prompt, time);
+ APP.chatHistory.push({ role:'assistant', content:{ type:'svg', svg, prompt }, time });
+ saveChatHistory(APP.currentSubject);
 }
 
 async function generateImageFromChat() {
@@ -7413,10 +7449,22 @@ async function generateImageFromChat() {
  </div>`;
  scrollChat();
 
+ // Schéma/diagramme : on passe par le générateur SVG (vrai texte lisible),
+ // avec repli sur l'image photo seulement si la génération SVG échoue —
+ // mieux vaut une image imparfaite qu'une bulle bloquée.
+ const container = document.getElementById(genId);
+ if (isDiagramRequest(prompt)) {
+ try {
+ await generateSvgDiagramFromChat(prompt, genId);
+ scrollChat();
+ return;
+ } catch (svgErr) {
+ // on continue vers le repli image photo ci-dessous
+ }
+ }
  // Pollinations.ai : simple URL, pas de clé API. On précharge l'image avant de
  // l'afficher (avec repli sur un autre modèle/domaine si ça échoue ou traîne),
  // pour ne jamais laisser une bulle vide/bloquée si la génération est lente ou échoue.
- const container = document.getElementById(genId);
  try {
  const imgUrl = await generatePollinationsImage(buildImageGenPrompt(prompt));
  container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time);
