@@ -7468,7 +7468,8 @@ function buildImageGenPrompt(userPrompt) {
 // l'IA vision et lui demande, pour chaque élément identifié, un libellé, une
 // courte explication et sa position (x/y en % de l'image) — de quoi poser un
 // numéro directement sur l'image, comme sur un vrai schéma annoté.
-async function generateDiagramLegendVision(imgUrl, userPrompt) {
+async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
+ attempt = attempt || 1;
  try {
  const resp = await fetch(imgUrl);
  const blob = await resp.blob();
@@ -7493,6 +7494,39 @@ async function generateDiagramLegendVision(imgUrl, userPrompt) {
  ]}]
  })
  });
+ if (!res.ok) throw new Error('http-'+res.status);
+ const data = await res.json();
+ const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
+ const match = raw.match(/\[[\s\S]*\]/);
+ if (!match) throw new Error('no-json');
+ const parsed = JSON.parse(match[0]);
+ if (!Array.isArray(parsed) || parsed.length < 3) throw new Error('too-few');
+ return parsed
+ .filter(it => it && it.label && typeof it.x === 'number' && typeof it.y === 'number')
+ .map(it => ({ label:String(it.label).slice(0,60), detail: it.detail ? String(it.detail).slice(0,150) : '', x:Math.max(2,Math.min(98,it.x)), y:Math.max(2,Math.min(98,it.y)) }))
+ .slice(0, 14);
+ } catch(e) {
+ // Une transcription/erreur réseau ponctuelle ne doit pas priver l'utilisateur
+ // de légende : un deuxième essai avant d'abandonner cette approche.
+ if (attempt < 2) return generateDiagramLegendVision(imgUrl, userPrompt, attempt+1);
+ return null;
+ }
+}
+
+// Repli si l'analyse vision échoue deux fois (ex: l'image cross-origin ne peut
+// pas être relue en JS selon l'hébergeur) : une légende texte seule, sans
+// position sur l'image, mais toujours du vrai texte lisible plutôt que rien.
+// Ne dépend d'aucune lecture de l'image — ne peut donc pas échouer pour les
+// mêmes raisons que l'analyse vision.
+async function generateDiagramLegendText(userPrompt) {
+ try {
+ const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
+ const sysPrompt = `Pour le schéma/diagramme demandé, liste 6 à 12 éléments clés à connaître, du plus important au moins important. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}"}].`;
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ method:'POST', headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 700, system: sysPrompt, messages:[{role:'user',content:userPrompt}] })
+ });
  if (!res.ok) return null;
  const data = await res.json();
  const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
@@ -7500,10 +7534,9 @@ async function generateDiagramLegendVision(imgUrl, userPrompt) {
  if (!match) return null;
  const parsed = JSON.parse(match[0]);
  if (!Array.isArray(parsed) || parsed.length < 3) return null;
- return parsed
- .filter(it => it && it.label && typeof it.x === 'number' && typeof it.y === 'number')
- .map(it => ({ label:String(it.label).slice(0,60), detail: it.detail ? String(it.detail).slice(0,150) : '', x:Math.max(2,Math.min(98,it.x)), y:Math.max(2,Math.min(98,it.y)) }))
- .slice(0, 14);
+ return parsed.filter(it => it && it.label)
+ .map(it => ({ label:String(it.label).slice(0,60), detail: it.detail ? String(it.detail).slice(0,150) : '' }))
+ .slice(0, 12);
  } catch(e) { return null; }
 }
 
@@ -7551,11 +7584,22 @@ async function generateImageFromChat() {
  scrollChat();
  if (wantsLegend) {
  generateDiagramLegendVision(imgUrl, prompt).then(legend => {
- if (!legend) return;
- histEntry.content.legend = legend;
+ return legend || generateDiagramLegendText(prompt);
+ }).then(legend => {
+ histEntry.content.legend = legend || 'failed';
  saveChatHistory(APP.currentSubject);
  const c = document.getElementById(genId);
- if (c) c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend);
+ if (!c) return;
+ if (legend) { c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend); return; }
+ // Les deux approches ont échoué (réseau coupé, service indisponible...) :
+ // on le dit clairement au lieu de laisser l'image seule sans explication,
+ // avec un bouton pour retenter juste la légende sans regénérer l'image.
+ const legendPromptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
+ c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null) + `
+ <div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
+ <span>⚠ Légende indisponible (problème réseau)</span>
+ <button onclick="retryDiagramLegend('${genId}','${legendPromptB64}',atob('${btoa(imgUrl)}'))" style="background:var(--em);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">↻ Réessayer</button>
+ </div>`;
  });
  }
  } catch (e) {
@@ -7566,6 +7610,30 @@ async function generateImageFromChat() {
  </div>`;
  }
  scrollChat();
+}
+
+// Retente uniquement la légende (sans regénérer l'image) depuis le bouton
+// affiché quand les deux méthodes ont échoué la première fois.
+function retryDiagramLegend(genId, promptB64, imgUrl) {
+ const prompt = decodeURIComponent(escape(atob(promptB64)));
+ const c = document.getElementById(genId);
+ if (c) c.innerHTML = renderImageMsgHTML(imgUrl, prompt, '', null) + `<div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2)">Nouvel essai de légende...</div>`;
+ generateDiagramLegendVision(imgUrl, prompt).then(legend => {
+ return legend || generateDiagramLegendText(prompt);
+ }).then(legend => {
+ const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+ const idx = APP.chatHistory.findIndex(m => m.content && typeof m.content === 'object' && m.content.type === 'image' && m.content.url === imgUrl && m.content.prompt === prompt);
+ if (idx !== -1) { APP.chatHistory[idx].content.legend = legend || 'failed'; saveChatHistory(APP.currentSubject); }
+ const c2 = document.getElementById(genId);
+ if (!c2) return;
+ if (legend) { c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend); return; }
+ const legendPromptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
+ c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null) + `
+ <div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
+ <span>⚠ Légende indisponible (problème réseau)</span>
+ <button onclick="retryDiagramLegend('${genId}','${legendPromptB64}',atob('${btoa(imgUrl)}'))" style="background:var(--em);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">↻ Réessayer</button>
+ </div>`;
+ });
 }
 
 // Précharge l'image générée avant affichage : 1er essai sur image.pollinations.ai
