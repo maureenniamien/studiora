@@ -289,6 +289,25 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  </div>
  <p style="font-size:11px;color:var(--text3);margin-top:24px;line-height:1.5"> Tes données restent privées · Fonctionne hors ligne</p>
 </div>
+<script>
+// Anti-flash : cet écran est visible par défaut dans le HTML (avant que le
+// reste du JS ne s'exécute), donc quelqu'un déjà connecté le voyait quand
+// même briller une fraction de seconde à chaque ouverture, le temps que
+// _runInit() vérifie la session et bascule vers l'écran principal. Ce script
+// s'exécute dès que ce <div> existe (au fil du parsing HTML, avant que le
+// reste de la page ne soit prêt) et le masque tout de suite si une session
+// a l'air valide — _runInit() prend ensuite le relais normalement, y compris
+// pour le réafficher si la session s'avère finalement invalide.
+(function(){
+ try {
+ var raw = localStorage.getItem('studiora_session');
+ if (raw) {
+ var data = JSON.parse(raw);
+ if (data && data.prenom) document.getElementById('screen-onboarding').classList.add('hidden');
+ }
+ } catch(e) {}
+})();
+</script>
 
 <!-- ═══════════════════ LOGIN ═══════════════════ -->
 <div id="screen-login" class="screen hidden">
@@ -581,7 +600,7 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
  <button onclick="document.getElementById('chat-file-input').click()" title="Joindre un fichier" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
  </button>
- <button onclick="openImageGenMenu()" title="Générer une image ou un schéma" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
+ <button onclick="generateImageFromChat()" title="Générer une image" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
  </button>
  <button id="mic-btn" onclick="toggleVoiceInput()" title="Parler" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
@@ -3732,11 +3751,23 @@ function extractDocDirective(text) {
 
 // Bulle d'image générée par IA : réutilisée à la génération ET au rechargement de
 // l'historique (pour que l'image reste visible après avoir quitté/rouvert la conversation).
-function renderImageMsgHTML(url, prompt, time) {
+function renderImageMsgHTML(url, prompt, time, legend) {
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
+ // La légende est du vrai texte HTML (pas des pixels) : contrairement au texte
+ // que le modèle d'image tenterait de dessiner dans l'image elle-même — jamais
+ // fiable, souvent illisible — ces libellés sont toujours nets, quel que soit
+ // le zoom ou la qualité de l'image générée.
+ const legendHTML = (legend && legend.length) ? `
+ <div style="margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:10px">
+ <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:5px">Légende</div>
+ <ol style="margin:0;padding-left:18px;font-size:13px;color:var(--text1);line-height:1.6">
+ ${legend.map(l=>`<li>${escHtml(l)}</li>`).join('')}
+ </ol>
+ </div>` : '';
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
  <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}'))" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
+ ${legendHTML}
  </div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
  <div class="msg-time" style="margin-top:0">${time || ''}</div>
@@ -3805,7 +3836,7 @@ function downloadGeneratedSvg(svgB64, promptB64) {
 
 function renderMsgHTML(m, idx) {
  if (m.role === 'assistant' && m.content && typeof m.content === 'object' && m.content.type === 'image') {
- return `<div class="msg-row">${renderImageMsgHTML(m.content.url, m.content.prompt, m.time)}</div>`;
+ return `<div class="msg-row">${renderImageMsgHTML(m.content.url, m.content.prompt, m.time, m.content.legend)}</div>`;
  }
  if (m.role === 'assistant' && m.content && typeof m.content === 'object' && m.content.type === 'svg') {
  return `<div class="msg-row">${renderSvgMsgHTML(m.content.svg, m.content.prompt, m.time)}</div>`;
@@ -7371,53 +7402,42 @@ function speakMessage(b64text, btn) {
 // Un seul générateur de visuel désormais (le mode "schéma vectoriel" séparé
 // s'est révélé peu fiable — soit trop pauvre, soit refusant des demandes
 // pourtant légitimes) : plus besoin de menu de choix, on lance directement.
-function openImageGenMenu() {
- const input = document.getElementById('chat-input');
- if (!input.value.trim()) { showToast('! Décris d\'abord ce que tu veux dans le champ de texte'); return; }
- generateImageFromChat();
-}
-
-// Détecte une demande de schéma/diagramme pour orienter le style vers une
-// illustration pédagogique nette et légendée, plutôt que le rendu artistique
-// par défaut du modèle (décors, textures, mise en scène — inadapté à un
-// contenu qu'on doit pouvoir lire et annoter). N'affecte pas le prompt
-// affiché dans l'historique, seulement celui envoyé au générateur.
+// Détecte une demande de schéma/diagramme pour adapter le style et générer une
+// légende — plutôt que le rendu artistique par défaut du modèle (décors,
+// textures, mise en scène — inadapté à un contenu qu'on doit pouvoir étudier).
 function isDiagramRequest(userPrompt) {
  return /(sch[ée]ma|diagramme|annot[ée]|coupe|cycle|organigramme|carte mentale|croquis|l[ée]gend|frise|processus)/i.test(userPrompt);
 }
+// Un modèle de génération d'image (Pollinations/Flux) ne sait PAS écrire de
+// texte lisible dans une image — il ne fait qu'imiter visuellement des
+// lettres, ce qui donne un charabia illisible (voire pire : un rendu façon
+// "planche couverte de texte" quand on lui demande explicitement des
+// légendes). On lui demande donc une illustration détaillée et colorée SANS
+// aucun texte, et on obtient les légendes à part (voir generateDiagramLegend)
+// sous forme de vrai texte HTML, toujours net.
 function buildImageGenPrompt(userPrompt) {
  if (!isDiagramRequest(userPrompt)) return userPrompt;
- return userPrompt + ', educational textbook diagram, flat 2D scientific illustration, black text labels in French written directly next to each part with thin pointer lines, numbered labels, white background, no artistic shading, no photorealism, top-down didactic infographic style like a biology textbook page';
+ return userPrompt + ', highly detailed scientific illustration, distinct vivid colors for each part so they are easy to tell apart, clean educational diagram style like a biology textbook plate, plain white background, sharp clear linework, absolutely no text, no words, no letters, no numbers, no labels rendered anywhere in the image';
 }
-
-// Génère un vrai schéma vectoriel (SVG) via l'IA plutôt qu'une image photo :
-// un modèle de génération d'image (Pollinations/Flux) ne sait PAS écrire de
-// texte lisible — il ne fait qu'imiter visuellement des lettres, illisibles
-// même en zoomant. Un SVG contient de vrais éléments <text>, donc les
-// légendes sont toujours nettes et lisibles, quel que soit le zoom.
-async function generateSvgDiagramFromChat(prompt, genId) {
+// Demande à l'IA texte une légende courte (5 à 10 éléments) pour le schéma
+// demandé, affichée en vrai HTML sous l'image — toujours lisible, contrairement
+// à du texte dessiné par le générateur d'image. Best-effort : si ça échoue,
+// l'image s'affiche quand même, simplement sans légende.
+async function generateDiagramLegend(userPrompt) {
+ try {
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
- const langInstruction = APP_LANG && APP_LANG !== 'fr' ? (' Écris tous les libellés en ' + (langNames[APP_LANG]||'français') + '.') : ' Écris tous les libellés en français.';
- const sysPrompt = 'Tu es un générateur de schémas pédagogiques en SVG. Réponds UNIQUEMENT avec un unique élément <svg>...</svg> valide et complet, sans balise <script>, sans image externe (<image>/href vers une URL), sans markdown, sans texte avant ou après.' +
- ' Utilise viewBox="0 0 700 700", un rectangle de fond blanc, des formes simples (cercles, rectangles, lignes, chemins) pour représenter les éléments, et de VRAIS éléments <text> (jamais de texte dessiné en chemin) pour chaque légende, avec des lignes fines (<line>) reliant chaque légende à la partie qu\'elle désigne. Utilise des couleurs sobres et contrastées, une mise en page claire et aérée, en évitant que les textes se chevauchent.' + langInstruction;
+ const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
+ const sysPrompt = `Tu réponds UNIQUEMENT avec une liste de 5 à 10 libellés courts (3-8 mots chacun) en ${lang}, un par ligne, sans numérotation, sans tiret, sans texte avant ou après — les éléments qu'un schéma annoté sur ce sujet devrait légender.`;
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
  method:'POST',
  headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 3500, system: sysPrompt, messages:[{ role:'user', content: 'Schéma demandé : ' + prompt }] })
+ body: JSON.stringify({ model: MODEL, max_tokens: 400, system: sysPrompt, messages:[{ role:'user', content: userPrompt }] })
  });
- if (!res.ok) { const err = await res.text(); throw new Error('HTTP ' + res.status + ': ' + err.slice(0,120)); }
+ if (!res.ok) return [];
  const data = await res.json();
- let raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
- // Retire d'éventuelles balises de code markdown (```svg ... ```) autour du SVG.
- raw = raw.replace(/```(?:svg|xml)?/gi, '').trim();
- const match = raw.match(/<svg[\s\S]*<\/svg>/i);
- if (!match) throw new Error('svg-invalide');
- const svg = match[0];
- const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
- const container = document.getElementById(genId);
- if (container) container.innerHTML = renderSvgMsgHTML(svg, prompt, time);
- APP.chatHistory.push({ role:'assistant', content:{ type:'svg', svg, prompt }, time });
- saveChatHistory(APP.currentSubject);
+ const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
+ return raw.split('\n').map(l => l.replace(/^[\s\-•*\d.)]+/, '').trim()).filter(Boolean).slice(0, 10);
+ } catch(e) { return []; }
 }
 
 async function generateImageFromChat() {
@@ -7449,26 +7469,18 @@ async function generateImageFromChat() {
  </div>`;
  scrollChat();
 
- // Schéma/diagramme : on passe par le générateur SVG (vrai texte lisible),
- // avec repli sur l'image photo seulement si la génération SVG échoue —
- // mieux vaut une image imparfaite qu'une bulle bloquée.
+ // Schéma/diagramme : on lance en parallèle l'image (détaillée, sans texte
+ // intégré) et sa légende (vrai texte HTML) — un seul générateur d'image pour
+ // tous les cas, la légende comble ce que l'image ne peut pas rendre lisible.
  const container = document.getElementById(genId);
- if (isDiagramRequest(prompt)) {
+ const wantsLegend = isDiagramRequest(prompt);
  try {
- await generateSvgDiagramFromChat(prompt, genId);
- scrollChat();
- return;
- } catch (svgErr) {
- // on continue vers le repli image photo ci-dessous
- }
- }
- // Pollinations.ai : simple URL, pas de clé API. On précharge l'image avant de
- // l'afficher (avec repli sur un autre modèle/domaine si ça échoue ou traîne),
- // pour ne jamais laisser une bulle vide/bloquée si la génération est lente ou échoue.
- try {
- const imgUrl = await generatePollinationsImage(buildImageGenPrompt(prompt));
- container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time);
- APP.chatHistory.push({ role:'assistant', content:{ type:'image', url:imgUrl, prompt }, time });
+ const [imgUrl, legend] = await Promise.all([
+ generatePollinationsImage(buildImageGenPrompt(prompt)),
+ wantsLegend ? generateDiagramLegend(prompt) : Promise.resolve(null)
+ ]);
+ container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend);
+ APP.chatHistory.push({ role:'assistant', content:{ type:'image', url:imgUrl, prompt, legend }, time });
  saveChatHistory(APP.currentSubject);
  } catch (e) {
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
