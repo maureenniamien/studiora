@@ -2643,6 +2643,23 @@ const ALL_SUBJECTS = [
  { id:'couturecreative', icon:'', name:'Couture Créative', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
  { id:'artsnumeriques', icon:'', name:'Arts Numériques', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
  { id:'slam', icon:'', name:'Slam', color:'#EA580C', soft:'#FCEAE0', border:'rgba(234,88,12,.2)' },
+ // --- Matières ajoutées pour coller aux maquettes officielles MIAGE et Biologie Médicale ---
+ { id:'analysedonnees', icon:'', name:'Analyse de Données', color:'#0B6E4F', soft:'#E3F2EB', border:'#C2E0CF' },
+ { id:'theorielangages', icon:'', name:'Théorie des Langages Formels', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'procedureimportexport', icon:'', name:'Procédures d\'Import-Export', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'droittic', icon:'', name:'Droit des TIC', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'rechercheoperationnelle', icon:'', name:'Recherche Opérationnelle', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'adminsecubdd', icon:'', name:'Administration et Sécurité des Bases de Données', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
+ { id:'businessintelligence', icon:'', name:'Business Intelligence', color:'#1E40AF', soft:'#DBEAFE', border:'rgba(30,64,175,.2)' },
+ { id:'stagegeneral', icon:'', name:'Stage Professionnel', color:'#9333EA', soft:'#F3E8FF', border:'rgba(147,51,234,.2)' },
+ { id:'methodorecherchemem', icon:'', name:'Méthodologie de Recherche et Rédaction de Mémoire', color:'#DB2777', soft:'#FBE5EF', border:'rgba(219,39,119,.2)' },
+ { id:'soinsinfirmiers', icon:'', name:'Soins Infirmiers', color:'#65A30D', soft:'#EEF6E1', border:'#D3E9B6' },
+ { id:'initiationrecherche', icon:'', name:'Initiation à la Recherche', color:'#1D4ED8', soft:'#E4EBFC', border:'#C4D3F7' },
+ { id:'techniquelabo', icon:'', name:'Technique de Laboratoire', color:'#0891B2', soft:'#E0F2FE', border:'rgba(8,145,178,.25)' },
+ { id:'gestiondestock', icon:'', name:'Gestion de Stock', color:'#D13A3A', soft:'#FDEAEA', border:'rgba(209,58,58,.2)' },
+ { id:'biotechlabo', icon:'', name:'Biotechnologie de Laboratoire', color:'#7C3AED', soft:'#EDE9FF', border:'rgba(124,58,237,.2)' },
+ { id:'cytologie', icon:'', name:'Cytologie', color:'#5B4FCF', soft:'#EDE9FF', border:'rgba(91,79,207,.25)' },
+ { id:'entomologievect', icon:'', name:'Entomologie Vectorielle', color:'#C47A0B', soft:'#FEF3DC', border:'rgba(196,122,11,.2)' },
 ];
 
 // Garde-fou définitif contre les doublons (même id OU même nom, accents/casse
@@ -2741,6 +2758,12 @@ const SUBJECT_CATEGORY = {
  yoga:'Arts & Loisirs', bienetrerelaxation:'Arts & Loisirs', nologie:'Arts & Loisirs', patisserieartistique:'Arts & Loisirs', decorationdinterieur:'Arts & Loisirs',
  artisanat:'Arts & Loisirs', broderie:'Arts & Loisirs', tissage:'Arts & Loisirs', couturecreative:'Arts & Loisirs', artsnumeriques:'Arts & Loisirs',
  slam:'Arts & Loisirs',
+ analysedonnees:'Informatique & Numérique', theorielangages:'Informatique & Numérique', adminsecubdd:'Informatique & Numérique', businessintelligence:'Informatique & Numérique',
+ procedureimportexport:'Économie, Gestion & Droit', droittic:'Économie, Gestion & Droit', gestiondestock:'Économie, Gestion & Droit',
+ rechercheoperationnelle:'Sciences & Maths',
+ stagegeneral:'Techniques & Métiers',
+ methodorecherchemem:'Sciences humaines & Culture générale', initiationrecherche:'Sciences humaines & Culture générale', techniqueexpression:'Sciences humaines & Culture générale',
+ soinsinfirmiers:'Santé & Médecine', techniquelabo:'Santé & Médecine', biotechlabo:'Santé & Médecine', cytologie:'Santé & Médecine', entomologievect:'Santé & Médecine',
 };
 function categoryForSubject(id) { return SUBJECT_CATEGORY[id] || 'Autres'; }
 
@@ -2789,11 +2812,11 @@ const SUBJECTS_BY_LEVEL = {
  // qui se poursuit en L2/L3 puis en Master "Biologie Médicale" déjà défini
  // plus bas — même logique de programme d'excellence. Liste construite à
  // partir des programmes de référence de Licence Sciences Biomédicales.
- 'Biologie Médicale': ['biocell','chimiegen','anatomie','biophysique','histo','physiohum','genetique','microbio','math','biostat','info','ang','methodo','terminomed','ethiquesante','hygielab','nutrition','svt'],
+ 'Biologie Médicale': ['biocell','chimiegen','anatomie','biophysique','histo','physiohum','genetique','microbio','math','biostat','info','ang','methodo','terminomed','ethiquesante','hygielab','nutrition','svt','soinsinfirmiers','santepublique','hygienehosp','politiquehosp','initiationrecherche','techexpression','ecologie'],
  },
  'Licence 2': {
  'default': ['math','info','ang','eco','stats'],
- 'MIAGE': ['java','poo','algo','bdd','stats','si','math','uml','mobile','ia','ang'],
+ 'MIAGE': ['java','poo','algo','bdd','stats','si','math','uml','mobile','ia','ang','analysedonnees','theorielangages','procedureimportexport','droittic'],
  'ASSRI': ['java','poo','algo','bdd','si','reseau','math','droit','ang'],
  'Informatique': ['java','poo','algo','bdd','si','mobile','math','uml','ang'],
  'Économie':['eco','stats','compta','gestion','ang'],
@@ -2805,11 +2828,11 @@ const SUBJECTS_BY_LEVEL = {
  'Communication':['comm','marketing','fr','ang','politiq'],
  'Science Politique':['politiq','droitpub','eco','ang','fr'],
  'Biologie': ['physiohum','microbio','biochimie','histo','biostat','ang'],
- 'Biologie Médicale': ['physiohum','biochimie','microbio','bacterio','virologie','parasito','hemato','immuno','genetiquemed','biostat','pharmaco','qualitelab','epidemio','semio','endocrino','enzymo','ang','methodo'],
+ 'Biologie Médicale': ['physiohum','biochimie','microbio','bacterio','virologie','parasito','hemato','immuno','genetiquemed','biostat','pharmaco','qualitelab','epidemio','semio','endocrino','enzymo','ang','methodo','techniquelabo','gestiondestock','biotechlabo','cytologie','entomologievect','cytogenetique','bromato','toxico'],
  },
  'Licence 3': {
  'default': ['info','math','ang','eco','stats'],
- 'MIAGE': ['ia','mobile','reseau','si','bdd','gestion','ang','uml'],
+ 'MIAGE': ['ia','mobile','reseau','si','bdd','gestion','ang','uml','rechercheoperationnelle','gestiondeprojet','adminsecubdd','genielogiciel','businessintelligence','cybersecurite','entrepreneuriat','rh','marketing','stagegeneral','methodorecherchemem'],
  'ASSRI': ['reseau','si','bdd','ia','mobile','droit','ang'],
  'Informatique': ['algo','bdd','si','info','ang'],
  'Économie':['eco','stats','compta','gestion','droit'],
@@ -7457,7 +7480,7 @@ function isDiagramRequest(userPrompt) {
 // sous forme de vrai texte HTML, toujours net.
 function buildImageGenPrompt(userPrompt) {
  if (!isDiagramRequest(userPrompt)) return userPrompt;
- return userPrompt + ', highly detailed scientific illustration, distinct vivid colors for each part so they are easy to tell apart, clean educational diagram style like a biology textbook plate, plain white background, sharp clear linework, absolutely no text, no words, no letters, no numbers, no labels rendered anywhere in the image';
+ return userPrompt + ', flat 2D vector diagram, matte muted natural colors (not neon, not glowing, not saturated), simple clean line art with thin black outlines, minimalist clinical textbook illustration like a printed biology atlas page, orthographic front view, plain white background, no artistic shading, no gradient, no glow effect, no surreal or dreamlike style, no painterly brush texture, absolutely no text, no words, no letters, no numbers, no labels rendered anywhere in the image';
 }
 // Demande à l'IA texte une légende courte (5 à 10 éléments) pour le schéma
 // demandé, affichée en vrai HTML sous l'image — toujours lisible, contrairement
