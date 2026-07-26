@@ -3796,7 +3796,7 @@ function extractDocDirective(text) {
 
 // Bulle d'image générée par IA : réutilisée à la génération ET au rechargement de
 // l'historique (pour que l'image reste visible après avoir quitté/rouvert la conversation).
-function renderImageMsgHTML(url, prompt, time, legend) {
+function renderImageMsgHTML(url, prompt, time, legend, visionError) {
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  // La légende est du vrai texte HTML (pas des pixels) : contrairement au texte
  // que le modèle d'image tenterait de dessiner dans l'image elle-même — jamais
@@ -3810,6 +3810,12 @@ function renderImageMsgHTML(url, prompt, time, legend) {
  const looksLikeApology = s => /je n'ai pas pu|d[ée]sol[ée]|je ne peux pas|impossible de r[ée]pondre/i.test(s||'');
  const validItems = (items && items.length >= 3 && !items.some(it => looksLikeApology(it.label))) ? items : null;
  const hasPositions = validItems && validItems.some(it => typeof it.x === 'number' && typeof it.y === 'number');
+ // Note de diagnostic PERMANENTE (contrairement à un toast qui s'efface en 3s)
+ // quand les positions n'ont pas pu être détectées : reste visible dans la
+ // conversation pour qu'on puisse la relire/la partager sans avoir dû la
+ // voir passer au bon moment.
+ const diagHTML = (validItems && !hasPositions && visionError) ? `
+ <div style="margin-top:6px;padding:8px 10px;background:#FDF2E9;border:1px solid #F2D9BC;border-radius:8px;font-size:11px;color:#8a5a1e">ⓘ Numéros non placés sur l'image — détail technique : ${escHtml(String(visionError).slice(0,200))}</div>` : '';
 
  // Numéros posés directement sur l'image, à la position réelle identifiée par
  // l'analyse vision — pas juste une liste à côté, comme sur un vrai schéma annoté.
@@ -3825,7 +3831,7 @@ function renderImageMsgHTML(url, prompt, time, legend) {
  <ol style="margin:0;padding-left:18px;font-size:13px;color:var(--text1);line-height:1.6">
  ${validItems.map(it=>`<li><b>${escHtml(it.label)}</b>${it.detail ? ' — ' + escHtml(it.detail) : ''}</li>`).join('')}
  </ol>
- </div>` : '';
+ </div>${diagHTML}` : '';
 
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
@@ -3902,7 +3908,7 @@ function downloadGeneratedSvg(svgB64, promptB64) {
 
 function renderMsgHTML(m, idx) {
  if (m.role === 'assistant' && m.content && typeof m.content === 'object' && m.content.type === 'image') {
- return `<div class="msg-row">${renderImageMsgHTML(m.content.url, m.content.prompt, m.time, m.content.legend)}</div>`;
+ return `<div class="msg-row">${renderImageMsgHTML(m.content.url, m.content.prompt, m.time, m.content.legend, m.content.visionError)}</div>`;
  }
  if (m.role === 'assistant' && m.content && typeof m.content === 'object' && m.content.type === 'svg') {
  return `<div class="msg-row">${renderSvgMsgHTML(m.content.svg, m.content.prompt, m.time)}</div>`;
@@ -7648,18 +7654,18 @@ async function generateImageFromChat() {
  generateDiagramLegendVision(imgUrl, prompt).then(legend => {
  if (!legend || !legend.length) {
  // On a épuisé les 3 stratégies de récupération de l'image sans succès :
- // on affiche l'erreur réelle (temporaire, pour diagnostiquer) au lieu de
- // deviner un 4e correctif à l'aveugle.
- showToast('⚠ Positions indisponibles : ' + (window._lastLegendVisionError || 'raison inconnue'));
+ // on garde l'erreur réelle pour l'afficher de façon permanente dans la
+ // bulle (voir plus bas), au lieu d'un toast qui s'efface en 3 secondes.
  return generateDiagramLegendText(prompt);
  }
  return legend;
  }).then(legend => {
  histEntry.content.legend = legend || 'failed';
+ histEntry.content.visionError = window._lastLegendVisionError || null;
  saveChatHistory(APP.currentSubject);
  const c = document.getElementById(genId);
  if (!c) return;
- if (legend) { c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend); return; }
+ if (legend) { c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend, histEntry.content.visionError); return; }
  // Les deux approches ont échoué (réseau coupé, service indisponible...) :
  // on le dit clairement au lieu de laisser l'image seule sans explication,
  // avec un bouton pour retenter juste la légende sans regénérer l'image.
@@ -7688,18 +7694,16 @@ function retryDiagramLegend(genId, promptB64, imgUrl) {
  const c = document.getElementById(genId);
  if (c) c.innerHTML = renderImageMsgHTML(imgUrl, prompt, '', null) + `<div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2)">Nouvel essai de légende...</div>`;
  generateDiagramLegendVision(imgUrl, prompt).then(legend => {
- if (!legend || !legend.length) {
- showToast('⚠ Positions indisponibles : ' + (window._lastLegendVisionError || 'raison inconnue'));
- return generateDiagramLegendText(prompt);
- }
+ if (!legend || !legend.length) return generateDiagramLegendText(prompt);
  return legend;
  }).then(legend => {
  const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
  const idx = APP.chatHistory.findIndex(m => m.content && typeof m.content === 'object' && m.content.type === 'image' && m.content.url === imgUrl && m.content.prompt === prompt);
- if (idx !== -1) { APP.chatHistory[idx].content.legend = legend || 'failed'; saveChatHistory(APP.currentSubject); }
+ const visionErr = window._lastLegendVisionError || null;
+ if (idx !== -1) { APP.chatHistory[idx].content.legend = legend || 'failed'; APP.chatHistory[idx].content.visionError = visionErr; saveChatHistory(APP.currentSubject); }
  const c2 = document.getElementById(genId);
  if (!c2) return;
- if (legend) { c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend); return; }
+ if (legend) { c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend, visionErr); return; }
  const legendPromptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null) + `
  <div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
