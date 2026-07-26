@@ -3779,21 +3779,34 @@ function renderImageMsgHTML(url, prompt, time, legend) {
  // que le modèle d'image tenterait de dessiner dans l'image elle-même — jamais
  // fiable, souvent illisible — ces libellés sont toujours nets, quel que soit
  // le zoom ou la qualité de l'image générée.
- // Filtre aussi au rendu (pas seulement à la génération) : des messages déjà
- // enregistrés avant ce correctif peuvent contenir une légende à un seul
- // élément qui était en fait une excuse du service ("Je n'ai pas pu
- // répondre."), pas un vrai libellé.
- const validLegend = (legend && legend.length >= 3 && !legend.some(l => /je n'ai pas pu|d[ée]sol[ée]|je ne peux pas|impossible de r[ée]pondre/i.test(l))) ? legend : null;
- const legendHTML = validLegend ? `
+ // legend : null (pas de légende), tableau de strings (ancien format, avant
+ // la localisation sur l'image), ou tableau de {label,detail,x,y} (format
+ // enrichi actuel). On accepte les deux pour ne pas casser les anciens
+ // messages déjà enregistrés.
+ const items = Array.isArray(legend) ? legend.map(l => typeof l === 'string' ? { label:l } : l) : null;
+ const looksLikeApology = s => /je n'ai pas pu|d[ée]sol[ée]|je ne peux pas|impossible de r[ée]pondre/i.test(s||'');
+ const validItems = (items && items.length >= 3 && !items.some(it => looksLikeApology(it.label))) ? items : null;
+ const hasPositions = validItems && validItems.every(it => typeof it.x === 'number' && typeof it.y === 'number');
+
+ // Numéros posés directement sur l'image, à la position réelle identifiée par
+ // l'analyse vision — pas juste une liste à côté, comme sur un vrai schéma annoté.
+ const markersHTML = hasPositions ? validItems.map((it,i) => `
+ <div style="position:absolute;left:${it.x}%;top:${it.y}%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:var(--em);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.45);border:2px solid #fff;pointer-events:none">${i+1}</div>`).join('') : '';
+
+ const legendHTML = validItems ? `
  <div style="margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:10px">
  <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:5px">Légende</div>
  <ol style="margin:0;padding-left:18px;font-size:13px;color:var(--text1);line-height:1.6">
- ${validLegend.map(l=>`<li>${escHtml(l)}</li>`).join('')}
+ ${validItems.map(it=>`<li><b>${escHtml(it.label)}</b>${it.detail ? ' — ' + escHtml(it.detail) : ''}</li>`).join('')}
  </ol>
  </div>` : '';
+
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
- <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}'))" onerror="this.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
+ <div style="position:relative;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}'))">
+ <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
+ ${markersHTML}
+ </div>
  ${legendHTML}
  </div>
  <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
@@ -7450,29 +7463,48 @@ function buildImageGenPrompt(userPrompt) {
 // demandé, affichée en vrai HTML sous l'image — toujours lisible, contrairement
 // à du texte dessiné par le générateur d'image. Best-effort : si ça échoue,
 // l'image s'affiche quand même, simplement sans légende.
-async function generateDiagramLegend(userPrompt) {
+// Analyse l'image RÉELLEMENT générée (pas une supposition à l'aveugle sur le
+// prompt) pour situer chaque légende à l'endroit correct : envoie l'image à
+// l'IA vision et lui demande, pour chaque élément identifié, un libellé, une
+// courte explication et sa position (x/y en % de l'image) — de quoi poser un
+// numéro directement sur l'image, comme sur un vrai schéma annoté.
+async function generateDiagramLegendVision(imgUrl, userPrompt) {
  try {
+ const resp = await fetch(imgUrl);
+ const blob = await resp.blob();
+ const base64 = await new Promise((resolve, reject) => {
+ const r = new FileReader();
+ r.onload = () => resolve(r.result.split(',')[1]);
+ r.onerror = reject;
+ r.readAsDataURL(blob);
+ });
+ const mediaType = blob.type || 'image/jpeg';
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
- const sysPrompt = `Tu réponds UNIQUEMENT avec une liste de 5 à 10 libellés courts (3-8 mots chacun) en ${lang}, un par ligne, sans numérotation, sans tiret, sans texte avant ou après — les éléments qu'un schéma annoté sur ce sujet devrait légender.`;
+ const sysPrompt = `Tu regardes une image et tu identifies 8 à 14 éléments visibles pertinents pour le sujet donné, du plus important au moins important. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}","x":nombre,"y":nombre}]. x et y sont la position du CENTRE de cet élément sur l'image, en pourcentage de la largeur/hauteur (0 = bord gauche/haut, 100 = bord droit/bas). Base-toi uniquement sur ce que tu vois réellement dans l'image fournie.`;
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
  method:'POST',
  headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 500, system: sysPrompt, messages:[{ role:'user', content: 'Sujet du schéma : ' + userPrompt }] })
+ body: JSON.stringify({
+ model: MODEL, max_tokens: 1400, system: sysPrompt,
+ messages:[{ role:'user', content:[
+ { type:'image', source:{ type:'base64', media_type: mediaType, data: base64 } },
+ { type:'text', text: 'Sujet du schéma : ' + userPrompt }
+ ]}]
+ })
  });
- if (!res.ok) return [];
+ if (!res.ok) return null;
  const data = await res.json();
  const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
- const lines = raw.split('\n').map(l => l.replace(/^[\s\-•*\d.)]+/, '').trim()).filter(Boolean).slice(0, 10);
- // Le service texte renvoie parfois, en cas d'échec interne, une phrase
- // d'excuse ("Je n'ai pas pu répondre.") au lieu d'une vraie erreur HTTP —
- // sans ce filtre, cette phrase s'affichait telle quelle comme légende à
- // un seul élément. On exige plusieurs lignes ET on écarte tout ce qui
- // ressemble à un refus/une excuse plutôt qu'à un vrai libellé.
- const looksLikeApology = s => /je n'ai pas pu|d[ée]sol[ée]|je ne peux pas|impossible de r[ée]pondre|en tant qu'ia/i.test(s);
- if (lines.length < 3 || lines.some(looksLikeApology)) return [];
- return lines;
- } catch(e) { return []; }
+ const match = raw.match(/\[[\s\S]*\]/);
+ if (!match) return null;
+ const parsed = JSON.parse(match[0]);
+ if (!Array.isArray(parsed) || parsed.length < 3) return null;
+ return parsed
+ .filter(it => it && it.label && typeof it.x === 'number' && typeof it.y === 'number')
+ .map(it => ({ label:String(it.label).slice(0,60), detail: it.detail ? String(it.detail).slice(0,150) : '', x:Math.max(2,Math.min(98,it.x)), y:Math.max(2,Math.min(98,it.y)) }))
+ .slice(0, 14);
+ } catch(e) { return null; }
 }
 
 async function generateImageFromChat() {
@@ -7504,19 +7536,28 @@ async function generateImageFromChat() {
  </div>`;
  scrollChat();
 
- // Schéma/diagramme : on lance en parallèle l'image (détaillée, sans texte
- // intégré) et sa légende (vrai texte HTML) — un seul générateur d'image pour
- // tous les cas, la légende comble ce que l'image ne peut pas rendre lisible.
+ // Un seul générateur d'image pour tous les cas. Pour un schéma/diagramme,
+ // l'image s'affiche dès qu'elle est prête (pas d'attente), puis la légende
+ // positionnée arrive quelques secondes après — elle demande une analyse
+ // vision de l'image réellement générée, plus lente que la génération elle-même.
  const container = document.getElementById(genId);
  const wantsLegend = isDiagramRequest(prompt);
  try {
- const [imgUrl, legend] = await Promise.all([
- generatePollinationsImage(buildImageGenPrompt(prompt)),
- wantsLegend ? generateDiagramLegend(prompt) : Promise.resolve(null)
- ]);
- container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend);
- APP.chatHistory.push({ role:'assistant', content:{ type:'image', url:imgUrl, prompt, legend }, time });
+ const imgUrl = await generatePollinationsImage(buildImageGenPrompt(prompt));
+ container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null);
+ const histEntry = { role:'assistant', content:{ type:'image', url:imgUrl, prompt, legend:null }, time };
+ APP.chatHistory.push(histEntry);
  saveChatHistory(APP.currentSubject);
+ scrollChat();
+ if (wantsLegend) {
+ generateDiagramLegendVision(imgUrl, prompt).then(legend => {
+ if (!legend) return;
+ histEntry.content.legend = legend;
+ saveChatHistory(APP.currentSubject);
+ const c = document.getElementById(genId);
+ if (c) c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend);
+ });
+ }
  } catch (e) {
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  container.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px">
