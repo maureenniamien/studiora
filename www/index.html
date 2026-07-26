@@ -3779,11 +3779,16 @@ function renderImageMsgHTML(url, prompt, time, legend) {
  // que le modèle d'image tenterait de dessiner dans l'image elle-même — jamais
  // fiable, souvent illisible — ces libellés sont toujours nets, quel que soit
  // le zoom ou la qualité de l'image générée.
- const legendHTML = (legend && legend.length) ? `
+ // Filtre aussi au rendu (pas seulement à la génération) : des messages déjà
+ // enregistrés avant ce correctif peuvent contenir une légende à un seul
+ // élément qui était en fait une excuse du service ("Je n'ai pas pu
+ // répondre."), pas un vrai libellé.
+ const validLegend = (legend && legend.length >= 3 && !legend.some(l => /je n'ai pas pu|d[ée]sol[ée]|je ne peux pas|impossible de r[ée]pondre/i.test(l))) ? legend : null;
+ const legendHTML = validLegend ? `
  <div style="margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:10px">
  <div style="font-size:11px;color:var(--text3);font-weight:700;margin-bottom:5px">Légende</div>
  <ol style="margin:0;padding-left:18px;font-size:13px;color:var(--text1);line-height:1.6">
- ${legend.map(l=>`<li>${escHtml(l)}</li>`).join('')}
+ ${validLegend.map(l=>`<li>${escHtml(l)}</li>`).join('')}
  </ol>
  </div>` : '';
  return `<div>
@@ -7453,12 +7458,20 @@ async function generateDiagramLegend(userPrompt) {
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
  method:'POST',
  headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 400, system: sysPrompt, messages:[{ role:'user', content: userPrompt }] })
+ body: JSON.stringify({ model: MODEL, max_tokens: 500, system: sysPrompt, messages:[{ role:'user', content: 'Sujet du schéma : ' + userPrompt }] })
  });
  if (!res.ok) return [];
  const data = await res.json();
  const raw = (data.content && data.content[0] ? data.content[0].text : '') || '';
- return raw.split('\n').map(l => l.replace(/^[\s\-•*\d.)]+/, '').trim()).filter(Boolean).slice(0, 10);
+ const lines = raw.split('\n').map(l => l.replace(/^[\s\-•*\d.)]+/, '').trim()).filter(Boolean).slice(0, 10);
+ // Le service texte renvoie parfois, en cas d'échec interne, une phrase
+ // d'excuse ("Je n'ai pas pu répondre.") au lieu d'une vraie erreur HTTP —
+ // sans ce filtre, cette phrase s'affichait telle quelle comme légende à
+ // un seul élément. On exige plusieurs lignes ET on écarte tout ce qui
+ // ressemble à un refus/une excuse plutôt qu'à un vrai libellé.
+ const looksLikeApology = s => /je n'ai pas pu|d[ée]sol[ée]|je ne peux pas|impossible de r[ée]pondre|en tant qu'ia/i.test(s);
+ if (lines.length < 3 || lines.some(looksLikeApology)) return [];
+ return lines;
  } catch(e) { return []; }
 }
 
