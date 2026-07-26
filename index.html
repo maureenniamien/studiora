@@ -278,6 +278,28 @@ table[data-sheet] td:focus{-webkit-user-select:text;user-select:text}
 </head>
 <body style="touch-action:manipulation">
 
+<!-- ═══════════════════ SPLASH DE DÉMARRAGE ═══════════════════ -->
+<!-- Premier élément du body : couvre tout l'écran dès que la page commence à
+ s'afficher (avant même que le reste du JS ne détermine quel écran montrer),
+ pour qu'il n'y ait jamais de flash de noir ou de contenu à moitié chargé.
+ hideAppSplash() le retire une fois que _runInit() a choisi l'écran suivant. -->
+<div id="app-splash" style="position:fixed;inset:0;z-index:999998;background:var(--em);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .35s ease">
+ <div style="width:88px;height:88px;border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 30px rgba(0,0,0,.18)">
+ <span style="font-size:44px;font-weight:900;color:var(--em);font-family:'Plus Jakarta Sans',sans-serif">S</span>
+ </div>
+ <div style="margin-top:16px;font-size:22px;font-weight:900;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:.3px">Studiora</div>
+ <div style="position:fixed;left:0;right:0;bottom:max(env(safe-area-inset-bottom,0px) + 22px, 28px);text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.75);letter-spacing:1px">MAURDEV</div>
+</div>
+<script>
+function hideAppSplash() {
+ var el = document.getElementById('app-splash');
+ if (!el) return;
+ el.style.opacity = '0';
+ setTimeout(function(){ el.remove(); }, 350);
+}
+setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le splash
+</script>
+
 <!-- ═══════════════════ ONBOARDING ═══════════════════ -->
 <div id="screen-onboarding" class="screen">
  <h1 class="display" style="font-size:38px;font-weight:900;line-height:1.1;margin-bottom:10px;color:var(--em2)">Studiora</h1>
@@ -10348,9 +10370,11 @@ function _runInit() {
  } else {
  showScreen('screen-onboarding');
  }
+ hideAppSplash();
  } catch(e) {
  console.error('Init error:', e.message);
  try { showScreen('screen-onboarding'); } catch(e2) {}
+ hideAppSplash();
  }
 }
 // On attend que tout le HTML (dont la nav) soit parsé
