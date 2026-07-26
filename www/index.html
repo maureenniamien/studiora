@@ -7561,7 +7561,16 @@ async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  // d'abandonner cette approche pour le repli texte seul (sans positions).
  window._lastLegendVisionError = (strategy + ': ' + (e && e.message || e));
  console.warn('Analyse vision du schéma échouée (' + strategy + ') :', e && e.message);
- if (attempt < 3) return generateDiagramLegendVision(imgUrl, userPrompt, attempt+1);
+ if (attempt < 3) {
+ // Une limite de débit ("rate limit") côté fournisseur IA a besoin d'un
+ // vrai temps de repos pour se libérer — retenter tout de suite dans la
+ // foulée retombe presque toujours sur la même limite. On attend donc plus
+ // longtemps spécifiquement dans ce cas (5s), et un peu quand même sinon
+ // (1.5s) pour laisser une éventuelle erreur réseau ponctuelle se résorber.
+ const isRateLimit = /rate limit|rate_limit|429/i.test(String(e && e.message));
+ await new Promise(r => setTimeout(r, isRateLimit ? 5000 : 1500));
+ return generateDiagramLegendVision(imgUrl, userPrompt, attempt+1);
+ }
  return null;
  }
 }
