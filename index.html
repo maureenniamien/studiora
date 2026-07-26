@@ -7478,12 +7478,12 @@ function isDiagramRequest(userPrompt) {
 // texte lisible dans une image — il ne fait qu'imiter visuellement des
 // lettres, ce qui donne un charabia illisible (voire pire : un rendu façon
 // "planche couverte de texte" quand on lui demande explicitement des
-// légendes). On lui demande donc une illustration détaillée et colorée SANS
+// légendes). On lui demande donc une illustration détaillée et réaliste SANS
 // aucun texte, et on obtient les légendes à part (voir generateDiagramLegend)
 // sous forme de vrai texte HTML, toujours net.
 function buildImageGenPrompt(userPrompt) {
  if (!isDiagramRequest(userPrompt)) return userPrompt;
- return userPrompt + ', flat 2D vector diagram, matte muted natural colors (not neon, not glowing, not saturated), simple clean line art with thin black outlines, minimalist clinical textbook illustration like a printed biology atlas page, orthographic front view, plain white background, no artistic shading, no gradient, no glow effect, no surreal or dreamlike style, no painterly brush texture, absolutely no text, no words, no letters, no numbers, no labels rendered anywhere in the image';
+ return userPrompt + ', realistic detailed medical/scientific textbook illustration, anatomically accurate, professional educational atlas style like Netter\'s Atlas of Human Anatomy or a university biology textbook plate, natural realistic colors and shading, precise fine details, high resolution scientific rendering, photographic quality where appropriate, plain neutral background, NOT flat design, NOT cartoon, NOT icon style, NOT abstract, NOT vector art, NOT minimalist, absolutely no text, no words, no letters, no numbers, no labels rendered anywhere in the image';
 }
 // Demande à l'IA texte une légende courte (5 à 10 éléments) pour le schéma
 // demandé, affichée en vrai HTML sous l'image — toujours lisible, contrairement
@@ -7497,6 +7497,20 @@ function buildImageGenPrompt(userPrompt) {
 async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  attempt = attempt || 1;
  try {
+ const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
+ const sysPrompt = `Tu regardes une image et tu identifies 8 à 14 éléments visibles pertinents pour le sujet donné, du plus important au moins important. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}","x":nombre,"y":nombre}]. x et y sont la position du CENTRE de cet élément sur l'image, en pourcentage de la largeur/hauteur (0 = bord gauche/haut, 100 = bord droit/bas). Base-toi uniquement sur ce que tu vois réellement dans l'image fournie.`;
+ // On essaie d'abord de passer l'URL de l'image directement au modèle de
+ // vision (le serveur la récupère lui-même, sans restriction CORS) plutôt que
+ // de la re-télécharger nous-mêmes en base64 depuis le navigateur : les CDN
+ // d'images publics (pollinations.ai...) n'autorisent en général pas la
+ // lecture cross-origin en JS, donc ce fetch() échouait systématiquement
+ // ("Failed to fetch"), faisant croire à une "analyse vision" alors qu'elle
+ // n'était en réalité JAMAIS tentée — d'où l'absence totale de numéros sur
+ // l'image, à chaque génération, sans exception.
+ const imageBlock = attempt === 1
+ ? { type:'image', source:{ type:'url', url: imgUrl } }
+ : await (async () => {
  const resp = await fetch(imgUrl);
  const blob = await resp.blob();
  const base64 = await new Promise((resolve, reject) => {
@@ -7505,17 +7519,15 @@ async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  r.onerror = reject;
  r.readAsDataURL(blob);
  });
- const mediaType = blob.type || 'image/jpeg';
- const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
- const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
- const sysPrompt = `Tu regardes une image et tu identifies 8 à 14 éléments visibles pertinents pour le sujet donné, du plus important au moins important. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}","x":nombre,"y":nombre}]. x et y sont la position du CENTRE de cet élément sur l'image, en pourcentage de la largeur/hauteur (0 = bord gauche/haut, 100 = bord droit/bas). Base-toi uniquement sur ce que tu vois réellement dans l'image fournie.`;
+ return { type:'image', source:{ type:'base64', media_type: blob.type || 'image/jpeg', data: base64 } };
+ })();
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
  method:'POST',
  headers:{'Content-Type':'application/json'},
  body: JSON.stringify({
  model: MODEL, max_tokens: 1400, system: sysPrompt,
  messages:[{ role:'user', content:[
- { type:'image', source:{ type:'base64', media_type: mediaType, data: base64 } },
+ imageBlock,
  { type:'text', text: 'Sujet du schéma : ' + userPrompt }
  ]}]
  })
@@ -7539,6 +7551,10 @@ async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  // Une transcription/erreur réseau ponctuelle ne doit pas priver l'utilisateur
  // de légende positionnée : deux essais supplémentaires (3 au total) avant
  // d'abandonner cette approche pour le repli texte seul (sans positions).
+ // Le 2e essai bascule automatiquement sur la conversion base64 (voir
+ // imageBlock ci-dessus) au cas où le passage par URL échouerait pour une
+ // autre raison (image expirée, service de vision qui ne supporte pas les
+ // URL externes, etc.).
  if (attempt < 3) return generateDiagramLegendVision(imgUrl, userPrompt, attempt+1);
  return null;
  }
@@ -8414,15 +8430,16 @@ async function startQuizLibre(topic) {
  const btnTxt=document.getElementById('quiz-btn-text');
  btn.disabled=true; btnTxt.textContent=' Génération en cours...';
  const level=APP.user.level||'Licence 2';
- const prompt='Genere exactement '+selectedNQ+' questions QCM de niveau "'+selectedDiff+'" sur ce sujet libre: '+topic+'. Reponds UNIQUEMENT en JSON valide: {"questions":[{"q":"question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"La bonne reponse est A) ..."}]}';
- try {
- const quizLibreMaxTokens = Math.min(8000, 400 + selectedNQ*180);
+ async function fetchQuizLibreBatch(n) {
+ const prompt='Genere exactement '+n+' questions QCM de niveau "'+selectedDiff+'" sur ce sujet libre: '+topic+'. Reponds UNIQUEMENT en JSON valide: {"questions":[{"q":"question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"La bonne reponse est A) ..."}]}';
+ const quizLibreMaxTokens = Math.min(8000, 400 + n*180);
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:MODEL,max_tokens:quizLibreMaxTokens,
  system:'Tu es un generateur de QCM. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres.',
  messages:[{role:'user',content:prompt}]})
  });
+ if(!res.ok) throw new Error('HTTP '+res.status);
  const data=await res.json();
  let raw=(data.content&&data.content[0]?data.content[0].text:'')||'{}';
  raw=extractJsonBlock(raw);
@@ -8431,10 +8448,38 @@ async function startQuizLibre(topic) {
  try { parsed=JSON.parse(raw); }
  catch(je) {
  try { parsed = repairTruncatedJson(raw); }
- catch(je2) { throw new Error('JSON invalide — Réessaie ou baisse le nombre de questions.'); }
+ catch(je2) { throw new Error('JSON invalide'); }
  }
- APP.quizQuestions=parsed.questions||[];
+ return parsed.questions || [];
+ }
+ async function fetchWithRetry(n) {
+ let lastErr;
+ for (let attempt=0; attempt<3; attempt++) {
+ try { return await fetchQuizLibreBatch(n); } catch(e) { lastErr = e; }
+ }
+ throw lastErr;
+ }
+ try {
+ let questions = [];
+ try { questions = await fetchWithRetry(selectedNQ); } catch(e) { questions = []; }
+ // On ne livre jamais moins que le nombre demandé sans avoir essayé de
+ // compléter : tant qu'il en manque, on redemande exactement le manque,
+ // dans la limite d'une sécurité anti-boucle infinie (6 tours).
+ let rounds = 0;
+ while (questions.length < selectedNQ && rounds < 6) {
+ const missing = selectedNQ - questions.length;
+ try {
+ const extra = await fetchWithRetry(missing);
+ if (extra && extra.length) questions = questions.concat(extra);
+ else rounds++;
+ } catch(e) { rounds++; }
+ }
+ questions = questions.slice(0, selectedNQ);
+ APP.quizQuestions = questions;
  if(APP.quizQuestions.length===0) throw new Error('empty');
+ if (APP.quizQuestions.length < selectedNQ) {
+ showToast(`⚠ ${APP.quizQuestions.length}/${selectedNQ} questions générées (service indisponible après plusieurs tentatives) — quiz lancé quand même`);
+ }
  APP.quizIndex=0; APP.quizScore=0; APP.quizAnswers=[];
  // Clé stable par sujet de quiz libre (au lieu du seul id générique
  // "quiz-libre" partagé par tous les thèmes) : chaque thème garde son
@@ -8544,6 +8589,25 @@ async function startQuiz() {
  }
  throw lastErr;
  }
+ // Complète la liste jusqu'au nombre demandé, quel que soit le nombre de
+ // questions manquantes ou de tentatives ratées : on ne se contente jamais
+ // de "livrer moins" (ex: 4 questions générées sur 5 demandées). On boucle en
+ // demandant à chaque tour exactement ce qu'il manque encore, avec une limite
+ // de sécurité (6 tours) pour ne pas boucler indéfiniment si le service est
+ // réellement en panne — cette limite est très large pour un usage normal :
+ // même avec plusieurs échecs partiels, quelques tours suffisent à combler.
+ async function fillToTarget(questions, target) {
+ let rounds = 0;
+ while (questions.length < target && rounds < 6) {
+ const missing = target - questions.length;
+ try {
+ const extra = await generateBatchWithRetry(Math.min(BATCH, missing));
+ if (extra && extra.length) questions = questions.concat(extra);
+ else rounds++;
+ } catch(e) { rounds++; }
+ }
+ return questions.slice(0, target);
+ }
 
  try {
  let allQuestions = [];
@@ -8563,22 +8627,21 @@ async function startQuiz() {
  continue;
  }
  }
- // Rattrapage : si on est encore court à la fin (lots incomplets ou échecs), on
- // retente une fois le nombre de questions manquantes avant de rendre la main.
- if (allQuestions.length < selectedNQ) {
- const missing = selectedNQ - allQuestions.length;
- try {
- const extra = await generateBatchWithRetry(Math.min(BATCH, missing));
- allQuestions = allQuestions.concat(extra);
- } catch(e) { /* on part avec ce qu'on a */ }
- }
  } else {
- allQuestions = await generateBatchWithRetry(selectedNQ);
+ try { allQuestions = await generateBatchWithRetry(selectedNQ); }
+ catch(e) { allQuestions = []; }
+ }
+ // Rattrapage (petit ou gros quiz) : tant qu'il manque des questions, on en
+ // redemande, jusqu'à atteindre exactement le nombre voulu ou la limite de
+ // sécurité ci-dessus.
+ if (allQuestions.length < selectedNQ) {
+ btnTxt.textContent = ` Génération en cours... (${allQuestions.length}/${selectedNQ})`;
+ allQuestions = await fillToTarget(allQuestions, selectedNQ);
  }
  APP.quizQuestions = allQuestions;
  if(APP.quizQuestions.length===0) throw new Error('empty');
  if (APP.quizQuestions.length < selectedNQ) {
- showToast(`⚠ ${APP.quizQuestions.length}/${selectedNQ} questions générées (le reste a échoué) — quiz lancé quand même`);
+ showToast(`⚠ ${APP.quizQuestions.length}/${selectedNQ} questions générées (service indisponible après plusieurs tentatives) — quiz lancé quand même`);
  }
  APP.quizIndex = 0; APP.quizScore = 0; APP.quizAnswers = [];
  launchQuiz();
