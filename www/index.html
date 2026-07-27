@@ -3815,7 +3815,7 @@ function renderImageMsgHTML(url, prompt, time, legend, visionError) {
  // conversation pour qu'on puisse la relire/la partager sans avoir dû la
  // voir passer au bon moment.
  const diagHTML = (validItems && !hasPositions && visionError) ? `
- <div style="margin-top:6px;padding:8px 10px;background:#FDF2E9;border:1px solid #F2D9BC;border-radius:8px;font-size:11px;color:#8a5a1e">ⓘ Numéros non placés sur l'image — détail technique : ${escHtml(String(visionError).slice(0,200))}</div>` : '';
+ <div style="margin-top:6px;padding:8px 10px;background:#FDF2E9;border:1px solid #F2D9BC;border-radius:8px;font-size:11px;color:#8a5a1e">ⓘ Numéros sur l'image bientôt disponibles — en attendant, la légende ci-dessus reste complète et à jour.</div>` : '';
 
  // Numéros posés directement sur l'image, à la position réelle identifiée par
  // l'analyse vision — pas juste une liste à côté, comme sur un vrai schéma annoté.
@@ -7528,7 +7528,13 @@ async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  try {
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
- const sysPrompt = `Tu regardes une image et tu identifies 8 à 14 éléments visibles pertinents pour le sujet donné, du plus important au moins important. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}","x":nombre,"y":nombre}]. x et y sont la position du CENTRE de cet élément sur l'image, en pourcentage de la largeur/hauteur (0 = bord gauche/haut, 100 = bord droit/bas). Base-toi uniquement sur ce que tu vois réellement dans l'image fournie.`;
+ const sysPrompt = `Tu regardes une image et tu identifies 8 à 14 éléments visibles pertinents pour le sujet donné, du plus important au moins important.
+
+Pour localiser précisément chaque élément, imagine une grille de repérage superposée à l'image : 10 colonnes numérotées de 0 à 100 (par pas de 10) de gauche à droite, et 10 lignes numérotées de 0 à 100 (par pas de 10) de haut en bas. Pour chaque élément, repère d'abord dans quelle case de cette grille se trouve son CENTRE VISUEL réel (pas une estimation vague), puis affine x et y à l'intérieur de cette case (valeur précise entre les deux graduations les plus proches). Vérifie mentalement que le point (x,y) tombe bien À L'INTÉRIEUR de la forme de l'élément que tu décris, pas à côté ni sur un élément voisin.
+
+Donne des coordonnées x/y pour TOUS les éléments dont l'emplacement est visuellement identifiable dans l'image (c'est le cas de la grande majorité d'un schéma anatomique/scientifique bien composé) ; omets x/y UNIQUEMENT pour un concept réellement abstrait sans emplacement visuel propre (ex: "système nerveux" comme concept général plutôt qu'un organe précis).
+
+Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}","x":nombre,"y":nombre}]. x et y sont en pourcentage de la largeur/hauteur de l'image (0 = bord gauche/haut, 100 = bord droit/bas). Base-toi uniquement sur ce que tu vois réellement dans l'image fournie.`;
  // Les CDN d'images publics (pollinations.ai...) n'envoient pas d'en-têtes
  // CORS, donc fetch(imgUrl) échoue depuis le navigateur ("Failed to fetch")
  // — on essaie donc plusieurs façons de récupérer les octets de l'image
@@ -9672,7 +9678,7 @@ async function saveCourseToDatabase(title, subject, snippet, fullText, result, a
 
 // Récupère les documents partagés par d'autres étudiants du même niveau/filière — VIP uniquement
 async function fetchSharedDocuments() {
- if (!APP.user || APP.user.plan !== 'vip') return [];
+ if (!APP.user || !(isAdmin()||getPlan()==='vip'||isExceptionUser())) return [];
  const level = APP.user.level || '';
  const filiere = APP.user.filiere || '';
  try {
@@ -9801,7 +9807,7 @@ function renderCoursesInTravaux() {
 async function renderSharedDocs() {
  const el = document.getElementById('shared-docs-list');
  if (!el) return;
- if (APP.user.plan !== 'vip') {
+ if (!(isAdmin()||getPlan()==='vip'||isExceptionUser())) {
  el.innerHTML = `<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;border-radius:12px;padding:16px;text-align:center">
  <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px"> Réservé aux membres VIP</div>
  <div style="font-size:11px;color:#92400e;margin-bottom:10px">Accède aux cours partagés par les étudiants de ton niveau et ta filière</div>
