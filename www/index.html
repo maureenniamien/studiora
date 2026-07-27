@@ -7542,7 +7542,14 @@ function buildImageGenPrompt(userPrompt) {
 // essaie donc l'une après l'autre, et surtout on garde la dernière erreur
 // rencontrée (window._lastLegendVisionError) pour pouvoir enfin diagnostiquer
 // précisément si ça échoue encore, au lieu de re-deviner à l'aveugle.
+// Mémorise les octets déjà récupérés par URL : rejouer juste l'analyse (bouton
+// "Réessayer") n'a pas besoin de re-télécharger/re-proxifier la même image —
+// c'était l'étape la plus lente et la plus sujette à échec (proxys CORS), et
+// la reprendre à chaque nouvel essai rendait "Réessayer" peu utile en pratique.
+const _imageBytesCache = new Map();
 async function _fetchImageAsBase64(imgUrl, strategy) {
+ const cacheKey = imgUrl;
+ if (_imageBytesCache.has(cacheKey)) return _imageBytesCache.get(cacheKey);
  let fetchUrl = imgUrl;
  if (strategy === 'wsrv') fetchUrl = 'https://wsrv.nl/?url=' + encodeURIComponent(imgUrl) + '&output=jpg';
  else if (strategy === 'corsproxy') fetchUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(imgUrl);
@@ -7556,7 +7563,9 @@ async function _fetchImageAsBase64(imgUrl, strategy) {
  r.onerror = reject;
  r.readAsDataURL(blob);
  });
- return { base64, mediaType: blob.type || 'image/jpeg' };
+ const result = { base64, mediaType: blob.type || 'image/jpeg' };
+ _imageBytesCache.set(cacheKey, result);
+ return result;
 }
 // Plafonne la durée totale d'une promesse : la chaîne légende-vision peut
 // s'y reprendre à 3 fois (plusieurs proxys, plusieurs attentes en cas de
@@ -7684,10 +7693,16 @@ async function generateImageFromChat() {
  el.innerHTML += renderMsgHTML({ role:'user', content:displayText }, APP.chatHistory.length-1);
 
  const genId = 'imggen-' + Date.now();
+ // État d'annulation partagé : vérifié après chaque étape (génération de
+ // l'image, puis légende) pour arrêter net dès que "Stop" est cliqué, au lieu
+ // d'attendre la fin d'une étape qui peut être longue.
+ const genState = { cancelled:false };
+ _activeGenerations[genId] = genState;
  el.innerHTML += `<div id="${genId}" class="msg-row">
  <div class="msg-bubble ai" style="padding:12px 16px">
- <div style="display:flex;gap:5px;align-items:center">
- <div class="typing-dot"></div><div class="typing-dot"></div> ◆ Génération de l'image...
+ <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
+ <div style="display:flex;gap:5px;align-items:center"><div class="typing-dot"></div><div class="typing-dot"></div> ◆ Génération de l'image...</div>
+ <button onclick="cancelGeneration('${genId}')" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">■ Stop</button>
  </div>
  </div>
  </div>`;
@@ -7701,6 +7716,7 @@ async function generateImageFromChat() {
  const wantsLegend = isDiagramRequest(prompt);
  try {
  const imgUrl = await generatePollinationsImage(buildImageGenPrompt(prompt));
+ if (genState.cancelled) return;
  container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null);
  const histEntry = { role:'assistant', content:{ type:'image', url:imgUrl, prompt, legend:null }, time };
  APP.chatHistory.push(histEntry);
@@ -7716,6 +7732,7 @@ async function generateImageFromChat() {
  }
  return legend;
  }).then(legend => {
+ if (genState.cancelled) return;
  histEntry.content.legend = legend || 'failed';
  histEntry.content.visionError = window._lastLegendVisionError || null;
  saveChatHistory(APP.currentSubject);
@@ -7726,21 +7743,34 @@ async function generateImageFromChat() {
  // on le dit clairement au lieu de laisser l'image seule sans explication,
  // avec un bouton pour retenter juste la légende sans regénérer l'image.
  const legendPromptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
- c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null) + `
+ c.innerHTML = `<div>${renderImageMsgHTML(imgUrl, prompt, time, null)}
  <div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
  <span>⚠ Légende indisponible (problème réseau)</span>
  <button onclick="retryDiagramLegend('${genId}','${legendPromptB64}',atob('${btoa(imgUrl)}'))" style="background:var(--em);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">↻ Réessayer</button>
- </div>`;
+ </div></div>`;
  });
  }
  } catch (e) {
+ delete _activeGenerations[genId];
+ if (genState.cancelled) return; // "Stop" a déjà affiché son propre message
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  container.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px">
  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">✕ Image indisponible pour le moment (service saturé).</div>
  <button onclick="regenerateImageFromPrompt('${promptB64}')" style="background:var(--em);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Réessayer</button>
  </div>`;
  }
+ delete _activeGenerations[genId];
  scrollChat();
+}
+
+// Registre des générations en cours, pour que le bouton "Stop" puisse
+// retrouver et couper l'état d'annulation partagé de la bonne génération.
+const _activeGenerations = {};
+function cancelGeneration(genId) {
+ const genState = _activeGenerations[genId];
+ if (genState) genState.cancelled = true;
+ const c = document.getElementById(genId);
+ if (c) c.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px;color:var(--text3);font-size:13px">Génération annulée.</div>`;
 }
 
 // Retente uniquement la légende (sans regénérer l'image) depuis le bouton
@@ -7748,7 +7778,10 @@ async function generateImageFromChat() {
 function retryDiagramLegend(genId, promptB64, imgUrl) {
  const prompt = decodeURIComponent(escape(atob(promptB64)));
  const c = document.getElementById(genId);
- if (c) c.innerHTML = renderImageMsgHTML(imgUrl, prompt, '', null) + `<div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2)">Nouvel essai de légende...</div>`;
+ // Un seul élément englobant (pas deux <div> côte à côte) : le conteneur du
+ // message est en flex-row, donc deux enfants directs s'affichaient l'un à
+ // côté de l'autre au lieu de l'un sous l'autre.
+ if (c) c.innerHTML = `<div>${renderImageMsgHTML(imgUrl, prompt, '', null)}<div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2)">Nouvel essai de légende...</div></div>`;
  withTimeout(generateDiagramLegendVision(imgUrl, prompt), 25000).then(legend => {
  if (!legend || !legend.length) return generateDiagramLegendText(prompt);
  return legend;
@@ -7761,11 +7794,11 @@ function retryDiagramLegend(genId, promptB64, imgUrl) {
  if (!c2) return;
  if (legend) { c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend, visionErr); return; }
  const legendPromptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
- c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null) + `
+ c2.innerHTML = `<div>${renderImageMsgHTML(imgUrl, prompt, time, null)}
  <div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
  <span>⚠ Légende indisponible (problème réseau)</span>
  <button onclick="retryDiagramLegend('${genId}','${legendPromptB64}',atob('${btoa(imgUrl)}'))" style="background:var(--em);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">↻ Réessayer</button>
- </div>`;
+ </div></div>`;
  });
 }
 
