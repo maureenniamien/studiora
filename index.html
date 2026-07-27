@@ -6907,10 +6907,12 @@ let _voiceMicBtnId = 'mic-btn'; // bouton dont on change l'apparence pendant l'�
 let _voiceAppendNewline = false; // true pour l'outil de transcription (une ligne par prise de parole)
 let _voiceSessionIsTranscription = false; // capture figée au démarrage (le quota s'applique seulement à l'outil de transcription)
 let _voiceSessionStartTs = 0;
+let _lastInputWasVoice = false; // vrai si le texte du champ vient de la voix (pour lire la réponse automatiquement)
 
 function _voiceInsertText(text) {
  const el = document.getElementById(_voiceTargetId);
  if (!el) return;
+ if (_voiceTargetId === 'chat-input') _lastInputWasVoice = true;
  if (_voiceAppendNewline) {
  el.value = (el.value ? el.value + '\n' : '') + text;
  } else {
@@ -7332,7 +7334,20 @@ async function toggleVoiceInput(targetId, micBtnId) {
 
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- if (isListening) { window.AndroidSTT.stopListening(); _voiceExpectingCallback = false; return; }
+ if (isListening) {
+ // Le bouton ne redevenait jamais inactif après un arrêt manuel : le natif
+ // était bien coupé, mais isListening et l'apparence du bouton ne
+ // l'étaient jamais explicitement ici (seuls les callbacks de résultat/
+ // erreur le faisaient, or on vient justement de les désactiver juste
+ // en dessous pour ignorer un éventuel callback tardif).
+ isListening = false;
+ _voiceSetMicActive(false);
+ if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
+ _voiceSessionStartTs = 0;
+ window.AndroidSTT.stopListening();
+ _voiceExpectingCallback = false;
+ return;
+ }
  _voiceExpectingCallback = true;
  window.AndroidSTT.startListening();
  return;
@@ -7695,14 +7710,17 @@ async function generateImageFromChat() {
  const genId = 'imggen-' + Date.now();
  // État d'annulation partagé : vérifié après chaque étape (génération de
  // l'image, puis légende) pour arrêter net dès que "Stop" est cliqué, au lieu
- // d'attendre la fin d'une étape qui peut être longue.
+ // d'attendre la fin d'une étape qui peut être longue. Le bouton Stop lui-même
+ // est maintenant celui du champ de saisie (Envoyer devient Stop pendant
+ // toute génération, texte ou image) plutôt qu'un bouton dédié ici.
  const genState = { cancelled:false };
  _activeGenerations[genId] = genState;
+ _busyGeneration = { type:'image', genId };
+ setSendButtonBusy(true);
  el.innerHTML += `<div id="${genId}" class="msg-row">
  <div class="msg-bubble ai" style="padding:12px 16px">
- <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
- <div style="display:flex;gap:5px;align-items:center"><div class="typing-dot"></div><div class="typing-dot"></div> ◆ Génération de l'image...</div>
- <button onclick="cancelGeneration('${genId}')" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">■ Stop</button>
+ <div style="display:flex;gap:5px;align-items:center">
+ <div class="typing-dot"></div><div class="typing-dot"></div> ◆ Génération de l'image...
  </div>
  </div>
  </div>`;
@@ -7722,6 +7740,9 @@ async function generateImageFromChat() {
  APP.chatHistory.push(histEntry);
  saveChatHistory(APP.currentSubject);
  scrollChat();
+ // L'image est affichée : on rend la main tout de suite (Envoyer redevient
+ // Envoyer) même si la légende continue de se charger tranquillement derrière.
+ if (_busyGeneration && _busyGeneration.genId === genId) { _busyGeneration = null; setSendButtonBusy(false); }
  if (wantsLegend) {
  withTimeout(generateDiagramLegendVision(imgUrl, prompt), 25000).then(legend => {
  if (!legend || !legend.length) {
@@ -7752,6 +7773,7 @@ async function generateImageFromChat() {
  }
  } catch (e) {
  delete _activeGenerations[genId];
+ if (_busyGeneration && _busyGeneration.genId === genId) { _busyGeneration = null; setSendButtonBusy(false); }
  if (genState.cancelled) return; // "Stop" a déjà affiché son propre message
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  container.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px">
@@ -7824,6 +7846,39 @@ function generatePollinationsImage(prompt) {
 }
 
 
+// ── STOP UNIFIÉ (bouton Envoyer) ──
+// Une seule génération "active" à la fois (réponse texte OU image/schéma) :
+// pendant qu'elle tourne, le bouton Envoyer devient un bouton Stop qui
+// l'annule, plutôt qu'un bouton dédié séparé par type de génération.
+let _busyGeneration = null; // { type:'chat'|'image', controller?, genId? }
+
+function setSendButtonBusy(busy) {
+ const btn = document.getElementById('send-btn');
+ if (!btn) return;
+ if (busy) {
+ btn.onclick = () => stopCurrentGeneration();
+ btn.innerHTML = '■';
+ btn.title = 'Arrêter';
+ btn.style.background = '#C0392B';
+ } else {
+ btn.onclick = () => sendMessage();
+ btn.innerHTML = '→';
+ btn.title = '';
+ btn.style.background = '';
+ btn.disabled = false;
+ }
+}
+function stopCurrentGeneration() {
+ if (!_busyGeneration) return;
+ if (_busyGeneration.type === 'chat' && _busyGeneration.controller) {
+ try { _busyGeneration.controller.abort(); } catch(e) {}
+ } else if (_busyGeneration.type === 'image' && _busyGeneration.genId) {
+ cancelGeneration(_busyGeneration.genId);
+ }
+ _busyGeneration = null;
+ setSendButtonBusy(false);
+}
+
 async function sendMessage() {
  const input = document.getElementById('chat-input');
  const text = input.value.trim();
@@ -7869,7 +7924,13 @@ async function sendMessage() {
  // re-envoyer tout le fichier à chaque futur message
  APP.chatHistory.push({ role:'user', content:displayContent, time });
  const btn = document.getElementById('send-btn');
- btn.disabled = true; btn.textContent = '...';
+ // Capturé puis réinitialisé tout de suite : si la question vient d'une saisie
+ // vocale, on lira la réponse à voix haute automatiquement une fois arrivée.
+ const wasVoiceQuestion = _lastInputWasVoice;
+ _lastInputWasVoice = false;
+ const chatController = new AbortController();
+ _busyGeneration = { type:'chat', controller: chatController };
+ setSendButtonBusy(true);
 
  // Ajouter msg user dans le DOM
  const el = document.getElementById('chat-messages');
@@ -7914,7 +7975,8 @@ async function sendMessage() {
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
  headers:{'Content-Type':'application/json',},
- body: JSON.stringify({ model:chatModel, max_tokens:1024, system:SYSTEM_PROMPT, messages })
+ body: JSON.stringify({ model:chatModel, max_tokens:1024, system:SYSTEM_PROMPT, messages }),
+ signal: chatController.signal
  });
  const data = await res.json();
 
@@ -7924,7 +7986,7 @@ async function sendMessage() {
  const errMsg = ` Erreur ${res.status} : ${(data.error && data.error.message) || JSON.stringify(data)}`;
  el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
  scrollChat();
- btn.disabled = false; btn.textContent = '→';
+ _busyGeneration = null; setSendButtonBusy(false);
  return;
  }
 
@@ -7935,15 +7997,29 @@ async function sendMessage() {
  saveChatHistory(APP.currentSubject);
  el.innerHTML += renderMsgHTML({role:'assistant',content:aiText,time:aiTime});
  scrollChat();
+ // Question posée à la voix : on lit la réponse à voix haute automatiquement.
+ // Un second appui sur ce même bouton haut-parleur (ou stopSpeaking()) l'arrête.
+ if (wasVoiceQuestion) {
+ const lastRow = el.lastElementChild;
+ const ttsBtn = lastRow && lastRow.querySelector('.tts-btn');
+ if (ttsBtn) speakMessage(btoa(unescape(encodeURIComponent(aiText))), ttsBtn);
+ }
+ _busyGeneration = null; setSendButtonBusy(false);
 
  } catch(e) {
  (function(){var _t=document.getElementById(typingId);if(_t)_t.remove()})();
- const errMsg = e.name==='AbortError' ? ' Délai dépassé. Réessaie.' : ` Erreur réseau : ${e.message}`;
+ // Un arrêt volontaire (bouton Stop) déclenche aussi une AbortError : on ne
+ // veut pas afficher "délai dépassé, réessaie" dans ce cas, juste confirmer
+ // l'arrêt sans bulle d'erreur alarmante.
+ if (e.name === 'AbortError') {
+ el.innerHTML += renderMsgHTML({role:'assistant',content:'⏹ Génération arrêtée.'});
+ } else {
+ const errMsg = ` Erreur réseau : ${e.message}`;
  el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
- scrollChat();
  }
-
- btn.disabled = false; btn.textContent = '→';
+ scrollChat();
+ _busyGeneration = null; setSendButtonBusy(false);
+ }
 }
 
 // ── SAUVEGARDE DISCUSSIONS PAR MATIÈRE ──
