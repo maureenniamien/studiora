@@ -3392,10 +3392,10 @@ function openImageLightbox(url, markersB64) {
  try { markers = JSON.parse(decodeURIComponent(escape(atob(markersB64)))) || []; } catch(e) { markers = []; }
  }
  const markersHTML = markers.map((it,i) => (typeof it.x === 'number' && typeof it.y === 'number') ? `
- <div style="position:absolute;left:${it.x}%;top:${it.y}%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:var(--em);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(0,0,0,.5);border:2px solid #fff;pointer-events:none">${i+1}</div>` : '').join('');
+ <div style="position:absolute;left:${it.x}%;top:${it.y}%;transform:translate(-50%,-50%) scale(var(--lightbox-inv-scale,1));width:28px;height:28px;border-radius:50%;background:var(--em);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(0,0,0,.5);border:2px solid #fff;pointer-events:none">${i+1}</div>` : '').join('');
  ov.innerHTML = `
  <button onclick="closeImageLightbox()" style="position:absolute;top:max(16px,env(safe-area-inset-top,0px));left:16px;z-index:2;background:rgba(255,255,255,.15);border:none;border-radius:12px;color:#fff;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif">← Retour</button>
- <div id="image-lightbox-stage" style="position:relative;display:inline-flex;max-width:100%;max-height:100%;transform-origin:center center;transition:transform .05s linear">
+ <div id="image-lightbox-stage" style="position:relative;display:inline-flex;max-width:100%;max-height:100%;transform-origin:center center;transition:transform .05s linear;--lightbox-inv-scale:1">
  <img id="image-lightbox-img" src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;display:block">
  ${markersHTML}
  </div>`;
@@ -3424,7 +3424,16 @@ function _initLightboxZoom(ov) {
  let startDist = 0, startScale = 1, startTx = 0, startTy = 0, startMidX = 0, startMidY = 0;
  let dragging = false, dragStartX = 0, dragStartY = 0;
  let lastTap = 0;
- const apply = () => { stage.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`; };
+ const apply = () => {
+ stage.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+ // Les repères restent enfants du stage (pour suivre la bonne position sur
+ // l'image en zoomant/déplaçant), mais on annule leur propre grossissement
+ // en les redimensionnant en sens inverse : ils gardent une taille fixe à
+ // l'écran quel que soit le zoom, au lieu de devenir des ronds énormes qui
+ // cachent la zone qu'ils sont censés préciser. Plus on zoome, plus le point
+ // devient précis relativement au détail affiché, au lieu de grossir avec lui.
+ stage.style.setProperty('--lightbox-inv-scale', String(1/scale));
+ };
  const dist = (t1,t2) => Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
  ov.addEventListener('touchstart', (e) => {
  if (e.touches.length === 2) {
@@ -3854,7 +3863,7 @@ function renderImageMsgHTML(url, prompt, time, legend, visionError) {
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
  <div style="position:relative;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}')${hasPositions ? `,'${btoa(unescape(encodeURIComponent(JSON.stringify(validItems.map(it=>({x:it.x,y:it.y}))))))}'` : ''})">
- <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
+ <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\\'${promptB64}\\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\\'Plus Jakarta Sans\\',sans-serif&quot;>↻ Réessayer</button></div>'">
  ${markersHTML}
  </div>
  ${legendHTML}
@@ -7549,6 +7558,19 @@ async function _fetchImageAsBase64(imgUrl, strategy) {
  });
  return { base64, mediaType: blob.type || 'image/jpeg' };
 }
+// Plafonne la durée totale d'une promesse : la chaîne légende-vision peut
+// s'y reprendre à 3 fois (plusieurs proxys, plusieurs attentes en cas de
+// rate-limit) et, mise bout à bout, ça peut devenir très long si l'app a été
+// mise en arrière-plan pendant l'attente. Passé ce délai, on abandonne cette
+// tentative précise (l'image reste affichée normalement) plutôt que de
+// laisser l'utilisateur attendre indéfiniment.
+function withTimeout(promise, ms) {
+ return Promise.race([
+ promise,
+ new Promise(resolve => setTimeout(() => resolve(null), ms))
+ ]);
+}
+
 async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  attempt = attempt || 1;
  const strategies = ['wsrv', 'corsproxy', 'direct'];
@@ -7685,7 +7707,7 @@ async function generateImageFromChat() {
  saveChatHistory(APP.currentSubject);
  scrollChat();
  if (wantsLegend) {
- generateDiagramLegendVision(imgUrl, prompt).then(legend => {
+ withTimeout(generateDiagramLegendVision(imgUrl, prompt), 25000).then(legend => {
  if (!legend || !legend.length) {
  // On a épuisé les 3 stratégies de récupération de l'image sans succès :
  // on garde l'erreur réelle pour l'afficher de façon permanente dans la
@@ -7727,7 +7749,7 @@ function retryDiagramLegend(genId, promptB64, imgUrl) {
  const prompt = decodeURIComponent(escape(atob(promptB64)));
  const c = document.getElementById(genId);
  if (c) c.innerHTML = renderImageMsgHTML(imgUrl, prompt, '', null) + `<div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2)">Nouvel essai de légende...</div>`;
- generateDiagramLegendVision(imgUrl, prompt).then(legend => {
+ withTimeout(generateDiagramLegendVision(imgUrl, prompt), 25000).then(legend => {
  if (!legend || !legend.length) return generateDiagramLegendText(prompt);
  return legend;
  }).then(legend => {
