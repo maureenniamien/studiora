@@ -607,7 +607,13 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
 
  <!-- Messages -->
- <div id="chat-messages" class="scroll-body" style="flex:1;min-height:0;padding:14px;display:flex;flex-direction:column;gap:12px"></div>
+ <div style="position:relative;flex:1;min-height:0;display:flex">
+ <div id="chat-messages" class="scroll-body" style="flex:1;min-height:0;padding:14px;display:flex;flex-direction:column;gap:12px" onscroll="_updateScrollToBottomBtn()"></div>
+ <!-- Revenir au dernier message : masqué par défaut, apparaît seulement quand
+ on a remonté dans l'historique (pas la peine de l'afficher quand on est
+ déjà en bas). -->
+ <button id="chat-scroll-bottom-btn" onclick="scrollChat()" style="display:none;position:absolute;right:14px;bottom:14px;width:40px;height:40px;border-radius:50%;background:var(--em);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:18px;cursor:pointer;align-items:center;justify-content:center;z-index:5">↓</button>
+ </div>
 
  <!-- Suggestions -->
  <div style="padding:6px 14px 4px;background:var(--bg)">
@@ -3372,15 +3378,27 @@ function onScreenEnter(id) {
 // d'écrans de l'app (screenHistory), donc "retour" tombait à travers jusqu'à
 // fermer l'activité Android. On pousse maintenant un état d'historique à
 // l'ouverture, et on l'intercepte (popstate) pour fermer juste la visionneuse.
-function openImageLightbox(url) {
+function openImageLightbox(url, markersB64) {
  let ov = document.getElementById('image-lightbox');
  if (ov) ov.remove();
  ov = document.createElement('div');
  ov.id = 'image-lightbox';
  ov.style.cssText = 'position:fixed;inset:0;background:#000;z-index:999999;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none';
+ // Les numéros de légende (s'il y en a) sont dans le même "stage" que l'image,
+ // pour qu'ils zooment/se déplacent avec elle au lieu de disparaître ou de
+ // rester figés en agrandissant.
+ let markers = [];
+ if (markersB64) {
+ try { markers = JSON.parse(decodeURIComponent(escape(atob(markersB64)))) || []; } catch(e) { markers = []; }
+ }
+ const markersHTML = markers.map((it,i) => (typeof it.x === 'number' && typeof it.y === 'number') ? `
+ <div style="position:absolute;left:${it.x}%;top:${it.y}%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:var(--em);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(0,0,0,.5);border:2px solid #fff;pointer-events:none">${i+1}</div>` : '').join('');
  ov.innerHTML = `
  <button onclick="closeImageLightbox()" style="position:absolute;top:max(16px,env(safe-area-inset-top,0px));left:16px;z-index:2;background:rgba(255,255,255,.15);border:none;border-radius:12px;color:#fff;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif">← Retour</button>
- <img id="image-lightbox-img" src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;transition:transform .05s linear">`;
+ <div id="image-lightbox-stage" style="position:relative;display:inline-flex;max-width:100%;max-height:100%;transform-origin:center center;transition:transform .05s linear">
+ <img id="image-lightbox-img" src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;display:block">
+ ${markersHTML}
+ </div>`;
  document.body.appendChild(ov);
  history.pushState({ studioraLightbox:true }, '', location.href);
  _initLightboxZoom(ov);
@@ -3400,13 +3418,13 @@ window.addEventListener('popstate', (e) => {
 // Pincer pour zoomer/dézoomer, glisser à un doigt pour déplacer l'image une
 // fois zoomée, et double-tap pour réinitialiser — comme dans une galerie photo.
 function _initLightboxZoom(ov) {
- const img = ov.querySelector('#image-lightbox-img');
- if (!img) return;
+ const stage = ov.querySelector('#image-lightbox-stage');
+ if (!stage) return;
  let scale = 1, tx = 0, ty = 0;
  let startDist = 0, startScale = 1, startTx = 0, startTy = 0, startMidX = 0, startMidY = 0;
  let dragging = false, dragStartX = 0, dragStartY = 0;
  let lastTap = 0;
- const apply = () => { img.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`; };
+ const apply = () => { stage.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`; };
  const dist = (t1,t2) => Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
  ov.addEventListener('touchstart', (e) => {
  if (e.touches.length === 2) {
@@ -3835,7 +3853,7 @@ function renderImageMsgHTML(url, prompt, time, legend, visionError) {
 
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
- <div style="position:relative;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}'))">
+ <div style="position:relative;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}')${hasPositions ? `,'${btoa(unescape(encodeURIComponent(JSON.stringify(validItems.map(it=>({x:it.x,y:it.y}))))))}'` : ''})">
  <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
  ${markersHTML}
  </div>
@@ -6779,7 +6797,17 @@ function escHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 
 function scrollChat() {
  const el = document.getElementById('chat-messages');
- setTimeout(()=>{ el.scrollTop = el.scrollHeight; }, 50);
+ setTimeout(()=>{ el.scrollTop = el.scrollHeight; _updateScrollToBottomBtn(); }, 50);
+}
+// Le bouton "revenir au dernier message" n'apparaît que si on a remonté d'au
+// moins ~150px dans l'historique — pas la peine de l'afficher quand on est
+// déjà tout en bas (ou tout près).
+function _updateScrollToBottomBtn() {
+ const el = document.getElementById('chat-messages');
+ const btn = document.getElementById('chat-scroll-bottom-btn');
+ if (!el || !btn) return;
+ const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+ btn.style.display = distanceFromBottom > 150 ? 'flex' : 'none';
 }
 
 // ── PIÈCES JOINTES DANS LE CHAT ──
