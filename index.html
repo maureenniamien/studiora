@@ -1015,16 +1015,8 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="display:flex;flex-direction:column;gap:8px">
  <div>
  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NIVEAU</div>
- <div style="display:flex;gap:6px;flex-wrap:wrap" id="level-btns">
- <button onclick="setUserLevel('Terminal',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Terminal</button>
- <button onclick="setUserLevel('Licence 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 1</button>
- <button onclick="setUserLevel('Licence 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 2</button>
- <button onclick="setUserLevel('Licence 3',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 3</button>
- <button onclick="setUserLevel('Master 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Master 1</button>
- <button onclick="setUserLevel('Master 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Master 2</button>
- <button onclick="setUserLevel('BTS',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">BTS</button>
- <button onclick="setUserLevel('DEUG',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">DEUG</button>
- </div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap" id="level-btns"></div>
+ <span onclick="renderLevelButtons(true)" style="display:inline-block;margin-top:6px;font-size:11px;color:var(--em);font-weight:600;cursor:pointer">Voir tous les niveaux</span>
  </div>
  <div style="margin-top:4px">
  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">FILIÈRE</div>
@@ -6935,6 +6927,19 @@ window.onAndroidSTTStart = function() {
  isListening = true;
  _voiceSessionStartTs = Date.now();
  _voiceSetMicActive(true);
+ // Filet de sécurité : si le pont natif ne rappelle jamais (ni résultat ni
+ // erreur) — ce qui semble être le cas sur certains appareils, le micro
+ // s'allume mais aucun texte n'arrive jamais — on ne laisse pas le bouton
+ // allumé indéfiniment sans explication.
+ clearTimeout(window._voiceStuckTimer);
+ window._voiceStuckTimer = setTimeout(() => {
+ if (!_voiceExpectingCallback) return;
+ _voiceExpectingCallback = false;
+ isListening = false;
+ _voiceSetMicActive(false);
+ _voiceSessionStartTs = 0;
+ showToast('⚠ Le micro ne renvoie rien (problème natif Android). Vérifie l\'autorisation micro dans Paramètres > Apps > Studiora.');
+ }, 15000);
 };
 // Certains appareils déclenchent le callback natif Android *après* qu'on ait déjà
 // explicitement arrêté l'écoute (navigation vers un autre écran, etc.). Sans ce
@@ -6942,6 +6947,7 @@ window.onAndroidSTTStart = function() {
 // alors que l'utilisateur a quitté l'outil depuis longtemps.
 let _voiceExpectingCallback = false;
 window.onAndroidSTTResult = function(text) {
+ clearTimeout(window._voiceStuckTimer);
  if (!_voiceExpectingCallback) return;
  _voiceExpectingCallback = false;
  isListening = false;
@@ -6961,6 +6967,7 @@ window.onAndroidSTTResult = function(text) {
  }
 };
 window.onAndroidSTTError = function(code) {
+ clearTimeout(window._voiceStuckTimer);
  if (!_voiceExpectingCallback) return;
  _voiceExpectingCallback = false;
  isListening = false;
@@ -7342,6 +7349,7 @@ async function toggleVoiceInput(targetId, micBtnId) {
  // en dessous pour ignorer un éventuel callback tardif).
  isListening = false;
  _voiceSetMicActive(false);
+ clearTimeout(window._voiceStuckTimer);
  if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
  _voiceSessionStartTs = 0;
  window.AndroidSTT.stopListening();
@@ -9666,6 +9674,7 @@ function applyDark(on) {
 
 function renderProfile() {
  if (!APP.user || !APP.user.prenom) return;
+ renderLevelButtons();
  const st = getStats();
  function safeSet(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
  safeSet('stat-sessions', st.sessions || 0);
@@ -12042,6 +12051,33 @@ function saveUserName() {
  showToast(' Nom mis à jour : ' + APP.user.prenom + ' ' + APP.user.nom);
 }
 
+// Ordre canonique complet, du collège au doctorat — identique à celui du
+// menu déroulant d'inscription, pour que "Mon niveau" propose des niveaux
+// réellement proches de celui déjà enregistré (2 en arrière, 3 devant),
+// plutôt qu'une liste fixe de niveaux post-bac qui ne concernait jamais un
+// compte encore au collège ou au lycée.
+const LEVEL_ORDER = ['6ème','5ème','4ème','3ème','2nde','1ère','Terminale','BT','BTS 1','BTS 2','DUT','Licence 1','Licence 2','Licence 3','Master 1','Master 2','Doctorat'];
+// Anciens libellés encore présents dans certains comptes déjà enregistrés
+// avant l'harmonisation de cette liste — on les fait correspondre à leur
+// équivalent actuel pour trouver la bonne position dans LEVEL_ORDER.
+const LEVEL_ALIASES = { 'Terminal':'Terminale', 'BTS':'BTS 1', 'DEUG':'Licence 1' };
+
+function renderLevelButtons(showAll) {
+ const container = document.getElementById('level-btns');
+ if (!container || !APP.user) return;
+ const current = LEVEL_ALIASES[APP.user.level] || APP.user.level;
+ let idx = LEVEL_ORDER.indexOf(current);
+ if (idx === -1) idx = 6; // repli sur Terminale si le niveau n'est pas reconnu
+ const window_ = showAll ? LEVEL_ORDER : LEVEL_ORDER.slice(Math.max(0, idx - 2), Math.min(LEVEL_ORDER.length, idx + 3 + 1));
+ container.innerHTML = window_.map(lvl => {
+ const isCurrent = lvl === current;
+ const style = isCurrent
+ ? "padding:7px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--em-soft);border:1.5px solid var(--em);color:var(--em)"
+ : "padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)";
+ return `<button onclick="setUserLevel('${lvl}',this)" class="level-btn" style="${style}">${lvl}</button>`;
+ }).join('');
+}
+
 function setUserLevel(level, btn) {
  document.querySelectorAll('.level-btn').forEach(b => {
  b.style.background = 'var(--bg2)';
@@ -12080,6 +12116,7 @@ function saveUserLevel() {
  }
  }
  renderHome();
+ renderLevelButtons();
  showToast(' Niveau mis à jour : ' + level + ' · ' + filiere);
 }
 
