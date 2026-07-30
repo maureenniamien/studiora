@@ -21,6 +21,11 @@ import android.speech.tts.TextToSpeech;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebView;
+import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.WebViewClientCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
@@ -49,9 +54,12 @@ public class MainActivity extends BridgeActivity {
     private static final long STT_TIMEOUT_MS = 12000;
     private final ExecutorService downloadExecutor = Executors.newSingleThreadExecutor();
 
-    // URL de la page publiee sur GitHub Pages, utilisee pour rafraichir la
-    // copie locale modifiable en arriere-plan (auto-mise a jour silencieuse).
     private static final String LIVE_INDEX_URL = "https://maureenniamien.github.io/studiora/index.html";
+    // Domaine virtuel standard recommande par Google pour WebViewAssetLoader.
+    // Ne correspond a aucun vrai serveur : sert uniquement de "nom d'origine"
+    // pour que le WebView traite les fichiers locaux comme une vraie page web,
+    // sans passer par file:// (bloque par le sandbox du renderer sur Android 10+).
+    private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
 
     private class WebAppInterface {
         @JavascriptInterface
@@ -235,13 +243,6 @@ public class MainActivity extends BridgeActivity {
         return e.getMessage() != null ? e.getMessage() : "error";
     }
 
-    // ---------------------------------------------------------------------
-    // Copie locale modifiable + auto-mise a jour silencieuse (Option 2)
-    // ---------------------------------------------------------------------
-
-    // Premier lancement uniquement : copie l'index.html embarque dans l'APK
-    // (assets/public/index.html) vers un dossier modifiable de l'app. Ne fait
-    // rien si la copie existe deja (lancements suivants).
     private void ensureLocalCopyFromAssets() {
         File dir = new File(getFilesDir(), "www-live");
         File index = new File(dir, "index.html");
@@ -272,10 +273,6 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Retelecharge index.html depuis GitHub Pages en arriere-plan et remplace
-    // la copie locale de facon atomique (fichier temporaire puis renameTo).
-    // En cas d'echec reseau ou de reponse suspecte, la copie locale valide
-    // n'est jamais touchee : l'app reste utilisable hors ligne dans tous les cas.
     private void silentlyRefreshLiveCopy() {
         if (!isNetworkAvailable()) return;
         downloadExecutor.execute(() -> {
@@ -366,11 +363,30 @@ public class MainActivity extends BridgeActivity {
                     androidx.core.content.ContextCompat.RECEIVER_EXPORTED
                 );
 
-                // --- Copie locale modifiable + auto-mise a jour silencieuse ---
+                // --- Copie locale modifiable + auto-mise a jour silencieuse (Option 2) ---
                 ensureLocalCopyFromAssets();
-                File liveIndex = new File(getFilesDir(), "www-live/index.html");
+
+                // CORRECTIF : file:// vers /data/user/0/.../files/ est bloque par le
+                // sandbox du processus renderer du WebView sur Android 10+ (ERR_ACCESS_DENIED).
+                // On sert donc les fichiers via WebViewAssetLoader, qui les expose comme
+                // une origine web normale (https://appassets.androidplatform.net/live/...)
+                // sans jamais passer par file://.
+                File liveDir = new File(getFilesDir(), "www-live");
+                WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                        .setDomain(ASSET_DOMAIN)
+                        .addPathHandler("/live/", new WebViewAssetLoader.InternalStoragePathHandler(this, liveDir))
+                        .build();
+
+                getBridge().getWebView().setWebViewClient(new WebViewClientCompat() {
+                    @Override
+                    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                        return assetLoader.shouldInterceptRequest(request.getUrl());
+                    }
+                });
+
+                File liveIndex = new File(liveDir, "index.html");
                 if (liveIndex.exists()) {
-                    getBridge().getWebView().loadUrl("file://" + liveIndex.getAbsolutePath());
+                    getBridge().getWebView().loadUrl("https://" + ASSET_DOMAIN + "/live/index.html");
                 }
                 silentlyRefreshLiveCopy();
                 // --- fin ---
