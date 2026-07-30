@@ -1940,9 +1940,14 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  el.textContent = '⚠ Erreur au chargement de l\'app :\n\n' + msg;
  (document.body || document.documentElement).appendChild(el);
  }
+ const NON_CRITICAL_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
  window.addEventListener('error', function(e) {
  const src = e.target && (e.target.src || e.target.href);
- if (src) showFatalOverlay('Ressource introuvable : ' + src);
+ if (src) {
+ const isNonCritical = NON_CRITICAL_HOSTS.some(function(h) { return src.indexOf(h) !== -1; });
+ if (isNonCritical) { console.warn('[Studiora] ressource optionnelle indisponible :', src); return; }
+ showFatalOverlay('Ressource introuvable : ' + src);
+ }
  else if (e.message) showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
  }, true);
  window.addEventListener('unhandledrejection', function(e) {
