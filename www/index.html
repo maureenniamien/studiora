@@ -10143,7 +10143,7 @@ const STUDIORA_APK_URL = 'https://studiora-education.netlify.app/downloads/studi
 function isRunningInNativeApp() {
  // Capacitor injecte automatiquement window.Capacitor dans l'app native —
  // absent, on est forcément dans un navigateur (web/PWA)
- return typeof window.Capacitor !== 'undefined';
+ return typeof window.AndroidTTS !== 'undefined' || typeof window.AndroidDownload !== 'undefined';
 }
 
 function initWebToAppBanner() {
