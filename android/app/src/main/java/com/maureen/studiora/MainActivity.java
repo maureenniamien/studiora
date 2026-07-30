@@ -44,9 +44,14 @@ public class MainActivity extends BridgeActivity {
     private Intent pendingIntent = null;
     private TextToSpeech tts;
     private SpeechRecognizer speechRecognizer;
-    // Thread dedie aux telechargements reseau : Android interdit tout appel
-    // reseau sur le thread principal (NetworkOnMainThreadException).
+    private Handler sttTimeoutHandler;
+    private Runnable sttTimeoutRunnable;
+    private static final long STT_TIMEOUT_MS = 12000;
     private final ExecutorService downloadExecutor = Executors.newSingleThreadExecutor();
+
+    // URL de la page publiee sur GitHub Pages, utilisee pour rafraichir la
+    // copie locale modifiable en arriere-plan (auto-mise a jour silencieuse).
+    private static final String LIVE_INDEX_URL = "https://maureenniamien.github.io/studiora/index.html";
 
     private class WebAppInterface {
         @JavascriptInterface
@@ -56,11 +61,6 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
-        // Manquait entierement : la page web appelait AndroidTTS.stop() (et
-        // d'autres noms en secours) mais aucune methode d'arret n'etait exposee
-        // cote natif, donc rien ne se passait et la lecture continuait jusqu'a
-        // la fin. TextToSpeech.stop() vide la file d'attente ET interrompt
-        // l'enonce en cours.
         @JavascriptInterface
         public void stop() {
             new Handler(Looper.getMainLooper()).post(() -> {
@@ -81,12 +81,6 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Bridge de telechargement. Chaque methode recoit desormais un reqId (genere
-    // cote JS) qui est renvoye tel quel dans onAndroidDownloadResult(reqId,
-    // success, info). Avant, un seul callback global sans identifiant faisait que
-    // le JS ne pouvait jamais savoir avec certitude si UN téléchargement precis
-    // avait reussi (fire-and-forget), et deux telechargements simultanes se
-    // marchaient dessus.
     private class DownloadInterface {
         @JavascriptInterface
         public void saveFile(String reqId, String base64Data, String filename, String mimeType) {
@@ -101,11 +95,6 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
-        // Telecharge une URL distante (ex: image Pollinations) puis l'ecrit dans le
-        // stockage du telephone. Fait sur un thread d'arriere-plan : evite a la fois
-        // le NetworkOnMainThreadException ET les blocages CORS que fetch() subit
-        // cote WebView (le CORS ne s'applique qu'aux requetes JS, pas a un
-        // telechargement natif Java).
         @JavascriptInterface
         public void saveFileFromUrl(String reqId, String url, String filename, String mimeType) {
             downloadExecutor.execute(() -> {
@@ -185,7 +174,7 @@ public class MainActivity extends BridgeActivity {
         try {
             File file = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "studiora_update.apk");
             Uri apkUri = androidx.core.content.FileProvider.getUriForFile(
-                    this, getPackageName() + ".fileprovider", file);
+                this, getPackageName() + ".fileprovider", file);
             Intent installIntent = new Intent(Intent.ACTION_VIEW);
             installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
             installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -197,10 +186,6 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Ecriture reelle dans le stockage du telephone (MediaStore sur Android 10+,
-    // fichier direct avant). Appelee UNIQUEMENT depuis le thread principal.
-    // Partagee par saveFile() (base64 deja en memoire) et saveFileFromUrl()
-    // (bytes telecharges en arriere-plan) pour ne pas dupliquer cette logique.
     private void writeBytesToDownloads(String reqId, byte[] bytes, String filename, String mimeType) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -220,10 +205,6 @@ public class MainActivity extends BridgeActivity {
                 values.put(MediaStore.Downloads.IS_PENDING, 0);
                 getContentResolver().update(item, values, null, null);
             } else {
-                // Android 9 et moins : le stockage public "Downloads" exige la
-                // permission WRITE_EXTERNAL_STORAGE accordee a l'execution (elle
-                // est demandee au demarrage dans onCreate). Sans elle, l'ecriture
-                // leve une SecurityException, capturee ci-dessous et remontee au JS.
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
                     notifyDownloadResult(reqId, false, "permission_stockage_refusee");
@@ -254,6 +235,95 @@ public class MainActivity extends BridgeActivity {
         return e.getMessage() != null ? e.getMessage() : "error";
     }
 
+    // ---------------------------------------------------------------------
+    // Copie locale modifiable + auto-mise a jour silencieuse (Option 2)
+    // ---------------------------------------------------------------------
+
+    // Premier lancement uniquement : copie l'index.html embarque dans l'APK
+    // (assets/public/index.html) vers un dossier modifiable de l'app. Ne fait
+    // rien si la copie existe deja (lancements suivants).
+    private void ensureLocalCopyFromAssets() {
+        File dir = new File(getFilesDir(), "www-live");
+        File index = new File(dir, "index.html");
+        if (index.exists()) return;
+        try {
+            if (!dir.exists()) dir.mkdirs();
+            InputStream is = getAssets().open("public/index.html");
+            FileOutputStream fos = new FileOutputStream(index);
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = is.read(buf)) != -1) fos.write(buf, 0, n);
+            is.close();
+            fos.close();
+            Log.i(TAG, "Copie initiale des assets embarques vers le stockage modifiable");
+        } catch (Exception e) {
+            Log.e(TAG, "ensureLocalCopyFromAssets error", e);
+        }
+    }
+
+    private boolean isNetworkAvailable() {
+        try {
+            android.net.ConnectivityManager cm =
+                (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            android.net.NetworkCapabilities caps = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return caps != null && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Retelecharge index.html depuis GitHub Pages en arriere-plan et remplace
+    // la copie locale de facon atomique (fichier temporaire puis renameTo).
+    // En cas d'echec reseau ou de reponse suspecte, la copie locale valide
+    // n'est jamais touchee : l'app reste utilisable hors ligne dans tous les cas.
+    private void silentlyRefreshLiveCopy() {
+        if (!isNetworkAvailable()) return;
+        downloadExecutor.execute(() -> {
+            HttpURLConnection conn = null;
+            try {
+                URL u = new URL(LIVE_INDEX_URL + "?t=" + System.currentTimeMillis());
+                conn = (HttpURLConnection) u.openConnection();
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(20000);
+                conn.setRequestMethod("GET");
+                conn.connect();
+                int code = conn.getResponseCode();
+                if (code < 200 || code >= 300) throw new Exception("HTTP " + code);
+
+                InputStream is = conn.getInputStream();
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                byte[] chunk = new byte[8192];
+                int n;
+                while ((n = is.read(chunk)) != -1) buffer.write(chunk, 0, n);
+                is.close();
+                byte[] bytes = buffer.toByteArray();
+
+                if (bytes.length < 1024) {
+                    Log.w(TAG, "Reponse suspecte (" + bytes.length + " octets), mise a jour ignoree");
+                    return;
+                }
+
+                File dir = new File(getFilesDir(), "www-live");
+                if (!dir.exists()) dir.mkdirs();
+                File tmp = new File(dir, "index.html.tmp");
+                FileOutputStream fos = new FileOutputStream(tmp);
+                fos.write(bytes);
+                fos.close();
+
+                File index = new File(dir, "index.html");
+                if (!tmp.renameTo(index)) {
+                    Log.w(TAG, "Echec du remplacement atomique de index.html");
+                } else {
+                    Log.i(TAG, "Copie locale mise a jour depuis GitHub Pages (" + bytes.length + " octets)");
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "silentlyRefreshLiveCopy: " + safeMsg(e));
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -266,8 +336,6 @@ public class MainActivity extends BridgeActivity {
                         new String[]{Manifest.permission.RECORD_AUDIO}, MIC_PERMISSION_CODE);
             }
 
-            // Necessaire uniquement sur Android 9 et moins (API < 29) : au-dela,
-            // MediaStore.Downloads ne demande aucune permission d'execution.
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
                     && ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -281,9 +349,6 @@ public class MainActivity extends BridgeActivity {
                 }
             });
 
-            // OnBackPressedCallback : mecanisme officiel AndroidX, le seul qui
-            // capte a la fois le bouton retour classique ET le geste de
-            // navigation par glissement (majoritaire sur les telephones recents).
             getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
                 @Override
                 public void handleOnBackPressed() {
@@ -300,6 +365,16 @@ public class MainActivity extends BridgeActivity {
                     new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
                     androidx.core.content.ContextCompat.RECEIVER_EXPORTED
                 );
+
+                // --- Copie locale modifiable + auto-mise a jour silencieuse ---
+                ensureLocalCopyFromAssets();
+                File liveIndex = new File(getFilesDir(), "www-live/index.html");
+                if (liveIndex.exists()) {
+                    getBridge().getWebView().loadUrl("file://" + liveIndex.getAbsolutePath());
+                }
+                silentlyRefreshLiveCopy();
+                // --- fin ---
+
                 getBridge().getWebView().postDelayed(() -> {
                     try { handleShareIntent(pendingIntent); }
                     catch (Exception e) { Log.e(TAG, "share intent error", e); }
@@ -322,19 +397,23 @@ public class MainActivity extends BridgeActivity {
             runJs("window.onAndroidSTTError && window.onAndroidSTTError('unavailable');");
             return;
         }
+
         if (speechRecognizer == null) {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
             speechRecognizer.setRecognitionListener(new RecognitionListener() {
                 @Override public void onReadyForSpeech(Bundle params) {
                     runJs("window.onAndroidSTTStart && window.onAndroidSTTStart();");
                 }
+
                 @Override public void onResults(Bundle results) {
+                    cancelSttTimeout();
                     ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     String text = (matches != null && !matches.isEmpty()) ? matches.get(0) : "";
                     runJs("window.onAndroidSTTResult && window.onAndroidSTTResult('"
-                            + text.replace("\\", "\\\\").replace("'", "\\'") + "');");
+                        + text.replace("\\", "\\\\").replace("'", "\\'") + "');");
                 }
                 @Override public void onError(int error) {
+                    cancelSttTimeout();
                     runJs("window.onAndroidSTTError && window.onAndroidSTTError('" + error + "');");
                 }
                 @Override public void onEndOfSpeech() {}
@@ -345,34 +424,52 @@ public class MainActivity extends BridgeActivity {
                 @Override public void onEvent(int eventType, Bundle params) {}
             });
         }
+
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR");
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
         try {
             speechRecognizer.startListening(intent);
+            armSttTimeout();
         } catch (Exception e) {
             runJs("window.onAndroidSTTError && window.onAndroidSTTError('start_failed');");
         }
     }
 
- // Gere le retour (bouton physique ET geste de navigation par glissement).
- // handleBack() est appelee par l'OnBackPressedCallback enregistre dans onCreate.
- private void handleBack() {
- if (getBridge() != null && getBridge().getWebView() != null) {
- getBridge().getWebView().evaluateJavascript(
- "(function(){ try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
- value -> {
- boolean handledByJs = "true".equals(value);
- if (!handledByJs) {
- finish();
- }
- }
- );
- } else {
- finish();
- }
- }
+    private void armSttTimeout() {
+        cancelSttTimeout();
+        sttTimeoutHandler = new Handler(Looper.getMainLooper());
+        sttTimeoutRunnable = () -> {
+            if (speechRecognizer != null) {
+                try { speechRecognizer.cancel(); } catch (Exception ignored) {}
+            }
+            runJs("window.onAndroidSTTError && window.onAndroidSTTError('timeout');");
+        };
+        sttTimeoutHandler.postDelayed(sttTimeoutRunnable, STT_TIMEOUT_MS);
+    }
+
+    private void cancelSttTimeout() {
+        if (sttTimeoutHandler != null && sttTimeoutRunnable != null) {
+            sttTimeoutHandler.removeCallbacks(sttTimeoutRunnable);
+        }
+    }
+
+    private void handleBack() {
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript(
+                "(function() { try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
+                value -> {
+                    boolean handledByJs = "true".equals(value);
+                    if (!handledByJs) {
+                        finish();
+                    }
+                }
+            );
+        } else {
+            finish();
+        }
+    }
 
     @Override
     public void onNewIntent(Intent intent) {
@@ -413,7 +510,7 @@ public class MainActivity extends BridgeActivity {
             String base64 = Base64.encodeToString(buffer.toByteArray(), Base64.NO_WRAP);
             String fileName = getFileName(uri);
             String js = "window.receiveSharedImage && window.receiveSharedImage('"
-                    + base64 + "', '" + mimeType + "', '" + fileName.replace("'", "") + "');";
+                + base64 + "', '" + mimeType + "', '" + fileName.replace("'", "\\'") + "');";
             runJs(js);
         } catch (Exception e) { Log.e(TAG, "sendImageToWebView error", e); }
     }

@@ -1,9 +1,5 @@
 {
   "appId": "com.maureen.studiora",
   "appName": "Studiora",
-  "webDir": "www",
-  "server": {
-    "url": "https://maureenniamien.github.io/studiora/",
-    "cleartext": true
-  }
+  "webDir": "www"
 }
