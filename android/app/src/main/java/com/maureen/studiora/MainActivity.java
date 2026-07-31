@@ -21,6 +21,8 @@ import android.speech.tts.TextToSpeech;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -85,6 +87,7 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void stopListening() {
             new Handler(Looper.getMainLooper()).post(() -> {
+                cancelSttTimeout();
                 if (speechRecognizer != null) speechRecognizer.stopListening();
             });
         }
@@ -258,10 +261,8 @@ public class MainActivity extends BridgeActivity {
             is.close();
             fos.close();
             Log.i(TAG, "Copie initiale des assets embarques vers le stockage modifiable");
-            toast("Studiora : copie initiale OK (1er lancement)");
         } catch (Exception e) {
             Log.e(TAG, "ensureLocalCopyFromAssets error", e);
-            toast("Studiora : ECHEC copie initiale - " + safeMsg(e));
         }
     }
 
@@ -277,10 +278,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void silentlyRefreshLiveCopy() {
-        if (!isNetworkAvailable()) {
-            toast("Studiora : hors ligne, pas de mise a jour HTML cette fois");
-            return;
-        }
+        if (!isNetworkAvailable()) return;
         downloadExecutor.execute(() -> {
             HttpURLConnection conn = null;
             try {
@@ -303,7 +301,6 @@ public class MainActivity extends BridgeActivity {
 
                 if (bytes.length < 1024) {
                     Log.w(TAG, "Reponse suspecte (" + bytes.length + " octets), mise a jour ignoree");
-                    toast("Studiora : reponse HTML suspecte (" + bytes.length + " o), ignoree");
                     return;
                 }
 
@@ -317,15 +314,11 @@ public class MainActivity extends BridgeActivity {
                 File index = new File(dir, "index.html");
                 if (!tmp.renameTo(index)) {
                     Log.w(TAG, "Echec du remplacement atomique de index.html");
-                    toast("Studiora : ECHEC remplacement fichier HTML");
                 } else {
                     Log.i(TAG, "Copie locale mise a jour depuis GitHub Pages (" + bytes.length + " octets)");
-                    toast("Studiora : HTML mis a jour (" + bytes.length + " o) - actif au prochain lancement");
                 }
             } catch (Exception e) {
                 Log.w(TAG, "silentlyRefreshLiveCopy: " + safeMsg(e));
-                final String msg = safeMsg(e);
-                toast("Studiora : ECHEC mise a jour HTML - " + msg);
             } finally {
                 if (conn != null) conn.disconnect();
             }
@@ -374,6 +367,34 @@ public class MainActivity extends BridgeActivity {
                     androidx.core.content.ContextCompat.RECEIVER_EXPORTED
                 );
 
+                // CORRECTIF : sous la nouvelle origine WebViewAssetLoader, on s'assure
+                // explicitement que les demandes getUserMedia() (micro/camera) de la
+                // page sont auto-accordees des lors que la permission Android est deja
+                // accordee -- au lieu de compter sur le comportement par defaut de
+                // Capacitor qui peut ne pas reconnaitre cette origine.
+                getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
+                    @Override
+                    public void onPermissionRequest(final PermissionRequest request) {
+                        runOnUiThread(() -> {
+                            try {
+                                boolean needsAudio = false;
+                                for (String res : request.getResources()) {
+                                    if (android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)) needsAudio = true;
+                                }
+                                if (needsAudio && ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                                        != PackageManager.PERMISSION_GRANTED) {
+                                    request.deny();
+                                    return;
+                                }
+                                request.grant(request.getResources());
+                            } catch (Exception e) {
+                                Log.e(TAG, "onPermissionRequest error", e);
+                                request.deny();
+                            }
+                        });
+                    }
+                });
+
                 ensureLocalCopyFromAssets();
 
                 File liveDir = new File(getFilesDir(), "www-live");
@@ -391,9 +412,6 @@ public class MainActivity extends BridgeActivity {
 
                 File liveIndex = new File(liveDir, "index.html");
                 if (liveIndex.exists()) {
-                    long ageMs = System.currentTimeMillis() - liveIndex.lastModified();
-                    long ageMin = ageMs / 60000;
-                    toast("Studiora : chargement copie locale (age " + ageMin + " min)");
                     getBridge().getWebView().loadUrl("https://" + ASSET_DOMAIN + "/live/index.html");
                 }
                 silentlyRefreshLiveCopy();
@@ -415,10 +433,28 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // --- Micro AndroidSTT : 2 correctifs ---
     private void startNativeListening() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             runJs("window.onAndroidSTTError && window.onAndroidSTTError('unavailable');");
             return;
+        }
+
+        // CORRECTIF 1 : verifie la permission a chaque tentative (elle peut avoir
+        // ete revoquee dans les Parametres apres le premier lancement).
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            runJs("window.onAndroidSTTError && window.onAndroidSTTError('permission_refusee');");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO}, MIC_PERMISSION_CODE);
+            return;
+        }
+
+        // CORRECTIF 2 : empeche une double session (double-appui rapide avant que
+        // isListening ne soit mis a jour cote JS) de bloquer les callbacks suivants.
+        cancelSttTimeout();
+        if (speechRecognizer != null) {
+            try { speechRecognizer.cancel(); } catch (Exception ignored) {}
         }
 
         if (speechRecognizer == null) {
@@ -432,6 +468,7 @@ public class MainActivity extends BridgeActivity {
                     cancelSttTimeout();
                     ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     String text = (matches != null && !matches.isEmpty()) ? matches.get(0) : "";
+                    text = text.replace("\n", " ").replace("\r", " ");
                     runJs("window.onAndroidSTTResult && window.onAndroidSTTResult('"
                         + text.replace("\\", "\\\\").replace("'", "\\'") + "');");
                 }
