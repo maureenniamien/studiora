@@ -1948,7 +1948,10 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  if (isNonCritical) { console.warn('[Studiora] ressource optionnelle indisponible :', src); return; }
  showFatalOverlay('Ressource introuvable : ' + src);
  }
- else if (e.message) showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
+ else if (e.message) {
+ if (e.message === 'Script error.' && !e.filename) { console.warn('[Studiora] exception cross-origin non identifiable, ignoree'); return; }
+ showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
+ }
  }, true);
  window.addEventListener('unhandledrejection', function(e) {
  showFatalOverlay('Promesse rejetée : ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
@@ -3610,7 +3613,7 @@ async function generateSubjectInfo(subj) {
  const langInstruction = ' Reponds ENTIEREMENT en ' + (langNames[APP_LANG]||'francais') + '.';
  const prompt = 'Presente la matiere "' + safeSubj + '" pour un etudiant de niveau ' + safeLevel + '.' + filiereRule + langInstruction +
  ' Donne une definition courte de la matiere (2-3 phrases), 5 a 6 termes cles avec une definition courte chacun, et 4 a 5 concepts de base avec une explication courte chacun.' +
- ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}';
+ ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}';
 
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
@@ -7231,6 +7234,16 @@ let _micRecording = false;
 let _micStartTs = 0;
 
 async function toggleMicWhisperTranscription() {
+ try {
+ await _toggleMicWhisperTranscriptionInner();
+ } catch(e) {
+ console.warn('[Studiora] erreur micro transcription (interceptee) :', e);
+ showToast('⚠ Erreur micro, reessaie');
+ const btn = document.getElementById('transcribe-mic-btn');
+ if (btn) { btn.disabled = false; }
+ }
+}
+async function _toggleMicWhisperTranscriptionInner() {
  if (_micRecording) { stopMicWhisperRecording(); return; }
  if (!canUseTranscription()) {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
@@ -9088,7 +9101,7 @@ async function generateFlashcards() {
  const filiereRule = safeFiliere ? ` Adapte le perimetre de ${safeSubj} au contexte reel de la filiere ${safeFiliere} (si ce n'est pas sa specialite, reste a un niveau d'usage pratique realiste pour cette filiere, sinon va au niveau technique attendu).` : '';
  const fcLangNames = {fr:'francais',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const fcLangInstruction = ' Reponds ENTIEREMENT en ' + (fcLangNames[APP_LANG]||'francais') + ' (questions et reponses).';
- const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
+ const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
 
  try {
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
