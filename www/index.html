@@ -16,15 +16,55 @@
 // (avant même que l'app ait pu afficher quoi que ce soit), on l'affiche
 // directement à l'écran au lieu de laisser une page blanche silencieuse —
 // ça permet de savoir immédiatement ce qui bloque, sans outils de debug.
+//
+// CORRECTIF : un message générique "Script error." (sans fichier ni ligne) se
+// produit quand l'erreur vient d'un script chargé sur un autre domaine (CDN)
+// sans l'attribut crossorigin — le navigateur masque alors les détails par
+// sécurité. Les balises <script> des CDN plus bas ont maintenant
+// crossorigin="anonymous", donc les prochaines erreurs afficheront le vrai
+// message/fichier/ligne. On garde tout de même un repli lisible ici au cas où.
+//
+// CORRECTIF 2 : au réveil de l'app (retour de mise en veille), Android relance
+// parfois le chargement de la page pendant un bref instant sans réseau stable,
+// ce qui peut faire échouer une ressource CDN une seule fois. Plutôt que
+// d'afficher tout de suite l'écran d'erreur bloquant, on tente un seul
+// rechargement automatique silencieux avant de l'afficher — ce qui corrige le
+// cas transitoire sans intervention, et ne montre l'écran d'erreur que si le
+// problème persiste après ce rechargement.
 window.addEventListener('error', function(e) {
  try {
  if (document.getElementById('studiora-fatal-error')) return;
+
+ var isGenericScriptError = (e.message === 'Script error.' || e.message === 'Script error') && !e.filename;
+ var alreadyRetried = sessionStorage.getItem('studiora_autoreload_done') === '1';
+ if (isGenericScriptError && !alreadyRetried) {
+ sessionStorage.setItem('studiora_autoreload_done', '1');
+ location.reload();
+ return;
+ }
+
+ var details = e.message || 'erreur inconnue';
+ if (e.error && e.error.stack) details += '\n\nPile d\'appel :\n' + e.error.stack;
+ var location_ = e.filename ? (e.filename + ':' + e.lineno + (e.colno ? ':' + e.colno : '')) : (isGenericScriptError ? '(erreur cross-origin sans détail — voir la console distante / logcat)' : '');
+
  var el = document.createElement('div');
  el.id = 'studiora-fatal-error';
  el.style.cssText = 'position:fixed;inset:0;background:#fff;color:#7a1f1f;z-index:999999;padding:20px;padding-top:max(20px, env(safe-area-inset-top));font-family:monospace;font-size:13px;overflow:auto;white-space:pre-wrap';
- el.textContent = 'Erreur au chargement de Studiora :\n\n' + (e.message || 'erreur inconnue') + '\n\n' + (e.filename ? (e.filename + ':' + e.lineno) : '') + '\n\nMerci de faire une capture d\'écran de ce message.';
+ el.textContent = 'Erreur au chargement de Studiora :\n\n' + details + '\n\n' + location_ + '\n\nMerci de faire une capture d\'écran de ce message.';
+ var btn = document.createElement('button');
+ btn.textContent = 'Recharger';
+ btn.style.cssText = 'margin-top:16px;padding:10px 18px;background:#0B6E4F;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700';
+ btn.onclick = function() { sessionStorage.removeItem('studiora_autoreload_done'); location.reload(); };
+ el.appendChild(document.createElement('br'));
+ el.appendChild(btn);
  document.body ? document.body.appendChild(el) : document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(el); });
  } catch(err) {}
+});
+// On efface le drapeau de rechargement automatique une fois l'app bien chargée,
+// pour qu'une future erreur transitoire (après une prochaine mise en veille)
+// bénéficie à nouveau d'une tentative de rechargement silencieux.
+window.addEventListener('load', function() {
+ try { sessionStorage.removeItem('studiora_autoreload_done'); } catch(e) {}
 });
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1015,8 +1055,16 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="display:flex;flex-direction:column;gap:8px">
  <div>
  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NIVEAU</div>
- <div style="display:flex;gap:6px;flex-wrap:wrap" id="level-btns"></div>
- <span onclick="renderLevelButtons(true)" style="display:inline-block;margin-top:6px;font-size:11px;color:var(--em);font-weight:600;cursor:pointer">Voir tous les niveaux</span>
+ <div style="display:flex;gap:6px;flex-wrap:wrap" id="level-btns">
+ <button onclick="setUserLevel('Terminal',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Terminal</button>
+ <button onclick="setUserLevel('Licence 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 1</button>
+ <button onclick="setUserLevel('Licence 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 2</button>
+ <button onclick="setUserLevel('Licence 3',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Licence 3</button>
+ <button onclick="setUserLevel('Master 1',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Master 1</button>
+ <button onclick="setUserLevel('Master 2',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Master 2</button>
+ <button onclick="setUserLevel('BTS',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">BTS</button>
+ <button onclick="setUserLevel('DEUG',this)" class="level-btn" style="padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">DEUG</button>
+ </div>
  </div>
  <div style="margin-top:4px">
  <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">FILIÈRE</div>
@@ -1530,7 +1578,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="transcribe-media-preview" style="display:none;margin-top:10px"></div>
  <div id="transcribe-media-actions" style="display:none;gap:8px;margin-top:10px">
  <button id="transcribe-media-btn" onclick="toggleMediaTranscription()" style="flex:1;background:var(--em);color:#fff;border:none;border-radius:10px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Transcrire pendant la lecture</button>
- <button id="transcribe-media-cancel-btn" onclick="cancelMediaTranscription()" style="display:none;background:#C0392B;color:#fff;border:none;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Stop</button>
+ <button id="transcribe-media-cancel-btn" onclick="cancelMediaTranscription()" style="display:none;background:var(--amber);color:#fff;border:none;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Stop</button>
  </div>
  <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.4">Le fichier est lu et le micro écoute en même temps pour transcrire : augmente le volume et installe-toi dans un endroit calme pour un meilleur résultat.</div>
  </div>
@@ -1940,18 +1988,10 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  el.textContent = '⚠ Erreur au chargement de l\'app :\n\n' + msg;
  (document.body || document.documentElement).appendChild(el);
  }
- const NON_CRITICAL_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
  window.addEventListener('error', function(e) {
  const src = e.target && (e.target.src || e.target.href);
- if (src) {
- const isNonCritical = NON_CRITICAL_HOSTS.some(function(h) { return src.indexOf(h) !== -1; });
- if (isNonCritical) { console.warn('[Studiora] ressource optionnelle indisponible :', src); return; }
- showFatalOverlay('Ressource introuvable : ' + src);
- }
- else if (e.message) {
- if (e.message === 'Script error.' && !e.filename) { console.warn('[Studiora] exception cross-origin non identifiable, ignoree'); return; }
- showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
- }
+ if (src) showFatalOverlay('Ressource introuvable : ' + src);
+ else if (e.message) showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
  }, true);
  window.addEventListener('unhandledrejection', function(e) {
  showFatalOverlay('Promesse rejetée : ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
@@ -3613,7 +3653,7 @@ async function generateSubjectInfo(subj) {
  const langInstruction = ' Reponds ENTIEREMENT en ' + (langNames[APP_LANG]||'francais') + '.';
  const prompt = 'Presente la matiere "' + safeSubj + '" pour un etudiant de niveau ' + safeLevel + '.' + filiereRule + langInstruction +
  ' Donne une definition courte de la matiere (2-3 phrases), 5 a 6 termes cles avec une definition courte chacun, et 4 a 5 concepts de base avec une explication courte chacun.' +
- ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}';
+ ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}';
 
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
@@ -3863,7 +3903,7 @@ function renderImageMsgHTML(url, prompt, time, legend, visionError) {
  return `<div>
  <div class="msg-bubble ai" style="padding:8px">
  <div style="position:relative;cursor:pointer" onclick="openImageLightbox(atob('${btoa(url)}')${hasPositions ? `,'${btoa(unescape(encodeURIComponent(JSON.stringify(validItems.map(it=>({x:it.x,y:it.y}))))))}'` : ''})">
- <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\\'${promptB64}\\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\\'Plus Jakarta Sans\\',sans-serif&quot;>↻ Réessayer</button></div>'">
+ <img src="${url}" alt="${escHtml(prompt||'')}" style="width:100%;border-radius:12px;display:block" onerror="this.parentElement.parentElement.innerHTML='<div style=&quot;padding:10px;font-size:13px;color:var(--text2)&quot;>✕ Image indisponible<br><button onclick=&quot;regenerateImageFromPrompt(\'${promptB64}\')&quot; style=&quot;margin-top:8px;background:var(--em);color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif&quot;>↻ Réessayer</button></div>'">
  ${markersHTML}
  </div>
  ${legendHTML}
@@ -5156,7 +5196,7 @@ function loadXSpreadsheetAssets() {
  }
  _xsAssetsPromise = new Promise((resolve, reject) => {
  if (document.querySelector(`script[src="${JS}"]`)) { resolve(); return; }
- const s = document.createElement('script'); s.src = JS;
+ const s = document.createElement('script'); s.src = JS; s.crossOrigin = 'anonymous';
  s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + JS));
  document.head.appendChild(s);
  }).catch(e => { _xsAssetsPromise = null; throw e; });
@@ -6123,7 +6163,7 @@ function loadLuckysheetAssets() {
  });
  const loadScript = src => new Promise((resolve, reject) => {
  if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
- const s = document.createElement('script'); s.src = src;
+ const s = document.createElement('script'); s.src = src; s.crossOrigin = 'anonymous';
  s.onload = resolve; s.onerror = () => reject(new Error('load fail: ' + src));
  document.head.appendChild(s);
  });
@@ -6907,12 +6947,10 @@ let _voiceMicBtnId = 'mic-btn'; // bouton dont on change l'apparence pendant l'�
 let _voiceAppendNewline = false; // true pour l'outil de transcription (une ligne par prise de parole)
 let _voiceSessionIsTranscription = false; // capture figée au démarrage (le quota s'applique seulement à l'outil de transcription)
 let _voiceSessionStartTs = 0;
-let _lastInputWasVoice = false; // vrai si le texte du champ vient de la voix (pour lire la réponse automatiquement)
 
 function _voiceInsertText(text) {
  const el = document.getElementById(_voiceTargetId);
  if (!el) return;
- if (_voiceTargetId === 'chat-input') _lastInputWasVoice = true;
  if (_voiceAppendNewline) {
  el.value = (el.value ? el.value + '\n' : '') + text;
  } else {
@@ -6935,19 +6973,6 @@ window.onAndroidSTTStart = function() {
  isListening = true;
  _voiceSessionStartTs = Date.now();
  _voiceSetMicActive(true);
- // Filet de sécurité : si le pont natif ne rappelle jamais (ni résultat ni
- // erreur) — ce qui semble être le cas sur certains appareils, le micro
- // s'allume mais aucun texte n'arrive jamais — on ne laisse pas le bouton
- // allumé indéfiniment sans explication.
- clearTimeout(window._voiceStuckTimer);
- window._voiceStuckTimer = setTimeout(() => {
- if (!_voiceExpectingCallback) return;
- _voiceExpectingCallback = false;
- isListening = false;
- _voiceSetMicActive(false);
- _voiceSessionStartTs = 0;
- showToast('⚠ Le micro ne renvoie rien (problème natif Android). Vérifie l\'autorisation micro dans Paramètres > Apps > Studiora.');
- }, 15000);
 };
 // Certains appareils déclenchent le callback natif Android *après* qu'on ait déjà
 // explicitement arrêté l'écoute (navigation vers un autre écran, etc.). Sans ce
@@ -6955,7 +6980,6 @@ window.onAndroidSTTStart = function() {
 // alors que l'utilisateur a quitté l'outil depuis longtemps.
 let _voiceExpectingCallback = false;
 window.onAndroidSTTResult = function(text) {
- clearTimeout(window._voiceStuckTimer);
  if (!_voiceExpectingCallback) return;
  _voiceExpectingCallback = false;
  isListening = false;
@@ -6975,7 +6999,6 @@ window.onAndroidSTTResult = function(text) {
  }
 };
 window.onAndroidSTTError = function(code) {
- clearTimeout(window._voiceStuckTimer);
  if (!_voiceExpectingCallback) return;
  _voiceExpectingCallback = false;
  isListening = false;
@@ -6988,8 +7011,31 @@ window.onAndroidSTTError = function(code) {
  return;
  }
  if (_mediaTranscribing) stopMediaTranscription();
- if (code === 'unavailable') showToast('⚠ Reconnaissance vocale non disponible sur cet appareil');
- else showToast('⚠ Micro : erreur (' + code + '), réessaie');
+ if (code === 'unavailable') { showToast('⚠ Reconnaissance vocale non disponible sur cet appareil'); return; }
+ if (code === 'timeout') { showToast('⚠ Rien entendu après plusieurs secondes, réessaie'); return; }
+ if (code === 'permission_refusee') { showToast('⚠ Micro refusé. Autorise-le dans Paramètres > Apps > Studiora > Autorisations'); return; }
+ if (code === 'start_failed') { showToast('⚠ Micro : échec du démarrage de l\'écoute native'); return; }
+ // Codes numériques natifs Android (SpeechRecognizer.ERROR_*) : on affiche leur
+ // nom réel au lieu du chiffre brut, pour identifier précisément la cause.
+ var androidSttCodes = {
+ '1': 'ERROR_NETWORK_TIMEOUT (réseau trop lent)',
+ '2': 'ERROR_NETWORK (pas de réseau)',
+ '3': 'ERROR_AUDIO (erreur d\'enregistrement audio)',
+ '4': 'ERROR_SERVER (erreur serveur de reconnaissance)',
+ '5': 'ERROR_CLIENT',
+ '6': 'ERROR_SPEECH_TIMEOUT (rien entendu)',
+ '7': 'ERROR_NO_MATCH (parole non reconnue)',
+ '8': 'ERROR_RECOGNIZER_BUSY (déjà en cours d\'écoute)',
+ '9': 'ERROR_INSUFFICIENT_PERMISSIONS (permission micro manquante)',
+ '10': 'ERROR_TOO_MANY_REQUESTS',
+ '11': 'ERROR_SERVER_DISCONNECTED',
+ '12': 'ERROR_LANGUAGE_NOT_SUPPORTED',
+ '13': 'ERROR_LANGUAGE_UNAVAILABLE',
+ '14': 'ERROR_CANNOT_CHECK_SUPPORT_FOR_LANGUAGE',
+ '15': 'ERROR_CANNOT_LISTEN_TO_NEXT_COMMAND'
+ };
+ var readable = androidSttCodes[String(code)];
+ showToast(readable ? ('⚠ Micro : ' + readable + ' [code ' + code + ']') : ('⚠ Micro : erreur (' + code + '), réessaie'));
 };
 
 // ── Transcription d'un fichier audio/vidéo importé ──
@@ -7234,16 +7280,6 @@ let _micRecording = false;
 let _micStartTs = 0;
 
 async function toggleMicWhisperTranscription() {
- try {
- await _toggleMicWhisperTranscriptionInner();
- } catch(e) {
- console.warn('[Studiora] erreur micro transcription (interceptee) :', e);
- showToast('⚠ Erreur micro, reessaie');
- const btn = document.getElementById('transcribe-mic-btn');
- if (btn) { btn.disabled = false; }
- }
-}
-async function _toggleMicWhisperTranscriptionInner() {
  if (_micRecording) { stopMicWhisperRecording(); return; }
  if (!canUseTranscription()) {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
@@ -7259,7 +7295,11 @@ async function _toggleMicWhisperTranscriptionInner() {
  try {
  _micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
  } catch(e) {
- showToast('⚠ Micro indisponible ou refusé');
+ // On affiche le nom/message réel de l'erreur (ex: NotAllowedError,
+ // NotFoundError, NotReadableError...) plutôt qu'un message générique, pour
+ // pouvoir diagnostiquer précisément ce qui bloque le micro.
+ var reason = (e && (e.name || e.message)) ? (e.name || '') + (e.message ? ' — ' + e.message : '') : 'raison inconnue';
+ showToast('⚠ Micro indisponible : ' + reason);
  return;
  }
  const mimeType = (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/webm';
@@ -7277,7 +7317,7 @@ async function _toggleMicWhisperTranscriptionInner() {
  _micRecording = true;
  _micStartTs = Date.now();
  const btn = document.getElementById('transcribe-mic-btn');
- if (btn) { btn.style.background = '#C0392B'; btn.style.color = '#fff'; btn.innerHTML = _STOP_ICON_SVG; }
+ if (btn) { btn.style.background = 'var(--amber)'; btn.style.color = '#fff'; btn.innerHTML = _STOP_ICON_SVG; }
  const label = document.getElementById('transcribe-quota-label');
  if (label) label.textContent = '🔴 Enregistrement en cours... appuie pour arrêter';
 }
@@ -7359,21 +7399,7 @@ async function toggleVoiceInput(targetId, micBtnId) {
 
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- if (isListening) {
- // Le bouton ne redevenait jamais inactif après un arrêt manuel : le natif
- // était bien coupé, mais isListening et l'apparence du bouton ne
- // l'étaient jamais explicitement ici (seuls les callbacks de résultat/
- // erreur le faisaient, or on vient justement de les désactiver juste
- // en dessous pour ignorer un éventuel callback tardif).
- isListening = false;
- _voiceSetMicActive(false);
- clearTimeout(window._voiceStuckTimer);
- if (_voiceSessionIsTranscription && _voiceSessionStartTs) addTranscriptionUsageSec(Math.round((Date.now()-_voiceSessionStartTs)/1000));
- _voiceSessionStartTs = 0;
- window.AndroidSTT.stopListening();
- _voiceExpectingCallback = false;
- return;
- }
+ if (isListening) { window.AndroidSTT.stopListening(); _voiceExpectingCallback = false; return; }
  _voiceExpectingCallback = true;
  window.AndroidSTT.startListening();
  return;
@@ -7583,14 +7609,7 @@ function buildImageGenPrompt(userPrompt) {
 // essaie donc l'une après l'autre, et surtout on garde la dernière erreur
 // rencontrée (window._lastLegendVisionError) pour pouvoir enfin diagnostiquer
 // précisément si ça échoue encore, au lieu de re-deviner à l'aveugle.
-// Mémorise les octets déjà récupérés par URL : rejouer juste l'analyse (bouton
-// "Réessayer") n'a pas besoin de re-télécharger/re-proxifier la même image —
-// c'était l'étape la plus lente et la plus sujette à échec (proxys CORS), et
-// la reprendre à chaque nouvel essai rendait "Réessayer" peu utile en pratique.
-const _imageBytesCache = new Map();
 async function _fetchImageAsBase64(imgUrl, strategy) {
- const cacheKey = imgUrl;
- if (_imageBytesCache.has(cacheKey)) return _imageBytesCache.get(cacheKey);
  let fetchUrl = imgUrl;
  if (strategy === 'wsrv') fetchUrl = 'https://wsrv.nl/?url=' + encodeURIComponent(imgUrl) + '&output=jpg';
  else if (strategy === 'corsproxy') fetchUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(imgUrl);
@@ -7604,23 +7623,8 @@ async function _fetchImageAsBase64(imgUrl, strategy) {
  r.onerror = reject;
  r.readAsDataURL(blob);
  });
- const result = { base64, mediaType: blob.type || 'image/jpeg' };
- _imageBytesCache.set(cacheKey, result);
- return result;
+ return { base64, mediaType: blob.type || 'image/jpeg' };
 }
-// Plafonne la durée totale d'une promesse : la chaîne légende-vision peut
-// s'y reprendre à 3 fois (plusieurs proxys, plusieurs attentes en cas de
-// rate-limit) et, mise bout à bout, ça peut devenir très long si l'app a été
-// mise en arrière-plan pendant l'attente. Passé ce délai, on abandonne cette
-// tentative précise (l'image reste affichée normalement) plutôt que de
-// laisser l'utilisateur attendre indéfiniment.
-function withTimeout(promise, ms) {
- return Promise.race([
- promise,
- new Promise(resolve => setTimeout(() => resolve(null), ms))
- ]);
-}
-
 async function generateDiagramLegendVision(imgUrl, userPrompt, attempt) {
  attempt = attempt || 1;
  const strategies = ['wsrv', 'corsproxy', 'direct'];
@@ -7734,15 +7738,6 @@ async function generateImageFromChat() {
  el.innerHTML += renderMsgHTML({ role:'user', content:displayText }, APP.chatHistory.length-1);
 
  const genId = 'imggen-' + Date.now();
- // État d'annulation partagé : vérifié après chaque étape (génération de
- // l'image, puis légende) pour arrêter net dès que "Stop" est cliqué, au lieu
- // d'attendre la fin d'une étape qui peut être longue. Le bouton Stop lui-même
- // est maintenant celui du champ de saisie (Envoyer devient Stop pendant
- // toute génération, texte ou image) plutôt qu'un bouton dédié ici.
- const genState = { cancelled:false };
- _activeGenerations[genId] = genState;
- _busyGeneration = { type:'image', genId };
- setSendButtonBusy(true);
  el.innerHTML += `<div id="${genId}" class="msg-row">
  <div class="msg-bubble ai" style="padding:12px 16px">
  <div style="display:flex;gap:5px;align-items:center">
@@ -7760,17 +7755,13 @@ async function generateImageFromChat() {
  const wantsLegend = isDiagramRequest(prompt);
  try {
  const imgUrl = await generatePollinationsImage(buildImageGenPrompt(prompt));
- if (genState.cancelled) return;
  container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null);
  const histEntry = { role:'assistant', content:{ type:'image', url:imgUrl, prompt, legend:null }, time };
  APP.chatHistory.push(histEntry);
  saveChatHistory(APP.currentSubject);
  scrollChat();
- // L'image est affichée : on rend la main tout de suite (Envoyer redevient
- // Envoyer) même si la légende continue de se charger tranquillement derrière.
- if (_busyGeneration && _busyGeneration.genId === genId) { _busyGeneration = null; setSendButtonBusy(false); }
  if (wantsLegend) {
- withTimeout(generateDiagramLegendVision(imgUrl, prompt), 25000).then(legend => {
+ generateDiagramLegendVision(imgUrl, prompt).then(legend => {
  if (!legend || !legend.length) {
  // On a épuisé les 3 stratégies de récupération de l'image sans succès :
  // on garde l'erreur réelle pour l'afficher de façon permanente dans la
@@ -7779,7 +7770,6 @@ async function generateImageFromChat() {
  }
  return legend;
  }).then(legend => {
- if (genState.cancelled) return;
  histEntry.content.legend = legend || 'failed';
  histEntry.content.visionError = window._lastLegendVisionError || null;
  saveChatHistory(APP.currentSubject);
@@ -7790,35 +7780,21 @@ async function generateImageFromChat() {
  // on le dit clairement au lieu de laisser l'image seule sans explication,
  // avec un bouton pour retenter juste la légende sans regénérer l'image.
  const legendPromptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
- c.innerHTML = `<div>${renderImageMsgHTML(imgUrl, prompt, time, null)}
+ c.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null) + `
  <div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
  <span>⚠ Légende indisponible (problème réseau)</span>
  <button onclick="retryDiagramLegend('${genId}','${legendPromptB64}',atob('${btoa(imgUrl)}'))" style="background:var(--em);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">↻ Réessayer</button>
- </div></div>`;
+ </div>`;
  });
  }
  } catch (e) {
- delete _activeGenerations[genId];
- if (_busyGeneration && _busyGeneration.genId === genId) { _busyGeneration = null; setSendButtonBusy(false); }
- if (genState.cancelled) return; // "Stop" a déjà affiché son propre message
  const promptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
  container.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px">
  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">✕ Image indisponible pour le moment (service saturé).</div>
  <button onclick="regenerateImageFromPrompt('${promptB64}')" style="background:var(--em);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Réessayer</button>
  </div>`;
  }
- delete _activeGenerations[genId];
  scrollChat();
-}
-
-// Registre des générations en cours, pour que le bouton "Stop" puisse
-// retrouver et couper l'état d'annulation partagé de la bonne génération.
-const _activeGenerations = {};
-function cancelGeneration(genId) {
- const genState = _activeGenerations[genId];
- if (genState) genState.cancelled = true;
- const c = document.getElementById(genId);
- if (c) c.innerHTML = `<div class="msg-bubble ai" style="padding:12px 16px;color:var(--text3);font-size:13px">Génération annulée.</div>`;
 }
 
 // Retente uniquement la légende (sans regénérer l'image) depuis le bouton
@@ -7826,11 +7802,8 @@ function cancelGeneration(genId) {
 function retryDiagramLegend(genId, promptB64, imgUrl) {
  const prompt = decodeURIComponent(escape(atob(promptB64)));
  const c = document.getElementById(genId);
- // Un seul élément englobant (pas deux <div> côte à côte) : le conteneur du
- // message est en flex-row, donc deux enfants directs s'affichaient l'un à
- // côté de l'autre au lieu de l'un sous l'autre.
- if (c) c.innerHTML = `<div>${renderImageMsgHTML(imgUrl, prompt, '', null)}<div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2)">Nouvel essai de légende...</div></div>`;
- withTimeout(generateDiagramLegendVision(imgUrl, prompt), 25000).then(legend => {
+ if (c) c.innerHTML = renderImageMsgHTML(imgUrl, prompt, '', null) + `<div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2)">Nouvel essai de légende...</div>`;
+ generateDiagramLegendVision(imgUrl, prompt).then(legend => {
  if (!legend || !legend.length) return generateDiagramLegendText(prompt);
  return legend;
  }).then(legend => {
@@ -7842,11 +7815,11 @@ function retryDiagramLegend(genId, promptB64, imgUrl) {
  if (!c2) return;
  if (legend) { c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, legend, visionErr); return; }
  const legendPromptB64 = btoa(unescape(encodeURIComponent(prompt||'')));
- c2.innerHTML = `<div>${renderImageMsgHTML(imgUrl, prompt, time, null)}
+ c2.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null) + `
  <div style="margin:-10px 0 8px;padding:8px 12px;background:var(--bg2);border-radius:10px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px">
  <span>⚠ Légende indisponible (problème réseau)</span>
  <button onclick="retryDiagramLegend('${genId}','${legendPromptB64}',atob('${btoa(imgUrl)}'))" style="background:var(--em);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">↻ Réessayer</button>
- </div></div>`;
+ </div>`;
  });
 }
 
@@ -7871,39 +7844,6 @@ function generatePollinationsImage(prompt) {
  return candidates.reduce((p, url) => p.catch(() => tryLoad(url, 25000)), Promise.reject());
 }
 
-
-// ── STOP UNIFIÉ (bouton Envoyer) ──
-// Une seule génération "active" à la fois (réponse texte OU image/schéma) :
-// pendant qu'elle tourne, le bouton Envoyer devient un bouton Stop qui
-// l'annule, plutôt qu'un bouton dédié séparé par type de génération.
-let _busyGeneration = null; // { type:'chat'|'image', controller?, genId? }
-
-function setSendButtonBusy(busy) {
- const btn = document.getElementById('send-btn');
- if (!btn) return;
- if (busy) {
- btn.onclick = () => stopCurrentGeneration();
- btn.innerHTML = '■';
- btn.title = 'Arrêter';
- btn.style.background = '#C0392B';
- } else {
- btn.onclick = () => sendMessage();
- btn.innerHTML = '→';
- btn.title = '';
- btn.style.background = '';
- btn.disabled = false;
- }
-}
-function stopCurrentGeneration() {
- if (!_busyGeneration) return;
- if (_busyGeneration.type === 'chat' && _busyGeneration.controller) {
- try { _busyGeneration.controller.abort(); } catch(e) {}
- } else if (_busyGeneration.type === 'image' && _busyGeneration.genId) {
- cancelGeneration(_busyGeneration.genId);
- }
- _busyGeneration = null;
- setSendButtonBusy(false);
-}
 
 async function sendMessage() {
  const input = document.getElementById('chat-input');
@@ -7950,13 +7890,7 @@ async function sendMessage() {
  // re-envoyer tout le fichier à chaque futur message
  APP.chatHistory.push({ role:'user', content:displayContent, time });
  const btn = document.getElementById('send-btn');
- // Capturé puis réinitialisé tout de suite : si la question vient d'une saisie
- // vocale, on lira la réponse à voix haute automatiquement une fois arrivée.
- const wasVoiceQuestion = _lastInputWasVoice;
- _lastInputWasVoice = false;
- const chatController = new AbortController();
- _busyGeneration = { type:'chat', controller: chatController };
- setSendButtonBusy(true);
+ btn.disabled = true; btn.textContent = '...';
 
  // Ajouter msg user dans le DOM
  const el = document.getElementById('chat-messages');
@@ -8001,8 +7935,7 @@ async function sendMessage() {
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
  method:'POST',
  headers:{'Content-Type':'application/json',},
- body: JSON.stringify({ model:chatModel, max_tokens:1024, system:SYSTEM_PROMPT, messages }),
- signal: chatController.signal
+ body: JSON.stringify({ model:chatModel, max_tokens:1024, system:SYSTEM_PROMPT, messages })
  });
  const data = await res.json();
 
@@ -8012,7 +7945,7 @@ async function sendMessage() {
  const errMsg = ` Erreur ${res.status} : ${(data.error && data.error.message) || JSON.stringify(data)}`;
  el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
  scrollChat();
- _busyGeneration = null; setSendButtonBusy(false);
+ btn.disabled = false; btn.textContent = '→';
  return;
  }
 
@@ -8023,29 +7956,15 @@ async function sendMessage() {
  saveChatHistory(APP.currentSubject);
  el.innerHTML += renderMsgHTML({role:'assistant',content:aiText,time:aiTime});
  scrollChat();
- // Question posée à la voix : on lit la réponse à voix haute automatiquement.
- // Un second appui sur ce même bouton haut-parleur (ou stopSpeaking()) l'arrête.
- if (wasVoiceQuestion) {
- const lastRow = el.lastElementChild;
- const ttsBtn = lastRow && lastRow.querySelector('.tts-btn');
- if (ttsBtn) speakMessage(btoa(unescape(encodeURIComponent(aiText))), ttsBtn);
- }
- _busyGeneration = null; setSendButtonBusy(false);
 
  } catch(e) {
  (function(){var _t=document.getElementById(typingId);if(_t)_t.remove()})();
- // Un arrêt volontaire (bouton Stop) déclenche aussi une AbortError : on ne
- // veut pas afficher "délai dépassé, réessaie" dans ce cas, juste confirmer
- // l'arrêt sans bulle d'erreur alarmante.
- if (e.name === 'AbortError') {
- el.innerHTML += renderMsgHTML({role:'assistant',content:'⏹ Génération arrêtée.'});
- } else {
- const errMsg = ` Erreur réseau : ${e.message}`;
+ const errMsg = e.name==='AbortError' ? ' Délai dépassé. Réessaie.' : ` Erreur réseau : ${e.message}`;
  el.innerHTML += renderMsgHTML({role:'assistant',content:errMsg});
- }
  scrollChat();
- _busyGeneration = null; setSendButtonBusy(false);
  }
+
+ btn.disabled = false; btn.textContent = '→';
 }
 
 // ── SAUVEGARDE DISCUSSIONS PAR MATIÈRE ──
@@ -9101,7 +9020,7 @@ async function generateFlashcards() {
  const filiereRule = safeFiliere ? ` Adapte le perimetre de ${safeSubj} au contexte reel de la filiere ${safeFiliere} (si ce n'est pas sa specialite, reste a un niveau d'usage pratique realiste pour cette filiere, sinon va au niveau technique attendu).` : '';
  const fcLangNames = {fr:'francais',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const fcLangInstruction = ' Reponds ENTIEREMENT en ' + (fcLangNames[APP_LANG]||'francais') + ' (questions et reponses).';
- const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
+ const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
 
  try {
  const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
@@ -9692,7 +9611,6 @@ function applyDark(on) {
 
 function renderProfile() {
  if (!APP.user || !APP.user.prenom) return;
- renderLevelButtons();
  const st = getStats();
  function safeSet(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
  safeSet('stat-sessions', st.sessions || 0);
@@ -10156,12 +10074,12 @@ const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 // dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
 // Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
 // "Installer" ouvrira un lien invalide.
-const STUDIORA_APK_URL = 'https://studiora-education.netlify.app/downloads/studiora-1.0.3.apk';
+const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.0/app-debug-51.apk';
 
 function isRunningInNativeApp() {
  // Capacitor injecte automatiquement window.Capacitor dans l'app native —
  // absent, on est forcément dans un navigateur (web/PWA)
- return typeof window.AndroidTTS !== 'undefined' || typeof window.AndroidDownload !== 'undefined';
+ return typeof window.Capacitor !== 'undefined';
 }
 
 function initWebToAppBanner() {
@@ -10828,7 +10746,7 @@ let _appInited = false;
 function _runInitOnce() { if (_appInited) return; _appInited = true; _runInit(); }
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.3'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
+const APP_VERSION = '1.0.2'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
 
 async function checkForAppUpdate() {
  try {
@@ -12069,33 +11987,6 @@ function saveUserName() {
  showToast(' Nom mis à jour : ' + APP.user.prenom + ' ' + APP.user.nom);
 }
 
-// Ordre canonique complet, du collège au doctorat — identique à celui du
-// menu déroulant d'inscription, pour que "Mon niveau" propose des niveaux
-// réellement proches de celui déjà enregistré (2 en arrière, 3 devant),
-// plutôt qu'une liste fixe de niveaux post-bac qui ne concernait jamais un
-// compte encore au collège ou au lycée.
-const LEVEL_ORDER = ['6ème','5ème','4ème','3ème','2nde','1ère','Terminale','BT','BTS 1','BTS 2','DUT','Licence 1','Licence 2','Licence 3','Master 1','Master 2','Doctorat'];
-// Anciens libellés encore présents dans certains comptes déjà enregistrés
-// avant l'harmonisation de cette liste — on les fait correspondre à leur
-// équivalent actuel pour trouver la bonne position dans LEVEL_ORDER.
-const LEVEL_ALIASES = { 'Terminal':'Terminale', 'BTS':'BTS 1', 'DEUG':'Licence 1' };
-
-function renderLevelButtons(showAll) {
- const container = document.getElementById('level-btns');
- if (!container || !APP.user) return;
- const current = LEVEL_ALIASES[APP.user.level] || APP.user.level;
- let idx = LEVEL_ORDER.indexOf(current);
- if (idx === -1) idx = 6; // repli sur Terminale si le niveau n'est pas reconnu
- const window_ = showAll ? LEVEL_ORDER : LEVEL_ORDER.slice(Math.max(0, idx - 2), Math.min(LEVEL_ORDER.length, idx + 3 + 1));
- container.innerHTML = window_.map(lvl => {
- const isCurrent = lvl === current;
- const style = isCurrent
- ? "padding:7px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--em-soft);border:1.5px solid var(--em);color:var(--em)"
- : "padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)";
- return `<button onclick="setUserLevel('${lvl}',this)" class="level-btn" style="${style}">${lvl}</button>`;
- }).join('');
-}
-
 function setUserLevel(level, btn) {
  document.querySelectorAll('.level-btn').forEach(b => {
  b.style.background = 'var(--bg2)';
@@ -12134,7 +12025,6 @@ function saveUserLevel() {
  }
  }
  renderHome();
- renderLevelButtons();
  showToast(' Niveau mis à jour : ' + level + ' · ' + filiere);
 }
 
