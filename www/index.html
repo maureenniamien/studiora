@@ -7593,7 +7593,15 @@ function isDiagramRequest(userPrompt) {
 // sous forme de vrai texte HTML, toujours net.
 function buildImageGenPrompt(userPrompt) {
  if (!isDiagramRequest(userPrompt)) return userPrompt;
- return userPrompt + ', realistic detailed medical/scientific textbook illustration, anatomically accurate, professional educational atlas style like Netter\'s Atlas of Human Anatomy or a university biology textbook plate, natural realistic colors and shading, precise fine details, high resolution scientific rendering, photographic quality where appropriate, plain neutral background, NOT flat design, NOT cartoon, NOT icon style, NOT abstract, NOT vector art, NOT minimalist, absolutely no text, no words, no letters, no numbers, no labels rendered anywhere in the image';
+ // CORRECTIF : l'ancien prompt demandait un rendu "photographic quality"
+ // pour un corps humain réaliste, ce qui poussait Flux à générer une figure
+ // nue photoréaliste — parfois avec un mélange de traits masculins/féminins
+ // (le modèle n'ayant reçu aucune consigne de genre), donnant un résultat
+ // ambigu et inapproprié au lieu d'un schéma pédagogique propre. On demande
+ // maintenant explicitement un style d'illustration de manuel scolaire
+ // (planche anatomique classique, dessin au trait/gravure), jamais une photo
+ // réaliste d'un corps nu, avec une figure neutre non sexualisée.
+ return userPrompt + ', classic textbook anatomical line-art illustration, engraving/plate style like a 19th-century anatomy atlas (Gray\'s Anatomy plate style), muted educational color palette, schematic non-sexualized mannequin-style figure, clearly one single consistent unambiguous body type, modest/non-nude presentation, clinical educational diagram, professional biology textbook plate, precise fine details, high resolution, plain neutral background, NOT a realistic photo, NOT photographic, NOT flat design, NOT cartoon, NOT icon style, NOT abstract, NOT minimalist, absolutely no text, no words, no letters, no numbers, no labels rendered anywhere in the image';
 }
 // Demande à l'IA texte une légende courte (5 à 10 éléments) pour le schéma
 // demandé, affichée en vrai HTML sous l'image — toujours lisible, contrairement
