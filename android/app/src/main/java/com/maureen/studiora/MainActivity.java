@@ -24,6 +24,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
+import android.widget.Toast;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 import androidx.core.app.ActivityCompat;
@@ -55,11 +56,11 @@ public class MainActivity extends BridgeActivity {
     private final ExecutorService downloadExecutor = Executors.newSingleThreadExecutor();
 
     private static final String LIVE_INDEX_URL = "https://maureenniamien.github.io/studiora/index.html";
-    // Domaine virtuel standard recommande par Google pour WebViewAssetLoader.
-    // Ne correspond a aucun vrai serveur : sert uniquement de "nom d'origine"
-    // pour que le WebView traite les fichiers locaux comme une vraie page web,
-    // sans passer par file:// (bloque par le sandbox du renderer sur Android 10+).
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
+
+    private void toast(final String msg) {
+        runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
+    }
 
     private class WebAppInterface {
         @JavascriptInterface
@@ -257,8 +258,10 @@ public class MainActivity extends BridgeActivity {
             is.close();
             fos.close();
             Log.i(TAG, "Copie initiale des assets embarques vers le stockage modifiable");
+            toast("Studiora : copie initiale OK (1er lancement)");
         } catch (Exception e) {
             Log.e(TAG, "ensureLocalCopyFromAssets error", e);
+            toast("Studiora : ECHEC copie initiale - " + safeMsg(e));
         }
     }
 
@@ -274,7 +277,10 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void silentlyRefreshLiveCopy() {
-        if (!isNetworkAvailable()) return;
+        if (!isNetworkAvailable()) {
+            toast("Studiora : hors ligne, pas de mise a jour HTML cette fois");
+            return;
+        }
         downloadExecutor.execute(() -> {
             HttpURLConnection conn = null;
             try {
@@ -297,6 +303,7 @@ public class MainActivity extends BridgeActivity {
 
                 if (bytes.length < 1024) {
                     Log.w(TAG, "Reponse suspecte (" + bytes.length + " octets), mise a jour ignoree");
+                    toast("Studiora : reponse HTML suspecte (" + bytes.length + " o), ignoree");
                     return;
                 }
 
@@ -310,11 +317,15 @@ public class MainActivity extends BridgeActivity {
                 File index = new File(dir, "index.html");
                 if (!tmp.renameTo(index)) {
                     Log.w(TAG, "Echec du remplacement atomique de index.html");
+                    toast("Studiora : ECHEC remplacement fichier HTML");
                 } else {
                     Log.i(TAG, "Copie locale mise a jour depuis GitHub Pages (" + bytes.length + " octets)");
+                    toast("Studiora : HTML mis a jour (" + bytes.length + " o) - actif au prochain lancement");
                 }
             } catch (Exception e) {
                 Log.w(TAG, "silentlyRefreshLiveCopy: " + safeMsg(e));
+                final String msg = safeMsg(e);
+                toast("Studiora : ECHEC mise a jour HTML - " + msg);
             } finally {
                 if (conn != null) conn.disconnect();
             }
@@ -363,14 +374,8 @@ public class MainActivity extends BridgeActivity {
                     androidx.core.content.ContextCompat.RECEIVER_EXPORTED
                 );
 
-                // --- Copie locale modifiable + auto-mise a jour silencieuse (Option 2) ---
                 ensureLocalCopyFromAssets();
 
-                // CORRECTIF : file:// vers /data/user/0/.../files/ est bloque par le
-                // sandbox du processus renderer du WebView sur Android 10+ (ERR_ACCESS_DENIED).
-                // On sert donc les fichiers via WebViewAssetLoader, qui les expose comme
-                // une origine web normale (https://appassets.androidplatform.net/live/...)
-                // sans jamais passer par file://.
                 File liveDir = new File(getFilesDir(), "www-live");
                 WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
                         .setDomain(ASSET_DOMAIN)
@@ -386,10 +391,12 @@ public class MainActivity extends BridgeActivity {
 
                 File liveIndex = new File(liveDir, "index.html");
                 if (liveIndex.exists()) {
+                    long ageMs = System.currentTimeMillis() - liveIndex.lastModified();
+                    long ageMin = ageMs / 60000;
+                    toast("Studiora : chargement copie locale (age " + ageMin + " min)");
                     getBridge().getWebView().loadUrl("https://" + ASSET_DOMAIN + "/live/index.html");
                 }
                 silentlyRefreshLiveCopy();
-                // --- fin ---
 
                 getBridge().getWebView().postDelayed(() -> {
                     try { handleShareIntent(pendingIntent); }
