@@ -1164,6 +1164,13 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  dernier build (au lieu de deviner si un problème persiste ou si c'est juste
  une ancienne copie encore en cache). -->
  <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)" id="build-stamp"></div>
+ <!-- CORRECTIF : le rafraîchissement automatique natif (silentlyRefreshLiveCopy)
+ télécharge la nouvelle version en arrière-plan mais ne l'affiche qu'au
+ lancement SUIVANT de l'app — source de confusion répétée en test. Ce bouton
+ contourne complètement ce mécanisme : il navigue directement vers la copie
+ web réellement à jour (GitHub Pages), sans passer par la copie locale
+ mise en cache. Ne nécessite aucune modification native / rebuild APK. -->
+ <button onclick="location.href='https://maureenniamien.github.io/studiora/index.html?t=' + Date.now()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Forcer la mise à jour du contenu</button>
  </div>
 </div>
 
@@ -7771,20 +7778,25 @@ async function generateDiagramLegendText(userPrompt) {
 async function generateSvgDiagram(userPrompt) {
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
- const sysPrompt = `Tu es un illustrateur pédagogique qui dessine des schémas éducatifs directement en SVG, pour des étudiants.
+ const sysPrompt = `Tu es un illustrateur pédagogique senior qui dessine des planches de manuel scolaire directement en SVG, pour des étudiants qui vont réviser dessus.
 
 Réponds UNIQUEMENT avec du code SVG valide et complet, rien d'autre : pas de phrase avant ou après, pas de balises markdown \`\`\`, ta réponse doit commencer directement par <svg et finir par </svg>.
 
+Exigence de richesse (ceci est le critère le plus important — un schéma pauvre est un échec même s'il est techniquement valide) :
+- Le sujet doit être traité EN DÉTAIL, pas résumé à 2-3 éléments. Vise au moins 10 à 20 éléments labellisés au total selon la complexité du sujet (ex: pour "corps humain", ne montre pas juste 3 os — détaille têtes, membres, organes principaux, etc. avec chacun son propre label).
+- Le dessin doit occuper la quasi-totalité du viewBox (peu ou pas de vide inutile), avec des formes de taille généreuse et bien visibles, pas un petit dessin perdu dans un grand cadre vide.
+- Si le sujet a plusieurs aspects distincts (ex: squelette + muscles + organes + système nerveux pour "corps humain"), consacre un panneau détaillé à CHACUN de ces aspects dans le même SVG, avec un titre <text> en gras par panneau — comme une vraie double-page de manuel, pas un croquis unique minimaliste.
+- Si un élément a des sous-parties bien connues (ex: le cœur a des cavités, le squelette a crâne/côtes/bassin/fémur/tibia...), nomme-les individuellement plutôt qu'un seul label générique englobant.
+
 Consignes de dessin :
-- Balise racine : <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto"> (adapte les proportions du viewBox si le sujet s'y prête mieux, ex. plus haut que large).
-- Utilise des formes géométriques simples (rect, circle, ellipse, path, line, polygon, polyline) pour représenter fidèlement le sujet demandé, dans un style plat/vectoriel propre façon manuel scolaire moderne — pas de tentative de réalisme photographique.
-- Tous les textes/légendes/titres DOIVENT être de vrais éléments <text> SVG (jamais dessinés comme des formes), rédigés en ${lang}, taille lisible (14 à 20px selon l'importance), bien positionnés à côté de l'élément qu'ils désignent, reliés si besoin par une fine <line> ou <path>.
-- Si le sujet a plusieurs aspects distincts (ex: squelette + organes + système nerveux pour "corps humain"), organise le schéma en plusieurs sections/panneaux clairement séparés dans le même SVG, chacun avec un titre <text> en gras, comme dans une vraie planche de manuel.
+- Balise racine : <svg viewBox="0 0 900 700" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto"> (adapte les proportions si le sujet s'y prête mieux, ex. plus haut que large pour une figure debout, ou plus large pour plusieurs panneaux côte à côte).
+- Utilise des formes géométriques (rect, circle, ellipse, path, line, polygon, polyline) pour représenter fidèlement chaque élément, dans un style plat/vectoriel propre façon manuel scolaire moderne — pas de tentative de réalisme photographique, mais pas non plus un simple bonhomme-bâton : les formes doivent suggérer clairement ce qu'elles représentent (ex: des poumons ont une silhouette de poumons, pas juste deux ovales identiques à tout le reste).
+- Tous les textes/légendes/titres DOIVENT être de vrais éléments <text> SVG (jamais dessinés comme des formes), rédigés en ${lang}, taille lisible (13 à 22px selon l'importance), bien positionnés à côté de l'élément qu'ils désignent, reliés par une fine <line> ou <path> quand l'élément est petit ou dense.
 - Palette de couleurs cohérente et sobre (5 à 8 couleurs maximum), fond blanc ou très clair, contours nets.
-- Le résultat doit être immédiatement compréhensible visuellement, strictement fidèle au sujet demandé, sans aucun élément hors-sujet, choquant ou ambigu.`;
+- Le résultat doit être immédiatement compréhensible visuellement, strictement fidèle au sujet demandé, riche en détails pertinents, sans aucun élément hors-sujet, choquant ou ambigu.`;
  const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
  method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4000, system: sysPrompt, messages:[{role:'user', content: userPrompt}] })
+ body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 8000, system: sysPrompt, messages:[{role:'user', content: userPrompt}] })
  });
  if (!res.ok) { const errText = await res.text().catch(()=>''); throw new Error('svg-api-http-' + res.status + ': ' + errText.slice(0,150)); }
  const data = await res.json();
@@ -7792,10 +7804,12 @@ Consignes de dessin :
  const match = raw.match(/<svg[\s\S]*<\/svg>/i);
  if (!match) throw new Error('svg-no-markup: ' + raw.slice(0,150));
  const svg = match[0];
- // Garde-fou basique : un SVG minuscule ou sans aucun <text> n'est
- // probablement pas exploitable (réponse tronquée ou dégénérée) — mieux vaut
- // échouer proprement (bouton "Réessayer") qu'afficher une coquille vide.
- if (svg.length < 200 || !/<text[\s>]/i.test(svg)) throw new Error('svg-incomplete');
+ // Garde-fou de qualité : en plus de la validité technique, on exige un
+ // minimum de densité (longueur + nombre de labels <text>) pour rejeter les
+ // schémas trop pauvres (ex: bonhomme-bâton à 3 labels) et forcer un nouvel
+ // essai plutôt que d'afficher un résultat décevant.
+ const textCount = (svg.match(/<text[\s>]/gi) || []).length;
+ if (svg.length < 1500 || textCount < 6) throw new Error('svg-too-sparse (len=' + svg.length + ', labels=' + textCount + ')');
  return svg;
 }
 
@@ -10824,7 +10838,7 @@ const APP_VERSION = '1.0.2'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-08-01 21:40';
+const BUILD_STAMP = '2026-08-01 22:05';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
