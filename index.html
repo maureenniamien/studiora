@@ -7775,6 +7775,28 @@ async function generateDiagramLegendText(userPrompt) {
 // (plus fiable en raisonnement géométrique/mise en page qu'un petit modèle
 // Groq) pour ce type de tâche structurée, comme déjà fait ailleurs pour
 // l'analyse vision des schémas.
+// ── Schéma via un vrai moteur d'image capable d'écrire du texte (payant, très
+// abordable : ~$0,005-0,05/image) — tentative prioritaire pour les diagrammes,
+// avec repli sur le générateur SVG gratuit si indisponible (clé manquante,
+// crédit épuisé, erreur réseau...). Passe par hyper-action pour ne jamais
+// exposer la clé OpenRouter côté client.
+function buildPaidDiagramPrompt(userPrompt) {
+ const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
+ const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
+ return `Create a detailed, richly labeled educational textbook diagram: ${userPrompt}. Include real, clearly legible text labels directly in the image identifying each part, written in ${lang}. Organize as a clean, professional infographic/poster suitable for a school textbook — multiple clearly separated sections with section titles if the topic has several aspects (e.g. skeleton, organs, nervous system for a human body). Flat, clean illustration style with accurate proportions, soft educational color palette, white background, no photorealism, nothing ambiguous, shocking or inappropriate — appropriate for students.`;
+}
+async function generatePaidDiagramImage(userPrompt) {
+ const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ method:'POST', headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ action:'generate_image', prompt: buildPaidDiagramPrompt(userPrompt), size:'1024x1536', quality:'low' })
+ });
+ if (!res.ok) { const errText = await res.text().catch(()=>''); throw new Error('paidimg-http-' + res.status + ': ' + errText.slice(0,150)); }
+ const data = await res.json();
+ if (data.error) throw new Error('paidimg-error: ' + String(data.error).slice(0,150));
+ if (!data.image) throw new Error('paidimg-no-image');
+ return data.image; // data URL (data:image/png;base64,...)
+}
+
 async function generateSvgDiagram(userPrompt) {
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
@@ -7851,6 +7873,13 @@ async function generateImageFromChat() {
 
  if (wantsDiagram) {
  try {
+ const imgUrl = await generatePaidDiagramImage(prompt);
+ container.innerHTML = renderImageMsgHTML(imgUrl, prompt, time, null);
+ APP.chatHistory.push({ role:'assistant', content:{ type:'image', url:imgUrl, prompt, legend:null }, time });
+ saveChatHistory(APP.currentSubject);
+ } catch (payErr) {
+ console.warn('Image payante indisponible, repli SVG gratuit :', payErr);
+ try {
  const svg = await generateSvgDiagram(prompt);
  container.innerHTML = renderSvgMsgHTML(svg, prompt, time);
  APP.chatHistory.push({ role:'assistant', content:{ type:'svg', svg, prompt }, time });
@@ -7861,6 +7890,7 @@ async function generateImageFromChat() {
  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">✕ Schéma indisponible pour le moment (service saturé).</div>
  <button onclick="regenerateSvgFromPrompt('${promptB64}')" style="background:var(--em);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Réessayer</button>
  </div>`;
+ }
  }
  scrollChat();
  return;
@@ -10838,7 +10868,7 @@ const APP_VERSION = '1.0.2'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-08-01 22:05';
+const BUILD_STAMP = '2026-08-01 23:10';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
