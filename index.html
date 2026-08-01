@@ -2010,6 +2010,14 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  });
 })();
 // ── CONFIGURATION ──
+// URL unique de la fonction proxy IA (Supabase Edge Function). IMPORTANT :
+// le "Name" affiché dans le Dashboard Supabase est juste une étiquette
+// cosmétique — il ne change PAS le slug réel utilisé dans cette URL
+// (Supabase le précise lui-même : "Your slug and endpoint URL will remain
+// the same"). Si tu renommes la fonction depuis le Dashboard, vérifie
+// toujours l'URL réelle affichée en haut de sa page et mets à jour UNIQUEMENT
+// cette ligne, plutôt que de chercher/remplacer dans tout le fichier.
+const AI_ENDPOINT = 'https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/swift-endpoint';
 const MODEL = 'llama-3.1-8b-instant';
 const BUILD_TAG = '2026-07-22-exception-user';
 console.log('[Studiora build]', BUILD_TAG);
@@ -3667,7 +3675,7 @@ async function generateSubjectInfo(subj) {
  ' Donne une definition courte de la matiere (2-3 phrases), 5 a 6 termes cles avec une definition courte chacun, et 4 a 5 concepts de base avec une explication courte chacun.' +
  ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}';
 
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res = await fetch(AI_ENDPOINT,{
  method:'POST',
  headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:MODEL,max_tokens:1600,system:'Tu es un generateur de fiches pedagogiques JSON. Reponds UNIQUEMENT avec du JSON valide, format exact: {"definition":"...","key_terms":[{"term":"...","definition":"..."}],"concepts":[{"title":"...","description":"..."}]}. Aucun texte avant ou apres. Aucun markdown. Aucune apostrophe ou guillemet dans les valeurs JSON, utilise des synonymes si necessaire.',messages:[{role:'user',content:prompt}]})
@@ -7421,8 +7429,17 @@ async function toggleVoiceInput(targetId, micBtnId) {
 
  // 1) Priorité au pont natif Android (fiable, contourne le bug getUserMedia en WebView)
  if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- if (isListening) { window.AndroidSTT.stopListening(); _voiceExpectingCallback = false; _voiceWatchdogId++; return; }
+ // CORRECTIF : on vérifie _voiceExpectingCallback (mis à true instantanément)
+ // et pas seulement isListening (mis à jour uniquement au retour du pont
+ // natif, avec un léger délai). Sans ça, un second tap pendant ce délai
+ // relançait une deuxième session d'écoute en parallèle, ce qui embrouillait
+ // l'état partagé et laissait le bouton bloqué en vert indéfiniment.
+ if (isListening || _voiceExpectingCallback) { window.AndroidSTT.stopListening(); _voiceExpectingCallback = false; isListening = false; _voiceSetMicActive(false); _voiceWatchdogId++; return; }
  _voiceExpectingCallback = true;
+ // Retour visuel immédiat (optimiste), sans attendre l'aller-retour natif
+ // onAndroidSTTStart — rend le bouton réactif au tap et empêche la fenêtre
+ // de course décrite ci-dessus.
+ _voiceSetMicActive(true);
  window.AndroidSTT.startListening();
  // CORRECTIF : filet de sécurité côté JS. Si le pont natif Android ne
  // rappelle jamais onAndroidSTTResult/onAndroidSTTError (ex: bug natif
@@ -7690,7 +7707,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, san
  // (proxy wsrv.nl, proxy corsproxy.io, puis accès direct en dernier recours)
  // avant d'abandonner.
  const { base64, mediaType } = await _fetchImageAsBase64(imgUrl, strategy);
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST',
  headers:{'Content-Type':'application/json'},
  body: JSON.stringify({
@@ -7746,7 +7763,7 @@ async function generateDiagramLegendText(userPrompt) {
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const lang = (typeof APP_LANG !== 'undefined' && APP_LANG) ? (langNames[APP_LANG]||'français') : 'français';
  const sysPrompt = `Pour le schéma/diagramme demandé, liste 6 à 12 éléments clés à connaître, du plus important au moins important. Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans balises markdown, au format exact : [{"label":"nom court en ${lang}","detail":"une phrase brève d'explication en ${lang}"}].`;
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST', headers:{'Content-Type':'application/json'},
  body: JSON.stringify({ model: MODEL, max_tokens: 700, system: sysPrompt, messages:[{role:'user',content:userPrompt}] })
  });
@@ -7786,7 +7803,7 @@ function buildPaidDiagramPrompt(userPrompt) {
  return `Create a detailed, richly labeled educational textbook diagram: ${userPrompt}. Include real, clearly legible text labels directly in the image identifying each part, written in ${lang}. Organize as a clean, professional infographic/poster suitable for a school textbook — multiple clearly separated sections with section titles if the topic has several aspects (e.g. skeleton, organs, nervous system for a human body). Flat, clean illustration style with accurate proportions, soft educational color palette, white background, no photorealism, nothing ambiguous, shocking or inappropriate — appropriate for students.`;
 }
 async function generatePaidDiagramImage(userPrompt) {
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST', headers:{'Content-Type':'application/json'},
  body: JSON.stringify({ action:'generate_image', prompt: buildPaidDiagramPrompt(userPrompt), size:'1024x1536', quality:'low' })
  });
@@ -7816,7 +7833,7 @@ Consignes de dessin :
 - Tous les textes/légendes/titres DOIVENT être de vrais éléments <text> SVG (jamais dessinés comme des formes), rédigés en ${lang}, taille lisible (13 à 22px selon l'importance), bien positionnés à côté de l'élément qu'ils désignent, reliés par une fine <line> ou <path> quand l'élément est petit ou dense.
 - Palette de couleurs cohérente et sobre (5 à 8 couleurs maximum), fond blanc ou très clair, contours nets.
 - Le résultat doit être immédiatement compréhensible visuellement, strictement fidèle au sujet demandé, riche en détails pertinents, sans aucun élément hors-sujet, choquant ou ambigu.`;
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST', headers:{'Content-Type':'application/json'},
  body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 8000, system: sysPrompt, messages:[{role:'user', content: userPrompt}] })
  });
@@ -8048,7 +8065,7 @@ async function sendMessage() {
  // multimodale, sans changer le modèle par défaut pour le texte simple.
  const chatModel = Array.isArray(userContent) ? 'claude-haiku-4-5-20251001' : MODEL;
 
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res = await fetch(AI_ENDPOINT,{
  method:'POST',
  headers:{'Content-Type':'application/json',},
  body: JSON.stringify({ model:chatModel, max_tokens:1024, system:SYSTEM_PROMPT, messages })
@@ -8521,7 +8538,7 @@ async function researchFiliereSubjects(niveau, filiere) {
 Pour la filière "${filiere}" au niveau "${niveau}", liste TOUTES les matières/UE réellement enseignées dans cette filière précise à ce niveau (la vraie maquette complète de l'année, pas un résumé ni des matières génériques passe-partout) — généralement entre 8 et 18 matières selon la filière, jamais moins de 6.
 Inspire-toi du programme de référence des meilleures universités mondiales dans ce domaine précis (ex: MIT/Stanford pour l'informatique, Harvard/Johns Hopkins pour la médecine, une grande école de référence pour la spécialité concernée) comme fil conducteur pour identifier les matières fondamentales, tout en gardant des intitulés compréhensibles pour un étudiant africain francophone.
 Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après : {"matieres":["Nom matière 1","Nom matière 2","..."]}`;
- const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST', headers:{'Content-Type':'application/json'},
  body: JSON.stringify({ model: MODEL, max_tokens: 900, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user',content:prompt}] })
  });
@@ -8689,7 +8706,7 @@ async function startQuizLibre(topic) {
  async function fetchQuizLibreBatch(n) {
  const prompt='Genere exactement '+n+' questions QCM de niveau "'+selectedDiff+'" sur ce sujet libre: '+topic+'. Reponds UNIQUEMENT en JSON valide: {"questions":[{"q":"question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"La bonne reponse est A) ..."}]}';
  const quizLibreMaxTokens = Math.min(8000, 400 + n*180);
- const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res=await fetch(AI_ENDPOINT,{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:MODEL,max_tokens:quizLibreMaxTokens,
  system:'Tu es un generateur de QCM. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres.',
@@ -8786,7 +8803,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
 {"questions":[{"type":"qcm","q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"La bonne réponse est Vrai car... explication pédagogique 3-5 phrases."}]}`;
 
  const quizMaxTokens = Math.min(8000, 500 + n*220);
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res = await fetch(AI_ENDPOINT,{
  method:'POST',
  headers:{'Content-Type':'application/json',},
  body:JSON.stringify({model:MODEL,max_tokens:quizMaxTokens,system:'Tu es un professeur expert qui génère des QCM éducatifs en JSON valide uniquement, sans texte autour.',messages:[{role:'user',content:prompt}]})
@@ -9139,7 +9156,7 @@ async function generateFlashcards() {
  const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
 
  try {
- const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res=await fetch(AI_ENDPOINT,{
  method:'POST',
  headers:{'Content-Type':'application/json',},
  body:JSON.stringify({model:MODEL,max_tokens:2200,system:'Tu es un generateur de flashcards JSON. Reponds UNIQUEMENT avec du JSON valide, format exact: {"cards":[{"front":"...","back":"..."}]}. Aucun texte avant ou apres. Aucun markdown. Aucune apostrophe ou guillemet dans les valeurs JSON, utilise des synonymes si necessaire.',messages:[{role:'user',content:prompt}]})
@@ -9265,7 +9282,7 @@ function handleFile(input) {
  reader.onload=async e=>{
  try {
  const base64=e.target.result.split(',')[1];
- const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res=await fetch(AI_ENDPOINT,{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
  messages:[{role:'user',content:[
@@ -9287,7 +9304,7 @@ function handleFile(input) {
  try {
  const base64=e.target.result.split(',')[1];
  const mime=file.type || 'image/jpeg';
- const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res=await fetch(AI_ENDPOINT,{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
  messages:[{role:'user',content:[
@@ -9387,7 +9404,7 @@ Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après :
 
  try {
  const sujetMaxTokens = Math.min(8000, 800 + selectedSujetNParts*500);
- const res = await fetch(`https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action`, {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST', headers:{'Content-Type':'application/json'},
  body: JSON.stringify({ model: MODEL, max_tokens: sujetMaxTokens, system: 'Réponds uniquement en JSON valide, sans aucun texte autour.', messages:[{role:'user', content:prompt}] })
  });
@@ -9474,7 +9491,7 @@ async function gradeSujet() {
  const prompt = `Tu es un correcteur expert en ${subj ? subj.name : 'la matière'} pour le niveau ${level}. Corrige ce devoir/examen partie par partie, avec bienveillance mais rigueur.${langInstruction}\n\n${partsBlock}\n\nPour chaque partie, attribue une note sur le barème indiqué (0 si non répondu), avec un commentaire court et constructif. Calcule aussi le total obtenu et le total maximum (somme des points de toutes les parties).\n\nRéponds UNIQUEMENT avec ce JSON valide, sans texte avant ou après :\n{"parts":[{"note":0,"commentaire":"..."}],"total":0,"total_max":20}`;
 
  try {
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res = await fetch(AI_ENDPOINT,{
  method:'POST', headers:{'Content-Type':'application/json'},
  body: JSON.stringify({ model: MODEL, max_tokens: 2200, system: 'Tu es un correcteur pedagogique. Reponds UNIQUEMENT en JSON valide, sans texte autour.', messages:[{role:'user', content:prompt}] })
  });
@@ -9534,7 +9551,7 @@ async function analyzeCourse() {
  btn.disabled=true; btn.textContent=' Analyse en cours...';
 
  try {
- const res=await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res=await fetch(AI_ENDPOINT,{
  method:'POST',
  headers:{'Content-Type':'application/json',},
  body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
@@ -10868,7 +10885,7 @@ const APP_VERSION = '1.0.2'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-08-01 23:10';
+const BUILD_STAMP = '2026-08-02 09:15';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
@@ -11335,7 +11352,7 @@ async function runTerminalCmd() {
  };
 
  try {
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST', headers:{'Content-Type':'application/json',},
  body: JSON.stringify({model:MODEL, max_tokens:400, system: sysP[terminalType]||sysP.linux, messages:[{role:'user',content:cmd}]})
  });
@@ -11396,7 +11413,7 @@ async function runEditorCode() {
  };
 
  try {
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action', {
+ const res = await fetch(AI_ENDPOINT, {
  method:'POST', headers:{'Content-Type':'application/json',},
  body: JSON.stringify({model:MODEL, max_tokens:600, system: sysE[terminalType]||sysE.linux, messages:[{role:'user',content:code}]})
  });
@@ -11685,7 +11702,7 @@ async function searchDict() {
  prompt = `Traduis "${word}" de la langue ${from} vers la langue ${to}. Donne : traduction principale, alternatives, exemples de phrases et contexte. Si la langue cible n'utilise pas l'alphabet latin, ajoute une translittération. Explications en français, pour un étudiant africain.`;
  }
  try {
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res = await fetch(AI_ENDPOINT,{
  method:'POST',headers:{'Content-Type':'application/json',},
  body:JSON.stringify({model:MODEL,max_tokens:600,system:'Tu es un assistant pédagogique expert pour étudiants africains. Réponds toujours en français de façon claire et structurée.',messages:[{role:'user',content:prompt}]})
  });
@@ -11750,7 +11767,7 @@ async function generateDiagram() {
  try {
  const prompt = `Génère un ${typeLabels[diagType]||diagType} pour : ${desc}.
 Fournis le code PlantUML complet (commence par @startuml, termine par @enduml) et explique brièvement les choix de conception. Adapté au contexte académique africain et à la filière concernée.`;
- const res = await fetch('https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/hyper-action',{
+ const res = await fetch(AI_ENDPOINT,{
  method:'POST',headers:{'Content-Type':'application/json',},
  body:JSON.stringify({model:MODEL,max_tokens:2200,system:'Tu es un professeur expert en modélisation UML qui génère des diagrammes PlantUML clairs et pédagogiques.',messages:[{role:'user',content:prompt}]})
  });
