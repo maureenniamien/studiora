@@ -31,21 +31,30 @@
 // rechargement automatique silencieux avant de l'afficher — ce qui corrige le
 // cas transitoire sans intervention, et ne montre l'écran d'erreur que si le
 // problème persiste après ce rechargement.
+// CORRECTIF 3 : le message générique "Script error." reste ambigu même après
+// crossorigin="anonymous" (certains CDN ne renvoient pas les en-têtes CORS
+// attendus). Hors connexion, ce message se déclenche à répétition à cause des
+// bibliothèques CDN optionnelles (KaTeX, mammoth...), et l'ancien
+// comportement (1 rechargement auto puis blocage plein écran DÉFINITIF)
+// créait une boucle qui rendait l'app entièrement inutilisable par
+// intermittence — plus aucun bouton cliquable pendant que l'écran rouge
+// s'affichait, donnant l'impression que "tout" était cassé. Comme ce message
+// ne contient de toute façon aucune info exploitable pour corriger un vrai
+// bug (ni fichier, ni ligne), on ne bloque plus jamais l'écran pour lui — on
+// se contente de logguer, et l'app continue de fonctionner normalement.
+// L'écran de blocage reste réservé aux erreurs avec un vrai détail
+// (fichier + ligne), qui sont de vrais bugs diagnosticables et méritent
+// d'être vus immédiatement.
 window.addEventListener('error', function(e) {
  try {
  if (document.getElementById('studiora-fatal-error')) return;
 
  var isGenericScriptError = (e.message === 'Script error.' || e.message === 'Script error') && !e.filename;
- var alreadyRetried = sessionStorage.getItem('studiora_autoreload_done') === '1';
- if (isGenericScriptError && !alreadyRetried) {
- sessionStorage.setItem('studiora_autoreload_done', '1');
- location.reload();
- return;
- }
+ if (isGenericScriptError) { console.warn('[Studiora] Script error cross-origin ignoré (probablement un CDN optionnel hors ligne)'); return; }
 
  var details = e.message || 'erreur inconnue';
  if (e.error && e.error.stack) details += '\n\nPile d\'appel :\n' + e.error.stack;
- var location_ = e.filename ? (e.filename + ':' + e.lineno + (e.colno ? ':' + e.colno : '')) : (isGenericScriptError ? '(erreur cross-origin sans détail — voir la console distante / logcat)' : '');
+ var location_ = e.filename ? (e.filename + ':' + e.lineno + (e.colno ? ':' + e.colno : '')) : '';
 
  var el = document.createElement('div');
  el.id = 'studiora-fatal-error';
@@ -54,7 +63,7 @@ window.addEventListener('error', function(e) {
  var btn = document.createElement('button');
  btn.textContent = 'Recharger';
  btn.style.cssText = 'margin-top:16px;padding:10px 18px;background:#0B6E4F;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700';
- btn.onclick = function() { sessionStorage.removeItem('studiora_autoreload_done'); location.reload(); };
+ btn.onclick = function() { location.reload(); };
  el.appendChild(document.createElement('br'));
  el.appendChild(btn);
  document.body ? document.body.appendChild(el) : document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(el); });
@@ -10279,9 +10288,21 @@ const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.0/app-debug-51.apk';
 
 function isRunningInNativeApp() {
- // Capacitor injecte automatiquement window.Capacitor dans l'app native —
- // absent, on est forcément dans un navigateur (web/PWA)
- return typeof window.Capacitor !== 'undefined';
+ // Capacitor injecte window.Capacitor dans l'app native, mais cette
+ // injection peut ne pas être terminée au moment où ce check tourne (juste
+ // après DOMContentLoaded), surtout si l'app est ralentie par des tentatives
+ // réseau ratées (CDN hors ligne). CORRECTIF : on ajoute un second signal,
+ // synchrone et toujours disponible immédiatement — le schéma/hôte de l'URL
+ // chargée. Une app Capacitor tourne toujours sur capacitor://localhost,
+ // https://localhost ou file:// ; jamais sur http(s) avec un vrai nom de
+ // domaine (ça, c'est uniquement le cas d'un navigateur web classique).
+ if (typeof window.Capacitor !== 'undefined') return true;
+ try {
+ var proto = window.location.protocol;
+ var host = window.location.hostname;
+ if (proto === 'capacitor:' || proto === 'file:' || host === 'localhost') return true;
+ } catch(e) {}
+ return false;
 }
 
 function initWebToAppBanner() {
