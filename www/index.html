@@ -668,7 +668,8 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <button onclick="document.getElementById('chat-file-input').click()" title="Joindre un fichier" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
  </button>
- <button onclick="generateImageFromChat()" title="Générer une image" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
+ <!-- Masqué temporairement : génération d'image payante sans crédit (voir generatePaidDiagramImage / paidimg-http-402). Remettre display:flex une fois les crédits rechargés. -->
+ <button onclick="generateImageFromChat()" title="Générer une image" style="display:none;width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;align-items:center;justify-content:center">
  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
  </button>
  <button id="mic-btn" onclick="toggleVoiceInput()" title="Parler" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
@@ -10196,7 +10197,14 @@ async function pullCloudSync() {
  Object.keys(cloud.tree.awarded).forEach(day => {
  mergedAwarded[day] = { ...(mergedAwarded[day]||{}), ...cloud.tree.awarded[day] };
  });
- const mergedPoints = recomputeTreePoints(mergedAwarded);
+ // BUGFIX : l'historique "awarded" est volontairement tronqué aux 14
+ // derniers jours (voir updateTreeGrowth), mais "points" est un total
+ // CUMULATIF depuis le début. Recalculer points uniquement à partir de
+ // l'awarded fusionné (tronqué) faisait perdre les points des jours plus
+ // anciens à CHAQUE synchronisation cloud (donc à chaque ouverture de
+ // l'app) — le score baissait au lieu de rester stable ou d'augmenter. On
+ // ne descend donc jamais en dessous du total déjà connu (local ou cloud).
+ const mergedPoints = Math.max(localTree.points||0, cloud.tree.points||0, recomputeTreePoints(mergedAwarded));
  if (mergedPoints !== (localTree.points||0) || JSON.stringify(mergedAwarded) !== JSON.stringify(localTree.awarded||{})) {
  const mergedRewards = Array.from(new Set([...(localTree.rewardsClaimed||[]), ...(cloud.tree.rewardsClaimed||[])]));
  localStorage.setItem('studiora_tree', JSON.stringify({ ...localTree, awarded: mergedAwarded, points: mergedPoints, rewardsClaimed: mergedRewards }));
