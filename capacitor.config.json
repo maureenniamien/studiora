@@ -1,5 +1,8 @@
 {
-  "appId": "com.maureen.studiora",
-  "appName": "Studiora",
-  "webDir": "www"
+"appId": "com.maureen.studiora",
+"appName": "Studiora",
+"webDir": "www",
+"server": {
+"cleartext": true
+}
 }
