@@ -2001,9 +2001,27 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  el.textContent = '⚠ Erreur au chargement de l\'app :\n\n' + msg;
  (document.body || document.documentElement).appendChild(el);
  }
+ // CORRECTIF : les bibliothèques CDN ci-dessous (KaTeX, mammoth, docx,
+ // pptxgen, xlsx, jsPDF, html2canvas, Quill...) sont TOUTES optionnelles —
+ // elles ne servent qu'à des fonctions précises (formules maths, lecture/
+ // export de documents), jamais à l'affichage de base (accueil, chat,
+ // quiz, transcription). Sans réseau, leur échec de chargement affichait
+ // un écran rouge plein écran qui bloquait TOUTE l'app, y compris les
+ // fonctions qui n'en ont pas besoin — donnant l'impression que "tout"
+ // (import, micro...) ne répondait plus, alors que seul cet écran cachait
+ // le reste. On ignore donc silencieusement (juste un warning console)
+ // l'échec de chargement de ces libs précises ; chaque fonction qui en
+ // dépend vérifie déjà elle-même sa disponibilité au moment de l'usage
+ // (ex: "typeof mammoth === 'undefined'") et affiche un message clair
+ // seulement si l'utilisateur essaie réellement de s'en servir hors ligne.
+ var OPTIONAL_CDN_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
  window.addEventListener('error', function(e) {
  const src = e.target && (e.target.src || e.target.href);
- if (src) showFatalOverlay('Ressource introuvable : ' + src);
+ if (src) {
+ var isOptionalCdn = OPTIONAL_CDN_HOSTS.some(function(h){ return src.indexOf(h) !== -1; });
+ if (isOptionalCdn) { console.warn('[Studiora] CDN optionnel indisponible (pas bloquant) :', src); return; }
+ showFatalOverlay('Ressource introuvable : ' + src);
+ }
  else if (e.message) showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
  }, true);
  window.addEventListener('unhandledrejection', function(e) {
@@ -6911,6 +6929,15 @@ async function handleChatAttachment(input) {
  if (!file) return;
  const name = file.name.toLowerCase();
 
+ // CORRECTIF : un .docx hors-ligne dépend de mammoth (CDN) qui peut ne pas
+ // être chargé — message clair et immédiat plutôt qu'un import qui semble
+ // ne rien faire.
+ if (name.endsWith('.docx') && !navigator.onLine) {
+ showToast('⚠ Lecture des .docx indisponible hors connexion. Les images et PDF fonctionnent hors ligne.');
+ input.value = '';
+ return;
+ }
+
  if (file.type.startsWith('image/')) {
  const reader = new FileReader();
  reader.onload = e => {
@@ -7045,6 +7072,15 @@ window.onAndroidSTTError = function(code) {
  if (code === 'timeout') { showToast('⚠ Rien entendu après plusieurs secondes, réessaie'); return; }
  if (code === 'permission_refusee') { showToast('⚠ Micro refusé. Autorise-le dans Paramètres > Apps > Studiora > Autorisations'); return; }
  if (code === 'start_failed') { showToast('⚠ Micro : échec du démarrage de l\'écoute native'); return; }
+ // CORRECTIF : ERROR_SPEECH_TIMEOUT (6) et ERROR_NO_MATCH (7) sont des
+ // résultats NORMAUX du moteur natif (aucune parole détectée, ou parole
+ // détectée mais non reconnue) — pas de vraie panne. Les afficher comme un
+ // message technique ("ERROR_NO_MATCH [code 7]") donnait l'impression que
+ // le micro était cassé alors qu'il suffit de réessayer en parlant plus
+ // près/plus fort. On garde le message technique pour les VRAIES pannes
+ // (réseau, permission, appareil), et un message simple pour ces deux cas
+ // très fréquents et normaux.
+ if (String(code) === '6' || String(code) === '7') { showToast('⚠ Rien entendu, réessaie'); return; }
  // Codes numériques natifs Android (SpeechRecognizer.ERROR_*) : on affiche leur
  // nom réel au lieu du chiffre brut, pour identifier précisément la cause.
  var androidSttCodes = {
@@ -7142,6 +7178,14 @@ async function toggleMediaTranscription() {
  if (_mediaTranscribing) { stopMediaTranscription(); return; }
  if (!canUseTranscription()) {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
+ return;
+ }
+ // CORRECTIF : la transcription d'un fichier importé passe TOUJOURS par le
+ // serveur (Whisper), donc par le réseau — sans ça, l'utilisateur voyait
+ // juste "rien se passer" pendant plusieurs secondes avant un message peu
+ // clair. Message immédiat et explicite si hors connexion.
+ if (!navigator.onLine) {
+ showToast('⚠ La transcription d\'un fichier importé nécessite une connexion internet.');
  return;
  }
  // 1) Transcription réelle du fichier envoyé à l'IA (précise, ne dépend pas du micro/volume).
