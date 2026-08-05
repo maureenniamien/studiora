@@ -3601,6 +3601,25 @@ function showToast(msg) {
  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
 }
 
+// CORRECTIF : les échecs réseau pendant une génération IA (quiz, cartes mémo,
+// sujet, analyse de cours...) étaient tous avalés en silence puis relancés
+// sous forme d'un message générique "Erreur : empty" — techniquement correct
+// mais incompréhensible pour l'utilisateur, surtout hors ligne où c'est la
+// cause la plus fréquente. On distingue maintenant explicitement le cas
+// "pas de connexion" pour donner un message actionnable, avant de retomber
+// sur les autres cas (délai dépassé, erreur technique réelle).
+function showAiErrorToast(e) {
+ if (!navigator.onLine) {
+ showToast('⚠ Pas de connexion internet — cette fonction a besoin d\'être en ligne. Reconnecte-toi puis réessaie.');
+ } else if ((e && e.name) === 'AbortError') {
+ showToast('⏱ Délai dépassé. Réessaie.');
+ } else if (e && e.message === 'empty') {
+ showToast('✕ Le service IA n\'a rien renvoyé. Réessaie dans un instant.');
+ } else {
+ showToast('✕ Erreur : ' + ((e && e.message) || 'Connexion impossible'));
+ }
+}
+
 // ── HOME ──
 function renderHome() {
  if (!APP.user || !APP.user.prenom) return;
@@ -9007,7 +9026,7 @@ async function startQuiz() {
  APP.quizIndex = 0; APP.quizScore = 0; APP.quizAnswers = [];
  launchQuiz();
  } catch(e) {
- showToast((e && e.name)==='AbortError' ? ' Délai dépassé. Réessaie.' : ' Erreur : '+((e && e.message)||'Connexion impossible'));
+ showAiErrorToast(e);
  btn.disabled=false; btnTxt.textContent=' Générer le quiz avec l\'IA';
  }
 }
@@ -9273,7 +9292,7 @@ async function generateFlashcards() {
  if(APP.flashcards.length===0) throw new Error('empty');
  launchFC();
  } catch(e) {
- showToast((e && e.name)==='AbortError' ? ' Délai dépassé. Réessaie.' : ' Erreur : '+((e && e.message)||'Connexion impossible'));
+ showAiErrorToast(e);
  btn.disabled=false; txt.textContent=' Générer les cartes mémo';
  }
 }
@@ -9513,7 +9532,7 @@ Réponds UNIQUEMENT avec ce JSON valide, sans texte avant ni après :
  renderSujetParts();
  showToast('✓ Sujet généré : ' + sujetParts.length + ' partie(s)');
  } catch(e) {
- showToast('✕ Erreur : ' + ((e && e.message) || 'génération impossible, réessaie'));
+ showAiErrorToast(e);
  }
  btn.disabled = false; btn.textContent = 'Générer le sujet';
 }
@@ -9678,7 +9697,7 @@ async function analyzeCourse() {
  showToast(' Cours "'+title+'" sauvegardé !');
  } catch(e2) { showToast('! Cours analysé mais non sauvegardé (stockage plein ?).'); }
  } catch(e) {
- showToast((e && e.name)==='AbortError' ? ' Délai dépassé. Réessaie.' : ' Erreur : '+((e && e.message)||'Connexion impossible'));
+ showAiErrorToast(e);
  }
  btn.disabled=false; btn.textContent=" Analyser avec l'IA";
 }
@@ -10308,17 +10327,24 @@ function isRunningInNativeApp() {
  // Capacitor injecte window.Capacitor dans l'app native, mais cette
  // injection peut ne pas être terminée au moment où ce check tourne (juste
  // après DOMContentLoaded), surtout si l'app est ralentie par des tentatives
- // réseau ratées (CDN hors ligne). CORRECTIF : on ajoute un second signal,
- // synchrone et toujours disponible immédiatement — le schéma/hôte de l'URL
- // chargée. Une app Capacitor tourne toujours sur capacitor://localhost,
- // https://localhost ou file:// ; jamais sur http(s) avec un vrai nom de
- // domaine (ça, c'est uniquement le cas d'un navigateur web classique).
+ // réseau ratées (CDN hors ligne).
  if (typeof window.Capacitor !== 'undefined') return true;
  try {
  var proto = window.location.protocol;
  var host = window.location.hostname;
  if (proto === 'capacitor:' || proto === 'file:' || host === 'localhost') return true;
  } catch(e) {}
+ // CORRECTIF : cette app charge en réalité son contenu directement depuis
+ // l'URL web réelle (GitHub Pages / Netlify) même à l'intérieur du shell
+ // natif — donc ni window.Capacitor, ni le schéma/hôte capacitor://localhost
+ // ne sont présents, et les deux checks ci-dessus renvoyaient toujours
+ // false même dans l'app installée. Résultat : le bouton "Passer à l'app"
+ // s'affichait à tort dans l'app elle-même (recouvrant au passage certains
+ // boutons de la barre du bas, comme la pièce jointe). Signal fiable à la
+ // place : les ponts JS injectés par le natif Android (AndroidSTT,
+ // AndroidTTS, AndroidDownload) n'existent que dans l'app installée, jamais
+ // dans un navigateur web classique.
+ if (window.AndroidSTT || window.AndroidTTS || window.AndroidDownload) return true;
  return false;
 }
 
