@@ -2023,7 +2023,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  // dépend vérifie déjà elle-même sa disponibilité au moment de l'usage
  // (ex: "typeof mammoth === 'undefined'") et affiche un message clair
  // seulement si l'utilisateur essaie réellement de s'en servir hors ligne.
- var OPTIONAL_CDN_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+ var OPTIONAL_CDN_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com', 'image.pollinations.ai', 'gen.pollinations.ai', 'kroki.io', 'wsrv.nl', 'corsproxy.io'];
  window.addEventListener('error', function(e) {
  const src = e.target && (e.target.src || e.target.href);
  if (src) {
@@ -2031,10 +2031,27 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  if (isOptionalCdn) { console.warn('[Studiora] CDN optionnel indisponible (pas bloquant) :', src); return; }
  showFatalOverlay('Ressource introuvable : ' + src);
  }
- else if (e.message) showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
+ else {
+ // CORRECTIF : même exemption que le premier filet de sécurité plus haut
+ // dans le fichier — un message générique "Script error." sans fichier ni
+ // ligne (erreur cross-origin) ne contient aucune info exploitable et se
+ // déclenche très souvent hors ligne quand un script CDN échoue en cours
+ // d'exécution (pas seulement au chargement). Ce filet-ci ne filtrait pas
+ // ce cas et bloquait donc TOUTE l'app (plein écran, boutons inaccessibles)
+ // à chaque coupure réseau — d'où l'impression que "tout" était cassé.
+ var isGenericScriptError = (e.message === 'Script error.' || e.message === 'Script error') && !e.filename;
+ if (isGenericScriptError) { console.warn('[Studiora] Script error cross-origin ignoré (pas bloquant)'); return; }
+ if (e.message) showFatalOverlay(e.message + (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
+ }
  }, true);
  window.addEventListener('unhandledrejection', function(e) {
- showFatalOverlay('Promesse rejetée : ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+ // CORRECTIF : une promesse rejetée (appel réseau échoué vers Supabase,
+ // l'IA, ou un CDN optionnel — systématique hors ligne) ne doit jamais
+ // bloquer toute l'app derrière un écran plein écran. Chaque fonction qui
+ // dépend du réseau gère déjà son propre échec avec un toast ou un message
+ // ciblé ; on se contente ici de logguer pour le diagnostic, sans jamais
+ // couvrir l'écran ni rendre les boutons inutilisables.
+ console.warn('[Studiora] Promesse rejetée (non bloquant) :', e.reason && e.reason.message ? e.reason.message : e.reason);
  });
 })();
 // ── CONFIGURATION ──
