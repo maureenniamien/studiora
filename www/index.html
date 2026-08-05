@@ -252,7 +252,7 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px}
 
 /* ── TOAST ── */
-.toast{position:absolute;bottom:95px;left:16px;right:16px;background:var(--text);border-radius:14px;padding:13px 18px;font-size:13px;font-weight:500;color:#fff;display:flex;align-items:center;gap:10px;z-index:300;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
+.toast{position:fixed;bottom:95px;left:16px;right:16px;background:var(--text);border-radius:14px;padding:13px 18px;font-size:13px;font-weight:500;color:#fff;display:flex;align-items:center;gap:10px;z-index:99999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 
 /* ── PROGRESS ── */
@@ -7218,6 +7218,11 @@ let importedMediaEl = null;
 let importedMediaFile = null;
 let _mediaTranscribing = false;
 function handleImportMediaFile(input) {
+ // CORRECTIF : cette fonction n'avait aucun try/catch — la moindre exception
+ // (élément manquant, fichier corrompu, createObjectURL qui échoue, etc.)
+ // échouait en silence total : aucun toast, aucune trace, rien à l'écran.
+ // On capture maintenant l'erreur précise et on l'affiche.
+ try {
  const file = input.files[0];
  if (!file) return;
  // Réinitialise toute lecture/transcription en cours avant de charger le nouveau fichier,
@@ -7228,15 +7233,21 @@ function handleImportMediaFile(input) {
  const url = URL.createObjectURL(file);
  const isVideo = file.type.startsWith('video');
  const container = document.getElementById('transcribe-media-preview');
+ if (!container) { showToast('✕ Import impossible : #transcribe-media-preview introuvable'); return; }
  container.innerHTML = isVideo
  ? `<video id="transcribe-media-el" src="${url}" controls style="width:100%;border-radius:12px;background:#000;max-height:220px"></video>`
  : `<audio id="transcribe-media-el" src="${url}" controls style="width:100%"></audio>`;
  container.style.display = 'block';
- document.getElementById('transcribe-media-actions').style.display = 'flex';
- document.getElementById('transcribe-media-remove-btn').style.display = 'inline-flex';
+ const actionsEl = document.getElementById('transcribe-media-actions');
+ if (actionsEl) actionsEl.style.display = 'flex';
+ const removeBtnEl = document.getElementById('transcribe-media-remove-btn');
+ if (removeBtnEl) removeBtnEl.style.display = 'inline-flex';
  importedMediaEl = document.getElementById('transcribe-media-el');
  importedMediaEl.onended = () => { if (_mediaTranscribing) stopMediaTranscription(); };
  input.value = '';
+ } catch(e) {
+ showToast('✕ Erreur import fichier : ' + ((e && e.message) || e));
+ }
 }
 // Retire le fichier importé (sans toucher à la logique de transcription elle-même) :
 // stoppe une éventuelle transcription en cours, libère l'URL objet, réinitialise l'UI.
@@ -12939,6 +12950,9 @@ async function canvasSaveImage() {
 
 
 function loadMediaFile(input) {
+ // CORRECTIF : idem transcribe-media — try/catch pour ne plus jamais échouer
+ // en silence (élément manquant, fichier illisible, etc.) sans rien afficher.
+ try {
  const file = input.files[0];
  if (!file) return;
  _mediaFile = file;
@@ -12970,6 +12984,9 @@ function loadMediaFile(input) {
  const dur = Math.floor(el.duration);
  document.getElementById('media-end').value = dur;
  };
+ } catch(e) {
+ showToast('✕ Erreur import fichier : ' + ((e && e.message) || e));
+ }
 }
 
 function setMediaSpeed(speed, btn) {
