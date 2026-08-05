@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io https://wsrv.nl https://corsproxy.io; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io https://wsrv.nl https://corsproxy.io; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -76,38 +76,47 @@ window.addEventListener('load', function() {
  try { sessionStorage.removeItem('studiora_autoreload_done'); } catch(e) {}
 });
 
-// ── AUTO-FRAÎCHEUR AU LANCEMENT (app native uniquement) ──
-// CORRECTIF : seul le bouton manuel "↻ Forcer la mise à jour du contenu"
-// (écran Profil) garantissait de charger la toute dernière version publiée,
-// en ajoutant un paramètre anti-cache à l'URL. Un lancement normal de l'app,
-// lui, pouvait resservir une copie mise en cache par le WebView Android —
-// les balises <meta http-equiv="Cache-Control"> du <head> ne sont pas
-// fiables dans une WebView embarquée (seuls de vrais en-têtes HTTP de
-// réponse le seraient, et on ne les contrôle pas forcément selon
-// l'hébergeur). Résultat concret : l'utilisateur devait forcer manuellement
-// à CHAQUE ouverture pour voir les correctifs déjà déployés, sinon il
-// retombait sur une ancienne copie avec des bugs déjà corrigés.
-// On automatise donc ici, le plus tôt possible dans le chargement (avant
-// même les polices/CDN, pour ne pas les charger inutilement si on va de
-// toute façon recharger), exactement ce que fait le bouton manuel : au tout
-// premier lancement de chaque session dans l'app native, on recharge une
-// seule fois silencieusement l'URL courante avec un paramètre anti-cache.
-// Jamais en navigateur web classique (là, le cache est normal et voulu), et
-// jamais hors ligne (sinon ça provoquerait un écran blanc pour rien).
-(function autoRefreshFreshCopyOnLaunch() {
+// ── COPIE FRAÎCHE EN LIGNE, DERNIÈRE COPIE VALIDE HORS LIGNE ──
+// CORRECTIF : jusqu'ici, seul le bouton manuel "↻ Forcer la mise à jour du
+// contenu" (écran Profil) garantissait de charger la toute dernière version
+// publiée. Un lancement normal de l'app pouvait resservir une ancienne copie
+// mise en cache — l'utilisateur devait forcer manuellement à CHAQUE
+// ouverture pour voir les correctifs déjà déployés.
+// Un Service Worker "réseau d'abord, cache en secours" résout les deux
+// besoins à la fois, sans le défaut d'une redirection avec paramètre
+// anti-cache (qui change l'URL à chaque lancement et empêche justement de
+// retrouver une copie en cache une fois hors ligne) :
+// - En ligne : toujours tenter le réseau en premier → toujours la dernière
+// version publiée, automatiquement, à chaque ouverture.
+// - Hors ligne : si le réseau échoue, servir la dernière copie qui avait
+// réussi à se charger en ligne (jamais un écran blanc/erreur juste parce
+// qu'il n'y a plus de réseau).
+// Le code du Service Worker est injecté en mémoire (Blob) au lieu d'un
+// fichier séparé, pour que ce correctif reste dans ce seul fichier index.html
+// et n'ajoute rien au pipeline de déploiement.
+(function setupOfflineCache() {
  try {
- if (sessionStorage.getItem('studiora_fresh_reload_done') === '1') return; // une seule fois par session, jamais de boucle
- var isNative = (typeof window.Capacitor !== 'undefined')
- || window.AndroidSTT || window.AndroidTTS || window.AndroidDownload
- || window.location.protocol === 'capacitor:' || window.location.protocol === 'file:'
- || window.location.hostname === 'localhost';
- if (!isNative) return; // jamais en navigateur web
- if (!navigator.onLine) return; // jamais hors ligne
- var url = new URL(window.location.href);
- if (url.searchParams.has('_fresh')) { sessionStorage.setItem('studiora_fresh_reload_done', '1'); return; } // on est déjà sur la copie fraîche issue de ce rechargement
- sessionStorage.setItem('studiora_fresh_reload_done', '1');
- url.searchParams.set('_fresh', Date.now());
- window.location.replace(url.toString());
+ if (!('serviceWorker' in navigator)) return; // WebView trop ancienne : pas grave, comportement inchangé
+ var swSource = "" +
+ "const CACHE='studiora-v1';" +
+ "self.addEventListener('install',e=>self.skipWaiting());" +
+ "self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));" +
+ "self.addEventListener('fetch',event=>{" +
+ " const req=event.request;" +
+ " if(req.method!=='GET')return;" +
+ " const url=new URL(req.url);" +
+ " if(url.origin!==self.location.origin)return;" + // uniquement notre propre document/domaine, jamais les CDN externes
+ " event.respondWith(" +
+ " fetch(req).then(res=>{" +
+ " if(res&&res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put(req,clone));}" +
+ " return res;" +
+ " }).catch(()=>caches.match(req).then(cached=>cached||Promise.reject('offline, pas de copie en cache')))" +
+ " );" +
+ "});";
+ var blobUrl = URL.createObjectURL(new Blob([swSource], { type: 'application/javascript' }));
+ navigator.serviceWorker.register(blobUrl, { scope: './' }).catch(function(e) {
+ console.warn('[Studiora] Service Worker non installé (pas bloquant) :', e && e.message);
+ });
  } catch(e) {}
 })();
 </script>
@@ -709,7 +718,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="chat-attachment-preview" style="display:none;align-items:center;gap:8px;background:var(--bg2);border-radius:10px;padding:8px 10px;margin-bottom:8px"></div>
  <div style="display:flex;gap:9px;align-items:flex-end">
  <input type="file" id="chat-file-input" accept="image/*,.pdf,.docx" style="display:none" onchange="handleChatAttachment(this)">
- <button onclick="document.getElementById('chat-file-input').click()" title="Joindre un fichier" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
+ <button onclick="triggerFileInput('chat-file-input')" title="Joindre un fichier" style="width:46px;height:46px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center">
  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
  </button>
  <!-- Masqué temporairement : génération d'image payante sans crédit (voir generatePaidDiagramImage / paidimg-http-402). Remettre display:flex une fois les crédits rechargés. -->
@@ -1233,7 +1242,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="media-panel-av">
 
  <!-- Zone d'import -->
- <div id="media-drop" onclick="document.getElementById('media-file-input').click()"
+ <div id="media-drop" onclick="triggerFileInput('media-file-input')"
  style="border:2px dashed var(--border);border-radius:16px;padding:32px 20px;text-align:center;cursor:pointer;background:var(--bg2);margin-bottom:16px">
  <div style="font-size:36px;margin-bottom:8px"></div>
  <div style="font-weight:700;font-size:15px;margin-bottom:4px">Importer un fichier</div>
@@ -1629,7 +1638,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="font-size:12px;font-weight:700;margin-bottom:8px">Ou transcrire un fichier importé</div>
  <input type="file" id="transcribe-media-input" accept="audio/*,video/*" style="display:none" onchange="handleImportMediaFile(this)">
  <div style="display:flex;gap:8px">
- <button onclick="document.getElementById('transcribe-media-input').click()" class="doc-tb-btn" style="flex:1;padding:11px">Importer un audio ou une vidéo</button>
+ <button onclick="triggerFileInput('transcribe-media-input')" class="doc-tb-btn" style="flex:1;padding:11px">Importer un audio ou une vidéo</button>
  <button id="transcribe-media-remove-btn" onclick="clearImportedMedia()" class="doc-tb-btn" style="display:none;padding:11px 14px" title="Retirer le fichier">Retirer</button>
  </div>
  <div id="transcribe-media-preview" style="display:none;margin-top:10px"></div>
@@ -1763,7 +1772,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div class="scroll-body" style="padding:16px 20px 100px">
  <div id="doceditor-empty">
  <input type="file" id="doceditor-file-input" accept=".docx,.xlsx,.xls,.txt,.tex,.md" style="display:none" onchange="handleDocEditorOpen(this)">
- <div onclick="document.getElementById('doceditor-file-input').click()" style="background:var(--white);border:2px dashed var(--border);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;margin-bottom:12px">
+ <div onclick="triggerFileInput('doceditor-file-input')" style="background:var(--white);border:2px dashed var(--border);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;margin-bottom:12px">
  <div style="font-size:14px;font-weight:700;margin-bottom:4px">Ouvrir un fichier</div>
  <div style="font-size:12px;color:var(--text3)">Word (.docx), Excel (.xlsx), texte ou LaTeX (.txt/.tex)</div>
  </div>
@@ -3626,6 +3635,23 @@ function openSvgLightbox(svgB64) {
 
 // ── TOAST ──
 let toastTimer;
+// CORRECTIF (diagnostic) : les boutons d'import déclenchaient un simple
+// document.getElementById(id).click() en inline — si jamais l'input ciblé
+// est introuvable (id renommé/dupliqué ailleurs) ou que .click() lève une
+// exception sur un appareil particulier, ça échouait en silence total : rien
+// à l'écran, aucune trace exploitable. Ce helper centralise le déclenchement
+// et affiche l'erreur précise (ou signale l'input manquant) au lieu de ne
+// rien faire visiblement.
+function triggerFileInput(id) {
+ try {
+ const el = document.getElementById(id);
+ if (!el) { showToast('✕ Bouton d\'import cassé : #' + id + ' introuvable dans la page'); return; }
+ el.click();
+ } catch(e) {
+ showToast('✕ Erreur import (#' + id + ') : ' + ((e && e.message) || e));
+ }
+}
+
 function showToast(msg) {
  const el = document.getElementById('toast');
  if (!el) return;
@@ -10389,6 +10415,19 @@ function initWebToAppBanner() {
  if (localStorage.getItem('studiora_hide_apk_banner') === '1') return; // déjà fermée par l'utilisateur
  const fab = document.getElementById('web-to-app-fab');
  if (fab) fab.style.display = 'block';
+ // CORRECTIF : les ponts natifs Android (AndroidSTT/AndroidTTS/
+ // AndroidDownload) peuvent ne pas encore être injectés au tout premier
+ // appel (juste après DOMContentLoaded), surtout si l'app est ralentie par
+ // le réseau — isRunningInNativeApp() pouvait donc à tort renvoyer false
+ // une fraction de seconde, laisser le bouton s'afficher, puis ne jamais le
+ // recacher. On revérifie donc une fois, avec un peu de délai, et on
+ // masque le bouton s'il s'avère qu'on est bien dans l'app native.
+ setTimeout(() => {
+ if (isRunningInNativeApp()) {
+ const fab2 = document.getElementById('web-to-app-fab');
+ if (fab2) fab2.style.display = 'none';
+ }
+ }, 1500);
  } catch(e) {}
 }
 
