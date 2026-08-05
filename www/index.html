@@ -75,6 +75,41 @@ window.addEventListener('error', function(e) {
 window.addEventListener('load', function() {
  try { sessionStorage.removeItem('studiora_autoreload_done'); } catch(e) {}
 });
+
+// ── AUTO-FRAÎCHEUR AU LANCEMENT (app native uniquement) ──
+// CORRECTIF : seul le bouton manuel "↻ Forcer la mise à jour du contenu"
+// (écran Profil) garantissait de charger la toute dernière version publiée,
+// en ajoutant un paramètre anti-cache à l'URL. Un lancement normal de l'app,
+// lui, pouvait resservir une copie mise en cache par le WebView Android —
+// les balises <meta http-equiv="Cache-Control"> du <head> ne sont pas
+// fiables dans une WebView embarquée (seuls de vrais en-têtes HTTP de
+// réponse le seraient, et on ne les contrôle pas forcément selon
+// l'hébergeur). Résultat concret : l'utilisateur devait forcer manuellement
+// à CHAQUE ouverture pour voir les correctifs déjà déployés, sinon il
+// retombait sur une ancienne copie avec des bugs déjà corrigés.
+// On automatise donc ici, le plus tôt possible dans le chargement (avant
+// même les polices/CDN, pour ne pas les charger inutilement si on va de
+// toute façon recharger), exactement ce que fait le bouton manuel : au tout
+// premier lancement de chaque session dans l'app native, on recharge une
+// seule fois silencieusement l'URL courante avec un paramètre anti-cache.
+// Jamais en navigateur web classique (là, le cache est normal et voulu), et
+// jamais hors ligne (sinon ça provoquerait un écran blanc pour rien).
+(function autoRefreshFreshCopyOnLaunch() {
+ try {
+ if (sessionStorage.getItem('studiora_fresh_reload_done') === '1') return; // une seule fois par session, jamais de boucle
+ var isNative = (typeof window.Capacitor !== 'undefined')
+ || window.AndroidSTT || window.AndroidTTS || window.AndroidDownload
+ || window.location.protocol === 'capacitor:' || window.location.protocol === 'file:'
+ || window.location.hostname === 'localhost';
+ if (!isNative) return; // jamais en navigateur web
+ if (!navigator.onLine) return; // jamais hors ligne
+ var url = new URL(window.location.href);
+ if (url.searchParams.has('_fresh')) { sessionStorage.setItem('studiora_fresh_reload_done', '1'); return; } // on est déjà sur la copie fraîche issue de ce rechargement
+ sessionStorage.setItem('studiora_fresh_reload_done', '1');
+ url.searchParams.set('_fresh', Date.now());
+ window.location.replace(url.toString());
+ } catch(e) {}
+})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
