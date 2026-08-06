@@ -736,7 +736,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
 
 <!-- ═══════════════════ QUIZ ═══════════════════ -->
 <div id="screen-quiz" class="screen hidden">
- <div style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
+ <div id="quiz-header-bar" style="padding:max(env(safe-area-inset-top,0px) + 14px, 48px) 20px 12px;display:flex;align-items:center;justify-content:space-between">
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <span class="display" style="font-size:17px;font-weight:700" data-i18n="quiz_header">Quiz express</span>
  </div>
@@ -805,9 +805,14 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
  <span style="font-size:12px;color:var(--text2)" id="quiz-counter">Question 1/5</span>
+ <div style="display:flex;align-items:center;gap:8px">
  <div style="background:var(--pur-soft);border-radius:8px;padding:5px 11px;display:flex;align-items:center;gap:5px">
  
  <span style="font-size:14px;font-weight:700;color:var(--purple)" id="quiz-timer">30</span>
+ </div>
+ <button onclick="toggleQuizFullscreen()" id="quiz-fullscreen-btn" title="Plein écran" style="width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0">
+ <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+ </button>
  </div>
  </div>
  <div class="prog-track"><div class="prog-fill" id="quiz-prog" style="background:var(--purple)"></div></div>
@@ -2106,7 +2111,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
 // the same"). Si tu renommes la fonction depuis le Dashboard, vérifie
 // toujours l'URL réelle affichée en haut de sa page et mets à jour UNIQUEMENT
 // cette ligne, plutôt que de chercher/remplacer dans tout le fichier.
-const AI_ENDPOINT = 'https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/swift-endpoint';
+const AI_ENDPOINT = 'https://qdxdvmxmetzyzfnpuogw.supabase.co/functions/v1/rapid-action';
 const MODEL = 'llama-3.1-8b-instant';
 const BUILD_TAG = '2026-07-22-exception-user';
 console.log('[Studiora build]', BUILD_TAG);
@@ -3504,6 +3509,9 @@ function goBack() {
  // donc sans ce garde-fou le retour matériel du téléphone tombait à travers
  // et fermait l'app entière.
  if (document.getElementById('image-lightbox')) { closeImageLightbox(); return; }
+ // Si on quitte l'écran quiz en mode plein écran (header/nav masqués), on les
+ // remet — sinon ils resteraient cachés en arrivant sur l'écran suivant.
+ if (typeof _quizIsFullscreen !== 'undefined' && _quizIsFullscreen) { toggleQuizFullscreen(); }
  // La nav sera gérée par updateGlobalNav via showScreen
  // Reset quiz si on quitte en cours de génération ou de jeu
  clearInterval(timerInterval);
@@ -8984,6 +8992,21 @@ async function startQuizLibre(topic) {
 // arrivait sur les gros Marathon (30/50/100 questions demandées, 3 reçues) :
 // un modèle rapide comme llama-3.1-8b-instant tient mal une longue réponse
 // JSON d'un seul bloc, alors que 10 questions à la fois passent de façon fiable.
+let _quizIsFullscreen = false;
+function toggleQuizFullscreen() {
+ _quizIsFullscreen = !_quizIsFullscreen;
+ const header = document.getElementById('quiz-header-bar');
+ const nav = document.getElementById('global-nav');
+ const btn = document.getElementById('quiz-fullscreen-btn');
+ if (header) header.style.display = _quizIsFullscreen ? 'none' : 'flex';
+ if (nav) nav.style.display = _quizIsFullscreen ? 'none' : '';
+ if (btn) btn.innerHTML = _quizIsFullscreen
+ ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v4a1 1 0 0 1-1 1H4M15 3v4a1 1 0 0 0 1 1h4M9 21v-4a1 1 0 0 0-1-1H4M15 21v-4a1 1 0 0 1 1-1h4"/></svg>'
+ : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
+ // Si updateGlobalNav() écrase notre display plus tard (changement d'écran),
+ // on remet l'état par défaut pour ne jamais bloquer la nav sur un autre écran.
+ if (!_quizIsFullscreen) updateGlobalNav('screen-quiz');
+}
 async function generateQuizBatch(n, subj, level, filiere, topic, isMarathon, diff) {
  const subjName = subjectPromptName(subj);
  const filiereRule = filiere ? `- Adapte le PÉRIMÈTRE de "${subjName}" au contexte réel de la filière ${filiere} : si cette matière n'est pas la spécialité de cette filière, reste au niveau d'usage pratique attendu (ex: "Informatique" pour une filière non-technique = bureautique et usage numérique courant, PAS de programmation/algorithmique ; à l'inverse pour une filière informatique/technique, va bien au niveau technique attendu). Ne suppose jamais un niveau d'expertise dans cette matière au-delà de ce qui est réaliste pour un·e étudiant·e de cette filière précise.\n` : '';
