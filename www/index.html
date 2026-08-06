@@ -1637,6 +1637,19 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </button>
  <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour enregistrer, appuie à nouveau pour arrêter et transcrire</div>
  <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
+ <div style="margin-top:14px">
+ <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Durée max d'enregistrement (00:00:00 = illimité, arrêt manuel)</div>
+ <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+ <select id="mic-dur-h" onchange="updateMicMaxDurationFromPicker()" style="padding:8px 6px;border-radius:8px;border:1px solid var(--border);font-size:15px;text-align:center;background:var(--white);color:var(--text)"></select>
+ <span style="font-size:13px;color:var(--text3)">h</span>
+ <select id="mic-dur-m" onchange="updateMicMaxDurationFromPicker()" style="padding:8px 6px;border-radius:8px;border:1px solid var(--border);font-size:15px;text-align:center;background:var(--white);color:var(--text)"></select>
+ <span style="font-size:13px;color:var(--text3)">min</span>
+ <select id="mic-dur-s" onchange="updateMicMaxDurationFromPicker()" style="padding:8px 6px;border-radius:8px;border:1px solid var(--border);font-size:15px;text-align:center;background:var(--white);color:var(--text)"></select>
+ <span style="font-size:13px;color:var(--text3)">s</span>
+ </div>
+ <div id="mic-duration-summary" style="font-size:11px;color:var(--em);margin-top:6px;font-weight:600;text-align:center">Illimité (arrêt manuel)</div>
+ <div id="mic-duration-plan-note" style="font-size:10.5px;color:var(--text3);margin-top:4px;text-align:center"></div>
+ </div>
  </div>
 
  <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:16px">
@@ -3544,7 +3557,7 @@ function onScreenEnter(id) {
  if(id==='screen-travaux') { renderSavedDiagrams(); renderCoursesInTravaux(); syncCoursesFromDatabase(); renderSharedDocs(); }
  if(id==='screen-library') { renderLibraryImports(); renderLibraryDownloads(); }
  if(id==='screen-diagrams') renderSavedDiagrams();
- if(id==='screen-transcription') updateTranscriptionQuotaLabel();
+ if(id==='screen-transcription') { updateTranscriptionQuotaLabel(); populateMicDurationSelects(); }
 }
 
 // ── APERÇU PLEIN ÉCRAN ──
@@ -7499,6 +7512,58 @@ let _micStream = null;
 let _micChunks = [];
 let _micRecording = false;
 let _micStartTs = 0;
+// Durée max d'enregistrement choisie par l'utilisateur (0 = illimité, arrêt
+// manuel uniquement). Sélecteur h/min/s pour couvrir aussi bien une note
+// rapide (quelques secondes) qu'un cours entier (jusqu'à 5h) — un simple
+// preset en minutes ne suffisait pas pour un usage "enregistrer un cours".
+let _micMaxDurationSec = 0;
+let _micAutoStopTimer = null;
+let _micCountdownInterval = null;
+function populateMicDurationSelects() {
+ const hSel = document.getElementById('mic-dur-h');
+ const mSel = document.getElementById('mic-dur-m');
+ const sSel = document.getElementById('mic-dur-s');
+ if (!hSel || !mSel || !sSel) return;
+ // Plafond d'heures selon le forfait (Standard 3h, Premium 6h, VIP illimité
+ // → on plafonne alors à 6 pour garder un sélecteur utilisable, la valeur
+ // "0 = illimité" restant toujours disponible).
+ const maxSec = getSessionMaxSec();
+ const maxH = isFinite(maxSec) ? Math.floor(maxSec/3600) : 6;
+ if (hSel.options.length && parseInt(hSel.dataset.maxH,10) === maxH) return; // déjà à jour
+ hSel.innerHTML = ''; mSel.innerHTML = ''; sSel.innerHTML = '';
+ hSel.dataset.maxH = maxH;
+ for (let i = 0; i <= maxH; i++) hSel.appendChild(new Option(String(i).padStart(2,'0'), i));
+ for (let i = 0; i < 60; i++) { mSel.appendChild(new Option(String(i).padStart(2,'0'), i)); sSel.appendChild(new Option(String(i).padStart(2,'0'), i)); }
+ const note = document.getElementById('mic-duration-plan-note');
+ if (note) {
+ if (!isFinite(maxSec)) note.textContent = 'Ton forfait ' + PLANS[getPlan()].name + ' : durée illimitée par enregistrement.';
+ else note.textContent = 'Ton forfait ' + PLANS[getPlan()].name + ' : ' + formatDurationHMS(maxSec) + ' max par enregistrement · ' + Math.floor(getTranscriptionRemainingSec()/60) + ' min restantes aujourd\'hui.';
+ }
+ updateMicMaxDurationFromPicker();
+}
+function formatDurationHMS(sec) {
+ const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+ const parts = [];
+ if (h) parts.push(h+'h');
+ if (m) parts.push(String(m).padStart(h?2:1,'0')+'min');
+ if (s || (!h && !m)) parts.push(String(s).padStart((h||m)?2:1,'0')+'s');
+ return parts.join(' ');
+}
+function updateMicMaxDurationFromPicker() {
+ const h = parseInt((document.getElementById('mic-dur-h')||{}).value, 10) || 0;
+ const m = parseInt((document.getElementById('mic-dur-m')||{}).value, 10) || 0;
+ const s = parseInt((document.getElementById('mic-dur-s')||{}).value, 10) || 0;
+ let sec = h*3600 + m*60 + s;
+ const cap = getSessionMaxSec();
+ let clamped = false;
+ if (sec > cap) { sec = cap; clamped = true; }
+ _micMaxDurationSec = sec;
+ const summary = document.getElementById('mic-duration-summary');
+ if (summary) {
+ if (_micMaxDurationSec === 0) summary.textContent = 'Illimité (arrêt manuel)';
+ else summary.textContent = 'Arrêt auto après ' + formatDurationHMS(_micMaxDurationSec) + (clamped ? ' (plafond de ton forfait)' : '');
+ }
+}
 
 async function toggleMicWhisperTranscription() {
  if (_micRecording) { stopMicWhisperRecording(); return; }
@@ -7548,11 +7613,29 @@ async function toggleMicWhisperTranscription() {
  if (btn) { btn.style.background = 'var(--amber)'; btn.style.color = '#fff'; btn.innerHTML = _STOP_ICON_SVG; }
  const label = document.getElementById('transcribe-quota-label');
  if (label) label.textContent = '🔴 Enregistrement en cours... appuie pour arrêter';
+ // Arrêt automatique : durée choisie par l'utilisateur, plafonnée dans tous
+ // les cas par la limite de session du forfait (même en "illimité", un
+ // compte Standard/Premium ne peut pas dépasser 3h/6h par enregistrement —
+ // seul VIP/Admin est vraiment sans plafond).
+ const planCap = getSessionMaxSec();
+ const effectiveMaxSec = isFinite(planCap) ? (_micMaxDurationSec > 0 ? Math.min(_micMaxDurationSec, planCap) : planCap) : _micMaxDurationSec;
+ if (effectiveMaxSec > 0 && isFinite(effectiveMaxSec)) {
+ _micAutoStopTimer = setTimeout(() => { if (_micRecording) stopMicWhisperRecording(); }, effectiveMaxSec * 1000);
+ let remaining = effectiveMaxSec;
+ if (label) label.textContent = '🔴 ' + formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ _micCountdownInterval = setInterval(() => {
+ remaining--;
+ if (label && remaining >= 0) label.textContent = '🔴 ' + formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ if (remaining <= 0) clearInterval(_micCountdownInterval);
+ }, 1000);
+ }
 }
 
 async function stopMicWhisperRecording() {
  if (!_micRecording || !_micRecorder) return;
  _micRecording = false;
+ if (_micAutoStopTimer) { clearTimeout(_micAutoStopTimer); _micAutoStopTimer = null; }
+ if (_micCountdownInterval) { clearInterval(_micCountdownInterval); _micCountdownInterval = null; }
  const btn = document.getElementById('transcribe-mic-btn');
  const rawMs = Date.now() - _micStartTs;
  const durationSec = Math.round(rawMs / 1000);
@@ -10550,10 +10633,10 @@ const EXCEPTION_EMAILS = ['manstaki@yahoo.fr'];
 function isExceptionUser() { return EXCEPTION_EMAILS.includes((APP.user.email||'').toLowerCase()); }
 
 const PLANS = {
- free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10, transcription_min_per_day:150 },
- premium: { name:'Premium', color:'#0B6E4F', ia_per_4h:45, quiz_per_5h:20, fc_per_day:30, transcription_min_per_day:300 },
- vip: { name:'VIP', color:'#f59e0b', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999, transcription_min_per_day:999 },
- admin: { name:'Admin', color:'#7c3aed', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999, transcription_min_per_day:999 }
+ free: { name:'Gratuit', color:'#6b7280', ia_per_4h:15, quiz_per_5h:10, fc_per_day:10, transcription_min_per_day:3*180, transcription_session_max_sec:3*3600 },
+ premium: { name:'Premium', color:'#0B6E4F', ia_per_4h:45, quiz_per_5h:20, fc_per_day:30, transcription_min_per_day:3*360, transcription_session_max_sec:6*3600 },
+ vip: { name:'VIP', color:'#f59e0b', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999, transcription_min_per_day:999, transcription_session_max_sec:Infinity },
+ admin: { name:'Admin', color:'#7c3aed', ia_per_4h:999,quiz_per_5h:999,fc_per_day:999, transcription_min_per_day:999, transcription_session_max_sec:Infinity }
 };
 
 function getPlan() {
@@ -10682,6 +10765,19 @@ function getTranscriptionRemainingSec() { return Math.max(0, getTranscriptionQuo
 function canUseTranscription() {
  if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return true;
  return getTranscriptionRemainingSec() > 0;
+}
+
+// ── Plafond par SESSION d'enregistrement micro (distinct du budget cumulé
+// ci-dessus) : Standard = 3h max par session, Premium = 6h, VIP/Admin =
+// illimité. "Session" = une prise d'enregistrement micro (du tap départ au
+// tap/auto arrêt). Le budget total du jour (3× cette durée) est déjà géré
+// par le quota cumulé habituel (getTranscriptionQuotaSec/canUseTranscription)
+// — pas de compteur de "nombre d'essais" séparé : ça pénaliserait à tort les
+// enregistrements courts (test de quelques secondes) au même titre qu'un
+// enregistrement complet.
+function getSessionMaxSec() {
+ if (isAdmin()||getPlan()==='vip'||isExceptionUser()) return Infinity;
+ return getPlanLimits().transcription_session_max_sec ?? 3*3600;
 }
 function addTranscriptionUsageSec(sec) {
  if (!sec || sec <= 0) return;
