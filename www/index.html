@@ -1638,7 +1638,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="font-size:12px;color:var(--text3);margin-top:8px">Appuie pour enregistrer, appuie à nouveau pour arrêter et transcrire</div>
  <div id="transcribe-quota-label" style="font-size:11px;color:var(--em);margin-top:4px;font-weight:600"></div>
  <div style="margin-top:14px">
- <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Durée max d'enregistrement (00:00:00 = illimité, arrêt manuel)</div>
+ <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Durée (00:00:00 = arrêt manuel)</div>
  <div style="display:flex;align-items:center;justify-content:center;gap:4px">
  <select id="mic-dur-h" onchange="updateMicMaxDurationFromPicker()" style="padding:8px 6px;border-radius:8px;border:1px solid var(--border);font-size:15px;text-align:center;background:var(--white);color:var(--text)"></select>
  <span style="font-size:13px;color:var(--text3)">h</span>
@@ -1648,7 +1648,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <span style="font-size:13px;color:var(--text3)">s</span>
  </div>
  <div id="mic-duration-summary" style="font-size:11px;color:var(--em);margin-top:6px;font-weight:600;text-align:center">Illimité (arrêt manuel)</div>
- <div id="mic-duration-plan-note" style="font-size:10.5px;color:var(--text3);margin-top:4px;text-align:center"></div>
+ <button id="mic-start-btn" onclick="toggleMicWhisperTranscription()" style="margin-top:10px;padding:10px 22px;border-radius:24px;border:none;background:var(--em);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">▶ Démarrer l'enregistrement</button>
  </div>
  </div>
 
@@ -7524,21 +7524,16 @@ function populateMicDurationSelects() {
  const mSel = document.getElementById('mic-dur-m');
  const sSel = document.getElementById('mic-dur-s');
  if (!hSel || !mSel || !sSel) return;
- // Plafond d'heures selon le forfait (Standard 3h, Premium 6h, VIP illimité
- // → on plafonne alors à 6 pour garder un sélecteur utilisable, la valeur
- // "0 = illimité" restant toujours disponible).
+ // Plafond d'heures du sélecteur selon le forfait (Standard 3h, Premium 6h).
+ // Pour un forfait sans limite de session (VIP/Admin), 24h pour couvrir
+ // n'importe quel usage (cours, conférence longue...).
  const maxSec = getSessionMaxSec();
- const maxH = isFinite(maxSec) ? Math.floor(maxSec/3600) : 6;
+ const maxH = isFinite(maxSec) ? Math.floor(maxSec/3600) : 24;
  if (hSel.options.length && parseInt(hSel.dataset.maxH,10) === maxH) return; // déjà à jour
  hSel.innerHTML = ''; mSel.innerHTML = ''; sSel.innerHTML = '';
  hSel.dataset.maxH = maxH;
  for (let i = 0; i <= maxH; i++) hSel.appendChild(new Option(String(i).padStart(2,'0'), i));
  for (let i = 0; i < 60; i++) { mSel.appendChild(new Option(String(i).padStart(2,'0'), i)); sSel.appendChild(new Option(String(i).padStart(2,'0'), i)); }
- const note = document.getElementById('mic-duration-plan-note');
- if (note) {
- if (!isFinite(maxSec)) note.textContent = 'Ton forfait ' + PLANS[getPlan()].name + ' : durée illimitée par enregistrement.';
- else note.textContent = 'Ton forfait ' + PLANS[getPlan()].name + ' : ' + formatDurationHMS(maxSec) + ' max par enregistrement · ' + Math.floor(getTranscriptionRemainingSec()/60) + ' min restantes aujourd\'hui.';
- }
  updateMicMaxDurationFromPicker();
 }
 function formatDurationHMS(sec) {
@@ -7548,6 +7543,10 @@ function formatDurationHMS(sec) {
  if (m) parts.push(String(m).padStart(h?2:1,'0')+'min');
  if (s || (!h && !m)) parts.push(String(s).padStart((h||m)?2:1,'0')+'s');
  return parts.join(' ');
+}
+function resetMicStartBtn() {
+ const startBtn = document.getElementById('mic-start-btn');
+ if (startBtn) { startBtn.textContent = '▶ Démarrer l\'enregistrement'; startBtn.style.background = 'var(--em)'; }
 }
 function updateMicMaxDurationFromPicker() {
  const h = parseInt((document.getElementById('mic-dur-h')||{}).value, 10) || 0;
@@ -7611,6 +7610,8 @@ async function toggleMicWhisperTranscription() {
  _micStartTs = Date.now();
  const btn = document.getElementById('transcribe-mic-btn');
  if (btn) { btn.style.background = 'var(--amber)'; btn.style.color = '#fff'; btn.innerHTML = _STOP_ICON_SVG; }
+ const startBtn = document.getElementById('mic-start-btn');
+ if (startBtn) { startBtn.textContent = '⏹ Arrêter l\'enregistrement'; startBtn.style.background = 'var(--amber)'; }
  const label = document.getElementById('transcribe-quota-label');
  if (label) label.textContent = '🔴 Enregistrement en cours... appuie pour arrêter';
  // Arrêt automatique : durée choisie par l'utilisateur, plafonnée dans tous
@@ -7647,23 +7648,27 @@ async function stopMicWhisperRecording() {
  const blob = new Blob(_micChunks, { type: mimeType });
  _micChunks = [];
  if (btn) { btn.disabled = true; btn.style.background = 'var(--white)'; btn.style.color = 'var(--text2)'; btn.innerHTML = _MIC_ICON_SVG; }
- if (!blob.size) { if (btn) btn.disabled = false; updateTranscriptionQuotaLabel(); return; }
+ const startBtn0 = document.getElementById('mic-start-btn');
+ if (startBtn0) { startBtn0.textContent = '⏳ Transcription en cours...'; startBtn0.style.background = 'var(--text3)'; }
+ if (!blob.size) { if (btn) btn.disabled = false; resetMicStartBtn(); updateTranscriptionQuotaLabel(); return; }
  // CORRECTIF anti-hallucination : un clip trop court (bruit, appui accidentel,
  // toux) n'a quasiment aucune chance de contenir de la parole exploitable, et
  // c'est justement ce genre d'audio qui pousse Whisper à halluciner un texte
  // fluide mais sans rapport avec ce qui a été dit. On l'écarte avant envoi
  // plutôt que de laisser Whisper "inventer" une réponse plausible.
- if (rawMs < 800) { if (btn) btn.disabled = false; showToast('⚠ Enregistrement trop court, réessaie'); updateTranscriptionQuotaLabel(); return; }
+ if (rawMs < 800) { if (btn) btn.disabled = false; resetMicStartBtn(); showToast('⚠ Enregistrement trop court, réessaie'); updateTranscriptionQuotaLabel(); return; }
  let result;
  try {
  result = await _uploadForTranscription(blob, 'micro.webm', btn);
  } catch(e) {
  if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ resetMicStartBtn();
  showToast('⚠ Erreur réseau, réessaie');
  updateTranscriptionQuotaLabel();
  return;
  }
  if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ resetMicStartBtn();
  if (result.notDeployed) { showToast('⚠ Fonction de transcription indisponible, réessaie plus tard'); updateTranscriptionQuotaLabel(); return; }
  if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); updateTranscriptionQuotaLabel(); return; }
  if (result.emptyText) { showToast('⚠ Aucun texte détecté, parle plus fort ou réessaie'); updateTranscriptionQuotaLabel(); return; }
