@@ -9076,12 +9076,18 @@ async function startQuiz() {
  // par le modèle (d'où les Marathon "30 demandées, 3 reçues"). On enchaîne donc
  // plusieurs petits appels fiables plutôt qu'un seul gros appel fragile.
  const BATCH = 10;
+ const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
 
  // Génère un lot avec jusqu'à 2 tentatives supplémentaires en cas d'échec réseau/JSON
  // (un lot isolé qui échoue une fois ne doit pas priver le Marathon des lots suivants).
+ // CORRECTIF : une pause croissante entre les tentatives (800ms, 1600ms) évite
+ // de re-frapper immédiatement une limite de requêtes/minute du service IA —
+ // sans ça, les 2e/3e tentatives échouaient quasi systématiquement juste après
+ // la 1ère, ce qui faisait "cascader" les échecs sur tout le quiz (ex: 13/50).
  async function generateBatchWithRetry(n) {
  let lastErr;
  for (let attempt = 0; attempt < 3; attempt++) {
+ if (attempt > 0) await sleepMs(800 * attempt);
  try { return await generateQuizBatch(n, subj, level, filiere, topic, isMarathon, selectedDiff); }
  catch(err) { lastErr = err; }
  }
@@ -9097,6 +9103,7 @@ async function startQuiz() {
  async function fillToTarget(questions, target) {
  let rounds = 0;
  while (questions.length < target && rounds < 6) {
+ if (rounds > 0) await sleepMs(1000);
  const missing = target - questions.length;
  try {
  const extra = await generateBatchWithRetry(Math.min(BATCH, missing));
@@ -9114,6 +9121,7 @@ async function startQuiz() {
  for (let b = 0; b < totalBatches; b++) {
  const remaining = selectedNQ - allQuestions.length;
  if (remaining <= 0) break;
+ if (b > 0) await sleepMs(400);
  const n = Math.min(BATCH, remaining);
  btnTxt.textContent = ` Génération en cours... (${allQuestions.length}/${selectedNQ})`;
  try {
