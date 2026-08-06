@@ -2922,6 +2922,28 @@ const SUBJECT_CATEGORY = {
 };
 function categoryForSubject(id) { return SUBJECT_CATEGORY[id] || 'Autres'; }
 
+// CORRECTIF : des sigles comme "EDHC" (Éducation aux Droits de l'Homme et
+// à la Citoyenneté, matière ivoirienne) ne sont pas forcément reconnus par
+// un petit modèle IA (ex: llama-3.1-8b-instant), qui peut alors halluciner
+// un tout autre sujet (ex: questions de physique/débit d'eau sur un quiz
+// EDHC). On donne systématiquement le nom complet et non ambigu à l'IA,
+// tout en gardant le sigle court dans l'interface utilisateur.
+const SUBJECT_FULL_NAMES = {
+ edhc: "EDHC (Éducation aux Droits de l'Homme et à la Citoyenneté — instruction civique et morale, PAS une matière scientifique)",
+ eps: "EPS (Éducation Physique et Sportive)",
+ svt: "SVT (Sciences de la Vie et de la Terre : biologie, géologie)",
+ hg: "Histoire-Géographie",
+ poo: "POO (Programmation Orientée Objet)",
+ bdd: "Bases de données (SGBD, SQL)",
+ rit: "RIT (Réseaux Informatiques et Télécommunications)",
+ assri: "ASSRI (Administration des Systèmes, Sécurité et Réseaux Informatiques)",
+ miage: "MIAGE (Méthodes Informatiques Appliquées à la Gestion des Entreprises)",
+};
+function subjectPromptName(subj) {
+ if (!subj) return '';
+ return SUBJECT_FULL_NAMES[subj.id] || subj.name;
+}
+
 // Matières par niveau et filière
 const SUBJECTS_BY_LEVEL = {
  '6ème': ['math','physique','svt','fr','ang','hg','eps','edhc','esp'],
@@ -3796,7 +3818,7 @@ function renderSubjectInfoContent(body, data) {
 async function generateSubjectInfo(subj) {
  const level = (APP.user && APP.user.level) || 'Licence 2';
  const filiere = (APP.user && APP.user.filiere) || '';
- const safeSubj = subj.name.replace(/['"\\]/g,'');
+ const safeSubj = subjectPromptName(subj).replace(/['"\\]/g,'');
  const safeLevel = level.replace(/['"\\]/g,'');
  const safeFiliere = filiere.replace(/['"\\]/g,'');
  const filiereRule = safeFiliere ? ` Adapte le niveau au contexte de la filiere ${safeFiliere}.` : '';
@@ -8958,21 +8980,22 @@ async function startQuizLibre(topic) {
 // un modèle rapide comme llama-3.1-8b-instant tient mal une longue réponse
 // JSON d'un seul bloc, alors que 10 questions à la fois passent de façon fiable.
 async function generateQuizBatch(n, subj, level, filiere, topic, isMarathon, diff) {
- const filiereRule = filiere ? `- Adapte le PÉRIMÈTRE de "${subj.name}" au contexte réel de la filière ${filiere} : si cette matière n'est pas la spécialité de cette filière, reste au niveau d'usage pratique attendu (ex: "Informatique" pour une filière non-technique = bureautique et usage numérique courant, PAS de programmation/algorithmique ; à l'inverse pour une filière informatique/technique, va bien au niveau technique attendu). Ne suppose jamais un niveau d'expertise dans cette matière au-delà de ce qui est réaliste pour un·e étudiant·e de cette filière précise.\n` : '';
+ const subjName = subjectPromptName(subj);
+ const filiereRule = filiere ? `- Adapte le PÉRIMÈTRE de "${subjName}" au contexte réel de la filière ${filiere} : si cette matière n'est pas la spécialité de cette filière, reste au niveau d'usage pratique attendu (ex: "Informatique" pour une filière non-technique = bureautique et usage numérique courant, PAS de programmation/algorithmique ; à l'inverse pour une filière informatique/technique, va bien au niveau technique attendu). Ne suppose jamais un niveau d'expertise dans cette matière au-delà de ce qui est réaliste pour un·e étudiant·e de cette filière précise.\n` : '';
  const langNames = {fr:'français',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const langInstruction = `- Réponds ENTIÈREMENT en ${langNames[APP_LANG]||'français'} (questions, options, explications).\n`;
  // Calibrage explicite : "Facile/Moyen/Difficile" est relatif au NIVEAU SCOLAIRE, pas absolu.
  // Sans cette règle, un petit modèle a tendance à générer des questions dignes du primaire
  // dès qu'on lui demande "Facile", même pour un·e élève de 4ème ou plus.
- const levelCalibration = `- CALIBRAGE DU NIVEAU (règle absolue) : "${diff}" est relatif au niveau scolaire ${level}${filiere?' ('+filiere+')':''}, JAMAIS un niveau absolu. Identifie d'abord mentalement les notions du programme officiel de ${level} en ${subj.name}, puis choisis UNIQUEMENT parmi ces notions-là. Une question "Facile" = la notion la plus accessible DU PROGRAMME DE ${level} (jamais une notion d'un niveau inférieur : PAS de simple addition/soustraction/multiplication à un chiffre, PAS de calcul de primaire, PAS de vocabulaire ultra-basique, même en "Facile"). "Moyen" = exercice standard de ${level}. "Difficile" = challenge un·e bon·ne élève de ${level} sans dépasser son programme officiel. Exemple si le niveau est un collège (6e à 3e) en mathématiques : "Facile" peut porter sur les nombres relatifs, les fractions simples, un calcul d'aire, une équation à une inconnue simple — jamais "combien font 7+4 ?".\n`;
+ const levelCalibration = `- CALIBRAGE DU NIVEAU (règle absolue) : "${diff}" est relatif au niveau scolaire ${level}${filiere?' ('+filiere+')':''}, JAMAIS un niveau absolu. Identifie d'abord mentalement les notions du programme officiel de ${level} en ${subjName}, puis choisis UNIQUEMENT parmi ces notions-là. Une question "Facile" = la notion la plus accessible DU PROGRAMME DE ${level} (jamais une notion d'un niveau inférieur : PAS de simple addition/soustraction/multiplication à un chiffre, PAS de calcul de primaire, PAS de vocabulaire ultra-basique, même en "Facile"). "Moyen" = exercice standard de ${level}. "Difficile" = challenge un·e bon·ne élève de ${level} sans dépasser son programme officiel. Exemple si le niveau est un collège (6e à 3e) en mathématiques : "Facile" peut porter sur les nombres relatifs, les fractions simples, un calcul d'aire, une équation à une inconnue simple — jamais "combien font 7+4 ?".\n`;
  const marathonHeader = isMarathon ? `, pour un format "Marathon" (liste défilante, un minuteur global)` : '';
- const varietyRule = isMarathon ? `- Varie les sous-thèmes de ${subj.name} pour ne pas répéter le même type de question.\n` : '';
- const prompt = `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
-Génère exactement ${n} questions de niveau "${diff}" STRICTEMENT sur la matière : ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}${marathonHeader}.
+ const varietyRule = isMarathon ? `- Varie les sous-thèmes de ${subjName} pour ne pas répéter le même type de question.\n` : '';
+ const prompt = `Tu es un professeur expert en ${subjName} pour le niveau ${level}${filiere?' filière '+filiere:''}.
+Génère exactement ${n} questions de niveau "${diff}" STRICTEMENT sur la matière : ${subjName}${topic?', sur le chapitre/sujet précis : '+topic:''}${marathonHeader}.
 
 RÈGLES ABSOLUES :
 - Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ ${isMarathon?'60% de qcm, 40%':'70% de qcm, 30%'} de vf, réparties dans un ordre varié (pas tout le vf à la fin).
-- Toutes les questions doivent porter UNIQUEMENT sur ${subj.name}. N'inclus AUCUNE question de géographie, culture générale, ou autre matière.
+- Toutes les questions doivent porter UNIQUEMENT sur ${subjName}, en restant dans la nature réelle de cette matière (ex: si c'est une matière de sciences humaines/civisme, N'INCLUS AUCUNE question de physique, chimie, ou calcul scientifique, et inversement). N'inclus AUCUNE question de géographie, culture générale, ou autre matière hors sujet.
 ${levelCalibration}${filiereRule}${langInstruction}${varietyRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)${isMarathon?'':', avec la démonstration ou le raisonnement complet'}
 
 RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A, 1=B, 2=C, 3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
@@ -8997,7 +9020,28 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
  try { parsed = repairTruncatedJson(raw); }
  catch(je2) { throw new Error('JSON invalide: '+je.message); }
  }
- return parsed.questions || [];
+ // CORRECTIF : une question mal formée (options manquantes, "correct" hors
+ // limites, énoncé vide...) plantait l'affichage plus loin (ex: quiz/marathon
+ // bloqué ou question illisible). On la filtre ici plutôt que de la garder
+ // telle quelle — comme ça, elle compte comme "manquante" et sera régénérée
+ // automatiquement par fillToTarget() dans startQuiz(), au lieu d'être juste
+ // sautée et de faire perdre une question au total demandé.
+ const rawQuestions = parsed.questions || [];
+ return rawQuestions.filter(isValidQuizQuestion);
+}
+function isValidQuizQuestion(q) {
+ if (!q || typeof q !== 'object') return false;
+ if (typeof q.q !== 'string' || !q.q.trim()) return false;
+ if (!Array.isArray(q.options)) return false;
+ if (q.type === 'vf') {
+ if (q.options.length !== 2) return false;
+ } else {
+ if (q.options.length !== 4) return false;
+ }
+ if (q.options.some(o => typeof o !== 'string' || !o.trim())) return false;
+ if (typeof q.correct !== 'number' || q.correct < 0 || q.correct >= q.options.length) return false;
+ if (typeof q.explication !== 'string' || !q.explication.trim()) return false;
+ return true;
 }
 
 async function startQuiz() {
@@ -9325,14 +9369,14 @@ async function generateFlashcards() {
 
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
- const safeSubj = subj.name.replace(/['"\\]/g,'');
+ const safeSubj = subjectPromptName(subj).replace(/['"\\]/g,'');
  const safeLevel = level.replace(/['"\\]/g,'');
  const safeFiliere = filiere.replace(/['"\\]/g,'');
  const safeTopic = topic.replace(/['"\\]/g,'');
  const filiereRule = safeFiliere ? ` Adapte le perimetre de ${safeSubj} au contexte reel de la filiere ${safeFiliere} (si ce n'est pas sa specialite, reste a un niveau d'usage pratique realiste pour cette filiere, sinon va au niveau technique attendu).` : '';
  const fcLangNames = {fr:'francais',en:'anglais',es:'espagnol',ar:'arabe',pt:'portugais',de:'allemand'};
  const fcLangInstruction = ' Reponds ENTIEREMENT en ' + (fcLangNames[APP_LANG]||'francais') + ' (questions et reponses).';
- const prompt = 'Genere 8 flashcards sur ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
+ const prompt = 'Genere 8 flashcards STRICTEMENT sur la matiere reelle ' + safeSubj + (safeTopic ? ' - sujet: ' + safeTopic : '') + '. Niveau: ' + safeLevel + (safeFiliere ? ' filiere ' + safeFiliere : '') + '. Reste dans la nature exacte de cette matiere, ne devie jamais vers une autre discipline.' + filiereRule + fcLangInstruction + ' Reponds UNIQUEMENT avec ce JSON valide, sans texte avant ou apres, sans apostrophes dans les valeurs, sans caracteres speciaux: {"cards":[{"front":"question","back":"reponse detaillee avec exemple"}]}';
 
  try {
  const res=await fetch(AI_ENDPOINT,{
@@ -9554,21 +9598,22 @@ async function analyzeSujet() {
  const topic = (document.getElementById('sujet-topic').value || '').trim();
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
- const filiereRule = filiere ? `Adapte le périmètre de "${subj.name}" au contexte réel de la filière ${filiere} (si ce n'est pas sa spécialité, reste à un niveau d'usage pratique réaliste pour cette filière, sinon va au niveau technique attendu). ` : '';
+ const subjName = subjectPromptName(subj);
+ const filiereRule = filiere ? `Adapte le périmètre de "${subjName}" au contexte réel de la filière ${filiere} (si ce n'est pas sa spécialité, reste à un niveau d'usage pratique réaliste pour cette filière, sinon va au niveau technique attendu). ` : '';
  const langRule = `Rédige TOUT le contenu en ${LANG_NAMES_FOR_AI[APP_LANG] || 'français'}. `;
 
  const CODE_SUBJECTS = ['Java','POO','Algorithmique','Prog. Mobile','Systemes info','Systèmes info','MIAGE','ASSRI','RIT','Informatique','Bases de données'];
  const isCodeSubject = CODE_SUBJECTS.some(s => subj.name.toLowerCase().includes(s.toLowerCase()));
  const codeRule = isCodeSubject
  ? `Le type "code" est autorisé ici (matière de programmation).`
- : `INTERDICTION ABSOLUE d'utiliser le type "code" : "${subj.name}" n'est PAS une matière de programmation. Même si le sujet pourrait théoriquement s'illustrer avec du code (ex: Python en statistiques), N'EN PROPOSE PAS — utilise uniquement "calcul" ou "texte".`;
+ : `INTERDICTION ABSOLUE d'utiliser le type "code" : "${subjName}" n'est PAS une matière de programmation. Même si le sujet pourrait théoriquement s'illustrer avec du code (ex: Python en statistiques), N'EN PROPOSE PAS — utilise uniquement "calcul" ou "texte".`;
  const prestigeRule = `Inspire-toi, pour le niveau d'exigence et la structure des questions, du programme de référence des meilleures universités mondiales dans ce domaine précis (ex: MIT/Stanford pour l'informatique, Harvard/Johns Hopkins pour la médecine, une grande école pour la spécialité concernée), tout en gardant un énoncé accessible au niveau ${level} d'un étudiant africain francophone.`;
 
  const btn = document.getElementById('sujet-analyze-btn');
  btn.disabled = true; btn.textContent = ' Génération en cours...';
 
- const prompt = `Tu es un professeur expert en ${subj.name} pour le niveau ${level}${filiere?' filière '+filiere:''}.
-Génère un sujet de type "${selectedSujetType}" en ${subj.name}${topic?', sur le chapitre/sujet précis : '+topic:''}, avec exactement ${selectedSujetNParts} parties/exercices distincts.
+ const prompt = `Tu es un professeur expert en ${subjName} pour le niveau ${level}${filiere?' filière '+filiere:''}.
+Génère un sujet de type "${selectedSujetType}" en ${subjName}, en restant strictement dans la nature réelle de cette matière${topic?', sur le chapitre/sujet précis : '+topic:''}, avec exactement ${selectedSujetNParts} parties/exercices distincts.
 ${filiereRule}${langRule}${prestigeRule}
 
 RÈGLES ABSOLUES :
