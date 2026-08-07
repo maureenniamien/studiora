@@ -3147,11 +3147,35 @@ function findParentFiliereFor(name) {
  return null;
 }
 
+// CORRECTIF : byLevel[filiere] exigeait une correspondance EXACTE du texte de
+// la filière. Une variante saisie (accents différents, espace au lieu de
+// tiret, "Restauration" au lieu de "Hôtellerie-Restauration"...) tombait
+// silencieusement sur la liste générique ['fr','ang','math','info'] au lieu
+// des matières dédiées pourtant définies. On normalise avant comparaison
+// (minuscules, accents retirés, ponctuation ignorée) et on tente aussi une
+// correspondance partielle (l'une contient l'autre) avant d'abandonner.
+function normalizeFiliereKey(s) {
+ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'');
+}
+function findFiliereKeyLoose(byLevel, filiere) {
+ if (!filiere || !byLevel) return null;
+ const target = normalizeFiliereKey(filiere);
+ if (!target) return null;
+ let bestKey = null, bestLen = 0;
+ for (const key in byLevel) {
+ if (key === 'default') continue;
+ const nk = normalizeFiliereKey(key);
+ if (nk === target) return key; // correspondance exacte normalisée
+ if ((nk.includes(target) || target.includes(nk)) && nk.length > bestLen) { bestKey = key; bestLen = nk.length; }
+ }
+ return bestKey;
+}
 function getSubjects() {
  const level = APP.user.level || 'Licence 2';
  const filiere = APP.user.filiere || '';
  hydrateCurriculumFromCache(level, filiere);
  const byLevel = SUBJECTS_BY_LEVEL[level];
+ const looseKey = byLevel && !Array.isArray(byLevel) && !byLevel[filiere] ? findFiliereKeyLoose(byLevel, filiere) : null;
  let ids, hasSpecificMapping = true;
  if (!byLevel) {
  ids = ['fr','ang','methodo','info'];
@@ -3160,6 +3184,8 @@ function getSubjects() {
  ids = byLevel;
  } else if (byLevel[filiere]) {
  ids = byLevel[filiere];
+ } else if (looseKey) {
+ ids = byLevel[looseKey];
  } else {
  const parentFiliere = findParentFiliereFor(filiere);
  if (parentFiliere && byLevel[parentFiliere]) {
