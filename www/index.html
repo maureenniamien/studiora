@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io https://wsrv.nl https://corsproxy.io; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io https://wsrv.nl https://corsproxy.io https://formsubmit.co; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -396,13 +396,13 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
 <!-- ═══════════════════ ONBOARDING ═══════════════════ -->
 <div id="screen-onboarding" class="screen">
  <h1 class="display" style="font-size:38px;font-weight:900;line-height:1.1;margin-bottom:10px;color:var(--em2)">Studiora</h1>
- <p style="font-size:16px;color:var(--text2);line-height:1.6;max-width:280px;margin:0 auto 10px">Ton coach IA qui comprend les programmes africains.</p>
- <p style="font-size:13px;color:var(--text3);margin-bottom:40px">BEPC · BAC · Licence · Concours grandes écoles</p>
+ <p style="font-size:16px;color:#4A5568;line-height:1.6;max-width:280px;margin:0 auto 10px">Ton coach IA qui comprend les programmes africains.</p>
+ <p style="font-size:13px;color:#7a7365;margin-bottom:40px">BEPC · BAC · Licence · Concours grandes écoles</p>
  <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px">
  <button class="btn-em" id="onboarding-btn-start" onclick="showScreen('screen-register')">Commencer gratuitement →</button>
  <button class="btn-outline" id="onboarding-btn-login" onclick="showScreen('screen-login')">J'ai déjà un compte</button>
  </div>
- <p style="font-size:11px;color:var(--text3);margin-top:24px;line-height:1.5"> Tes données restent privées · Fonctionne hors ligne</p>
+ <p style="font-size:11px;color:#7a7365;margin-top:24px;line-height:1.5"> Tes données restent privées · Fonctionne hors ligne</p>
 </div>
 <script>
 // Anti-flash : cet écran est visible par défaut dans le HTML (avant que le
@@ -431,12 +431,12 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Bon retour</p>
  <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px">Reconnecte-toi</h2>
  <p style="color:var(--text2);margin-bottom:30px">Continue là où tu t'es arrêté·e</p>
- <div style="margin-bottom:14px"><label class="field-label">Prénom</label><input class="input" id="login-prenom" placeholder="Ton prénom"></div>
- <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email"></div>
+ <div style="margin-bottom:14px"><label class="field-label">Prénom</label><input class="input" id="login-prenom" placeholder="Ton prénom" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}"></div>
+ <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}"></div>
  <div style="margin-bottom:8px">
  <label class="field-label">Mot de passe</label>
  <div style="position:relative">
- <input class="input" id="login-pwd" placeholder="••••••••" type="password" style="padding-right:44px">
+ <input class="input" id="login-pwd" placeholder="••••••••" type="password" style="padding-right:44px" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}">
  <span onclick="togglePwd('login-pwd',this)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text3);user-select:none;line-height:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
  </div>
 </div>
@@ -481,16 +481,16 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <option value="BTS 2">BTS 2ème année</option>
  <option value="DUT">DUT / BUT</option>
  </optgroup>
- <optgroup label="Université — Licence">
+ <optgroup label="Licence">
  <option value="Licence 1">Licence 1 (L1)</option>
  <option value="Licence 2">Licence 2 (L2)</option>
  <option value="Licence 3">Licence 3 (L3)</option>
  </optgroup>
- <optgroup label="Université — Master">
+ <optgroup label="Master">
  <option value="Master 1">Master 1 (M1)</option>
  <option value="Master 2">Master 2 (M2)</option>
  </optgroup>
- <optgroup label="Université — Doctorat">
+ <optgroup label="Doctorat">
  <option value="Doctorat">Doctorat (PhD)</option>
  </optgroup>
  </select>
@@ -1217,6 +1217,22 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  </div>
 
+ <!-- Avis & commentaires -->
+ <div class="card" style="margin-bottom:14px">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Avis & commentaires</h3>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Un bug, une idée, un compliment ? Écris-nous, ton message part directement par mail.</p>
+ <div id="feedback-stars" style="display:flex;gap:8px;justify-content:center;margin-bottom:12px">
+ <span class="fb-star" data-star="1" onclick="setFeedbackRating(1)" style="font-size:28px;line-height:1;cursor:pointer;color:var(--border)">&#9733;</span>
+ <span class="fb-star" data-star="2" onclick="setFeedbackRating(2)" style="font-size:28px;line-height:1;cursor:pointer;color:var(--border)">&#9733;</span>
+ <span class="fb-star" data-star="3" onclick="setFeedbackRating(3)" style="font-size:28px;line-height:1;cursor:pointer;color:var(--border)">&#9733;</span>
+ <span class="fb-star" data-star="4" onclick="setFeedbackRating(4)" style="font-size:28px;line-height:1;cursor:pointer;color:var(--border)">&#9733;</span>
+ <span class="fb-star" data-star="5" onclick="setFeedbackRating(5)" style="font-size:28px;line-height:1;cursor:pointer;color:var(--border)">&#9733;</span>
+ </div>
+ <textarea id="feedback-text" class="input" rows="4" placeholder="Ton avis ou ton message..." style="font-size:13px;padding:10px 14px;width:100%;resize:vertical;font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box"></textarea>
+ <button id="feedback-submit-btn" onclick="sendFeedback()" style="width:100%;padding:11px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:10px">Envoyer mon avis</button>
+ <div id="feedback-status" style="font-size:12px;margin-top:8px;text-align:center;min-height:14px"></div>
+ </div>
+
  <button id="logout-btn" onclick="doLogout()" style="width:100%;padding:13px;background:var(--red-soft);border:1px solid rgba(209,58,58,.2);border-radius:var(--r2);color:var(--red);font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Se déconnecter</button>
  <!-- Repère de build : affiche la version + un horodatage embarqué au moment du
  déploiement, pour vérifier d'un coup d'œil si un appareil a bien récupéré le
@@ -1229,7 +1245,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  contourne complètement ce mécanisme : il navigue directement vers la copie
  web réellement à jour (GitHub Pages), sans passer par la copie locale
  mise en cache. Ne nécessite aucune modification native / rebuild APK. -->
- <button onclick="location.href='https://maureenniamien.github.io/studiora/index.html?t=' + Date.now()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Forcer la mise à jour du contenu</button>
+ <button onclick="location.href='https://studiora-education.netlify.app/?t=' + Date.now()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Forcer la mise à jour du contenu</button>
  </div>
 </div>
 
@@ -2426,7 +2442,7 @@ function renderKnowledgeTreeWidget() {
  : stage.rewardAvailable ? '🍎 Une récompense t\'attend, appuie ici !'
  : stage.next ? 'Encore un peu pour évoluer' : 'Stade maximum atteint';
  el.innerHTML = `
- <div style="background:linear-gradient(135deg,var(--em-soft) 0%,#fff 55%,var(--amb-soft) 100%);border:1px solid var(--em-mid);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden">
+ <div style="background:linear-gradient(135deg,#E3F2EB 0%,#fff 55%,#FEF3DC 100%);border:1px solid var(--em-mid);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden">
  <svg width="100%" height="100%" style="position:absolute;inset:0;opacity:.12;pointer-events:none" viewBox="0 0 300 100" preserveAspectRatio="none">
  <circle cx="270" cy="20" r="40" fill="none" stroke="var(--amber)" stroke-width="1"/>
  <circle cx="270" cy="20" r="26" fill="none" stroke="var(--amber)" stroke-width="1"/>
@@ -2435,13 +2451,13 @@ function renderKnowledgeTreeWidget() {
  <div style="display:flex;align-items:center;gap:14px;position:relative">
  <div style="width:84px;flex-shrink:0">${renderKnowledgeTreeSVG(stage.idx, stage.sick)}</div>
  <div style="flex:1;min-width:0">
- <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Arbre de connaissance</div>
- <div style="font-size:16px;font-weight:800;margin-bottom:4px">🌳 ${stage.label}${stage.sick?' (affaibli)':''}</div>
- <div style="font-size:12px;color:${stage.rewardAvailable?'var(--amber)':'var(--text2)'};margin-bottom:8px;font-weight:${stage.rewardAvailable?'700':'500'}">${statusLine}</div>
+ <div style="font-size:11px;font-weight:700;color:#5b5647;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Arbre de connaissance</div>
+ <div style="font-size:16px;font-weight:800;margin-bottom:4px;color:#1a1a1a">🌳 ${stage.label}${stage.sick?' (affaibli)':''}</div>
+ <div style="font-size:12px;color:${stage.rewardAvailable?'#b8860b':'#4a4638'};margin-bottom:8px;font-weight:${stage.rewardAvailable?'700':'500'}">${statusLine}</div>
  <div style="height:7px;background:rgba(255,255,255,.7);border:1px solid var(--em-mid);border-radius:4px;overflow:hidden">
  <div style="height:100%;width:${stage.progressPct}%;background:linear-gradient(90deg,var(--em),var(--amber));border-radius:4px"></div>
  </div>
- <div style="font-size:10px;color:var(--text3);margin-top:4px">${stage.score} pts${stage.next ? ' · ' + stage.progressPct + '% vers ' + stage.next.label : ' · stade maximum'}</div>
+ <div style="font-size:10px;color:#5b5647;margin-top:4px">${stage.score} pts${stage.next ? ' · ' + stage.progressPct + '% vers ' + stage.next.label : ' · stade maximum'}</div>
  </div>
  </div>
  </div>`;
@@ -8903,6 +8919,13 @@ async function doRegister() {
  }
  if (!p||!n) { showToast('! Remplis Prénom et Nom'); return; }
  if (!niv) { showToast('! Choisis ton niveau'); return; }
+ // CORRECTIF : pour un niveau qui a une liste de filières définie (BT, BTS,
+ // Licence, Master...), rien n'empêchait de valider l'inscription sans avoir
+ // choisi de filière — le compte se créait avec filiere='' silencieusement,
+ // et l'app retombait ensuite sur des matières génériques sans que
+ // l'utilisateur comprenne pourquoi. On bloque maintenant tant que ce choix
+ // obligatoire n'est pas fait.
+ if (!filiere && FILIERES_BY_NIVEAU[niv]) { showToast('! Choisis ta filière / spécialité'); return; }
  if (!pwd) { showToast('! Le mot de passe est obligatoire'); return; }
  if (pwd.length < 8) { showToast('! Mot de passe trop court (8 caractères min)'); return; }
  if (!/[A-Za-z]/.test(pwd) || !/[0-9]/.test(pwd)) { showToast('! Mot de passe : mélange lettres et chiffres'); return; }
@@ -13370,6 +13393,66 @@ function mediaExtractAudio() {
  rec.start();
  vid.onended = () => { rec.stop(); vid.pause(); showToast(' Audio extrait !'); };
  showToast(' Lecture en cours...');
+}
+
+/* ── Avis & commentaires : envoi direct par mail via FormSubmit ── */
+let feedbackRating = 0;
+
+function setFeedbackRating(n) {
+  feedbackRating = n;
+  document.querySelectorAll('.fb-star').forEach(function (s) {
+    const active = parseInt(s.dataset.star, 10) <= n;
+    s.style.color = active ? '#F5B942' : 'var(--border)';
+  });
+}
+
+async function sendFeedback() {
+  const textEl = document.getElementById('feedback-text');
+  const statusEl = document.getElementById('feedback-status');
+  const btn = document.getElementById('feedback-submit-btn');
+  const text = (textEl.value || '').trim();
+
+  if (!text) {
+    statusEl.textContent = 'Écris un message avant d\u2019envoyer.';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+
+  const userName = (APP.user && (APP.user.prenom || '') + ' ' + (APP.user.nom || '')).trim() || 'Utilisateur Studiora';
+  const userEmail = (APP.user && APP.user.email) || 'non renseigné';
+  const userLevel = (APP.user && APP.user.level) || '';
+
+  btn.disabled = true;
+  btn.textContent = 'Envoi...';
+  statusEl.textContent = '';
+
+  try {
+    const res = await fetch('https://formsubmit.co/ajax/maurdev05@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        _subject: 'Nouvel avis Studiora' + (feedbackRating ? ' (' + feedbackRating + '/5)' : ''),
+        Nom: userName,
+        Email: userEmail,
+        Niveau: userLevel,
+        Note: feedbackRating ? feedbackRating + '/5' : 'Non noté',
+        Message: text
+      })
+    });
+
+    if (!res.ok) throw new Error('status ' + res.status);
+
+    statusEl.textContent = 'Merci ! Ton avis a bien été envoyé.';
+    statusEl.style.color = 'var(--em)';
+    textEl.value = '';
+    setFeedbackRating(0);
+  } catch (err) {
+    statusEl.textContent = 'Erreur d\u2019envoi, réessaie dans un instant.';
+    statusEl.style.color = 'var(--red)';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Envoyer mon avis';
 }
 
 </script>
