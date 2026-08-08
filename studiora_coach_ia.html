@@ -10974,11 +10974,11 @@ function showUpgradeModal(reason) {
 // GeniusPay n'est JAMAIS exposée côté client. Voir les fichiers de fonctions
 // Edge fournis séparément (create-payment, verify-payment, genius-pay-webhook).
 const GENIUSPAY_METHODS = {
- wave: { label: ' Wave', color: '#1a9af9', bg: '#f0f9ff' },
- orange_money: { label: ' Orange Money', color: '#ff6600', bg: '#fff8f3' },
- mtn_money: { label: ' MTN Mobile Money', color: '#b8860b', bg: '#fffdf0' },
- moov_money: { label: ' Moov Money', color: '#0066cc', bg: '#f0f5ff' },
- card: { label: ' Carte bancaire', color: '#5B4FCF', bg: '#EDE9FF' },
+ wave: { label: ' Wave', color: '#1a9af9', bg: '#f0f9ff', direct: true },
+ orange_money: { label: ' Orange Money', color: '#ff6600', bg: '#fff8f3', direct: false },
+ mtn_money: { label: ' MTN Mobile Money', color: '#b8860b', bg: '#fffdf0', direct: false },
+ moov_money: { label: ' Moov Money', color: '#0066cc', bg: '#f0f5ff', direct: false },
+ card: { label: ' Carte bancaire', color: '#5B4FCF', bg: '#EDE9FF', direct: true },
 };
 
 function startPayment(plan) {
@@ -10990,7 +10990,7 @@ function startPayment(plan) {
  overlay.id='payment-overlay';
  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
  const methodButtons = Object.entries(GENIUSPAY_METHODS).map(([key,m]) =>
- `<button onclick="payWithGeniusPay('${plan}','${key}',this)" style="padding:14px;border-radius:12px;border:1.5px solid ${m.color};background:${m.bg};color:${m.color};font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${m.label}</button>`
+ `<button onclick="payWithGeniusPay('${plan}','${m.direct ? key : ''}',this)" style="padding:14px;border-radius:12px;border:1.5px solid ${m.color};background:${m.bg};color:${m.color};font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${m.label}</button>`
  ).join('');
  overlay.innerHTML=`
  <div style="background:var(--white);border-radius:20px;padding:28px 24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">
@@ -11070,11 +11070,6 @@ async function payWithGeniusPay(plan, method, btn) {
  // Mémorise la référence pour vérification au retour sur l'app (utile si
  // le paramètre "reference" ne revient pas intact dans l'URL de retour)
  localStorage.setItem('studiora_pending_payment', JSON.stringify({ reference: data.data.reference, plan, ts: Date.now() }));
- // DEBUG TEMPORAIRE : montre ce que GeniusPay a réellement décidé avant de
- // rediriger, pour diagnostiquer pourquoi la méthode demandée n'est pas
- // toujours respectée. À retirer une fois le bug confirmé/résolu.
- console.log('GeniusPay debug — méthode demandée:', method, '| gateway retourné:', data.data.gateway, '| url:', data.data.checkout_url || data.data.payment_url);
- alert('DEBUG\nMéthode demandée : ' + method + '\nGateway GeniusPay : ' + (data.data.gateway || '(absent)') + '\nURL : ' + (data.data.checkout_url || data.data.payment_url));
  const url = data.data.checkout_url || data.data.payment_url;
  window.location.href = url;
  } catch(e) {
