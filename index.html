@@ -13440,14 +13440,28 @@ async function sendFeedback() {
       })
     });
 
-    if (!res.ok) throw new Error('status ' + res.status);
+    if (!res.ok) {
+      let detail = '';
+      try {
+        const body = await res.json();
+        detail = body && (body.message || body.error) ? (body.message || body.error) : '';
+      } catch (e2) {
+        try { detail = await res.text(); } catch (e3) { detail = ''; }
+      }
+      throw new Error('HTTP ' + res.status + (detail ? ' — ' + detail : ''));
+    }
 
     statusEl.textContent = 'Merci ! Ton avis a bien été envoyé.';
     statusEl.style.color = 'var(--em)';
     textEl.value = '';
     setFeedbackRating(0);
   } catch (err) {
-    statusEl.textContent = 'Erreur d\u2019envoi, réessaie dans un instant.';
+    const msg = (err && err.message) ? err.message : '';
+    if (/activat/i.test(msg) || /confirm/i.test(msg)) {
+      statusEl.textContent = 'Active d\u2019abord la réception : va voir ta boîte mail maurdev05@gmail.com et clique le lien FormSubmit.';
+    } else {
+      statusEl.textContent = 'Erreur d\u2019envoi (' + (msg || 'inconnue') + '). Réessaie dans un instant.';
+    }
     statusEl.style.color = 'var(--red)';
   }
 
