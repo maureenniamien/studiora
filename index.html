@@ -1243,9 +1243,12 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  télécharge la nouvelle version en arrière-plan mais ne l'affiche qu'au
  lancement SUIVANT de l'app — source de confusion répétée en test. Ce bouton
  contourne complètement ce mécanisme : il navigue directement vers la copie
- web réellement à jour (GitHub Pages), sans passer par la copie locale
- mise en cache. Ne nécessite aucune modification native / rebuild APK. -->
+ web réellement à jour (Netlify, seule source confirmée fiable), sans passer
+ par la copie locale mise en cache. Ne nécessite aucune modification native / rebuild APK. -->
  <button onclick="location.href='https://studiora-education.netlify.app/?t=' + Date.now()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Forcer la mise à jour du contenu</button>
+ <!-- Lien permanent de telechargement de l'APK : le bouton flottant peut etre
+ ferme definitivement par l'utilisateur (localStorage), qui perd alors tout
+ moyen de retrouver l'app native. Ce bouton reste toujours accessible ici. -->
  <button onclick="downloadStudioraApk()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📲 Télécharger l'app Android</button>
  </div>
 </div>
@@ -10693,7 +10696,7 @@ const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
 // dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
 // Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
 // "Installer" ouvrira un lien invalide.
-const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1_0_5/studiora-1_0_5.apk';
+const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.5/studiora-1.0.5.apk';
 
 function isRunningInNativeApp() {
  // Capacitor injecte window.Capacitor dans l'app native, mais cette
@@ -10996,6 +10999,12 @@ function startPayment(plan) {
 
  <p style="font-size:12px;color:var(--text3);margin-bottom:14px;text-align:center">Choisis ton mode de paiement — tu seras redirigé(e) vers une page de paiement sécurisée, puis ton abonnement sera activé automatiquement dès la confirmation.</p>
 
+ <div style="margin-bottom:14px">
+ <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:6px">Numéro Mobile Money</label>
+ <input id="genius-pay-phone" class="input" type="tel" placeholder="Ex : 0708001122" value="${(APP.user && /^[+0-9][0-9\s]{6,}$/.test(APP.user.email||'')) ? APP.user.email : ''}" style="font-size:14px;padding:12px 14px">
+ <p style="font-size:10.5px;color:var(--text3);margin-top:4px">Nécessaire pour Wave, Orange Money, MTN et Moov Money.</p>
+ </div>
+
  <div id="genius-pay-methods" style="display:flex;flex-direction:column;gap:10px">${methodButtons}</div>
 
  <button onclick="payWithGeniusPay('${plan}','',null)" style="width:100%;padding:12px;margin-top:14px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Autre moyen — choisir sur la page sécurisée</button>
@@ -11012,6 +11021,14 @@ async function payWithGeniusPay(plan, method, btn) {
  const amounts={'premium':1490,'vip':3490};
  const amount=amounts[plan]||1490;
  const buttons = document.querySelectorAll('#genius-pay-methods button');
+ const phoneInput = document.getElementById('genius-pay-phone');
+ const phone = phoneInput ? phoneInput.value.trim() : '';
+ const MOBILE_MONEY_METHODS = ['wave','orange_money','mtn_money','moov_money'];
+ if (MOBILE_MONEY_METHODS.includes(method) && !phone) {
+ showToast('! Renseigne ton numéro Mobile Money avant de continuer');
+ if (phoneInput) phoneInput.focus();
+ return;
+ }
  buttons.forEach(b=>b.disabled=true);
  const originalLabel = btn ? btn.textContent : null;
  if (btn) btn.textContent = '⏳ Redirection...';
@@ -11027,6 +11044,7 @@ async function payWithGeniusPay(plan, method, btn) {
  plan, amount,
  method: method || undefined,
  user_email: APP.user.email || '',
+ user_phone: phone || undefined,
  user_name: ((APP.user.prenom||'')+' '+(APP.user.nom||'')).trim(),
  return_url: window.location.href.split('?')[0]
  })
@@ -11410,7 +11428,7 @@ let _appInited = false;
 function _runInitOnce() { if (_appInited) return; _appInited = true; _runInit(); }
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.4'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
+const APP_VERSION = '1.0.5'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
 // CORRECTIF : cette constante était restée bloquée sur '1.0.2' alors que
 // l'app installée était déjà en 1.0.3 — checkForAppUpdate() la comparait à
 // version.json et croyait donc en permanence qu'une mise à jour existait,
@@ -11421,7 +11439,7 @@ const APP_VERSION = '1.0.4'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-08-02 21:55';
+const BUILD_STAMP = '2026-08-08 07:38';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
@@ -13441,14 +13459,28 @@ async function sendFeedback() {
       })
     });
 
-    if (!res.ok) throw new Error('status ' + res.status);
+    if (!res.ok) {
+      let detail = '';
+      try {
+        const body = await res.json();
+        detail = body && (body.message || body.error) ? (body.message || body.error) : '';
+      } catch (e2) {
+        try { detail = await res.text(); } catch (e3) { detail = ''; }
+      }
+      throw new Error('HTTP ' + res.status + (detail ? ' — ' + detail : ''));
+    }
 
     statusEl.textContent = 'Merci ! Ton avis a bien été envoyé.';
     statusEl.style.color = 'var(--em)';
     textEl.value = '';
     setFeedbackRating(0);
   } catch (err) {
-    statusEl.textContent = 'Erreur d\u2019envoi, réessaie dans un instant.';
+    const msg = (err && err.message) ? err.message : '';
+    if (/activat/i.test(msg) || /confirm/i.test(msg)) {
+      statusEl.textContent = 'Active d\u2019abord la réception : va voir ta boîte mail maurdev05@gmail.com et clique le lien FormSubmit.';
+    } else {
+      statusEl.textContent = 'Erreur d\u2019envoi (' + (msg || 'inconnue') + '). Réessaie dans un instant.';
+    }
     statusEl.style.color = 'var(--red)';
   }
 
