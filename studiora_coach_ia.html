@@ -431,12 +431,12 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Bon retour</p>
  <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:6px">Reconnecte-toi</h2>
  <p style="color:var(--text2);margin-bottom:30px">Continue là où tu t'es arrêté·e</p>
- <div style="margin-bottom:14px"><label class="field-label">Prénom</label><input class="input" id="login-prenom" placeholder="Ton prénom"></div>
- <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email"></div>
+ <div style="margin-bottom:14px"><label class="field-label">Prénom</label><input class="input" id="login-prenom" placeholder="Ton prénom" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}"></div>
+ <div style="margin-bottom:14px"><label class="field-label">Email ou numéro</label><input class="input" id="login-email" placeholder="toi@email.com" type="email" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}"></div>
  <div style="margin-bottom:8px">
  <label class="field-label">Mot de passe</label>
  <div style="position:relative">
- <input class="input" id="login-pwd" placeholder="••••••••" type="password" style="padding-right:44px">
+ <input class="input" id="login-pwd" placeholder="••••••••" type="password" style="padding-right:44px" onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}">
  <span onclick="togglePwd('login-pwd',this)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text3);user-select:none;line-height:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
  </div>
 </div>
