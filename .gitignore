@@ -7,3 +7,5 @@ android/.gradle/
 android/build/
 android/local.properties
 !www/downloads/*.apk
+.vercel
+.env*
