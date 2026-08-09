@@ -11007,7 +11007,7 @@ function startPayment(plan) {
  <div style="margin-bottom:14px">
  <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:6px">Numéro Mobile Money</label>
  <input id="genius-pay-phone" class="input" type="tel" placeholder="Ex : 07 02 30 68 08" value="${(APP.user && /^[+0-9][0-9\s]{6,}$/.test(APP.user.email||'')) ? APP.user.email : ''}" style="font-size:14px;padding:12px 14px">
- <p style="font-size:10.5px;color:var(--text3);margin-top:4px">Nécessaire pour Wave, Orange Money, MTN et Moov Money.</p>
+ <p style="font-size:10.5px;color:var(--text3);margin-top:4px">Nécessaire pour Orange Money, MTN et Moov Money (pas pour Wave).</p>
  </div>
 
  <div id="genius-pay-methods" style="display:flex;flex-direction:column;gap:10px">${methodButtons}</div>
@@ -11028,7 +11028,9 @@ async function payWithGeniusPay(plan, method, btn) {
  const buttons = document.querySelectorAll('#genius-pay-methods button');
  const phoneInput = document.getElementById('genius-pay-phone');
  const phone = phoneInput ? phoneInput.value.trim() : '';
- const MOBILE_MONEY_METHODS = ['wave','orange_money','mtn_money','moov_money'];
+ // Wave exclu volontairement : lui n'a pas besoin du telephone (voir
+ // commentaire cote fonction serveur), les autres si.
+ const MOBILE_MONEY_METHODS = ['orange_money','mtn_money','moov_money'];
  if (MOBILE_MONEY_METHODS.includes(method) && !phone) {
  showToast('! Renseigne ton numéro Mobile Money avant de continuer');
  if (phoneInput) phoneInput.focus();
