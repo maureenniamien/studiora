@@ -11113,7 +11113,17 @@ async function checkPaymentReturn() {
  renderProfile();
  localStorage.removeItem('studiora_pending_payment');
  } else if (data.status==='pending' || data.status==='processing') {
+ // Un paiement resté "en attente" plus de 30 minutes est considéré comme
+ // abandonné (l'utilisateur a probablement fermé la page sans payer). Sans
+ // cette expiration, ce message réapparaissait à chaque ouverture de l'app,
+ // indéfiniment, tant que le paiement n'était ni confirmé ni explicitement
+ // rejeté par le serveur.
+ const ageMs = Date.now() - (pending?.ts || 0);
+ if (ageMs > 30*60*1000) {
+ localStorage.removeItem('studiora_pending_payment');
+ } else {
  showToast('⏳ Paiement en cours de confirmation — réessaie dans un instant.');
+ }
  } else {
  showToast('! Paiement non confirmé — contacte le support si tu as été débité(e).');
  localStorage.removeItem('studiora_pending_payment');
