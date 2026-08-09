@@ -1249,7 +1249,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <!-- Lien permanent de telechargement de l'APK : le bouton flottant peut etre
  ferme definitivement par l'utilisateur (localStorage), qui perd alors tout
  moyen de retrouver l'app native. Ce bouton reste toujours accessible ici. -->
- <button onclick="downloadStudioraApk()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📲 Télécharger l'app Android</button>
+ <button id="profile-apk-download-btn" onclick="downloadStudioraApk()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📲 Télécharger l'app Android</button>
  </div>
 </div>
 
@@ -10725,6 +10725,11 @@ function isRunningInNativeApp() {
 
 function initWebToAppBanner() {
  try {
+ // Le bouton "Télécharger l'app Android" du Profil n'a de sens que sur le
+ // web — dans l'app installée, le masquer (contrairement au FAB plus bas,
+ // il est toujours rendu dans le HTML, donc on le cache explicitement ici).
+ const profileApkBtn = document.getElementById('profile-apk-download-btn');
+ if (profileApkBtn && isRunningInNativeApp()) profileApkBtn.style.display = 'none';
  if (isRunningInNativeApp()) return; // jamais dans l'app installée
  if (localStorage.getItem('studiora_hide_apk_banner') === '1') return; // déjà fermée par l'utilisateur
  const fab = document.getElementById('web-to-app-fab');
