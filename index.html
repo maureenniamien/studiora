@@ -11335,16 +11335,20 @@ async function requestPasswordResetCode() {
  if (!email) { statusEl.textContent = 'Entre ton email.'; statusEl.style.color = 'var(--red)'; return; }
  btn.disabled = true; btn.textContent = 'Envoi...';
  try {
- const res = await fetch(`${SUPABASE_URL}/functions/v1/reset-password`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/rapid-responder`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
  body: JSON.stringify({ action: 'request', email })
  });
- const data = await res.json();
- if (!res.ok || !data.success) throw new Error(data.error || 'Erreur');
+ let data;
+ try { data = await res.json(); } catch (e0) { data = null; }
+ if (!res.ok || !data || !data.success) {
+ const detail = (data && data.error) ? data.error : ('HTTP ' + res.status);
+ throw new Error(detail);
+ }
  openResetCodeModal(email);
  } catch (e) {
- statusEl.textContent = 'Erreur, réessaie dans un instant.';
+ statusEl.textContent = 'Erreur : ' + (e.message || 'inconnue');
  statusEl.style.color = 'var(--red)';
  }
  btn.disabled = false; btn.textContent = 'Envoyer le code';
@@ -11379,7 +11383,7 @@ async function confirmPasswordReset(email) {
  try {
  const salt = generateSalt();
  const hash = await hashPasswordSecure(newPwd, salt);
- const res = await fetch(`${SUPABASE_URL}/functions/v1/reset-password`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/rapid-responder`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
  body: JSON.stringify({ action: 'confirm', email, code, pwd_hash: hash, pwd_salt: salt })
