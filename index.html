@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io https://wsrv.nl https://corsproxy.io https://formsubmit.co; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.groq.com https://image.pollinations.ai https://*.pollinations.ai https://kroki.io https://wsrv.nl https://corsproxy.io https://formsubmit.co https://accounts.google.com; frame-src https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -442,6 +442,11 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
 </div>
  <p style="text-align:right;font-size:12px;color:var(--em);font-weight:600;margin-bottom:26px;cursor:pointer" onclick="openForgotPasswordModal()">Mot de passe oublié ?</p>
  <button class="btn-em" id="login-submit-btn" onclick="doLogin()">Se connecter</button>
+ <div style="display:flex;align-items:center;gap:10px;margin:18px 0"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--text3)">ou</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+ <button class="btn-outline" id="google-signin-btn-login" onclick="signInWithGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%">
+ <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59A9 9 0 0 0 .96 4.95L3.97 7.28C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+ Continuer avec Google
+ </button>
  <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--text2)">Pas encore inscrit ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-register')">Créer un compte</span></p>
  <p style="text-align:center;margin-top:10px;font-size:11px;color:var(--text3)">En te connectant tu acceptes nos <span style="color:var(--em);text-decoration:underline;cursor:pointer" onclick="showScreen('screen-cgu')">CGU</span></p>
  </div>
@@ -452,7 +457,13 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div class="scroll-body" style="padding:max(env(safe-area-inset-top,0px) + 24px, 44px) 24px 40px">
  <button onclick="goBack()" style="background:none;border:none;font-size:22px;cursor:pointer;margin-bottom:28px;display:block">←</button>
  <p style="font-size:13px;color:var(--em);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Inscription gratuite</p>
- <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:26px">Crée ton profil</h2>
+ <h2 class="display" style="font-size:28px;font-weight:700;margin-bottom:18px">Crée ton profil</h2>
+ <button class="btn-outline" id="google-signin-btn-register" onclick="signInWithGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-bottom:18px">
+ <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59A9 9 0 0 0 .96 4.95L3.97 7.28C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+ S'inscrire avec Google
+ </button>
+ <div id="reg-google-notice" class="hidden" style="background:var(--em2,#eef);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--em);margin-bottom:16px">✓ Compte Google lié — finalise juste ton niveau ci-dessous, pas besoin de mot de passe.</div>
+ <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--text3)">ou avec un email</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
  <div><label class="field-label">Prénom</label><input class="input" id="reg-prenom" placeholder="Koffi"></div>
  <div><label class="field-label">Nom</label><input class="input" id="reg-nom" placeholder="Konan"></div>
@@ -521,6 +532,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <input id="reg-filiere-autre" class="input" placeholder="Précise ta filière" style="display:none;margin-top:8px" oninput="onFiliereAutreInput()">
  </div>
  </div>
+ <div id="reg-pwd-block">
  <div style="margin-bottom:14px">
  <label class="field-label">Mot de passe</label>
  <div style="position:relative">
@@ -538,6 +550,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  <p id="pwd-match-label" style="font-size:11px;margin-top:3px"></p>
 </div>
+ </div>
  <button class="btn-em" id="register-submit-btn" onclick="doRegister()">Créer mon compte →</button>
  <p style="text-align:center;margin-top:14px;font-size:11px;color:var(--text3)">En t'inscrivant tu acceptes nos <span style="color:var(--em);text-decoration:underline;cursor:pointer" onclick="showScreen('screen-cgu')">CGU</span></p>
  <p style="text-align:center;margin-top:10px;font-size:13px;color:var(--text2)">Déjà un compte ? <span style="color:var(--em);font-weight:700;cursor:pointer" onclick="showScreen('screen-login')">Se connecter</span></p>
@@ -3978,7 +3991,9 @@ Format de "content" selon le type :
 - pdf : {"paragraphs":[{"text":"...","heading":1|2|3|null,"bold":false}]}
 - latex : {"source":"\\\\documentclass{article}...code LaTeX complet et compilable..."}
 
-N'utilise ce format QUE si un document est explicitement demandé. Pour toute autre question, réponds normalement en texte.`;
+N'utilise ce format QUE si un document est explicitement demandé. Pour toute autre question, réponds normalement en texte.
+
+VISUALISATIONS / GRAPHIQUES : ne dessine JAMAIS de graphique en art ASCII (axes avec |, /, -, flèches, etc.) — ça s'affiche mal sur mobile et déforme les proportions. Si on te demande de visualiser une courbe, une fonction ou des données, décris-les avec des mots (allure de la courbe, points clés, variations) ET/OU donne un tableau de valeurs clair avec des retours à la ligne, jamais un dessin.`;
 
 function renderChat() {
  const subj = SUBJECTS.find(s=>s.id===APP.currentSubject) || SUBJECTS[0];
@@ -8921,6 +8936,7 @@ async function doRegister() {
  filiere = (document.getElementById('reg-filiere-autre')||{}).value.trim();
  if (!filiere) { showToast('! Précise le nom de ta filière'); return; }
  }
+ const viaGoogle = !!APP.pendingGoogleAuth;
  if (!p||!n) { showToast('! Remplis Prénom et Nom'); return; }
  if (!niv) { showToast('! Choisis ton niveau'); return; }
  // CORRECTIF : pour un niveau qui a une liste de filières définie (BT, BTS,
@@ -8930,11 +8946,13 @@ async function doRegister() {
  // l'utilisateur comprenne pourquoi. On bloque maintenant tant que ce choix
  // obligatoire n'est pas fait.
  if (!filiere && FILIERES_BY_NIVEAU[niv]) { showToast('! Choisis ta filière / spécialité'); return; }
+ const pwd2 = (document.getElementById('reg-pwd2')||{}).value || '';
+ if (!viaGoogle) {
  if (!pwd) { showToast('! Le mot de passe est obligatoire'); return; }
  if (pwd.length < 8) { showToast('! Mot de passe trop court (8 caractères min)'); return; }
  if (!/[A-Za-z]/.test(pwd) || !/[0-9]/.test(pwd)) { showToast('! Mot de passe : mélange lettres et chiffres'); return; }
- const pwd2 = (document.getElementById('reg-pwd2')||{}).value || '';
  if (pwd !== pwd2) { showToast('! Les mots de passe ne correspondent pas'); return; }
+ }
  const isCustomFiliere = !!filiere && FILIERES_BY_NIVEAU[niv] && !FILIERES_BY_NIVEAU[niv].includes(filiere);
  APP.user.prenom = p.charAt(0).toUpperCase()+p.slice(1);
  APP.user.nom = n;
@@ -8942,9 +8960,21 @@ async function doRegister() {
  APP.user.serie = serie;
  APP.user.filiere = filiere || '';
  APP.user.email = e;
+ if (viaGoogle) {
+ // Compte créé via Google : pas de mot de passe utilisateur. On génère
+ // un hash aléatoire inutilisable (empêche toute connexion par mot de
+ // passe tant qu'il n'en définit pas un explicitement dans son profil).
+ const randomPwd = (crypto.getRandomValues(new Uint32Array(4)).join('-'));
+ const salt = generateSalt();
+ APP.user.pwdHash = await hashPasswordSecure(randomPwd, salt);
+ APP.user.pwdSalt = salt;
+ APP.user.authProvider = 'google';
+ APP.pendingGoogleAuth = false;
+ } else {
  const salt = generateSalt();
  APP.user.pwdHash = await hashPasswordSecure(pwd, salt);
  APP.user.pwdSalt = salt;
+ }
  // Événement : 2 semaines VIP offertes à toute nouvelle inscription
  APP.user.plan = 'vip';
  APP.user.plan_expiry = new Date(Date.now() + 14*24*3600*1000).toISOString();
@@ -8960,6 +8990,94 @@ async function doRegister() {
  } catch(err) {
  console.error('doRegister error:', err);
  showToast('✕ Erreur lors de la création du compte. Réessaie.');
+ }
+}
+
+// ── Connexion / inscription via Google ──
+// Deux chemins possibles pour obtenir un ID token Google :
+//  1) App native (APK) : pont Kotlin `AndroidGoogleAuth.signIn()` (Google
+//     Sign-In natif, seul moyen fiable dans une WebView packagée — Google
+//     bloque son flux OAuth web dans les WebView embarquées avec l'erreur
+//     "disallowed_useragent"). Le résultat revient via window.onGoogleAuthResult.
+//  2) Version web (Netlify/Vercel, testée dans un vrai navigateur) : Google
+//     Identity Services (accounts.google.com/gsi/client), chargé à la demande.
+// Dans les deux cas, le id_token obtenu est envoyé à l'Edge Function
+// "google-auth" qui le vérifie côté serveur (jamais on ne fait confiance à
+// un email fourni par le client sans vérification) et renvoie soit un compte
+// existant, soit les infos pour préremplir l'inscription.
+let _googleGISLoaded = false;
+function signInWithGoogle() {
+ if (window.AndroidGoogleAuth && typeof window.AndroidGoogleAuth.signIn === 'function') {
+ showToast(' Connexion à Google...');
+ window.AndroidGoogleAuth.signIn();
+ return;
+ }
+ loadGoogleIdentityServices().then(() => {
+ google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: (resp) => handleGoogleIdToken(resp.credential) });
+ google.accounts.id.prompt((notification) => {
+ if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+ showToast('! Active les pop-ups pour continuer avec Google, ou utilise le formulaire.');
+ }
+ });
+ }).catch(() => showToast('✕ Google indisponible pour le moment. Utilise le formulaire.'));
+}
+function loadGoogleIdentityServices() {
+ return new Promise((resolve, reject) => {
+ if (_googleGISLoaded && window.google && google.accounts) return resolve();
+ const s = document.createElement('script');
+ s.src = 'https://accounts.google.com/gsi/client';
+ s.async = true; s.defer = true;
+ s.onload = () => { _googleGISLoaded = true; resolve(); };
+ s.onerror = reject;
+ document.head.appendChild(s);
+ });
+}
+// Appelé par le pont natif Kotlin (AndroidGoogleAuth) une fois le Sign-In natif terminé.
+window.onGoogleAuthResult = function(idToken, success, error) {
+ if (!success || !idToken) { showToast('✕ Connexion Google annulée ou échouée.'); return; }
+ handleGoogleIdToken(idToken);
+};
+async function handleGoogleIdToken(idToken) {
+ try {
+ showToast(' Vérification du compte Google...');
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/google-auth`, {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+ body: JSON.stringify({ id_token: idToken })
+ });
+ const data = await res.json();
+ if (!res.ok || data.error) { showToast('✕ ' + (data.error || 'Erreur de vérification Google')); return; }
+ if (data.exists) {
+ // Compte existant lié à cet email → connexion directe, sans mot de passe
+ APP.user = { ...APP.user, email: data.user.email, plan: data.user.plan, prenom: data.user.prenom,
+ level: data.user.level, filiere: data.user.filiere, authProvider: 'google' };
+ guardAccountSwitch(APP.user.email);
+ checkPlanExpiry();
+ saveSession();
+ SUBJECTS = getSubjects();
+ const prefs = getPrefs();
+ if (prefs.dark) applyDark(true);
+ await pullCloudSync();
+ SUBJECTS = getSubjects();
+ showToast(' Bienvenue ' + (APP.user.prenom || '') + ' !');
+ setTimeout(() => showScreen('screen-home'), 500);
+ } else {
+ // Pas encore de compte → préremplit l'inscription, il ne manque que niveau/filière
+ APP.pendingGoogleAuth = true;
+ APP.user = APP.user || {};
+ APP.user.email = data.email;
+ showScreen('screen-register');
+ setTimeout(() => {
+ const elE = document.getElementById('reg-email'); if (elE) { elE.value = data.email; elE.readOnly = true; }
+ const elP = document.getElementById('reg-prenom'); if (elP && data.given_name) elP.value = data.given_name;
+ const pwdBlock = document.getElementById('reg-pwd-block'); if (pwdBlock) pwdBlock.classList.add('hidden');
+ const notice = document.getElementById('reg-google-notice'); if (notice) notice.classList.remove('hidden');
+ }, 100);
+ showToast(' Un dernier pas : choisis ton niveau');
+ }
+ } catch(err) {
+ console.error('handleGoogleIdToken error:', err);
+ showToast('✕ Erreur de connexion Google. Réessaie.');
  }
 }
 
@@ -10690,6 +10808,11 @@ async function pullCloudSync() {
  } catch(e) { /* colonne absente ou hors-ligne : silencieux, le localStorage reste la source */ }
 }
 const SUPABASE_URL = 'https://qdxdvmxmetzyzfnpuogw.supabase.co';
+// Client ID OAuth Google (créé dans Google Cloud Console → Identifiants).
+// Il en faut DEUX en réalité : un "Web" (utilisé ici, id_token vérifié par
+// l'Edge Function) et un "Android" (référencé par le pont natif Kotlin, avec
+// le SHA-1 de signature de l'app). Voir les instructions de déploiement.
+const GOOGLE_CLIENT_ID = '156231140819-s7vsf98sf8r22gqfj5l7q7pno0lji19q.apps.googleusercontent.com';
 
 // ── Bouton "Passer à l'app" (affiché uniquement en navigateur web/PWA) ──
 // IMPORTANT : remplace cette URL par le vrai lien de téléchargement de ton

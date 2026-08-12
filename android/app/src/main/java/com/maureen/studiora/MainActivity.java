@@ -33,6 +33,10 @@ import androidx.webkit.WebViewClientCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,6 +64,34 @@ public class MainActivity extends BridgeActivity {
 
     private static final String LIVE_INDEX_URL = "https://maureenniamien.github.io/studiora/index.html";
     private static final String ASSET_DOMAIN = "appassets.androidplatform.net";
+
+    // ── Connexion Google ──
+    private static final String GOOGLE_WEB_CLIENT_ID = "156231140819-s7vsf98sf8r22gqfj5l7q7pno0lji19q.apps.googleusercontent.com";
+    private static final int RC_GOOGLE_SIGN_IN = 9001;
+    private GoogleSignInClient googleSignInClient;
+
+    private class GoogleAuthInterface {
+        @JavascriptInterface
+        public void signIn() {
+            runOnUiThread(() -> {
+                GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(GOOGLE_WEB_CLIENT_ID)
+                        .requestEmail()
+                        .build();
+                googleSignInClient = GoogleSignIn.getClient(MainActivity.this, gso);
+                startActivityForResult(googleSignInClient.getSignInIntent(), RC_GOOGLE_SIGN_IN);
+            });
+        }
+    }
+
+    private void postGoogleAuthResult(String idToken, boolean success, String error) {
+        String js = "window.onGoogleAuthResult && window.onGoogleAuthResult("
+                + (idToken == null ? "null" : "\"" + idToken.replace("\"", "\\\"") + "\"") + ", "
+                + success + ", "
+                + (error == null ? "null" : "\"" + error.replace("\"", "\\\"") + "\"")
+                + ");";
+        runJs(js);
+    }
 
     private void toast(final String msg) {
         runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
@@ -362,17 +394,13 @@ public class MainActivity extends BridgeActivity {
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidTTS");
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidSTT");
                 getBridge().getWebView().addJavascriptInterface(new DownloadInterface(), "AndroidDownload");
+                getBridge().getWebView().addJavascriptInterface(new GoogleAuthInterface(), "AndroidGoogleAuth");
                 androidx.core.content.ContextCompat.registerReceiver(
                     this, downloadReceiver,
                     new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
                     androidx.core.content.ContextCompat.RECEIVER_EXPORTED
                 );
 
-                // CORRECTIF : sous la nouvelle origine WebViewAssetLoader, on s'assure
-                // explicitement que les demandes getUserMedia() (micro/camera) de la
-                // page sont auto-accordees des lors que la permission Android est deja
-                // accordee -- au lieu de compter sur le comportement par defaut de
-                // Capacitor qui peut ne pas reconnaitre cette origine.
                 getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
                     @Override
                     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
@@ -391,7 +419,6 @@ public class MainActivity extends BridgeActivity {
                         }
                         return true;
                     }
-
 
                     @Override
                     public void onPermissionRequest(final PermissionRequest request) {
@@ -428,6 +455,25 @@ public class MainActivity extends BridgeActivity {
                     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                         return assetLoader.shouldInterceptRequest(request.getUrl());
                     }
+
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                        String scheme = request.getUrl().getScheme();
+                        if (scheme != null && !scheme.equals("http") && !scheme.equals("https")) {
+                            try {
+                                Intent intent = Intent.parseUri(request.getUrl().toString(), Intent.URI_INTENT_SCHEME);
+                                intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                                intent.setComponent(null);
+                                intent.setSelector(null);
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                Log.w(TAG, "Impossible d'ouvrir l'app de paiement (" + scheme + ")", e);
+                                toast("Application de paiement introuvable sur cet appareil.");
+                            }
+                            return true;
+                        }
+                        return false;
+                    }
                 });
 
                 File liveIndex = new File(liveDir, "index.html");
@@ -453,15 +499,12 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // --- Micro AndroidSTT : 2 correctifs ---
     private void startNativeListening() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             runJs("window.onAndroidSTTError && window.onAndroidSTTError('unavailable');");
             return;
         }
 
-        // CORRECTIF 1 : verifie la permission a chaque tentative (elle peut avoir
-        // ete revoquee dans les Parametres apres le premier lancement).
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             runJs("window.onAndroidSTTError && window.onAndroidSTTError('permission_refusee');");
@@ -470,8 +513,6 @@ public class MainActivity extends BridgeActivity {
             return;
         }
 
-        // CORRECTIF 2 : empeche une double session (double-appui rapide avant que
-        // isListening ne soit mis a jour cote JS) de bloquer les callbacks suivants.
         cancelSttTimeout();
         if (speechRecognizer != null) {
             try { speechRecognizer.cancel(); } catch (Exception ignored) {}
@@ -569,13 +610,27 @@ public class MainActivity extends BridgeActivity {
         super.onDestroy();
     }
 
-    
-    // CORRECTIF : gère le retour du sélecteur de fichiers natif ouvert par onShowFileChooser
     private ValueCallback<Uri[]> mFilePathCallback;
     private static final int FILE_CHOOSER_RESULT_CODE = 10001;
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == RC_GOOGLE_SIGN_IN) {
+            try {
+                com.google.android.gms.auth.api.signin.GoogleSignInAccount account =
+                        GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class);
+                String idToken = account != null ? account.getIdToken() : null;
+                if (idToken != null) {
+                    postGoogleAuthResult(idToken, true, null);
+                } else {
+                    postGoogleAuthResult(null, false, "no_id_token");
+                }
+            } catch (ApiException e) {
+                Log.e(TAG, "Google sign-in error", e);
+                postGoogleAuthResult(null, false, "code_" + e.getStatusCode());
+            }
+            return;
+        }
         if (requestCode == FILE_CHOOSER_RESULT_CODE) {
             if (mFilePathCallback == null) {
                 super.onActivityResult(requestCode, resultCode, data);

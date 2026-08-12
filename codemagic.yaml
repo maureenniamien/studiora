@@ -5,6 +5,8 @@ workflows:
     environment:
       node: 22
       java: 21
+      groups:
+        - studiora_signing
     scripts:
       - name: Install deps
         script: npm install
@@ -12,6 +14,9 @@ workflows:
         script: |
           test -d android || npx cap add android
           npx cap sync android
+      - name: Decode signing keystore
+        script: |
+          echo $CM_KEYSTORE | base64 -d > $CM_BUILD_DIR/android/app/studiora-release.keystore
       - name: Patch AndroidManifest
         script: |
           python3 - << 'PYEOF'
