@@ -11487,7 +11487,7 @@ async function requestPasswordResetCode() {
  if (!email) { statusEl.textContent = 'Entre ton email.'; statusEl.style.color = 'var(--red)'; return; }
  btn.disabled = true; btn.textContent = 'Envoi...';
  try {
- const res = await fetch(`${SUPABASE_URL}/functions/v1/rapid-responder`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/reset-password`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
  body: JSON.stringify({ action: 'request', email })
@@ -11535,7 +11535,7 @@ async function confirmPasswordReset(email) {
  try {
  const salt = generateSalt();
  const hash = await hashPasswordSecure(newPwd, salt);
- const res = await fetch(`${SUPABASE_URL}/functions/v1/rapid-responder`, {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/reset-password`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
  body: JSON.stringify({ action: 'confirm', email, code, pwd_hash: hash, pwd_salt: salt })
