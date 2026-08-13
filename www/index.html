@@ -462,7 +462,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59A9 9 0 0 0 .96 4.95L3.97 7.28C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
  S'inscrire avec Google
  </button>
- <p id="reg-google-notice" class="hidden" style="font-size:12px;color:var(--text2);margin:-8px 0 16px;text-align:right">Compte Google lié · <span onclick="cancelGoogleRegisterPrefill()" style="text-decoration:underline;font-weight:700;cursor:pointer;color:var(--em)">Changer de compte</span></p>
+ <p id="reg-google-notice" class="hidden" style="font-size:12px;color:var(--text2);margin:-8px 0 16px;text-align:center">Compte Google lié · <span onclick="cancelGoogleRegisterPrefill()" style="text-decoration:underline;font-weight:700;cursor:pointer;color:var(--em)">Changer de compte</span></p>
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--text3)">ou avec un email</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
  <div><label class="field-label">Prénom</label><input class="input" id="reg-prenom" placeholder="Koffi"></div>
@@ -10848,7 +10848,7 @@ const GOOGLE_CLIENT_ID = '156231140819-s7vsf98sf8r22gqfj5l7q7pno0lji19q.apps.goo
 // dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
 // Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
 // "Installer" ouvrira un lien invalide.
-const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.8/studiora-1.0.8.apk';
+const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.6/studiora-1.0.6.apk';
 
 function isRunningInNativeApp() {
  // Capacitor injecte window.Capacitor dans l'app native, mais cette
@@ -11689,7 +11689,7 @@ let _appInited = false;
 function _runInitOnce() { if (_appInited) return; _appInited = true; _runInit(); }
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.8'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
+const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
 // CORRECTIF : cette constante était restée bloquée sur '1.0.2' alors que
 // l'app installée était déjà en 1.0.3 — checkForAppUpdate() la comparait à
 // version.json et croyait donc en permanence qu'une mise à jour existait,
