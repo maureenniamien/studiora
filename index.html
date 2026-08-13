@@ -10391,8 +10391,8 @@ function renderProfile() {
  const planInfo=PLANS[planKey];
  const badgeEl=document.getElementById('profile-plan-badge');
  if(badgeEl){
- const icons={free:'FREE',premium:'PRO',vip:'VIP',admin:'ADMIN'};
- badgeEl.textContent=(icons[planKey]||'')+ ' ' + planInfo.name;
+ const icons={free:'',premium:'',vip:'⭐ ',admin:'👑 '};
+ badgeEl.textContent=(icons[planKey]||'')+planInfo.name;
  badgeEl.style.background=planKey==='vip'?'linear-gradient(135deg,#b45309,#f59e0b)':
  planKey==='admin'?'linear-gradient(135deg,#5b21b6,#7c3aed)':
  planKey==='premium'?'linear-gradient(135deg,var(--em),var(--em2))':'var(--bg2)';
