@@ -10391,7 +10391,7 @@ function renderProfile() {
  const planInfo=PLANS[planKey];
  const badgeEl=document.getElementById('profile-plan-badge');
  if(badgeEl){
- const icons={free:'',premium:'',vip:'⭐ ',admin:'👑 '};
+ const icons={free:'',premium:'',vip:'',admin:''};
  badgeEl.textContent=(icons[planKey]||'')+planInfo.name;
  badgeEl.style.background=planKey==='vip'?'linear-gradient(135deg,#b45309,#f59e0b)':
  planKey==='admin'?'linear-gradient(135deg,#5b21b6,#7c3aed)':
