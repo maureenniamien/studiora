@@ -578,12 +578,25 @@ public class MainActivity extends BridgeActivity {
 
     private void handleBack() {
         if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().evaluateJavascript(
+            WebView wv = getBridge().getWebView();
+            String currentUrl = wv.getUrl();
+            boolean onForeignPage = currentUrl != null
+                    && !currentUrl.contains(ASSET_DOMAIN)
+                    && !currentUrl.startsWith("file:");
+            if (onForeignPage && wv.canGoBack()) {
+                wv.goBack();
+                return;
+            }
+            wv.evaluateJavascript(
                 "(function() { try { return !!(window.onAndroidBackPressed && window.onAndroidBackPressed()); } catch(e){ return false; } })();",
                 value -> {
                     boolean handledByJs = "true".equals(value);
                     if (!handledByJs) {
-                        finish();
+                        if (wv.canGoBack()) {
+                            wv.goBack();
+                        } else {
+                            finish();
+                        }
                     }
                 }
             );
