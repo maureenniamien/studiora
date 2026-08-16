@@ -9881,6 +9881,7 @@ function clearFileInput() {
  if(ct){ ct.value=''; }
  var ti = document.getElementById('course-title-input');
  if(ti){ ti.value=''; }
+ APP.attachedCourseFile = null;
 }
 
 function handleFile(input) {
@@ -9905,11 +9906,15 @@ function handleFile(input) {
  };
  reader.readAsArrayBuffer(file);
  } else if(file.type==='application/pdf' || name.endsWith('.pdf')) {
- showToast(' Lecture du PDF...');
  const reader=new FileReader();
  reader.onload=async e=>{
- try {
  const base64=e.target.result.split(',')[1];
+ // Le fichier est attaché IMMÉDIATEMENT, avant même la tentative
+ // d'extraction du texte — s'il échoue, le fichier reste utilisable
+ // pour l'analyse directe, il ne "disparaît" plus jamais.
+ APP.attachedCourseFile = { name:file.name, mime:'application/pdf', base64, kind:'document' };
+ showFileLoaded(file.name, 'Fichier chargé — extraction de l\'aperçu en cours...');
+ try {
  const res=await fetch(AI_ENDPOINT,{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
@@ -9920,18 +9925,21 @@ function handleFile(input) {
  });
  const data=await res.json();
  const text=(data.content&&data.content[0]?data.content[0].text:'')||'';
- if(text){document.getElementById('course-text').value=text;showFileLoaded(file.name,'PDF extrait — prêt pour analyse');}
- else showToast('! PDF vide ou illisible');
- }catch(err){showToast(' Erreur lecture PDF');}
+ if(text){ document.getElementById('course-text').value=text; showFileLoaded(file.name,'PDF extrait — prêt pour analyse'); }
+ else showFileLoaded(file.name, 'Aperçu texte indisponible — le fichier reste attaché, tu peux analyser directement');
+ }catch(err){
+ showFileLoaded(file.name, 'Aperçu texte indisponible (réseau) — le fichier reste attaché, tu peux analyser directement');
+ }
  };
  reader.readAsDataURL(file);
  } else if(file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/.test(name)) {
- showToast(' Lecture de l\'image...');
  const reader=new FileReader();
  reader.onload=async e=>{
- try {
  const base64=e.target.result.split(',')[1];
  const mime=file.type || 'image/jpeg';
+ APP.attachedCourseFile = { name:file.name, mime, base64, kind:'image' };
+ showFileLoaded(file.name, 'Fichier chargé — extraction de l\'aperçu en cours...');
+ try {
  const res=await fetch(AI_ENDPOINT,{
  method:'POST',headers:{'Content-Type':'application/json'},
  body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,
@@ -9942,9 +9950,11 @@ function handleFile(input) {
  });
  const data=await res.json();
  const text=(data.content&&data.content[0]?data.content[0].text:'')||'';
- if(text){document.getElementById('course-text').value=text;showToast(' Image transcrite !');}
- else showToast('! Aucun texte détecté');
- }catch(err){showToast(' Erreur lecture image');}
+ if(text){ document.getElementById('course-text').value=text; showFileLoaded(file.name,'Image transcrite — prêt pour analyse'); }
+ else showFileLoaded(file.name, 'Aperçu texte indisponible — le fichier reste attaché, tu peux analyser directement');
+ }catch(err){
+ showFileLoaded(file.name, 'Aperçu texte indisponible (réseau) — le fichier reste attaché, tu peux analyser directement');
+ }
  };
  reader.readAsDataURL(file);
  } else {
@@ -10175,16 +10185,36 @@ function renderSujetResults(parsed, total, totalMax, pct, subj) {
 
 async function analyzeCourse() {
  const text=document.getElementById('course-text').value.trim();
- if(!text||text.length<30){ showToast('! Colle du texte (min 30 caractères)'); return; }
+ const hasAttachedFile = !!(APP.attachedCourseFile && APP.attachedCourseFile.base64);
+ if(!text && !hasAttachedFile){ showToast('! Importe un fichier ou colle du texte (min 30 caractères)'); return; }
+ if(text && text.length<30 && !hasAttachedFile){ showToast('! Colle du texte (min 30 caractères)'); return; }
  const btn=document.getElementById('analyze-btn');
  btn.disabled=true; btn.textContent=' Analyse en cours...';
 
  try {
- const res=await fetch(AI_ENDPOINT,{
+ let res;
+ if (text && text.length>=30) {
+ // Texte disponible (collé ou extrait avec succès) : chemin normal.
+ res=await fetch(AI_ENDPOINT,{
  method:'POST',
  headers:{'Content-Type':'application/json',},
  body:JSON.stringify({model:MODEL,max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:ANALYSIS_PROMPTS[selectedAnalysis](text)}]})
  });
+ } else {
+ // Pas de texte exploitable, mais un fichier est attaché : on l'envoie
+ // directement à l'IA en une seule fois (extraction + analyse combinées),
+ // au lieu d'exiger un copier-coller manuel.
+ const f = APP.attachedCourseFile;
+ const instruction = ANALYSIS_PROMPTS[selectedAnalysis]('[voir le fichier joint ci-dessus]');
+ res=await fetch(AI_ENDPOINT,{
+ method:'POST',
+ headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1500,system:SYSTEM_PROMPT,messages:[{role:'user',content:[
+ { type: f.kind==='image' ? 'image' : 'document', source:{ type:'base64', media_type:f.mime, data:f.base64 } },
+ { type:'text', text: instruction }
+ ]}]})
+ });
+ }
  const data=await res.json();
  const result=(data.content && data.content[0] ? data.content[0].text : '')||'Erreur';
  // Formatter le résultat avec sauts de ligne HTML
@@ -10198,7 +10228,8 @@ async function analyzeCourse() {
  // ── Sauvegarder dans la liste des cours importés ──
  const titleEl = document.getElementById('course-title-input');
  const title = (titleEl && titleEl.value.trim()) || ('Cours du ' + new Date().toLocaleDateString('fr-FR'));
- const snippet = text.slice(0, 200);
+ const safeText = text || ('[Fichier importé : ' + (APP.attachedCourseFile ? APP.attachedCourseFile.name : 'document') + ']');
+ const snippet = safeText.slice(0, 200);
  const shared = document.getElementById('course-share-checkbox')?.checked !== false;
  try {
  const saved = getCoursesStorage();
@@ -10207,7 +10238,7 @@ async function analyzeCourse() {
  title,
  subject: APP.currentSubject || '',
  snippet,
- fullText: text.slice(0, 3000), // tronqué pour éviter dépassement localStorage
+ fullText: safeText.slice(0, 3000), // tronqué pour éviter dépassement localStorage
  result,
  analysis: selectedAnalysis,
  date: new Date().toLocaleDateString('fr-FR')
@@ -10215,7 +10246,7 @@ async function analyzeCourse() {
  if (saved.length > 10) saved.pop();
  setCoursesStorage(saved);
  renderCoursesInTravaux();
- saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), result, selectedAnalysis, shared);
+ saveCourseToDatabase(title, APP.currentSubject || '', snippet, safeText.slice(0,3000), result, selectedAnalysis, shared);
  showToast(' Cours "'+title+'" sauvegardé !');
  } catch(e2) { showToast('! Cours analysé mais non sauvegardé (stockage plein ?).'); }
  } catch(e) {
@@ -10228,10 +10259,12 @@ async function analyzeCourse() {
 // utile pour juste déposer un cours à disposition (soi-même ou sa promotion)
 async function saveDocWithoutAnalyzing() {
  const text=document.getElementById('course-text').value.trim();
- if(!text||text.length<10){ showToast('! Colle ou importe un document d\'abord'); return; }
+ const hasAttachedFile = !!(APP.attachedCourseFile && APP.attachedCourseFile.base64);
+ if((!text||text.length<10) && !hasAttachedFile){ showToast('! Colle ou importe un document d\'abord'); return; }
  const titleEl = document.getElementById('course-title-input');
  const title = (titleEl && titleEl.value.trim()) || ('Document du ' + new Date().toLocaleDateString('fr-FR'));
- const snippet = text.slice(0, 200);
+ const safeText = text || ('[Fichier importé : ' + (APP.attachedCourseFile ? APP.attachedCourseFile.name : 'document') + ']');
+ const snippet = safeText.slice(0, 200);
  const shared = document.getElementById('course-share-checkbox')?.checked !== false;
  try {
  const saved = getCoursesStorage();
@@ -10240,7 +10273,7 @@ async function saveDocWithoutAnalyzing() {
  title,
  subject: APP.currentSubject || '',
  snippet,
- fullText: text.slice(0, 3000),
+ fullText: safeText.slice(0, 3000),
  result: '',
  analysis: 'non-analysé',
  date: new Date().toLocaleDateString('fr-FR')
@@ -10248,7 +10281,7 @@ async function saveDocWithoutAnalyzing() {
  if (saved.length > 10) saved.pop();
  setCoursesStorage(saved);
  renderCoursesInTravaux();
- saveCourseToDatabase(title, APP.currentSubject || '', snippet, text.slice(0,3000), '', 'non-analysé', shared);
+ saveCourseToDatabase(title, APP.currentSubject || '', snippet, safeText.slice(0,3000), '', 'non-analysé', shared);
  showToast(' Document "'+title+'" enregistré !');
  } catch(e2) { showToast('! Erreur d\'enregistrement (stockage plein ?).'); }
 }
@@ -10276,7 +10309,7 @@ function resetUpload() {
  document.getElementById('upload-result').style.display='none';
  document.getElementById('course-text').value='';
  document.getElementById('course-title-input').value='';
- // Remise à zéro
+ clearFileInput();
 }
 
 function continueInChat() {
@@ -10848,7 +10881,7 @@ const GOOGLE_CLIENT_ID = '156231140819-s7vsf98sf8r22gqfj5l7q7pno0lji19q.apps.goo
 // dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
 // Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
 // "Installer" ouvrira un lien invalide.
-const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.9/studiora-1.0.9.apk';
+const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.6/studiora-1.0.6.apk';
 
 function isRunningInNativeApp() {
  // Capacitor injecte window.Capacitor dans l'app native, mais cette
@@ -11689,7 +11722,7 @@ let _appInited = false;
 function _runInitOnce() { if (_appInited) return; _appInited = true; _runInit(); }
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.9'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
+const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
 // CORRECTIF : cette constante était restée bloquée sur '1.0.2' alors que
 // l'app installée était déjà en 1.0.3 — checkForAppUpdate() la comparait à
 // version.json et croyait donc en permanence qu'une mise à jour existait,
