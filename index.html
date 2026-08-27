@@ -240,6 +240,10 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 /* ── BADGE ── */
 .badge{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700}
 .badge-em{background:var(--em-soft);color:var(--em);border:1px solid var(--em-mid)}
+.school-niveau-chip{display:inline-flex;align-items:center;padding:7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)}
+.school-niveau-chip:has(input:checked){background:var(--em-soft);border-color:var(--em);color:var(--em)}
+.school-member-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.school-member-row:last-child{border-bottom:none}
 .badge-pur{background:var(--pur-soft);color:var(--purple);border:1px solid rgba(91,79,207,.2)}
 .badge-amb{background:var(--amb-soft);color:var(--amber);border:1px solid rgba(196,122,11,.2)}
 .badge-red{background:var(--red-soft);color:var(--red);border:1px solid rgba(209,58,58,.2)}
@@ -649,6 +653,20 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  </div>
 
+ <!-- Programme de la semaine (Phase 3 adaptative) -->
+ <div style="padding:0 20px 18px;display:none" class="a2" id="learning-plan-wrap">
+ <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+ <div style="display:flex;align-items:center;gap:7px">
+ <span style="font-size:16px"></span>
+ <span style="font-size:13px;font-weight:700">Programme de la semaine</span>
+ </div>
+ <span style="font-size:11px;color:var(--text3)" id="learning-plan-week"></span>
+ </div>
+ <div id="learning-plan-items"></div>
+ </div>
+ </div>
+
  <!-- Matières -->
  <div style="padding:0 20px 6px" class="a3">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1038,6 +1056,16 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="subject-scores"></div>
  </div>
 
+ <!-- Points à travailler (profil d'apprentissage) -->
+ <div class="card" style="margin-bottom:14px">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+ <div style="font-size:14px;font-weight:700">🎯 Points à travailler</div>
+ <span id="learning-rhythm-badge" class="badge badge-em" style="display:none"></span>
+ </div>
+ <p style="font-size:11px;color:var(--text3);margin-bottom:12px">Les notions qui reviennent le plus souvent dans tes erreurs de quiz</p>
+ <div id="weak-notions-list"></div>
+ </div>
+
  <!-- Objectifs -->
  <div class="card">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -1231,6 +1259,34 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  </div>
 
+ <!-- Espace Spécialisation (VIP/admin) -->
+ <div class="card" id="specialization-card" style="margin-bottom:14px;cursor:pointer;display:none" onclick="showScreen('screen-specialization')">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+ <div style="display:flex;align-items:center;gap:12px">
+ <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🚀</div>
+ <div>
+ <div style="font-weight:700;font-size:14px">Spécialisation</div>
+ <div id="specialization-card-subtitle" style="font-size:12px;color:var(--text3)">Apprends une nouvelle compétence, planning IA sur-mesure</div>
+ </div>
+ </div>
+ <div style="font-size:18px;color:var(--text3)">›</div>
+ </div>
+ </div>
+
+ <!-- Espace École -->
+ <div class="card" style="margin-bottom:14px;cursor:pointer" onclick="showScreen('screen-school')">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+ <div style="display:flex;align-items:center;gap:12px">
+ <div style="width:44px;height:44px;border-radius:12px;background:var(--em-soft);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏫</div>
+ <div>
+ <div style="font-weight:700;font-size:14px">Mon École</div>
+ <div id="school-card-subtitle" style="font-size:12px;color:var(--text3)">Rejoindre ou créer une école</div>
+ </div>
+ </div>
+ <div style="font-size:18px;color:var(--text3)">›</div>
+ </div>
+ </div>
+
  <!-- Avis & commentaires -->
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Avis & commentaires</h3>
@@ -1264,6 +1320,210 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  ferme definitivement par l'utilisateur (localStorage), qui perd alors tout
  moyen de retrouver l'app native. Ce bouton reste toujours accessible ici. -->
  <button id="profile-apk-download-btn" onclick="downloadStudioraApk()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📲 Télécharger l'app Android</button>
+ </div>
+</div>
+
+<!-- ═══════════════════ ÉCOLE ═══════════════════ -->
+<div id="screen-school" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">🏫 Mon École</h2>
+ <p style="color:var(--text3);font-size:12px;margin:0">Espace admin, élèves & profs</p>
+ </div>
+ </div>
+ <div class="scroll-body" style="padding:0 20px 100px">
+
+ <!-- État de chargement -->
+ <div id="school-loading" style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px">Chargement…</div>
+
+ <!-- ── ÉTAT : aucune école (rejoindre / créer) ── -->
+ <div id="school-empty-state" style="display:none">
+
+ <!-- Rejoindre une école -->
+ <div class="card" style="margin-bottom:14px">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Rejoindre une école</h3>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Tu as reçu un code élève ou professeur ? Entre-le ici.</p>
+ <input id="school-join-code" class="input" style="font-size:13px;padding:10px 14px;text-transform:uppercase" placeholder="Ex: 9QL2XXK2" maxlength="12">
+ <button id="school-join-btn" onclick="joinSchoolByCode()" style="width:100%;padding:11px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:10px">Rejoindre l'école →</button>
+ <div id="school-join-status" style="font-size:12px;margin-top:8px;text-align:center;min-height:14px"></div>
+ </div>
+
+ <!-- Créer une école (admin uniquement) -->
+ <div id="school-create-block" class="card" style="margin-bottom:14px;display:none">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Créer une école</h3>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Génère automatiquement un code élève et un code professeur à partager.</p>
+ <div style="margin-bottom:10px">
+ <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NOM DE L'ÉCOLE</div>
+ <input id="school-create-name" class="input" style="font-size:13px;padding:10px 14px" placeholder="Ex: Collège Sainte-Marie">
+ </div>
+ <div style="margin-bottom:4px">
+ <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">NIVEAUX CONCERNÉS</div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap" id="school-create-niveaux">
+ <label class="school-niveau-chip"><input type="checkbox" value="Terminale" style="margin-right:4px">Terminale</label>
+ <label class="school-niveau-chip"><input type="checkbox" value="Premiere" style="margin-right:4px">Première</label>
+ <label class="school-niveau-chip"><input type="checkbox" value="Seconde" style="margin-right:4px">Seconde</label>
+ <label class="school-niveau-chip"><input type="checkbox" value="Licence 1" style="margin-right:4px">Licence 1</label>
+ <label class="school-niveau-chip"><input type="checkbox" value="Licence 2" style="margin-right:4px">Licence 2</label>
+ <label class="school-niveau-chip"><input type="checkbox" value="Licence 3" style="margin-right:4px">Licence 3</label>
+ </div>
+ </div>
+ <button id="school-create-btn" onclick="createSchoolSubmit()" style="width:100%;padding:11px;background:var(--purple);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:10px"> Créer l'école</button>
+ <div id="school-create-status" style="font-size:12px;margin-top:8px;text-align:center;min-height:14px"></div>
+ </div>
+ </div>
+
+ <!-- ── ÉTAT : école active (créée ou rejointe) ── -->
+ <div id="school-active-state" style="display:none">
+
+ <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#0B6E4F,#16a34a);border:none;color:#fff">
+ <div style="font-size:11px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">École</div>
+ <div id="school-active-name" style="font-size:20px;font-weight:800;margin-bottom:10px">…</div>
+ <div id="school-active-niveaux" style="font-size:12px;opacity:.9"></div>
+ </div>
+
+ <!-- Codes d'invitation (visibles pour l'admin créateur) -->
+ <div id="school-codes-block" class="card" style="margin-bottom:14px;display:none">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Codes d'invitation</h3>
+ <div style="display:flex;flex-direction:column;gap:10px">
+ <div style="background:var(--bg2);border-radius:12px;padding:12px">
+ <div style="font-size:11px;color:var(--text3);margin-bottom:4px">CODE ÉLÈVE</div>
+ <div style="display:flex;justify-content:space-between;align-items:center">
+ <span id="school-code-eleve" style="font-family:monospace;font-size:15px;font-weight:700;color:var(--em)">…</span>
+ <button onclick="copySchoolValue('school-code-eleve')" style="background:none;border:none;color:var(--em);font-size:12px;font-weight:700;cursor:pointer">Copier</button>
+ </div>
+ </div>
+ <div style="background:var(--bg2);border-radius:12px;padding:12px">
+ <div style="font-size:11px;color:var(--text3);margin-bottom:4px">CODE PROFESSEUR</div>
+ <div style="display:flex;justify-content:space-between;align-items:center">
+ <span id="school-code-prof" style="font-family:monospace;font-size:15px;font-weight:700;color:var(--purple)">…</span>
+ <button onclick="copySchoolValue('school-code-prof')" style="background:none;border:none;color:var(--purple);font-size:12px;font-weight:700;cursor:pointer">Copier</button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Élèves & profs -->
+ <div class="card" style="margin-bottom:14px">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+ <h3 style="font-size:14px;font-weight:700">Membres</h3>
+ <div style="display:flex;gap:6px" id="school-members-tabs">
+ <button onclick="setSchoolMembersTab('eleves',this)" class="school-tab-btn active" data-tab="eleves" style="padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--em-soft);border:1.5px solid var(--em);color:var(--em)">Élèves</button>
+ <button onclick="setSchoolMembersTab('profs',this)" class="school-tab-btn" data-tab="profs" style="padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);border:1.5px solid var(--border);color:var(--text2)">Profs</button>
+ </div>
+ </div>
+ <div id="school-members-list">
+ <div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0">Chargement des membres…</div>
+ </div>
+ </div>
+
+ </div>
+
+ </div>
+</div>
+
+<!-- ═══════════════════ EXERCICE RÉDIGÉ (corrigé par l'IA) ═══════════════════ -->
+<div id="screen-custom-exercise" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">✍️ Exercice rédigé</h2>
+ <p id="custom-ex-subtitle" style="color:var(--text3);font-size:12px;margin:0">Corrigé par l'IA</p>
+ </div>
+ </div>
+ <div class="scroll-body" style="padding:0 20px 100px">
+
+ <div id="custom-ex-loading" style="text-align:center;padding:50px 0;color:var(--text3)">
+ <div class="spinner" style="margin:0 auto 12px"></div>
+ <p style="font-size:13px">Génération de ton exercice...</p>
+ </div>
+
+ <div id="custom-ex-body" style="display:none">
+ <div class="card" style="margin-bottom:14px">
+ <div style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Énoncé</div>
+ <p id="custom-ex-statement" style="font-size:14px;line-height:1.6;white-space:pre-wrap"></p>
+ </div>
+
+ <div id="custom-ex-answer-block" class="card" style="margin-bottom:14px">
+ <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ta réponse</div>
+ <textarea id="custom-ex-answer" rows="6" style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px;font-size:13.5px;font-family:'Plus Jakarta Sans',sans-serif;resize:vertical;background:var(--bg2)" placeholder="Rédige ta réponse ici..."></textarea>
+ <button id="custom-ex-submit-btn" onclick="submitCustomExercise()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:12px">Soumettre pour correction →</button>
+ </div>
+
+ <div id="custom-ex-result-block" style="display:none">
+ <div class="card" style="margin-bottom:14px" id="custom-ex-score-card">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+ <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Résultat</div>
+ <div id="custom-ex-score-badge" style="font-size:15px;font-weight:800"></div>
+ </div>
+ </div>
+ <div class="card" style="margin-bottom:14px">
+ <div style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Correction détaillée</div>
+ <p id="custom-ex-feedback" style="font-size:13.5px;line-height:1.6;white-space:pre-wrap"></p>
+ </div>
+ <button onclick="loadCustomExercise(_customExSubject,_customExNotion)" style="width:100%;padding:12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text);font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Nouvel exercice sur cette notion</button>
+ </div>
+ </div>
+
+ </div>
+</div>
+
+<!-- ═══════════════════ SPÉCIALISATION (VIP/admin) ═══════════════════ -->
+<div id="screen-specialization" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">🚀 Spécialisation</h2>
+ <p style="color:var(--text3);font-size:12px;margin:0">Apprends une compétence, planning IA sur-mesure</p>
+ </div>
+ </div>
+ <div class="scroll-body" style="padding:0 20px 100px">
+
+ <!-- ── ÉTAT 1 : choisir une activité à apprendre ── -->
+ <div id="spec-step-choose" style="display:none">
+ <div class="card" style="margin-bottom:14px">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Quelle activité veux-tu apprendre ?</h3>
+ <p style="font-size:12px;color:var(--text3);margin-bottom:12px">N'importe quoi : guitare, trading, développement web, anglais professionnel, cuisine... L'IA évalue d'abord ton niveau actuel, puis te construit un planning adapté.</p>
+ <input id="spec-topic-input" class="input" style="font-size:13px;padding:10px 14px" placeholder="Ex: Guitare, Trading, Développement web...">
+ <button id="spec-start-btn" onclick="startSpecializationEval()" style="width:100%;padding:11px;background:linear-gradient(135deg,#b45309,#f59e0b);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:10px">Évaluer mon niveau →</button>
+ </div>
+ </div>
+
+ <!-- ── ÉTAT 2 : évaluation en cours (chargement) ── -->
+ <div id="spec-step-eval-loading" style="display:none;text-align:center;padding:50px 0;color:var(--text3)">
+ <div class="spinner" style="margin:0 auto 12px"></div>
+ <p style="font-size:13px" id="spec-eval-loading-text">Préparation de ton évaluation...</p>
+ </div>
+
+ <!-- ── ÉTAT 3 : quiz d'évaluation ── -->
+ <div id="spec-step-eval-quiz" style="display:none">
+ <div class="card" style="margin-bottom:14px;background:var(--em-soft);border:1px solid var(--em-mid)">
+ <p style="font-size:12px;color:var(--text)">Réponds du mieux que tu peux — même si tu ne sais pas, essaie. C'est pour situer ton niveau, pas pour te juger 🙂</p>
+ </div>
+ <div id="spec-eval-questions"></div>
+ <button onclick="submitSpecializationEval()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:6px">Valider mon évaluation →</button>
+ </div>
+
+ <!-- ── ÉTAT 4 : génération du programme (chargement) ── -->
+ <div id="spec-step-program-loading" style="display:none;text-align:center;padding:50px 0;color:var(--text3)">
+ <div class="spinner" style="margin:0 auto 12px"></div>
+ <p style="font-size:13px">Construction de ton planning personnalisé...</p>
+ </div>
+
+ <!-- ── ÉTAT 5 : programme actif ── -->
+ <div id="spec-step-active" style="display:none">
+ <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#b45309,#f59e0b);border:none;color:#fff">
+ <div style="font-size:11px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Spécialisation en cours</div>
+ <div id="spec-active-topic" style="font-size:20px;font-weight:800;margin-bottom:6px">…</div>
+ <div id="spec-active-level" style="font-size:12px;opacity:.9"></div>
+ </div>
+ <div class="card" style="margin-bottom:14px">
+ <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Ton planning</h3>
+ <div id="spec-program-list"></div>
+ </div>
+ <button onclick="confirmChangeSpecialization()" style="width:100%;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Changer de spécialisation</button>
+ </div>
+
  </div>
 </div>
 
@@ -2265,6 +2525,258 @@ function getAvgScore() {
  const all = Object.values(s.scores).flat();
  if (!all.length) return 0;
  return Math.round(all.reduce((a,b)=>a+b,0)/all.length);
+}
+
+// ── PROFIL D'APPRENTISSAGE (fondation adaptative) ──
+// Enregistre, pour chaque question ratée d'un quiz, la matière + la notion
+// précise (si l'IA l'a fournie) + l'énoncé/explication, dans un historique
+// glissant. Sert de base aux prochaines phases (exercices ciblés, programme
+// adaptatif) sans nécessiter de nouvel appel réseau : tout part de données
+// déjà générées pendant le quiz normal.
+function recordWeakPoints(subjectId, questions, answers) {
+ const s = getStats();
+ if (!s.weakPoints) s.weakPoints = [];
+ questions.forEach((q, i) => {
+ const given = answers[i];
+ const isCorrect = given === q.correct;
+ if (isCorrect) return;
+ s.weakPoints.push({
+ subject: subjectId,
+ notion: (q.notion || '').trim() || null,
+ q: q.q,
+ date: new Date().toISOString().slice(0,10)
+ });
+ });
+ // Historique glissant : garde les 200 derniers points faibles, tous sujets confondus,
+ // largement suffisant pour dégager des tendances sans faire grossir le blob indéfiniment.
+ if (s.weakPoints.length > 200) s.weakPoints = s.weakPoints.slice(-200);
+ saveStats(s);
+}
+
+// Calcule le profil d'apprentissage courant à partir des stats déjà enregistrées :
+// forces/faiblesses par matière (scores moyens), notions récurrentes à travailler
+// (comptage des points faibles groupés par matière+notion), et rythme d'activité
+// (sessions des 7 derniers jours vs les 7 précédents). Ne fait aucun appel réseau :
+// tout est dérivé de `getStats()`, donc utilisable de façon synchrone à tout moment,
+// y compris hors-ligne.
+function getLearningProfile() {
+ const s = getStats();
+ const rawScores = s.scores || {};
+ const subjectAverages = Object.keys(rawScores).map(id => {
+ const arr = rawScores[id] || [];
+ const avg = arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
+ return { id, avg, attempts: arr.length };
+ }).filter(x => x.attempts > 0);
+
+ const strengths = subjectAverages.filter(x => x.avg >= 75).sort((a,b) => b.avg - a.avg).map(x => x.id);
+ const weaknesses = subjectAverages.filter(x => x.avg < 50).sort((a,b) => a.avg - b.avg).map(x => x.id);
+
+ // Regroupe les points faibles par (matière, notion) et compte les récurrences.
+ const weakPoints = s.weakPoints || [];
+ const notionCounts = {};
+ weakPoints.forEach(w => {
+ const key = w.subject + '||' + (w.notion || '—');
+ if (!notionCounts[key]) notionCounts[key] = { subject: w.subject, notion: w.notion, count: 0, lastDate: w.date };
+ notionCounts[key].count++;
+ if (w.date > notionCounts[key].lastDate) notionCounts[key].lastDate = w.date;
+ });
+ const topWeakNotions = Object.values(notionCounts)
+ .filter(x => x.notion) // on ignore les questions sans notion identifiée (anciens quiz)
+ .sort((a,b) => b.count - a.count)
+ .slice(0, 5);
+
+ // Rythme : compare la semaine courante à la précédente à partir de weekData/weeklyData déjà tenus à jour.
+ const thisWeek = getWeekData(0).reduce((a,b) => a+b, 0);
+ const lastWeek = getWeekData(-1).reduce((a,b) => a+b, 0);
+ let rhythm = 'nouveau';
+ if (thisWeek === 0 && lastWeek === 0) rhythm = 'inactif';
+ else if (thisWeek >= lastWeek && thisWeek > 0) rhythm = 'assidu';
+ else if (thisWeek < lastWeek) rhythm = 'irregulier';
+
+ return { subjectAverages, strengths, weaknesses, topWeakNotions, rhythm, sessionsThisWeek: thisWeek, sessionsLastWeek: lastWeek };
+}
+
+// ── SYNTHÈSE IA DU PROFIL (via Groq) ──
+// Contrairement aux stats ci-dessus (calculées localement, sans réseau), cette
+// fonction demande à l'IA (Groq, même modèle que le chat) de LIRE les échanges
+// récents avec le coach + les points faibles des quiz, et d'en dégager des
+// signaux qu'un simple comptage ne peut pas capter : sur quoi l'élève bloque
+// vraiment dans ses questions, son style d'apprentissage, son rythme ressenti.
+// Le résultat n'est PAS forcément affiché tel quel à l'utilisateur — il sert
+// de carburant aux fonctionnalités adaptatives (exercices ciblés, ton du
+// coach, programme) définies dans les phases suivantes.
+// Throttlé : ne relance un appel IA que si le précédent date de plus de 6h
+// ET qu'il y a eu de l'activité depuis (chat ou quiz), pour ne pas multiplier
+// les appels Groq à chaque message.
+function shouldSynthesizeProfile(s) {
+ const last = s.aiProfile && s.aiProfile.updatedAt;
+ if (!last) return true;
+ const hoursSince = (Date.now() - new Date(last).getTime()) / 3600000;
+ if (hoursSince < 6) return false;
+ const activityAtLastSync = (s.aiProfile && s.aiProfile.activitySnapshot) || 0;
+ const activityNow = (s.chatMsgs || 0) + (s.questions || 0);
+ return activityNow > activityAtLastSync;
+}
+
+// Rassemble un échantillon léger des échanges récents (toutes matières déjà
+// ouvertes) pour donner du contexte réel à l'IA sans envoyer tout l'historique.
+function collectRecentChatSample(maxPerSubject, maxTotal) {
+ const sample = [];
+ try {
+ const allSubjects = [...(typeof SUBJECTS !== 'undefined' ? SUBJECTS : [])];
+ allSubjects.forEach(s => {
+ const hist = loadChatHistory(s.id);
+ if (!hist || !hist.length) return;
+ hist.slice(-maxPerSubject).forEach(m => {
+ if (typeof m.content !== 'string') return; // on ignore images/schémas, juste le texte
+ sample.push({ subject: s.name, role: m.role, text: m.content.slice(0, 300) });
+ });
+ });
+ } catch(e) {}
+ // Garde les plus récents en dernier (ordre déjà chronologique par matière), tronque au total max
+ return sample.slice(-maxTotal);
+}
+
+async function maybeSynthesizeLearningProfile() {
+ const s = getStats();
+ if (!shouldSynthesizeProfile(s)) return;
+ try {
+ const chatSample = collectRecentChatSample(8, 25);
+ const profile = getLearningProfile();
+ const weakSummary = profile.topWeakNotions.map(w => `${w.notion} (${w.subject}, ${w.count} erreurs)`).join(', ') || 'aucune';
+ const chatText = chatSample.map(m => `[${m.subject}] ${m.role==='user'?'Élève':'Coach'}: ${m.text}`).join('\n') || '(aucun échange récent)';
+
+ const prompt = `Tu analyses le comportement d'apprentissage d'un·e élève à partir de ses échanges avec un coach IA et de ses résultats de quiz. Réponds UNIQUEMENT en JSON valide.
+
+NOTIONS RÉCURRENTES RATÉES EN QUIZ : ${weakSummary}
+
+EXTRAITS RÉCENTS DE CONVERSATION AVEC LE COACH :
+${chatText}
+
+Déduis-en un profil d'apprentissage synthétique. Réponds avec ce format JSON exact :
+{"strugglingTopics":["notion ou sujet où l'élève semble en difficulté d'après SES PROPRES questions/messages, pas seulement les quiz, max 5"],"confidentTopics":["sujets où l'élève semble à l'aise, max 3"],"learningStyle":"une courte phrase décrivant comment iel apprend le mieux (ex: a besoin d'exemples concrets, préfère les explications étape par étape, pose beaucoup de questions de clarification...)","paceNote":"une courte phrase sur son rythme (ex: progresse vite mais superficiellement, prend son temps et creuse...)","toneAdvice":"une courte instruction pour adapter le ton du coach à cet élève (ex: être plus encourageant, aller droit au but, ralentir et détailler davantage...)"}`;
+
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 500, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ if (!res.ok) return;
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+
+ const s2 = getStats();
+ s2.aiProfile = {
+ strugglingTopics: Array.isArray(parsed.strugglingTopics) ? parsed.strugglingTopics.slice(0,5) : [],
+ confidentTopics: Array.isArray(parsed.confidentTopics) ? parsed.confidentTopics.slice(0,3) : [],
+ learningStyle: typeof parsed.learningStyle === 'string' ? parsed.learningStyle : '',
+ paceNote: typeof parsed.paceNote === 'string' ? parsed.paceNote : '',
+ toneAdvice: typeof parsed.toneAdvice === 'string' ? parsed.toneAdvice : '',
+ updatedAt: new Date().toISOString(),
+ activitySnapshot: (s2.chatMsgs || 0) + (s2.questions || 0)
+ };
+ saveStats(s2);
+ } catch(e) {
+ console.error('Synthèse profil IA échouée (non bloquant) :', e);
+ }
+}
+
+// ── PROGRAMME D'APPRENTISSAGE ADAPTATIF (Phase 3) ──
+// Un plan hebdomadaire (2-3 priorités) généré par l'IA à partir du profil
+// d'apprentissage (notions faibles + synthèse IA du chat), réévalué chaque
+// nouvelle semaine (lundi). Contrairement au profil (throttlé sur l'activité),
+// ici le déclencheur est simplement "on n'a pas encore de plan pour cette
+// semaine civile" — un seul appel IA par semaine maximum.
+function getWeekMondayISO(d) {
+ const date = d ? new Date(d) : new Date();
+ const day = date.getDay(); // 0=dimanche
+ const diff = (day === 0 ? -6 : 1) - day; // recule jusqu'au lundi
+ const monday = new Date(date);
+ monday.setDate(date.getDate() + diff);
+ return monday.toISOString().slice(0,10);
+}
+
+function shouldGenerateLearningPlan(s) {
+ const plan = s.learningPlan;
+ if (!plan || !plan.weekOf) return true;
+ return plan.weekOf !== getWeekMondayISO();
+}
+
+async function maybeGenerateLearningPlan() {
+ const s = getStats();
+ if (!shouldGenerateLearningPlan(s)) { renderLearningPlan(); return; }
+ // Pas assez de données encore (élève tout nouveau) : on n'appelle pas l'IA pour rien.
+ const profile = getLearningProfile();
+ const hasSignal = profile.topWeakNotions.length > 0 || profile.subjectAverages.length > 0 || (s.aiProfile && (s.aiProfile.strugglingTopics||[]).length > 0);
+ if (!hasSignal) { document.getElementById('learning-plan-wrap').style.display = 'none'; return; }
+
+ try {
+ const weakSummary = profile.topWeakNotions.map(w => `${w.notion} (${w.subject}, ${w.count} erreurs)`).join(', ') || 'aucune';
+ const strongSummary = profile.strengths.join(', ') || 'aucune identifiée';
+ const ai = s.aiProfile || {};
+ const aiSummary = [ai.paceNote, ai.learningStyle].filter(Boolean).join(' / ') || 'pas encore de synthèse';
+
+ const prompt = `Tu construis le programme de révision de la semaine pour un·e élève, à partir de son profil. Réponds UNIQUEMENT en JSON valide.
+
+NOTIONS RÉCURRENTES RATÉES : ${weakSummary}
+MATIÈRES FORTES : ${strongSummary}
+PROFIL D'APPRENTISSAGE : ${aiSummary}
+RYTHME RÉCENT : ${profile.rhythm}
+
+Choisis 2 à 3 priorités CONCRÈTES pour cette semaine (des notions précises à retravailler en priorité, pas des généralités), en tenant compte du rythme (si "inactif" ou "irregulier", reste très accessible avec une charge légère ; si "assidu", tu peux viser un peu plus haut). Réponds avec ce format JSON exact :
+{"items":[{"subject":"identifiant de matière tel que fourni ci-dessus (ex: math, physique)","notion":"nom court de la notion à travailler","reason":"une phrase courte, chaleureuse, expliquant pourquoi cette priorité cette semaine"}]}`;
+
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 400, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ if (!res.ok) return;
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+ const items = Array.isArray(parsed.items) ? parsed.items.filter(it => it && it.subject && it.notion).slice(0,3) : [];
+ if (!items.length) return;
+
+ const s2 = getStats();
+ s2.learningPlan = { weekOf: getWeekMondayISO(), items, generatedAt: new Date().toISOString() };
+ saveStats(s2);
+ renderLearningPlan();
+ } catch(e) {
+ console.error('Génération du programme de la semaine échouée (non bloquant) :', e);
+ }
+}
+
+function renderLearningPlan() {
+ const s = getStats();
+ const plan = s.learningPlan;
+ const wrap = document.getElementById('learning-plan-wrap');
+ if (!wrap) return;
+ if (!plan || !plan.items || !plan.items.length) { wrap.style.display = 'none'; return; }
+ wrap.style.display = 'block';
+ const weekEl = document.getElementById('learning-plan-week');
+ if (weekEl) {
+ const d = new Date(plan.weekOf);
+ weekEl.textContent = 'Semaine du ' + d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+ }
+ const itemsEl = document.getElementById('learning-plan-items');
+ itemsEl.innerHTML = plan.items.map(it => {
+ const known = SUBJECTS.find(x=>x.id===it.subject) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===it.subject) : null);
+ const subjName = known ? known.name : it.subject;
+ const color = known ? known.color : '#6b7280';
+ return `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+ <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:5px"></div>
+ <div style="flex:1;min-width:0">
+ <div style="font-size:13px;font-weight:700">${it.notion} <span style="font-weight:500;color:var(--text3);font-size:11px">· ${subjName}</span></div>
+ <div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.4">${it.reason || ''}</div>
+ </div>
+ <button onclick="startTargetedExercise('${it.subject}','${(it.notion||'').replace(/'/g,"\\'")}')" style="background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0;margin-top:2px">Go</button>
+ </div>`;
+ }).join('');
+ refreshRemindersContentIfEnabled();
 }
 // Clé de semaine ISO (ex: "2026-W04"), pour indexer l'historique par semaine.
 function getISOWeekKey(d) {
@@ -3505,13 +4017,14 @@ window.onAndroidBackPressed = function() {
 // Screens qui affichent la nav globale
 const NAV_SCREENS = new Set(['screen-home',
  'screen-progress','screen-profile','screen-travaux','screen-upload',
- 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor','screen-transcription']);
+ 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor','screen-transcription','screen-school','screen-custom-exercise','screen-specialization']);
 const NAV_ACTIVE_MAP = {
  'screen-home':'nav-home',
  'screen-progress':'nav-home','screen-upload':'nav-travaux',
  'screen-calc':'nav-travaux','screen-dict':'nav-travaux','screen-diagrams':'nav-travaux',
  'screen-travaux':'nav-travaux','screen-media':'nav-travaux','screen-profile':'nav-profile',
  'screen-library':'nav-travaux','screen-doceditor':'nav-travaux','screen-transcription':'nav-travaux',
+ 'screen-school':'nav-profile','screen-custom-exercise':'nav-home','screen-specialization':'nav-profile',
 };
 
 function updateGlobalNav(id) {
@@ -3618,6 +4131,8 @@ function onScreenEnter(id) {
  if(id==='screen-library') { renderLibraryImports(); renderLibraryDownloads(); }
  if(id==='screen-diagrams') renderSavedDiagrams();
  if(id==='screen-transcription') { updateTranscriptionQuotaLabel(); populateMicDurationSelects(); }
+ if(id==='screen-school') renderSchoolScreen();
+ if(id==='screen-specialization') renderSpecializationScreen();
 }
 
 // ── APERÇU PLEIN ÉCRAN ──
@@ -3798,6 +4313,7 @@ function renderHome() {
  safeSet('home-salut', salut);
  safeSet('tip-text', TIPS[Math.floor(Math.random()*TIPS.length)]);
  renderKnowledgeTreeWidget();
+ maybeGenerateLearningPlan(); // Phase 3 : affiche le plan existant tout de suite, régénère en tâche de fond si besoin
 
  const el = document.getElementById('subjects-list');
  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
@@ -3995,6 +4511,23 @@ Format de "content" selon le type :
 N'utilise ce format QUE si un document est explicitement demandé. Pour toute autre question, réponds normalement en texte.
 
 VISUALISATIONS / GRAPHIQUES : ne dessine JAMAIS de graphique en art ASCII (axes avec |, /, -, flèches, etc.) — ça s'affiche mal sur mobile et déforme les proportions. Si on te demande de visualiser une courbe, une fonction ou des données, décris-les avec des mots (allure de la courbe, points clés, variations) ET/OU donne un tableau de valeurs clair avec des retours à la ligne, jamais un dessin.`;
+
+// ── COACH ADAPTATIF (Phase 5) ──
+// Ajoute au SYSTEM_PROMPT de base les insights du profil d'apprentissage
+// (calculés par maybeSynthesizeLearningProfile() à partir du chat + des quiz)
+// pour que le coach ajuste réellement son ton et ses priorités à l'élève,
+// sans que celui-ci voie jamais ce paragraphe. Si aucune synthèse n'a encore
+// eu lieu (nouvel utilisateur), retourne SYSTEM_PROMPT tel quel.
+function buildAdaptiveSystemPrompt() {
+ const ai = (getStats().aiProfile) || null;
+ if (!ai || (!ai.learningStyle && !ai.toneAdvice && !(ai.strugglingTopics||[]).length)) return SYSTEM_PROMPT;
+ let addon = '\n\nPROFIL D\'APPRENTISSAGE DE CET ÉLÈVE (déduit de son historique, ne JAMAIS le citer explicitement ni dire "d\'après ton profil") :\n';
+ if (ai.strugglingTopics && ai.strugglingTopics.length) addon += `- Notions où iel a souvent du mal : ${ai.strugglingTopics.join(', ')}. Sois particulièrement patient·e et détaillé·e si ça revient dans la conversation.\n`;
+ if (ai.confidentTopics && ai.confidentTopics.length) addon += `- Notions maîtrisées : ${ai.confidentTopics.join(', ')}. Tu peux aller plus vite dessus et t'appuyer dessus pour introduire des notions liées.\n`;
+ if (ai.learningStyle) addon += `- Style d'apprentissage observé : ${ai.learningStyle}\n`;
+ if (ai.toneAdvice) addon += `- Ajuste ton ton ainsi : ${ai.toneAdvice}\n`;
+ return SYSTEM_PROMPT + addon;
+}
 
 function renderChat() {
  const subj = SUBJECTS.find(s=>s.id===APP.currentSubject) || SUBJECTS[0];
@@ -8511,7 +9044,7 @@ async function sendMessage() {
  const res = await fetch(AI_ENDPOINT,{
  method:'POST',
  headers:{'Content-Type':'application/json',},
- body: JSON.stringify({ model:chatModel, max_tokens:1024, system:SYSTEM_PROMPT, messages })
+ body: JSON.stringify({ model:chatModel, max_tokens:1024, system:buildAdaptiveSystemPrompt(), messages })
  });
  const data = await res.json();
 
@@ -8530,6 +9063,7 @@ async function sendMessage() {
  APP.chatHistory.push({role:'assistant',content:aiText,time:aiTime});
  incrementChatActivity();
  saveChatHistory(APP.currentSubject);
+ maybeSynthesizeLearningProfile(); // asynchrone, non bloquant
  el.innerHTML += renderMsgHTML({role:'assistant',content:aiText,time:aiTime});
  scrollChat();
 
@@ -9208,6 +9742,11 @@ SUBJECTS = getSubjects();
 
 // ── QUIZ ──
 let selectedDiff = 'Facile', selectedNQ = 5, selectedSubjectQuiz = 'math';
+// Contexte d'un exercice ciblé lancé depuis "Points à travailler" (Phase 2 : exercices
+// adaptatifs). Quand non-null, generateQuizBatch() enrichit le prompt avec les notions
+// faibles + les insights du profil IA (style d'apprentissage, ton). Remis à null dès que
+// le quiz a réellement démarré, pour ne jamais influencer un quiz normal suivant.
+let _targetedExerciseContext = null;
 let selectedQuizFormat = 'classique';
 function selectFormat(btn, f) {
  // CORRECTIF : retaper sur le format déjà actif (ex: reconfirmer "Marathon")
@@ -9267,6 +9806,282 @@ function renderQuizConfig() {
 function selectQuizSubject(btn, id) {
  selectedSubjectQuiz = id;
  renderQuizConfig();
+}
+
+// Lance un exercice ciblé sur une notion précise depuis la carte "Points à
+// travailler" (Ma progression). Préremplit la config du quiz normal (matière +
+// thème) et marque le contexte comme "ciblé" pour que generateQuizBatch()
+// personnalise le prompt avec le profil d'apprentissage de l'élève.
+function startTargetedExercise(subjectId, notion) {
+ selectedSubjectQuiz = subjectId;
+ _targetedExerciseContext = { subjectId, notion };
+ showScreen('screen-quiz');
+ setTimeout(() => {
+ const topicInput = document.getElementById('quiz-topic');
+ if (topicInput) topicInput.value = notion;
+ showToast('🎯 Exercice ciblé prêt sur : ' + notion);
+ }, 60);
+}
+
+// ── EXERCICE RÉDIGÉ, CORRIGÉ PAR L'IA (extension Phase 2) ──
+// Contrairement au quiz (QCM/VF, correction locale par comparaison d'index),
+// ici l'IA génère un énoncé ouvert et corrige elle-même la réponse rédigée
+// par l'élève (score + feedback détaillé). Résultat pris en compte dans les
+// mêmes statistiques que les quiz (addSubjectScore, weakPoints), pour que le
+// profil d'apprentissage bénéficie de ce signal en plus.
+let _customExSubject = null, _customExNotion = null, _customExStatement = null, _customExExpected = null;
+
+function startCustomExercise(subjectId, notion) {
+ showScreen('screen-custom-exercise');
+ loadCustomExercise(subjectId, notion);
+}
+
+async function loadCustomExercise(subjectId, notion) {
+ _customExSubject = subjectId; _customExNotion = notion;
+ const known = SUBJECTS.find(x=>x.id===subjectId) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===subjectId) : null);
+ const subjName = known ? known.name : subjectId;
+ document.getElementById('custom-ex-subtitle').textContent = subjName + ' · ' + notion;
+ document.getElementById('custom-ex-loading').style.display = 'block';
+ document.getElementById('custom-ex-body').style.display = 'none';
+ document.getElementById('custom-ex-result-block').style.display = 'none';
+ document.getElementById('custom-ex-answer-block').style.display = 'block';
+ document.getElementById('custom-ex-answer').value = '';
+
+ try {
+ const ai = (getStats().aiProfile) || {};
+ let adaptiveHint = '';
+ if (ai.learningStyle) adaptiveHint += `Style d'apprentissage de l'élève : ${ai.learningStyle}. `;
+ const level = (APP.user && APP.user.level) || '';
+
+ const prompt = `Rédige UN exercice ouvert (pas un QCM, pas de choix à cocher : une vraie question à réponse rédigée/développée) en ${subjName}, niveau ${level || 'non précisé'}, portant précisément sur la notion "${notion}". ${adaptiveHint}L'élève a déjà montré des difficultés sur cette notion en quiz, donc reste accessible et progressif. Réponds UNIQUEMENT en JSON valide : {"statement":"énoncé complet de l'exercice, clair et autonome (peut inclure des données chiffrées si pertinent)","expectedElements":"pour ton usage interne uniquement : les 2-4 éléments clés qu'une bonne réponse doit contenir, pour te servir de grille de correction plus tard"}`;
+
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 500, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+ if (!parsed.statement) throw new Error('Pas d\'énoncé généré');
+
+ _customExStatement = parsed.statement;
+ _customExExpected = parsed.expectedElements || '';
+ document.getElementById('custom-ex-statement').textContent = parsed.statement;
+ document.getElementById('custom-ex-loading').style.display = 'none';
+ document.getElementById('custom-ex-body').style.display = 'block';
+ } catch(e) {
+ console.error('Génération exercice rédigé échouée', e);
+ document.getElementById('custom-ex-loading').style.display = 'none';
+ showToast('! Impossible de générer l\'exercice, réessaie');
+ goBack();
+ }
+}
+
+async function submitCustomExercise() {
+ const answerEl = document.getElementById('custom-ex-answer');
+ const answer = answerEl.value.trim();
+ if (!answer) { showToast('! Écris ta réponse avant de soumettre'); return; }
+ const btn = document.getElementById('custom-ex-submit-btn');
+ btn.disabled = true; btn.textContent = '⏳ Correction en cours...';
+
+ try {
+ const prompt = `Tu corriges la réponse d'un·e élève à un exercice. Sois bienveillant·e mais honnête sur les erreurs. Réponds UNIQUEMENT en JSON valide.
+
+ÉNONCÉ : ${_customExStatement}
+ÉLÉMENTS ATTENDUS DANS UNE BONNE RÉPONSE : ${_customExExpected || 'juge selon tes connaissances du sujet'}
+RÉPONSE DE L'ÉLÈVE : ${answer}
+
+Corrige et note sur 100. Réponds avec ce format JSON exact :
+{"score":0-100,"feedback":"correction détaillée et pédagogique (4-8 phrases) : ce qui est juste, ce qui manque ou est faux, comment s'améliorer. Écris directement à l'élève (tutoiement, ton chaleureux)."}`;
+
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 700, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+ const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+ const feedback = typeof parsed.feedback === 'string' ? parsed.feedback : 'Correction indisponible.';
+
+ // Pris en compte dans les mêmes statistiques que les quiz, pour que le
+ // profil d'apprentissage (Phase 1) et le programme (Phase 3) en bénéficient.
+ addSubjectScore(_customExSubject, score);
+ incrementQuestions(1);
+ if (score < 60) {
+ const s = getStats();
+ if (!s.weakPoints) s.weakPoints = [];
+ s.weakPoints.push({ subject: _customExSubject, notion: _customExNotion, q: _customExStatement, date: new Date().toISOString().slice(0,10), source: 'custom' });
+ if (s.weakPoints.length > 200) s.weakPoints = s.weakPoints.slice(-200);
+ saveStats(s);
+ }
+ maybeSynthesizeLearningProfile();
+
+ const scoreBadge = document.getElementById('custom-ex-score-badge');
+ scoreBadge.textContent = score + '/100';
+ scoreBadge.style.color = score >= 70 ? 'var(--em)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
+ document.getElementById('custom-ex-feedback').textContent = feedback;
+ document.getElementById('custom-ex-answer-block').style.display = 'none';
+ document.getElementById('custom-ex-result-block').style.display = 'block';
+ } catch(e) {
+ console.error('Correction exercice rédigé échouée', e);
+ showToast('! Erreur de correction, réessaie');
+ } finally {
+ btn.disabled = false; btn.textContent = 'Soumettre pour correction →';
+ }
+}
+
+// ── SPÉCIALISATION SUR-MESURE (VIP/admin) ──
+// L'utilisateur déclare une activité/compétence libre (hors matières scolaires).
+// 1) L'IA génère une évaluation rapide pour situer son niveau actuel.
+// 2) Une fois notée, l'IA construit un planning multi-semaines tenant compte
+//    du niveau évalué ET du comportement général déjà connu (rythme d'activité,
+//    style d'apprentissage) via getLearningProfile() / stats.aiProfile.
+// Persisté dans stats.specialization (une spécialisation active à la fois),
+// donc synchronisé cloud comme le reste sans plomberie supplémentaire.
+let _specEvalTopic = null, _specEvalQuestions = [];
+
+function renderSpecializationScreen() {
+ ['spec-step-choose','spec-step-eval-loading','spec-step-eval-quiz','spec-step-program-loading','spec-step-active'].forEach(id => {
+ const el = document.getElementById(id); if (el) el.style.display = 'none';
+ });
+ const s = getStats();
+ if (s.specialization && s.specialization.topic) {
+ renderActiveSpecialization(s.specialization);
+ document.getElementById('spec-step-active').style.display = 'block';
+ } else {
+ document.getElementById('spec-topic-input').value = '';
+ document.getElementById('spec-step-choose').style.display = 'block';
+ }
+}
+
+async function startSpecializationEval() {
+ const topic = document.getElementById('spec-topic-input').value.trim();
+ if (!topic) { showToast('! Indique une activité à apprendre'); return; }
+ _specEvalTopic = topic;
+ document.getElementById('spec-step-choose').style.display = 'none';
+ document.getElementById('spec-step-eval-loading').style.display = 'block';
+ document.getElementById('spec-eval-loading-text').textContent = `Préparation de ton évaluation en ${topic}...`;
+
+ try {
+ const prompt = `Génère une évaluation rapide de niveau pour quelqu'un qui débute peut-être en "${topic}" (activité libre, pas forcément scolaire). Réponds UNIQUEMENT en JSON valide.
+
+Crée exactement 5 questions QCM qui, ENSEMBLE, permettent de situer le niveau réel de la personne du grand débutant à l'avancé (varie la difficulté entre les questions : commence facile, monte progressivement). Format JSON exact :
+{"questions":[{"q":"énoncé de la question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"difficulty":"debutant"|"intermediaire"|"avance"}]}`;
+
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 1200, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+ _specEvalQuestions = Array.isArray(parsed.questions) ? parsed.questions.filter(q => q && q.q && Array.isArray(q.options)) : [];
+ if (!_specEvalQuestions.length) throw new Error('Aucune question générée');
+
+ document.getElementById('spec-eval-questions').innerHTML = _specEvalQuestions.map((q,i) => `
+ <div class="card" style="margin-bottom:12px">
+ <div style="font-size:13.5px;font-weight:600;margin-bottom:10px">${i+1}. ${q.q}</div>
+ <div style="display:flex;flex-direction:column;gap:7px">
+ ${q.options.map((opt,oi) => `
+ <label style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;cursor:pointer">
+ <input type="radio" name="spec-q-${i}" value="${oi}" style="accent-color:var(--em)">
+ <span>${opt}</span>
+ </label>`).join('')}
+ </div>
+ </div>`).join('');
+
+ document.getElementById('spec-step-eval-loading').style.display = 'none';
+ document.getElementById('spec-step-eval-quiz').style.display = 'block';
+ } catch(e) {
+ console.error('Génération évaluation spécialisation échouée', e);
+ document.getElementById('spec-step-eval-loading').style.display = 'none';
+ document.getElementById('spec-step-choose').style.display = 'block';
+ showToast('! Impossible de générer l\'évaluation, réessaie');
+ }
+}
+
+async function submitSpecializationEval() {
+ let correct = 0;
+ const unanswered = [];
+ _specEvalQuestions.forEach((q,i) => {
+ const checked = document.querySelector(`input[name="spec-q-${i}"]:checked`);
+ if (!checked) { unanswered.push(i); return; }
+ if (Number(checked.value) === Number(q.correct)) correct++;
+ });
+ if (unanswered.length) { showToast('! Réponds à toutes les questions (même en devinant)'); return; }
+
+ const scorePct = Math.round((correct / _specEvalQuestions.length) * 100);
+ const levelLabel = scorePct >= 75 ? 'Avancé' : scorePct >= 40 ? 'Intermédiaire' : 'Débutant';
+
+ document.getElementById('spec-step-eval-quiz').style.display = 'none';
+ document.getElementById('spec-step-program-loading').style.display = 'block';
+
+ try {
+ const profile = getLearningProfile();
+ const ai = (getStats().aiProfile) || {};
+ const behaviorSummary = [`rythme : ${profile.rhythm}`, ai.learningStyle ? `style d'apprentissage : ${ai.learningStyle}` : null, ai.paceNote ? `rythme ressenti : ${ai.paceNote}` : null].filter(Boolean).join(' ; ');
+
+ const prompt = `Construis un planning d'apprentissage personnalisé pour "${_specEvalTopic}". Réponds UNIQUEMENT en JSON valide.
+
+NIVEAU ÉVALUÉ : ${levelLabel} (${scorePct}% à l'évaluation initiale)
+COMPORTEMENT GÉNÉRAL DE L'APPRENANT : ${behaviorSummary || 'pas encore de données comportementales'}
+
+Crée un planning de 4 à 6 semaines, réaliste et progressif à partir de ce niveau. Adapte la charge de travail au rythme connu (si rythme irrégulier/inactif, reste léger et très accessible ; si assidu, tu peux pousser davantage). Réponds avec ce format JSON exact :
+{"program":[{"week":1,"title":"titre court de la semaine","objectives":["objectif concret 1","objectif concret 2","objectif concret 3"]}]}`;
+
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+ const program = Array.isArray(parsed.program) ? parsed.program.filter(w => w && w.title) : [];
+ if (!program.length) throw new Error('Aucun programme généré');
+
+ const s = getStats();
+ s.specialization = { topic: _specEvalTopic, level: levelLabel, score: scorePct, program, generatedAt: new Date().toISOString() };
+ saveStats(s);
+
+ document.getElementById('spec-step-program-loading').style.display = 'none';
+ renderActiveSpecialization(s.specialization);
+ document.getElementById('spec-step-active').style.display = 'block';
+ showToast('✓ Ton planning ' + _specEvalTopic + ' est prêt');
+ } catch(e) {
+ console.error('Génération programme spécialisation échouée', e);
+ document.getElementById('spec-step-program-loading').style.display = 'none';
+ document.getElementById('spec-step-choose').style.display = 'block';
+ showToast('! Impossible de générer le planning, réessaie');
+ }
+}
+
+function renderActiveSpecialization(spec) {
+ document.getElementById('spec-active-topic').textContent = spec.topic;
+ document.getElementById('spec-active-level').textContent = `Niveau évalué : ${spec.level} (${spec.score}%)`;
+ document.getElementById('spec-program-list').innerHTML = spec.program.map(w => `
+ <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+ <div style="font-size:13px;font-weight:700;margin-bottom:6px">Semaine ${w.week || ''} — ${w.title}</div>
+ <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px">
+ ${(w.objectives||[]).map(o => `<li style="font-size:12px;color:var(--text2);line-height:1.5">${o}</li>`).join('')}
+ </ul>
+ </div>`).join('');
+}
+
+function confirmChangeSpecialization() {
+ if (!confirm('Changer de spécialisation ? Le planning actuel sera remplacé (ton historique de progression scolaire, lui, reste intact).')) return;
+ const s = getStats();
+ delete s.specialization;
+ saveStats(s);
+ renderSpecializationScreen();
 }
 function selectDiff(btn, d) {
  selectedDiff = d;
@@ -9391,19 +10206,29 @@ async function generateQuizBatch(n, subj, level, filiere, topic, isMarathon, dif
  const levelCalibration = `- CALIBRAGE DU NIVEAU (règle absolue) : "${diff}" est relatif au niveau scolaire ${level}${filiere?' ('+filiere+')':''}, JAMAIS un niveau absolu. Identifie d'abord mentalement les notions du programme officiel de ${level} en ${subjName}, puis choisis UNIQUEMENT parmi ces notions-là. Une question "Facile" = la notion la plus accessible DU PROGRAMME DE ${level} (jamais une notion d'un niveau inférieur : PAS de simple addition/soustraction/multiplication à un chiffre, PAS de calcul de primaire, PAS de vocabulaire ultra-basique, même en "Facile"). "Moyen" = exercice standard de ${level}. "Difficile" = challenge un·e bon·ne élève de ${level} sans dépasser son programme officiel. Exemple si le niveau est un collège (6e à 3e) en mathématiques : "Facile" peut porter sur les nombres relatifs, les fractions simples, un calcul d'aire, une équation à une inconnue simple — jamais "combien font 7+4 ?".\n`;
  const marathonHeader = isMarathon ? `, pour un format "Marathon" (liste défilante, un minuteur global)` : '';
  const varietyRule = isMarathon ? `- Varie les sous-thèmes de ${subjName} pour ne pas répéter le même type de question.\n` : '';
+ // Exercice ciblé (Phase 2 adaptative) : on enrichit le prompt avec le profil
+ // d'apprentissage de l'élève, pour que les questions et surtout les explications
+ // soient vraiment personnalisées plutôt qu'un quiz générique sur le même thème.
+ let adaptiveRule = '';
+ if (_targetedExerciseContext) {
+ const aiProfile = (getStats().aiProfile) || null;
+ adaptiveRule += `- Ceci est un EXERCICE CIBLÉ généré parce que l'élève a fait des erreurs répétées sur cette notion précise en quiz. Reste concentré dessus et varie vraiment les angles d'approche entre les questions (pas de simple reformulation d'une même question).\n`;
+ if (aiProfile && aiProfile.learningStyle) adaptiveRule += `- Style d'apprentissage observé chez cet·te élève : ${aiProfile.learningStyle}. Adapte la formulation des questions et des explications en conséquence.\n`;
+ if (aiProfile && aiProfile.toneAdvice) adaptiveRule += `- Ton à adopter dans les explications : ${aiProfile.toneAdvice}.\n`;
+ }
  const prompt = `Tu es un professeur expert en ${subjName} pour le niveau ${level}${filiere?' filière '+filiere:''}.
 Génère exactement ${n} questions de niveau "${diff}" STRICTEMENT sur la matière : ${subjName}${topic?', sur le chapitre/sujet précis : '+topic:''}${marathonHeader}.
 
 RÈGLES ABSOLUES :
 - Mélange deux types de questions : "qcm" (4 options A-D) et "vf" (Vrai/Faux, exactement 2 options : "Vrai" et "Faux"). Environ ${isMarathon?'60% de qcm, 40%':'70% de qcm, 30%'} de vf, réparties dans un ordre varié (pas tout le vf à la fin).
 - Toutes les questions doivent porter UNIQUEMENT sur ${subjName}, en restant dans la nature réelle de cette matière (ex: si c'est une matière de sciences humaines/civisme, N'INCLUS AUCUNE question de physique, chimie, ou calcul scientifique, et inversement). N'inclus AUCUNE question de géographie, culture générale, ou autre matière hors sujet.
-${levelCalibration}${filiereRule}${langInstruction}${varietyRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)${isMarathon?'':', avec la démonstration ou le raisonnement complet'}
+${levelCalibration}${filiereRule}${langInstruction}${varietyRule}${adaptiveRule}- L'explication doit être pédagogique et détaillée (3-5 phrases minimum)${isMarathon?'':', avec la démonstration ou le raisonnement complet'}
 
 RÈGLE CRITIQUE : pour "qcm", correct=0 signifie A, 1=B, 2=C, 3=D. Pour "vf", correct=0 signifie "Vrai", correct=1 signifie "Faux".
 L'explication DOIT commencer par "La bonne réponse est X)" (qcm) ou "La bonne réponse est Vrai/Faux" (vf). Vérifie deux fois avant de générer.
 
 Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
-{"questions":[{"type":"qcm","q":"Énoncé de la question en ${subj.name}","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."},{"type":"vf","q":"Affirmation à évaluer","options":["Vrai","Faux"],"correct":0,"explication":"La bonne réponse est Vrai car... explication pédagogique 3-5 phrases."}]}`;
+{"questions":[{"type":"qcm","q":"Énoncé de la question en ${subj.name}","notion":"Nom court (2-4 mots) de la notion précise testée par cette question, ex: 'Dérivées', 'Théorème de Pythagore'","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explication":"La bonne réponse est A) car... explication pédagogique 3-5 phrases."},{"type":"vf","q":"Affirmation à évaluer","notion":"Nom court de la notion","options":["Vrai","Faux"],"correct":0,"explication":"La bonne réponse est Vrai car... explication pédagogique 3-5 phrases."}]}`;
 
  const quizMaxTokens = Math.min(8000, 500 + n*220);
  const res = await fetch(AI_ENDPOINT,{
@@ -9546,6 +10371,7 @@ async function startQuiz() {
  showToast(`⚠ ${APP.quizQuestions.length}/${selectedNQ} questions générées (service indisponible après plusieurs tentatives) — quiz lancé quand même`);
  }
  APP.quizIndex = 0; APP.quizScore = 0; APP.quizAnswers = [];
+ _targetedExerciseContext = null; // consommé : un quiz normal lancé juste après ne doit pas en hériter
  launchQuiz();
  } catch(e) {
  showAiErrorToast(e);
@@ -9689,6 +10515,8 @@ function showResults() {
  incrementSessions();
  incrementQuestions(APP.quizQuestions.length);
  addSubjectScore(selectedSubjectQuiz, pct);
+ recordWeakPoints(selectedSubjectQuiz, APP.quizQuestions, answers);
+ maybeSynthesizeLearningProfile(); // asynchrone, non bloquant : n'affecte pas l'affichage des résultats
  } catch(e) { console.error('Erreur enregistrement stats quiz', e); }
 
  const emojis = pct>=80?'':pct>=60?'':pct>=40?'':'';
@@ -10381,6 +11209,30 @@ function renderProgress() {
  const avgEl = document.getElementById('avg-score');
  if(avgEl) avgEl.textContent = avg > 0 ? avg + '%' : '--';
 
+ // Profil d'apprentissage : notions récurrentes à travailler + rythme
+ const profile = getLearningProfile();
+ const rhythmLabels = { assidu: '🔥 Assidu', irregulier: '📉 Irrégulier', inactif: '😴 Inactif', nouveau: '✨ Nouveau' };
+ const rhythmBadge = document.getElementById('learning-rhythm-badge');
+ if (rhythmBadge && rhythmLabels[profile.rhythm]) { rhythmBadge.textContent = rhythmLabels[profile.rhythm]; rhythmBadge.style.display = 'inline-flex'; }
+ const weakListEl = document.getElementById('weak-notions-list');
+ if (weakListEl) {
+ weakListEl.innerHTML = profile.topWeakNotions.length ? profile.topWeakNotions.map(w => {
+ const known = SUBJECTS.find(x=>x.id===w.subject) || ALL_SUBJECTS.find(x=>x.id===w.subject);
+ const subjName = known ? known.name : w.subject;
+ const color = known ? known.color : colorForSubjectId(w.subject);
+ return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+ <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
+ <div style="flex:1;min-width:0">
+ <div style="font-size:13px;font-weight:600">${w.notion}</div>
+ <div style="font-size:11px;color:var(--text3)">${subjName}</div>
+ </div>
+ <span class="badge" style="background:var(--bg2);color:var(--text2);font-size:10px">${w.count}×</span>
+ <button onclick="startTargetedExercise('${w.subject}','${w.notion.replace(/'/g,"\\'")}')" style="background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:5px 8px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0">QCM</button>
+ <button onclick="startCustomExercise('${w.subject}','${w.notion.replace(/'/g,"\\'")}')" style="background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:5px 8px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0">✍️</button>
+ </div>`;
+ }).join('') : '<div style="font-size:12px;color:var(--text3)">Fais quelques quiz pour que tes points à travailler apparaissent ici.</div>';
+ }
+
  // Objectifs
  const goals = getGoals();
  const doneCount = goals.filter(g=>g.done).length;
@@ -10401,14 +11253,102 @@ function savePrefs(key, val) {
  const p = getPrefs(); p[key] = val;
  localStorage.setItem('studiora_prefs', JSON.stringify(p));
  if (key === 'dark') applyDark(val);
+ if (key === 'notif') { if (val) scheduleStudyReminders(); else cancelStudyReminders(); }
 }
 function applyDark(on) {
  document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
 }
 
+// ── RAPPELS PAR NOTIFICATION (Phase 4) ──
+// Le toggle "Notifications de rappel" existait déjà dans Profil > Préférences
+// mais n'était encore branché sur rien de réel. On utilise le plugin Capacitor
+// @capacitor/local-notifications (notifications LOCALES, générées sur
+// l'appareil — pas de serveur push nécessaire). Le contenu du rappel est
+// dynamique : il reprend la priorité n°1 du "Programme de la semaine" (Phase 3)
+// ou, à défaut, la notion la plus faible détectée (Phase 1), pour que le
+// rappel soit toujours pertinent plutôt qu'un texte générique figé.
+// NB : nécessite `npm i @capacitor/local-notifications` + `npx cap sync android`
+// côté build — voir instructions fournies séparément. Sur web (hors app native),
+// ces fonctions ne font simplement rien (fallback silencieux, aucune erreur).
+const STUDIORA_REMINDER_IDS = [9001, 9002];
+
+function getLocalNotificationsPlugin() {
+ try {
+ if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins && Capacitor.Plugins.LocalNotifications) {
+ return Capacitor.Plugins.LocalNotifications;
+ }
+ } catch(e) {}
+ return null;
+}
+
+async function ensureNotificationPermission() {
+ const LN = getLocalNotificationsPlugin();
+ if (!LN) return false;
+ try {
+ let perm = await LN.checkPermissions();
+ if (perm.display !== 'granted') perm = await LN.requestPermissions();
+ return perm.display === 'granted';
+ } catch(e) { console.error('Permission notifications refusée/échouée', e); return false; }
+}
+
+async function scheduleStudyReminders() {
+ const LN = getLocalNotificationsPlugin();
+ if (!LN) return; // web ou plugin non installé : silencieux, pas d'erreur affichée
+ const granted = await ensureNotificationPermission();
+ if (!granted) { showToast('! Autorise les notifications pour recevoir des rappels'); return; }
+
+ try {
+ await LN.cancel({ notifications: STUDIORA_REMINDER_IDS.map(id => ({ id })) });
+
+ const planItems = (getStats().learningPlan || {}).items || [];
+ const profile = getLearningProfile();
+ let body = 'Prends 10 minutes pour réviser aujourd\'hui 💪';
+ if (planItems.length) body = `🎯 Aujourd'hui : ${planItems[0].notion} (${planItems[0].subject})`;
+ else if (profile.topWeakNotions.length) body = `🎯 À travailler : ${profile.topWeakNotions[0].notion}`;
+
+ const notifications = [{
+ id: 9001,
+ title: 'Studiora',
+ body,
+ schedule: { on: { hour: 18, minute: 0 }, allowWhileIdle: true, repeats: true }
+ }];
+ // Rappel plus doux à un autre horaire si l'élève est irrégulier/inactif ces derniers temps.
+ if (profile.rhythm === 'irregulier' || profile.rhythm === 'inactif') {
+ notifications.push({
+ id: 9002,
+ title: 'Studiora',
+ body: 'Ça fait un moment ! Une petite session de révision te ferait du bien 🌱',
+ schedule: { on: { hour: 10, minute: 0 }, allowWhileIdle: true, repeats: true }
+ });
+ }
+ await LN.schedule({ notifications });
+ } catch(e) { console.error('Programmation des rappels échouée', e); }
+}
+
+async function cancelStudyReminders() {
+ const LN = getLocalNotificationsPlugin();
+ if (!LN) return;
+ try { await LN.cancel({ notifications: STUDIORA_REMINDER_IDS.map(id => ({ id })) }); } catch(e) {}
+}
+
+// Rafraîchit le contenu des rappels déjà actifs (ex: quand le programme de la
+// semaine change) SANS jamais redemander la permission — évite de spammer
+// l'utilisateur d'une popup système à chaque ouverture de l'accueil.
+async function refreshRemindersContentIfEnabled() {
+ if (getPrefs().notif === false) return;
+ const LN = getLocalNotificationsPlugin();
+ if (!LN) return;
+ try {
+ const perm = await LN.checkPermissions();
+ if (perm.display === 'granted') scheduleStudyReminders();
+ } catch(e) {}
+}
+
 function renderProfile() {
  if (!APP.user || !APP.user.prenom) return;
  const st = getStats();
+ const specCard = document.getElementById('specialization-card');
+ if (specCard) specCard.style.display = isVipOrAdmin() ? 'block' : 'none';
  function safeSet(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
  safeSet('stat-sessions', st.sessions || 0);
  safeSet('stat-questions', st.questions || 0);
@@ -10883,7 +11823,183 @@ const GOOGLE_CLIENT_ID = '156231140819-s7vsf98sf8r22gqfj5l7q7pno0lji19q.apps.goo
 // dernier APK (ex: un lien "Release asset" GitHub, ou l'URL d'artefact
 // Codemagic si elle est publique). Tant que ce n'est pas fait, le bouton
 // "Installer" ouvrira un lien invalide.
-const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.10/studiora-1.0.10.apk';
+const STUDIORA_APK_URL = 'https://github.com/maureenniamien/studiora/releases/download/v1.0.6/studiora-1.0.6.apk';
+
+// ══════════════════════ ESPACE ÉCOLE ══════════════════════
+// Fonction Edge Supabase "school-manager", même convention que les autres
+// fonctions (apikey + Authorization Bearer avec la clé anon). Actions
+// supposées : create_school, join_school, get_my_school, list_members.
+// NB : si le contrat exact de la fonction diffère (noms d'action ou de
+// champs), il faudra ajuster schoolManagerCall() et les callers ci-dessous.
+let _mySchool = null; // objet école actif (créée ou rejointe), null si aucune
+let _schoolMembersTab = 'eleves';
+
+async function schoolManagerCall(action, payload) {
+ const res = await fetch(`${SUPABASE_URL}/functions/v1/school-manager`, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'apikey': SUPABASE_ANON_KEY,
+ 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+ },
+ body: JSON.stringify({ action, ...payload })
+ });
+ const rawText = await res.text();
+ let data;
+ try { data = JSON.parse(rawText); }
+ catch(e) { console.error('Réponse school-manager non-JSON:', res.status, rawText); return { success:false, error:{message:'Erreur serveur ('+res.status+')'} }; }
+ return data;
+}
+
+async function renderSchoolScreen() {
+ document.getElementById('school-loading').style.display = 'block';
+ document.getElementById('school-empty-state').style.display = 'none';
+ document.getElementById('school-active-state').style.display = 'none';
+ document.getElementById('school-create-block').style.display = isAdmin() ? 'block' : 'none';
+
+ try {
+ const data = await schoolManagerCall('get_my_school', { user_email: APP.user.email || '' });
+ document.getElementById('school-loading').style.display = 'none';
+ if (data.success && data.member_of_school && data.school) {
+ _mySchool = data.school;
+ showSchoolActiveState(data.school, data.role, data.can_manage_school);
+ } else {
+ _mySchool = null;
+ document.getElementById('school-empty-state').style.display = 'block';
+ }
+ } catch(e) {
+ console.error('Erreur chargement école:', e);
+ document.getElementById('school-loading').style.display = 'none';
+ document.getElementById('school-empty-state').style.display = 'block';
+ }
+}
+
+function showSchoolActiveState(school, role, canManageSchool) {
+ document.getElementById('school-active-state').style.display = 'block';
+ document.getElementById('school-card-subtitle').textContent = school.name;
+ document.getElementById('school-active-name').textContent = school.name;
+ const niveaux = school.niveaux_actifs || [];
+ document.getElementById('school-active-niveaux').textContent = niveaux.length ? niveaux.join(' · ') : 'Aucun niveau défini';
+
+ // Les codes d'invitation ne sont montrés qu'à l'administration (role admin ou délégation can_manage_school)
+ const isSchoolAdmin = role === 'admin' || canManageSchool === true;
+ document.getElementById('school-codes-block').style.display = isSchoolAdmin ? 'block' : 'none';
+ if (isSchoolAdmin) {
+ document.getElementById('school-code-eleve').textContent = school.invite_code_eleve || '—';
+ document.getElementById('school-code-prof').textContent = school.invite_code_prof || '—';
+ }
+ loadSchoolMembers(school.id);
+}
+
+async function createSchoolSubmit() {
+ const nameInput = document.getElementById('school-create-name');
+ const name = nameInput.value.trim();
+ const statusEl = document.getElementById('school-create-status');
+ const niveaux = Array.from(document.querySelectorAll('#school-create-niveaux input:checked')).map(cb => cb.value);
+ if (!name) { statusEl.textContent = '! Indique un nom d\'école'; statusEl.style.color = 'var(--red)'; return; }
+ if (!niveaux.length) { statusEl.textContent = '! Choisis au moins un niveau'; statusEl.style.color = 'var(--red)'; return; }
+ const btn = document.getElementById('school-create-btn');
+ btn.disabled = true; btn.textContent = '⏳ Création...';
+ statusEl.textContent = '';
+ try {
+ const data = await schoolManagerCall('create_school', {
+ name,
+ admin_email: APP.user.email || '',
+ niveaux
+ });
+ if (data.success && data.school) {
+ showToast('✓ École créée avec succès');
+ _mySchool = data.school;
+ document.getElementById('school-empty-state').style.display = 'none';
+ showSchoolActiveState(data.school, 'admin', true);
+ } else {
+ statusEl.textContent = '! ' + (data?.error || 'Échec de la création');
+ statusEl.style.color = 'var(--red)';
+ }
+ } catch(e) {
+ statusEl.textContent = '! Erreur réseau, réessaie';
+ statusEl.style.color = 'var(--red)';
+ } finally {
+ btn.disabled = false; btn.textContent = ' Créer l\'école';
+ }
+}
+
+async function joinSchoolByCode() {
+ const codeInput = document.getElementById('school-join-code');
+ const invite_code = codeInput.value.trim().toUpperCase();
+ const statusEl = document.getElementById('school-join-status');
+ if (!invite_code) { statusEl.textContent = '! Entre un code'; statusEl.style.color = 'var(--red)'; return; }
+ const btn = document.getElementById('school-join-btn');
+ btn.disabled = true; btn.textContent = '⏳ Vérification...';
+ statusEl.textContent = '';
+ try {
+ const data = await schoolManagerCall('join_school', {
+ invite_code,
+ user_email: APP.user.email || ''
+ });
+ if (data.success && data.school) {
+ showToast(data.already_member ? '✓ Tu es déjà membre de ' + data.school.name : '✓ Tu as rejoint ' + data.school.name);
+ _mySchool = data.school;
+ document.getElementById('school-empty-state').style.display = 'none';
+ showSchoolActiveState(data.school, data.role, false);
+ } else {
+ statusEl.textContent = '! ' + (data?.error || 'Code invalide');
+ statusEl.style.color = 'var(--red)';
+ }
+ } catch(e) {
+ statusEl.textContent = '! Erreur réseau, réessaie';
+ statusEl.style.color = 'var(--red)';
+ } finally {
+ btn.disabled = false; btn.textContent = 'Rejoindre l\'école →';
+ }
+}
+
+function setSchoolMembersTab(tab, btnEl) {
+ _schoolMembersTab = tab;
+ document.querySelectorAll('.school-tab-btn').forEach(b => {
+ const active = b.dataset.tab === tab;
+ b.classList.toggle('active', active);
+ b.style.background = active ? 'var(--em-soft)' : 'var(--bg2)';
+ b.style.borderColor = active ? 'var(--em)' : 'var(--border)';
+ b.style.color = active ? 'var(--em)' : 'var(--text2)';
+ });
+ if (_mySchool) loadSchoolMembers(_mySchool.id);
+}
+
+async function loadSchoolMembers(schoolId) {
+ const listEl = document.getElementById('school-members-list');
+ listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0">Chargement des membres…</div>';
+ try {
+ const data = await schoolManagerCall('list_members', { school_id: schoolId, role: _schoolMembersTab === 'eleves' ? 'eleve' : 'prof' });
+ if (!data.success) {
+ listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0">Liste des membres bientôt disponible.</div>';
+ return;
+ }
+ if (!Array.isArray(data.members) || !data.members.length) {
+ listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0">Aucun ' + (_schoolMembersTab === 'eleves' ? 'élève' : 'professeur') + ' pour l\'instant.</div>';
+ return;
+ }
+ listEl.innerHTML = data.members.map(m => {
+ const label = m.name || m.email || 'Utilisateur';
+ const initial = label.trim().charAt(0).toUpperCase();
+ return `<div class="school-member-row">
+ <div style="width:34px;height:34px;border-radius:50%;background:var(--em-soft);color:var(--em);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${initial}</div>
+ <div style="flex:1;min-width:0">
+ <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</div>
+ <div style="font-size:11px;color:var(--text3)">${m.email || ''}</div>
+ </div>
+ </div>`;
+ }).join('');
+ } catch(e) {
+ listEl.innerHTML = '<div style="font-size:12px;color:var(--red);text-align:center;padding:16px 0">Erreur de chargement</div>';
+ }
+}
+
+function copySchoolValue(elId) {
+ const text = document.getElementById(elId).textContent;
+ if (!text || text === '…' || text === '—') return;
+ navigator.clipboard?.writeText(text).then(() => showToast('✓ Copié')).catch(() => showToast('! Impossible de copier'));
+}
 
 function isRunningInNativeApp() {
  // Capacitor injecte window.Capacitor dans l'app native, mais cette
@@ -11724,7 +12840,7 @@ let _appInited = false;
 function _runInitOnce() { if (_appInited) return; _appInited = true; _runInit(); }
 if (document.readyState === 'loading') {
  // ── MISE À JOUR AUTOMATIQUE DE L'APK ──
-const APP_VERSION = '1.0.10'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
+const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit toujours matcher version.json avant de push/déployer)
 // CORRECTIF : cette constante était restée bloquée sur '1.0.2' alors que
 // l'app installée était déjà en 1.0.3 — checkForAppUpdate() la comparait à
 // version.json et croyait donc en permanence qu'une mise à jour existait,
