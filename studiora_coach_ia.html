@@ -725,8 +725,16 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  <div id="subjects-list" style="display:flex;flex-direction:column;gap:10px"></div>
  </div>
- <!-- Le "Conseil du jour" a été fusionné dans le widget Arbre de connaissance
- ci-dessus (le coach le donne directement, avec une petite mise en scène) -->
+
+ <!-- Conseil du jour -->
+ <div style="padding:16px 20px 0" class="a5">
+ <div style="background:var(--em-soft);border:1px solid var(--em-mid);border-radius:var(--r);padding:16px 18px">
+ <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+ <span style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px">Conseil du jour</span>
+ </div>
+ <p style="font-size:13px;color:var(--text);line-height:1.6" id="tip-text">La technique Pomodoro : 25 min de travail concentré, 5 min de pause. Ton cerveau retient 40% mieux ainsi !</p>
+ </div>
+ </div>
  </div>
 </div>
 
@@ -1303,7 +1311,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div class="card" id="specialization-card" style="margin-bottom:14px;cursor:pointer;display:none" onclick="showScreen('screen-specialization')">
  <div style="display:flex;align-items:center;justify-content:space-between">
  <div style="display:flex;align-items:center;gap:12px">
- <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🚀</div>
+ <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">SP</div>
  <div>
  <div style="font-weight:700;font-size:14px">Spécialisation</div>
  <div id="specialization-card-subtitle" style="font-size:12px;color:var(--text3)">Apprends une nouvelle compétence, planning IA sur-mesure</div>
@@ -1317,7 +1325,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div class="card" style="margin-bottom:14px;cursor:pointer" onclick="showScreen('screen-school')">
  <div style="display:flex;align-items:center;justify-content:space-between">
  <div style="display:flex;align-items:center;gap:12px">
- <div style="width:44px;height:44px;border-radius:12px;background:var(--em-soft);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏫</div>
+ <div style="width:44px;height:44px;border-radius:12px;background:var(--em-soft);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--em);flex-shrink:0">ÉC</div>
  <div>
  <div style="font-weight:700;font-size:14px">Mon École</div>
  <div id="school-card-subtitle" style="font-size:12px;color:var(--text3)">Rejoindre ou créer une école</div>
@@ -1368,7 +1376,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <div>
- <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">🏫 Mon École</h2>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Mon École</h2>
  <p style="color:var(--text3);font-size:12px;margin:0">Espace admin, élèves & profs</p>
  </div>
  </div>
@@ -1513,7 +1521,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <div>
- <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">🚀 Spécialisation</h2>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Spécialisation</h2>
  <p style="color:var(--text3);font-size:12px;margin:0">Apprends une compétence, planning IA sur-mesure</p>
  </div>
  </div>
@@ -3066,9 +3074,11 @@ function renderKnowledgeTreeWidget() {
  <div style="font-size:10px;color:#5b5647;margin-top:4px">${stage.score} pts${stage.next ? ' · ' + stage.progressPct + '% vers ' + stage.next.label : ' · stade maximum'}</div>
  </div>
  </div>
- <div style="position:relative;margin-top:12px;padding-top:12px;border-top:1px dashed rgba(90,86,71,.25)">
- <div style="font-size:11px;font-weight:700;color:var(--em);margin-bottom:3px">🧑‍🏫 Le coach ${coachTreeActionOfTheDay()}</div>
- <div style="font-size:12px;color:#4a4638;line-height:1.5" id="tip-text">${TIPS[Math.floor(Math.random()*TIPS.length)]}</div>
+ <div style="position:relative;margin-top:12px;padding-top:12px;border-top:1px dashed rgba(90,86,71,.25);display:flex;align-items:flex-start;gap:10px">
+ <div style="width:34px;height:34px;border-radius:50%;background:var(--em);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 2px 6px rgba(11,110,79,.35)">🧑‍🏫</div>
+ <div style="flex:1;background:rgba(255,255,255,.65);border-radius:12px;border-top-left-radius:4px;padding:8px 11px;position:relative">
+ <div style="font-size:11.5px;color:#4a4638;line-height:1.4">Le coach ${coachTreeActionOfTheDay()}.</div>
+ </div>
  </div>
  </div>`;
 }
@@ -4413,7 +4423,8 @@ function renderHome() {
  const h = new Date().getHours();
  const salut = h >= 5 && h < 12 ? 'Bonjour ' : h >= 12 && h < 18 ? 'Bon après-midi ' : h >= 18 && h < 22 ? 'Bonsoir ' : 'Bonne nuit ';
  safeSet('home-salut', salut);
- renderKnowledgeTreeWidget(); // affiche aussi le conseil du jour désormais (fusionné, voir plus bas)
+ safeSet('tip-text', TIPS[Math.floor(Math.random()*TIPS.length)]);
+ renderKnowledgeTreeWidget();
  maybeGenerateLearningPlan(); // Phase 3 : affiche le plan existant tout de suite, régénère en tâche de fond si besoin
 
  const el = document.getElementById('subjects-list');
@@ -10413,6 +10424,10 @@ Crée exactement 5 questions QCM qui, ENSEMBLE, permettent de situer le niveau r
  <input type="radio" name="spec-q-${i}" value="${oi}" style="accent-color:var(--em)">
  <span>${opt}</span>
  </label>`).join('')}
+ <label style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1.5px dashed var(--border);border-radius:10px;font-size:12.5px;cursor:pointer;color:var(--text3)">
+ <input type="radio" name="spec-q-${i}" value="-1" style="accent-color:var(--text3)">
+ <span>Je ne sais pas</span>
+ </label>
  </div>
  </div>`).join('');
 
