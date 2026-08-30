@@ -1584,6 +1584,29 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="spec-active-topic" style="font-size:20px;font-weight:800;margin-bottom:6px">…</div>
  <div id="spec-active-level" style="font-size:12px;opacity:.9"></div>
  </div>
+
+ <!-- Aujourd'hui : le parcours quotidien (leçon + exercice + jeu) -->
+ <div class="card" style="margin-bottom:14px">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+ <h3 style="font-size:14px;font-weight:700">Aujourd'hui</h3>
+ <span id="spec-today-badge" style="font-size:11px;color:var(--text3)"></span>
+ </div>
+ <p id="spec-today-focus" style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5"></p>
+ <div style="display:flex;gap:6px;margin-bottom:8px">
+ <button onclick="startSpecLesson()" style="flex:1;padding:9px 6px;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📖 Cours</button>
+ <button onclick="startSpecExercise()" style="flex:1;padding:9px 6px;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✍️ Exercice</button>
+ <button onclick="startSpecGame()" style="flex:1;padding:9px 6px;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🎮 Jeu</button>
+ </div>
+ <button onclick="markSpecDayDone()" id="spec-day-done-btn" style="width:100%;padding:10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✓ Marquer la journée comme terminée</button>
+ </div>
+
+ <!-- Examen hebdomadaire (débloque la semaine suivante) -->
+ <div id="spec-exam-card" class="card" style="margin-bottom:14px;display:none;background:#eef2ff;border:1px solid #6366f1">
+ <div style="font-size:11px;font-weight:700;color:#4338ca;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Examen de la semaine</div>
+ <p id="spec-exam-text" style="font-size:12.5px;color:#3730a3;margin-bottom:10px;line-height:1.5"></p>
+ <button onclick="startSpecWeekExam()" style="width:100%;padding:10px;background:#4338ca;border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer l'examen →</button>
+ </div>
+
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Ton planning</h3>
  <div id="spec-program-list"></div>
@@ -1594,10 +1617,60 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
 </div>
 
+<!-- ═══════════════════ COURS DU JOUR (spécialisation) ═══════════════════ -->
+<div id="screen-spec-lesson" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">📖 Cours du jour</h2>
+ <p id="spec-lesson-subtitle" style="color:var(--text3);font-size:12px;margin:0">Généré par l'IA</p>
+ </div>
+ </div>
+ <div class="scroll-body" style="padding:0 20px 100px">
+ <div id="spec-lesson-loading" style="text-align:center;padding:50px 0;color:var(--text3)">
+ <div class="spinner" style="margin:0 auto 12px"></div>
+ <p style="font-size:13px">Préparation de ton cours...</p>
+ </div>
+ <div id="spec-lesson-body" style="display:none">
+ <div class="card" style="margin-bottom:14px">
+ <p id="spec-lesson-content" style="font-size:13.5px;line-height:1.7;white-space:pre-wrap"></p>
+ </div>
+ <button onclick="startSpecExercise()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer à l'exercice →</button>
+ </div>
+ </div>
+</div>
+
+<!-- ═══════════════════ EXAMEN HEBDOMADAIRE (spécialisation) ═══════════════════ -->
+<div id="screen-spec-exam" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Examen de la semaine</h2>
+ <p id="spec-exam-subtitle" style="color:var(--text3);font-size:12px;margin:0"></p>
+ </div>
+ </div>
+ <div class="scroll-body" style="padding:0 20px 100px">
+ <div id="spec-exam-loading" style="text-align:center;padding:50px 0;color:var(--text3)">
+ <div class="spinner" style="margin:0 auto 12px"></div>
+ <p id="spec-exam-loading-text" style="font-size:13px">Préparation de l'examen...</p>
+ </div>
+ <div id="spec-exam-questions"></div>
+ <button id="spec-exam-submit-btn" onclick="submitSpecWeekExam()" style="display:none;width:100%;padding:12px;background:#4338ca;border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:6px">Valider l'examen →</button>
+ <div id="spec-exam-result" style="display:none">
+ <div class="card" style="margin-bottom:14px;text-align:center;padding:24px 20px">
+ <div id="spec-exam-score" style="font-size:26px;font-weight:800;margin-bottom:8px"></div>
+ <p id="spec-exam-feedback" style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px"></p>
+ <button onclick="goBack()" style="width:100%;padding:11px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Continuer →</button>
+ </div>
+ </div>
+ </div>
+</div>
+
 <!-- ═══════════════════ ACTIVITÉ PÉDAGOGIQUE (jeu) ═══════════════════ -->
 <div id="screen-activity" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
+
  <div>
  <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">🎮 Activité</h2>
  <p id="activity-subtitle" style="color:var(--text3);font-size:12px;margin:0">Apprendre en jouant</p>
@@ -4151,14 +4224,14 @@ window.onAndroidBackPressed = function() {
 // Screens qui affichent la nav globale
 const NAV_SCREENS = new Set(['screen-home',
  'screen-progress','screen-profile','screen-travaux','screen-upload',
- 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor','screen-transcription','screen-school','screen-custom-exercise','screen-specialization','screen-activity']);
+ 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor','screen-transcription','screen-school','screen-custom-exercise','screen-specialization','screen-activity','screen-spec-lesson','screen-spec-exam']);
 const NAV_ACTIVE_MAP = {
  'screen-home':'nav-home',
  'screen-progress':'nav-home','screen-upload':'nav-travaux',
  'screen-calc':'nav-travaux','screen-dict':'nav-travaux','screen-diagrams':'nav-travaux',
  'screen-travaux':'nav-travaux','screen-media':'nav-travaux','screen-profile':'nav-profile',
  'screen-library':'nav-travaux','screen-doceditor':'nav-travaux','screen-transcription':'nav-travaux',
- 'screen-school':'nav-profile','screen-custom-exercise':'nav-home','screen-specialization':'nav-profile','screen-activity':'nav-home',
+ 'screen-school':'nav-profile','screen-custom-exercise':'nav-home','screen-specialization':'nav-profile','screen-activity':'nav-home','screen-spec-lesson':'nav-profile','screen-spec-exam':'nav-profile',
 };
 
 function updateGlobalNav(id) {
@@ -10632,16 +10705,240 @@ function retrySpecializationProgram() {
  generateSpecializationProgram();
 }
 
+// ── SUIVI QUOTIDIEN / HEBDOMADAIRE (formation active) ──
+// Transforme le planning statique en parcours actif : chaque semaine du
+// programme (déjà générée avec 3 objectifs) est éclatée en journées — 2
+// jours par objectif, donc 6 jours/semaine — sans avoir besoin de
+// régénérer quoi que ce soit côté IA (rétro-compatible avec les
+// spécialisations déjà créées avant cette fonctionnalité). Chaque jour
+// propose un cours, un exercice et un jeu sur SA notion précise (via les
+// mêmes générateurs déjà utilisés pour "Points à travailler", juste
+// appliqués au sujet libre de la spécialisation au lieu d'une matière
+// scolaire). Un examen conclut chaque semaine et débloque la suivante.
+function getSpecTodayFocus(spec) {
+ const weekIdx = Math.min(spec.currentWeek || 0, spec.program.length - 1);
+ const week = spec.program[weekIdx];
+ const objectives = (week && week.objectives) || [];
+ const daysPerWeek = Math.max(objectives.length * 2, 1);
+ const dayIdx = (spec.currentDay || 0) % daysPerWeek;
+ const objIdx = Math.floor(dayIdx / 2);
+ const focus = objectives[objIdx] || (week ? week.title : spec.topic);
+ return { weekIdx, week, dayIdx, daysPerWeek, focus, isLastWeek: weekIdx >= spec.program.length - 1 };
+}
+
 function renderActiveSpecialization(spec) {
  document.getElementById('spec-active-topic').textContent = spec.topic;
  document.getElementById('spec-active-level').textContent = `Niveau évalué : ${spec.level} (${spec.score}%)`;
- document.getElementById('spec-program-list').innerHTML = spec.program.map(w => `
- <div style="padding:10px 0;border-bottom:1px solid var(--border)">
- <div style="font-size:13px;font-weight:700;margin-bottom:6px">Semaine ${w.week || ''} — ${escapeHtml(w.title)}</div>
+ document.getElementById('spec-program-list').innerHTML = spec.program.map((w,wi) => `
+ <div style="padding:10px 0;border-bottom:1px solid var(--border);${wi < (spec.currentWeek||0) ? 'opacity:.55' : ''}">
+ <div style="font-size:13px;font-weight:700;margin-bottom:6px">Semaine ${w.week || (wi+1)} — ${escapeHtml(w.title)} ${wi < (spec.currentWeek||0) ? '✓' : ''}</div>
  <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px">
  ${(w.objectives||[]).map(o => `<li style="font-size:12px;color:var(--text2);line-height:1.5">${escapeHtml(o)}</li>`).join('')}
  </ul>
  </div>`).join('');
+
+ const t = getSpecTodayFocus(spec);
+ document.getElementById('spec-today-badge').textContent = `Semaine ${t.weekIdx+1} · Jour ${t.dayIdx+1}/${t.daysPerWeek}`;
+ document.getElementById('spec-today-focus').textContent = t.focus;
+
+ const examCard = document.getElementById('spec-exam-card');
+ const weekDone = t.dayIdx >= t.daysPerWeek - 1;
+ const alreadyPassed = spec.weekExams && spec.weekExams[t.weekIdx];
+ if (weekDone && !alreadyPassed) {
+ examCard.style.display = 'block';
+ document.getElementById('spec-exam-text').textContent = `Tu as fini les journées de la semaine ${t.weekIdx+1} (${(t.week&&t.week.title)||''}). Passe l'examen pour débloquer la suite.`;
+ document.getElementById('spec-day-done-btn').style.display = 'none';
+ } else {
+ examCard.style.display = 'none';
+ document.getElementById('spec-day-done-btn').style.display = 'block';
+ }
+}
+
+function markSpecDayDone() {
+ const s = getStats();
+ const spec = s.specialization;
+ if (!spec) return;
+ const t = getSpecTodayFocus(spec);
+ if (t.dayIdx >= t.daysPerWeek - 1) { showToast('Passe d\'abord l\'examen de la semaine pour avancer'); renderActiveSpecialization(spec); return; }
+ spec.currentDay = (spec.currentDay || 0) + 1;
+ saveStats(s);
+ showToast('✓ Journée validée');
+ renderActiveSpecialization(spec);
+}
+
+// Après un examen réussi (ou tenté, dans l'esprit "jamais jugé" déjà présent
+// ailleurs dans l'app) : on débloque la semaine suivante en repartant à
+// currentDay=0, sauf si c'était la dernière semaine du programme.
+function advanceSpecWeek() {
+ const s = getStats();
+ const spec = s.specialization;
+ if (!spec) return;
+ const t = getSpecTodayFocus(spec);
+ if (!spec.weekExams) spec.weekExams = {};
+ if (!t.isLastWeek) {
+ spec.currentWeek = t.weekIdx + 1;
+ spec.currentDay = 0;
+ }
+ saveStats(s);
+}
+
+function startSpecLesson() {
+ showScreen('screen-spec-lesson');
+ loadSpecLesson();
+}
+
+async function loadSpecLesson() {
+ const spec = getStats().specialization;
+ if (!spec) { goBack(); return; }
+ const t = getSpecTodayFocus(spec);
+ document.getElementById('spec-lesson-subtitle').textContent = spec.topic + ' · ' + t.focus;
+ document.getElementById('spec-lesson-loading').style.display = 'block';
+ document.getElementById('spec-lesson-body').style.display = 'none';
+
+ try {
+ const prompt = `Rédige un court cours clair et pédagogique en "${spec.topic}", niveau ${spec.level}, sur précisément : "${t.focus}". Structure-le avec quelques paragraphes courts (pas de titres markdown avec #, du texte simple), va droit à l'essentiel, donne au moins un exemple concret. ${MATH_NOTATION_RULE}Réponds uniquement avec le texte du cours (pas de JSON, pas de préambule).`;
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: 1200, messages: [{role:'user', content: prompt}] })
+ });
+ const data = await res.json();
+ const text = (data.content && data.content[0] ? data.content[0].text : '') || 'Contenu indisponible, réessaie.';
+ document.getElementById('spec-lesson-content').textContent = text;
+ renderMathInChat(document.getElementById('spec-lesson-content'));
+ document.getElementById('spec-lesson-loading').style.display = 'none';
+ document.getElementById('spec-lesson-body').style.display = 'block';
+ } catch(e) {
+ console.error('Génération cours spécialisation échouée', e);
+ showToast('! Impossible de générer le cours, réessaie');
+ goBack();
+ }
+}
+
+// Réutilise directement le générateur d'exercice rédigé déjà construit pour
+// "Points à travailler" — le topic libre de la spécialisation sert de
+// pseudo-identifiant de matière (fonctionne tel quel : addSubjectScore()
+// et l'affichage gèrent déjà un id inconnu des matières scolaires).
+function startSpecExercise() {
+ const spec = getStats().specialization;
+ if (!spec) return;
+ const t = getSpecTodayFocus(spec);
+ startCustomExercise(spec.topic, t.focus);
+}
+
+function startSpecGame() {
+ const spec = getStats().specialization;
+ if (!spec) return;
+ const t = getSpecTodayFocus(spec);
+ startPedagogicalActivity(spec.topic, t.focus);
+}
+
+// ── EXAMEN HEBDOMADAIRE ──
+let _specExamAnswers = {};
+let _specExamQuestions = [];
+
+function startSpecWeekExam() {
+ showScreen('screen-spec-exam');
+ loadSpecWeekExam();
+}
+
+async function loadSpecWeekExam() {
+ const spec = getStats().specialization;
+ if (!spec) { goBack(); return; }
+ const t = getSpecTodayFocus(spec);
+ _specExamAnswers = {};
+ document.getElementById('spec-exam-subtitle').textContent = `${spec.topic} · Semaine ${t.weekIdx+1} — ${(t.week&&t.week.title)||''}`;
+ document.getElementById('spec-exam-loading').style.display = 'block';
+ document.getElementById('spec-exam-questions').innerHTML = '';
+ document.getElementById('spec-exam-submit-btn').style.display = 'none';
+ document.getElementById('spec-exam-result').style.display = 'none';
+
+ const objectives = (t.week && t.week.objectives) || [spec.topic];
+ const target = 8;
+ try {
+ let questions = [];
+ let rounds = 0;
+ const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
+ while (questions.length < target && rounds < 6) {
+ if (rounds > 0) await sleepMs(900 * rounds);
+ const missing = Math.min(5, target - questions.length);
+ document.getElementById('spec-exam-loading-text').textContent = questions.length > 0 ? `Génération en cours... (${questions.length}/${target})` : 'Préparation de l\'examen...';
+ try {
+ const prompt = `Génère ${missing} question(s) QCM pour un EXAMEN de fin de semaine en "${spec.topic}", niveau ${spec.level}, portant STRICTEMENT sur ces objectifs de la semaine : ${objectives.join(' ; ')}. Ne sors jamais de ces objectifs précis. Chaque option doit être complète (jamais tronquée ou vide). ${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide : {"questions":[{"q":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0}]}`;
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: Math.max(800, missing * 450), system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+ const extra = Array.isArray(parsed.questions) ? parsed.questions.filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2 && q.options.every(o => typeof o === 'string' && o.trim().length > 2) && Number.isInteger(q.correct)) : [];
+ if (extra.length) questions = questions.concat(extra); else rounds++;
+ } catch(e) { rounds++; }
+ }
+ _specExamQuestions = questions.slice(0, target);
+ if (!_specExamQuestions.length) throw new Error('Aucune question générée');
+
+ document.getElementById('spec-exam-questions').innerHTML = _specExamQuestions.map((q,i) => `
+ <div class="card" style="margin-bottom:12px">
+ <div style="font-size:13.5px;font-weight:600;margin-bottom:10px">${i+1}. ${escapeHtml(q.q)}</div>
+ <div style="display:flex;flex-direction:column;gap:7px">
+ ${q.options.map((opt,oi) => `
+ <div data-q="${i}" data-opt="${oi}" onclick="selectSpecExamAnswer(${i},${oi})" class="spec-exam-opt" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;cursor:pointer">
+ <span class="spec-exam-dot" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0"></span>
+ <span>${escapeHtml(opt)}</span>
+ </div>`).join('')}
+ </div>
+ </div>`).join('');
+ renderMathInChat(document.getElementById('spec-exam-questions'));
+ document.getElementById('spec-exam-loading').style.display = 'none';
+ document.getElementById('spec-exam-submit-btn').style.display = 'block';
+ } catch(e) {
+ console.error('Génération examen spécialisation échouée', e);
+ showToast('! Impossible de générer l\'examen, réessaie');
+ goBack();
+ }
+}
+
+function selectSpecExamAnswer(qIdx, optIdx) {
+ _specExamAnswers[qIdx] = optIdx;
+ document.querySelectorAll(`.spec-exam-opt[data-q="${qIdx}"]`).forEach(el => {
+ const isSel = Number(el.dataset.opt) === optIdx;
+ const dot = el.querySelector('.spec-exam-dot');
+ el.style.borderColor = isSel ? '#4338ca' : 'var(--border)';
+ el.style.background = isSel ? '#eef2ff' : 'transparent';
+ if (dot) { dot.style.borderColor = isSel ? '#4338ca' : 'var(--border)'; dot.style.background = isSel ? '#4338ca' : 'transparent'; }
+ });
+}
+
+function submitSpecWeekExam() {
+ const unanswered = _specExamQuestions.some((_,i) => !(i in _specExamAnswers));
+ if (unanswered) { showToast('! Réponds à toutes les questions'); return; }
+ let correct = 0;
+ _specExamQuestions.forEach((q,i) => { if (Number(_specExamAnswers[i]) === Number(q.correct)) correct++; });
+ const scorePct = Math.round((correct / _specExamQuestions.length) * 100);
+
+ const s = getStats();
+ const spec = s.specialization;
+ const t = getSpecTodayFocus(spec);
+ if (!spec.weekExams) spec.weekExams = {};
+ spec.weekExams[t.weekIdx] = { score: scorePct, passedAt: new Date().toISOString() };
+ saveStats(s);
+ addSubjectScore(spec.topic, scorePct); // compte aussi dans les stats générales, comme les autres formats
+
+ advanceSpecWeek();
+
+ document.getElementById('spec-exam-questions').style.display = 'none';
+ document.getElementById('spec-exam-submit-btn').style.display = 'none';
+ document.getElementById('spec-exam-result').style.display = 'block';
+ const scoreEl = document.getElementById('spec-exam-score');
+ scoreEl.textContent = `${correct}/${_specExamQuestions.length} — ${scorePct}%`;
+ scoreEl.style.color = scorePct >= 70 ? 'var(--em)' : scorePct >= 40 ? 'var(--amber)' : 'var(--red)';
+ document.getElementById('spec-exam-feedback').textContent = t.isLastWeek
+ ? 'Bravo, tu as terminé toutes les semaines de ce programme !'
+ : (scorePct >= 50 ? 'Bien joué ! La semaine suivante est débloquée.' : 'La semaine suivante est débloquée — n\'hésite pas à revoir les points ratés avec le coach IA.');
 }
 
 function confirmChangeSpecialization() {
