@@ -10420,6 +10420,55 @@ function renderSpecializationScreen() {
  }
 }
 
+// Génère un lot de N questions QCM sur `topic`, avec les mêmes garde-fous
+// (domaine strict, notation math, options jamais vides). Paramétré par `n`
+// pour pouvoir être appelé aussi bien pour les 15 questions initiales que
+// pour ne redemander que les questions manquantes (voir fillSpecEvalToTarget).
+async function generateSpecEvalBatch(n, topic) {
+ const prompt = `Génère ${n} question(s) QCM d'évaluation de niveau pour quelqu'un qui veut apprendre "${topic}" (activité libre, pas forcément scolaire). Réponds UNIQUEMENT en JSON valide.
+
+RÈGLE ABSOLUE : chaque question doit porter STRICTEMENT et DIRECTEMENT sur "${topic}" lui-même — jamais une question générique de culture générale, de calcul de base, ou d'un autre domaine, même "pour commencer facile". "Facile" veut dire une notion vraiment basique et fondatrice DE ${topic} (le tout premier concept qu'on apprend dans ce domaine précis), pas une question qui n'a aucun rapport avec ${topic}.
+
+Ces questions doivent, ENSEMBLE avec d'autres déjà générées, tester les points ESSENTIELS et les plus structurants pour évaluer où en est la personne dans SA PROGRESSION en ${topic} précisément (du tout premier concept fondamental jusqu'à des notions avancées du domaine). Varie la difficulté, en restant à chaque fois strictement dans le domaine ${topic}. IMPORTANT : chaque option de réponse doit être COMPLÈTE (jamais tronquée ou vide) — n'écris "A)" que suivi immédiatement du texte de la réponse. ${MATH_NOTATION_RULE}Format JSON exact :
+{"questions":[{"q":"énoncé de la question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"difficulty":"debutant"|"intermediaire"|"avance"}]}`;
+
+ const res = await fetch(AI_ENDPOINT, {
+ method: 'POST',
+ headers: {'Content-Type':'application/json'},
+ body: JSON.stringify({ model: MODEL, max_tokens: Math.max(800, n * 300), system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ });
+ const data = await res.json();
+ let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
+ raw = extractJsonBlock(raw);
+ const parsed = JSON.parse(raw);
+ return Array.isArray(parsed.questions)
+ ? parsed.questions.filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2 && q.options.every(opt => typeof opt === 'string' && opt.trim().length > 2) && Number.isInteger(q.correct))
+ : [];
+}
+
+// Même principe que le remplissage incrémental des quiz normaux (fillToTarget) :
+// on ne redemande JAMAIS tout depuis zéro — seulement le nombre de questions
+// qu'il manque encore, en accumulant au fil des tours. Une limite de sécurité
+// (6 tours) évite une boucle infinie si le service est vraiment en panne.
+async function fillSpecEvalToTarget(topic, target, updateProgress) {
+ const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
+ let questions = [];
+ let rounds = 0;
+ while (questions.length < target && rounds < 6) {
+ if (rounds > 0) await sleepMs(900 * rounds);
+ const missing = target - questions.length;
+ updateProgress(questions.length, target, rounds);
+ try {
+ const extra = await generateSpecEvalBatch(missing, topic);
+ if (extra && extra.length) questions = questions.concat(extra);
+ else rounds++;
+ } catch(e) { rounds++; }
+ }
+ return questions.slice(0, target);
+}
+
+const SPEC_EVAL_TARGET = 15;
+
 async function startSpecializationEval() {
  const topic = document.getElementById('spec-topic-input').value.trim();
  if (!topic) { showToast('! Indique une activité à apprendre'); return; }
@@ -10429,34 +10478,13 @@ async function startSpecializationEval() {
  document.getElementById('spec-step-eval-loading').style.display = 'block';
  document.getElementById('spec-eval-loading-text').textContent = `Préparation de ton évaluation en ${topic}...`;
 
- const prompt = `Génère une évaluation de niveau pour quelqu'un qui veut apprendre "${topic}" (activité libre, pas forcément scolaire). Réponds UNIQUEMENT en JSON valide.
-
-RÈGLE ABSOLUE : chaque question doit porter STRICTEMENT et DIRECTEMENT sur "${topic}" lui-même — jamais une question générique de culture générale, de calcul de base, ou d'un autre domaine, même "pour commencer facile". "Facile" veut dire une notion vraiment basique et fondatrice DE ${topic} (le tout premier concept qu'on apprend dans ce domaine précis), pas une question qui n'a aucun rapport avec ${topic}.
-
-Crée exactement 20 questions QCM qui, ENSEMBLE, testent les points ESSENTIELS et les plus structurants pour évaluer où en est la personne dans SA PROGRESSION en ${topic} précisément (du tout premier concept fondamental jusqu'à des notions avancées du domaine). Répartis la difficulté progressivement sur les 20 questions (les premières très basiques, les dernières nettement plus avancées), en restant à chaque fois strictement dans le domaine ${topic}. IMPORTANT : chaque option de réponse doit être COMPLÈTE (jamais tronquée ou vide) — n'écris "A)" que suivi immédiatement du texte de la réponse. ${MATH_NOTATION_RULE}Format JSON exact :
-{"questions":[{"q":"énoncé de la question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"difficulty":"debutant"|"intermediaire"|"avance"}]}`;
-
- // "Pas une de moins" : jusqu'à 3 tentatives automatiques si la génération
- // est tronquée ou mal formée, avant d'abandonner — l'utilisatrice n'a pas
- // à relancer elle-même une génération incomplète.
- const MAX_ATTEMPTS = 3;
- for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
  try {
- if (attempt > 1) document.getElementById('spec-eval-loading-text').textContent = `Nouvelle tentative (${attempt}/${MAX_ATTEMPTS})...`;
-
- const res = await fetch(AI_ENDPOINT, {
- method: 'POST',
- headers: {'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 6000, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ _specEvalQuestions = await fillSpecEvalToTarget(topic, SPEC_EVAL_TARGET, (have, target, round) => {
+ document.getElementById('spec-eval-loading-text').textContent = have > 0
+ ? `Génération en cours... (${have}/${target})`
+ : `Préparation de ton évaluation en ${topic}...`;
  });
- const data = await res.json();
- let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
- raw = extractJsonBlock(raw);
- const parsed = JSON.parse(raw);
- _specEvalQuestions = Array.isArray(parsed.questions)
- ? parsed.questions.filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2 && q.options.every(opt => typeof opt === 'string' && opt.trim().length > 2) && Number.isInteger(q.correct))
- : [];
- if (_specEvalQuestions.length < 20) throw new Error(`Génération incomplète (${_specEvalQuestions.length}/20 questions valides)`);
+ if (!_specEvalQuestions.length) throw new Error('Aucune question générée');
 
  document.getElementById('spec-eval-questions').innerHTML = _specEvalQuestions.map((q,i) => `
  <div class="card" style="margin-bottom:12px">
@@ -10477,17 +10505,11 @@ Crée exactement 20 questions QCM qui, ENSEMBLE, testent les points ESSENTIELS e
  document.getElementById('spec-step-eval-loading').style.display = 'none';
  document.getElementById('spec-step-eval-quiz').style.display = 'block';
  renderMathInChat(document.getElementById('spec-eval-questions'));
- return; // succès, on arrête la boucle de tentatives
-
  } catch(e) {
- console.error(`Génération évaluation spécialisation échouée (tentative ${attempt}/${MAX_ATTEMPTS})`, e);
- if (attempt === MAX_ATTEMPTS) {
+ console.error('Génération évaluation spécialisation échouée', e);
  document.getElementById('spec-step-eval-loading').style.display = 'none';
  document.getElementById('spec-step-choose').style.display = 'block';
- showToast('! Impossible de générer les 20 questions après plusieurs essais, réessaie');
- }
- // sinon on boucle : la tentative suivante démarre automatiquement
- }
+ showToast('! Impossible de générer l\'évaluation, réessaie');
  }
 }
 
