@@ -2874,8 +2874,8 @@ function renderLearningPlan() {
  return `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
  <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:5px"></div>
  <div style="flex:1;min-width:0">
- <div style="font-size:13px;font-weight:700">${it.notion} <span style="font-weight:500;color:var(--text3);font-size:11px">· ${subjName}</span></div>
- <div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.4">${it.reason || ''}</div>
+ <div style="font-size:13px;font-weight:700">${escapeHtml(it.notion)} <span style="font-weight:500;color:var(--text3);font-size:11px">· ${escapeHtml(subjName)}</span></div>
+ <div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.4">${escapeHtml(it.reason || '')}</div>
  </div>
  <button onclick="startTargetedExercise('${it.subject}','${(it.notion||'').replace(/'/g,"\\'")}')" style="background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0;margin-top:2px">Go</button>
  </div>`;
@@ -9432,6 +9432,16 @@ function selectLevel(btn) { selectedLevel = (btn && btn.dataset && btn.dataset.v
 // (déjà branché via renderMathInChat) le détecte et le rende correctement.
 const MATH_NOTATION_RULE = `- NOTATION MATHÉMATIQUE : pour TOUTE formule, expression, équation, matrice ou notation mathématique, utilise la syntaxe LaTeX entourée de signes dollar simples : $...$ (ex: $x^2-5x+2$, $\\begin{pmatrix}1&2\\\\3&6\\end{pmatrix}$, $\\frac{a}{b}$). Ne JAMAIS écrire une formule sans les délimiteurs $, et ne jamais laisser une expression mathématique en texte brut non formaté.\n`;
 
+// Échappe le HTML dans du contenu généré par l'IA avant de l'insérer via
+// innerHTML. Indispensable pour les sujets techniques (code, HTML, balises...)
+// où une réponse peut légitimement contenir "<p>", "<div>", "&&", etc. — sans
+// échappement, ces caractères sont interprétés comme du vrai HTML et cassent
+// toute la mise en page (options qui disparaissent, structure imbriquée).
+function escapeHtml(str) {
+ if (str === null || str === undefined) return '';
+ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function extractJsonBlock(raw) {
  // Retirer les blocs markdown ```json ... ```
  raw = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
@@ -10175,10 +10185,10 @@ function renderPedagogicalActivity(a) {
  <div class="card" style="margin-bottom:14px">
  <div style="display:flex;gap:14px">
  <div style="flex:1;display:flex;flex-direction:column;gap:8px" id="assoc-left">
- ${a.pairs.map((p,i)=>`<button class="assoc-item" data-idx="${i}" onclick="selectAssocLeft(${i})" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;text-align:left;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${p.left}</button>`).join('')}
+ ${a.pairs.map((p,i)=>`<button class="assoc-item" data-idx="${i}" onclick="selectAssocLeft(${i})" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;text-align:left;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${escapeHtml(p.left)}</button>`).join('')}
  </div>
  <div style="flex:1;display:flex;flex-direction:column;gap:8px" id="assoc-right">
- ${shuffledRight.map((r)=>`<button class="assoc-item" data-orig="${r.origIdx}" onclick="selectAssocRight(${r.origIdx})" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;text-align:left;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${r.text}</button>`).join('')}
+ ${shuffledRight.map((r)=>`<button class="assoc-item" data-orig="${r.origIdx}" onclick="selectAssocRight(${r.origIdx})" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;text-align:left;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${escapeHtml(r.text)}</button>`).join('')}
  </div>
  </div>
  </div>`;
@@ -10188,7 +10198,7 @@ function renderPedagogicalActivity(a) {
  renderOrderActivity(a);
  } else if (a.activity_type === 'texte_a_trous') {
  let idx = 0;
- const html = (a.text_with_blanks || '').replace(/___\d+___/g, () => {
+ const html = escapeHtml(a.text_with_blanks || '').replace(/___\d+___/g, () => {
  idx++;
  return `<input type="text" data-blank="${idx-1}" class="blank-input" style="border:none;border-bottom:2px solid var(--em);background:transparent;font-size:13px;font-weight:700;color:var(--em);width:110px;text-align:center;font-family:'Plus Jakarta Sans',sans-serif">`;
  });
@@ -10204,7 +10214,7 @@ function renderPedagogicalActivity(a) {
  <div style="display:flex;flex-direction:column;gap:10px">
  ${a.items.map((it,i) => `
  <div style="padding:8px 0;border-bottom:1px solid var(--border)">
- <div style="font-size:13px;font-weight:600;margin-bottom:6px">${i+1}. ${it.question}</div>
+ <div style="font-size:13px;font-weight:600;margin-bottom:6px">${i+1}. ${escapeHtml(it.question)}</div>
  <input type="text" data-calc="${i}" class="calc-input" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2)" placeholder="Ta réponse">
  </div>`).join('')}
  </div>
@@ -10220,9 +10230,9 @@ function renderPedagogicalActivity(a) {
  <div style="display:flex;flex-direction:column;gap:12px" id="choix-rapide-list">
  ${a.items.map((it,i) => `
  <div class="card" style="margin-bottom:0">
- <div style="font-size:13px;font-weight:600;margin-bottom:8px">${i+1}. ${it.question}</div>
+ <div style="font-size:13px;font-weight:600;margin-bottom:8px">${i+1}. ${escapeHtml(it.question)}</div>
  <div style="display:flex;gap:6px;flex-wrap:wrap">
- ${it.options.map((opt,oi) => `<button data-q="${i}" data-opt="${oi}" onclick="selectChoixRapide(${i},${oi})" class="choix-rapide-opt" style="flex:1;min-width:80px;padding:8px 10px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${opt}</button>`).join('')}
+ ${it.options.map((opt,oi) => `<button data-q="${i}" data-opt="${oi}" onclick="selectChoixRapide(${i},${oi})" class="choix-rapide-opt" style="flex:1;min-width:80px;padding:8px 10px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${escapeHtml(opt)}</button>`).join('')}
  </div>
  </div>`).join('')}
  </div>`;
@@ -10234,7 +10244,7 @@ function renderPedagogicalActivity(a) {
  ${a.riddles.map((r,i) => `
  <div class="card" style="margin-bottom:0">
  <div style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Énigme ${i+1}</div>
- <p style="font-size:13.5px;line-height:1.6;margin-bottom:10px">${r.question}</p>
+ <p style="font-size:13.5px;line-height:1.6;margin-bottom:10px">${escapeHtml(r.question)}</p>
  <input type="text" data-riddle="${i}" class="riddle-input" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2)" placeholder="Ta réponse">
  </div>`).join('')}
  </div>`;
@@ -10280,7 +10290,7 @@ function renderOrderActivity(a) {
  ${_activityOrder.map((origIdx,pos) => `
  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2)">
  <span style="font-weight:800;font-size:12px;color:var(--em);width:18px;flex-shrink:0">${pos+1}</span>
- <span style="flex:1;font-size:12.5px">${a.items[origIdx]}</span>
+ <span style="flex:1;font-size:12.5px">${escapeHtml(a.items[origIdx])}</span>
  <div style="display:flex;gap:4px;flex-shrink:0">
  <button onclick="moveOrderItem(${pos},-1)" style="width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer">↑</button>
  <button onclick="moveOrderItem(${pos},1)" style="width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer">↓</button>
@@ -10488,12 +10498,12 @@ async function startSpecializationEval() {
 
  document.getElementById('spec-eval-questions').innerHTML = _specEvalQuestions.map((q,i) => `
  <div class="card" style="margin-bottom:12px">
- <div style="font-size:13.5px;font-weight:600;margin-bottom:10px">${i+1}. ${q.q}</div>
+ <div style="font-size:13.5px;font-weight:600;margin-bottom:10px">${i+1}. ${escapeHtml(q.q)}</div>
  <div style="display:flex;flex-direction:column;gap:7px">
  ${q.options.map((opt,oi) => `
  <div data-q="${i}" data-opt="${oi}" onclick="selectSpecEvalAnswer(${i},${oi})" class="spec-eval-opt" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;cursor:pointer">
  <span class="spec-eval-dot" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0"></span>
- <span>${opt}</span>
+ <span>${escapeHtml(opt)}</span>
  </div>`).join('')}
  <div data-q="${i}" data-opt="-1" onclick="selectSpecEvalAnswer(${i},-1)" class="spec-eval-opt" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:10px;font-size:12.5px;cursor:pointer;color:var(--text3)">
  <span class="spec-eval-dot" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0"></span>
@@ -10574,9 +10584,9 @@ function renderActiveSpecialization(spec) {
  document.getElementById('spec-active-level').textContent = `Niveau évalué : ${spec.level} (${spec.score}%)`;
  document.getElementById('spec-program-list').innerHTML = spec.program.map(w => `
  <div style="padding:10px 0;border-bottom:1px solid var(--border)">
- <div style="font-size:13px;font-weight:700;margin-bottom:6px">Semaine ${w.week || ''} — ${w.title}</div>
+ <div style="font-size:13px;font-weight:700;margin-bottom:6px">Semaine ${w.week || ''} — ${escapeHtml(w.title)}</div>
  <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px">
- ${(w.objectives||[]).map(o => `<li style="font-size:12px;color:var(--text2);line-height:1.5">${o}</li>`).join('')}
+ ${(w.objectives||[]).map(o => `<li style="font-size:12px;color:var(--text2);line-height:1.5">${escapeHtml(o)}</li>`).join('')}
  </ul>
  </div>`).join('');
 }
@@ -10963,7 +10973,7 @@ function showQuestion() {
  document.getElementById('quiz-options').innerHTML = q.options.map((opt,i)=>`
  <button class="quiz-option" onclick="answerQ(${i})" id="opt-${i}">
  <div class="option-letter">${String.fromCharCode(65+i)}</div>
- <span>${opt}</span>
+ <span>${escapeHtml(opt)}</span>
  </button>`).join('');
  renderMathInChat(document.getElementById('quiz-play'));
 
@@ -11056,13 +11066,13 @@ function showResults() {
  <div style="background:var(--bg2);border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:3px solid ${isCorrect?'var(--em)':'var(--red)'}">
  <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px">
  <span style="flex-shrink:0">${isCorrect?'✅':'❌'}</span>
- <span style="font-size:13px;font-weight:600">${i+1}. ${q.q}</span>
+ <span style="font-size:13px;font-weight:600">${i+1}. ${escapeHtml(q.q)}</span>
  </div>
  <div style="font-size:12px;color:var(--text2);margin-bottom:4px">
- ${wasAnswered ? 'Ta réponse : <strong>'+(q.options[given]||'—')+'</strong>' : '<strong>Non répondu</strong> (considéré comme un échec)'}
+ ${wasAnswered ? 'Ta réponse : <strong>'+escapeHtml(q.options[given]||'—')+'</strong>' : '<strong>Non répondu</strong> (considéré comme un échec)'}
  </div>
- ${!isCorrect ? `<div style="font-size:12px;color:var(--em);margin-bottom:6px">Bonne réponse : <strong>${q.options[q.correct]||'—'}</strong></div>` : ''}
- <div style="font-size:12px;color:var(--text3);line-height:1.5">${q.explication || ''}</div>
+ ${!isCorrect ? `<div style="font-size:12px;color:var(--em);margin-bottom:6px">Bonne réponse : <strong>${escapeHtml(q.options[q.correct]||'—')}</strong></div>` : ''}
+ <div style="font-size:12px;color:var(--text3);line-height:1.5">${escapeHtml(q.explication || '')}</div>
  </div>`;
  }).join('')}`;
  renderMathInChat(document.getElementById('result-correction'));
@@ -11730,8 +11740,8 @@ function renderProgress() {
  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
  <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
  <div style="flex:1;min-width:0">
- <div style="font-size:13px;font-weight:600">${w.notion}</div>
- <div style="font-size:11px;color:var(--text3)">${subjName}</div>
+ <div style="font-size:13px;font-weight:600">${escapeHtml(w.notion)}</div>
+ <div style="font-size:11px;color:var(--text3)">${escapeHtml(subjName)}</div>
  </div>
  <span class="badge" style="background:var(--bg2);color:var(--text2);font-size:10px">${w.count}×</span>
  </div>
