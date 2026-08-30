@@ -1184,6 +1184,34 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="profile-subject-scores"><div style="font-size:12px;color:var(--text3)">Termine un quiz pour voir tes scores apparaître ici.</div></div>
  </div>
 
+ <!-- Espace Spécialisation (VIP/admin) -->
+ <div class="card" id="specialization-card" style="margin-bottom:14px;cursor:pointer;display:none" onclick="showScreen('screen-specialization')">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+ <div style="display:flex;align-items:center;gap:12px">
+ <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">SP</div>
+ <div>
+ <div style="font-weight:700;font-size:14px">Spécialisation</div>
+ <div id="specialization-card-subtitle" style="font-size:12px;color:var(--text3)">Apprends une nouvelle compétence, planning IA sur-mesure</div>
+ </div>
+ </div>
+ <div style="font-size:18px;color:var(--text3)">›</div>
+ </div>
+ </div>
+
+ <!-- Espace École -->
+ <div class="card" style="margin-bottom:14px;cursor:pointer" onclick="showScreen('screen-school')">
+ <div style="display:flex;align-items:center;justify-content:space-between">
+ <div style="display:flex;align-items:center;gap:12px">
+ <div style="width:44px;height:44px;border-radius:12px;background:var(--em-soft);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--em);flex-shrink:0">ÉC</div>
+ <div>
+ <div style="font-weight:700;font-size:14px">Mon École</div>
+ <div id="school-card-subtitle" style="font-size:12px;color:var(--text3)">Rejoindre ou créer une école</div>
+ </div>
+ </div>
+ <div style="font-size:18px;color:var(--text3)">›</div>
+ </div>
+ </div>
+
  <div class="card" style="margin-bottom:14px">
  <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">Préférences</h3>
  <div id="prefs-list"></div>
@@ -1315,34 +1343,6 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="font-size:11px;opacity:.8">Connectés (7j)</div>
  </div>
  </div>
- </div>
- </div>
-
- <!-- Espace Spécialisation (VIP/admin) -->
- <div class="card" id="specialization-card" style="margin-bottom:14px;cursor:pointer;display:none" onclick="showScreen('screen-specialization')">
- <div style="display:flex;align-items:center;justify-content:space-between">
- <div style="display:flex;align-items:center;gap:12px">
- <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">SP</div>
- <div>
- <div style="font-weight:700;font-size:14px">Spécialisation</div>
- <div id="specialization-card-subtitle" style="font-size:12px;color:var(--text3)">Apprends une nouvelle compétence, planning IA sur-mesure</div>
- </div>
- </div>
- <div style="font-size:18px;color:var(--text3)">›</div>
- </div>
- </div>
-
- <!-- Espace École -->
- <div class="card" style="margin-bottom:14px;cursor:pointer" onclick="showScreen('screen-school')">
- <div style="display:flex;align-items:center;justify-content:space-between">
- <div style="display:flex;align-items:center;gap:12px">
- <div style="width:44px;height:44px;border-radius:12px;background:var(--em-soft);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--em);flex-shrink:0">ÉC</div>
- <div>
- <div style="font-weight:700;font-size:14px">Mon École</div>
- <div id="school-card-subtitle" style="font-size:12px;color:var(--text3)">Rejoindre ou créer une école</div>
- </div>
- </div>
- <div style="font-size:18px;color:var(--text3)">›</div>
  </div>
  </div>
 
@@ -3077,7 +3077,7 @@ function renderKnowledgeTreeWidget() {
  <div style="width:84px;flex-shrink:0">${renderKnowledgeTreeSVG(stage.idx, stage.sick)}</div>
  <div style="flex:1;min-width:0">
  <div style="font-size:11px;font-weight:700;color:#5b5647;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Arbre de connaissance</div>
- <div style="font-size:16px;font-weight:800;margin-bottom:4px;color:#1a1a1a">🌳 ${stage.label}${stage.sick?' (affaibli)':''}</div>
+ <div style="font-size:16px;font-weight:800;margin-bottom:4px;color:#1a1a1a">${stage.label}${stage.sick?' (affaibli)':''}</div>
  <div style="font-size:12px;color:${stage.rewardAvailable?'#b8860b':'#4a4638'};margin-bottom:8px;font-weight:${stage.rewardAvailable?'700':'500'}">${statusLine}</div>
  <div style="height:7px;background:rgba(255,255,255,.7);border:1px solid var(--em-mid);border-radius:4px;overflow:hidden">
  <div style="height:100%;width:${stage.progressPct}%;background:linear-gradient(90deg,var(--em),var(--amber));border-radius:4px"></div>
@@ -10421,9 +10421,11 @@ async function startSpecializationEval() {
  document.getElementById('spec-eval-loading-text').textContent = `Préparation de ton évaluation en ${topic}...`;
 
  try {
- const prompt = `Génère une évaluation rapide de niveau pour quelqu'un qui débute peut-être en "${topic}" (activité libre, pas forcément scolaire). Réponds UNIQUEMENT en JSON valide.
+ const prompt = `Génère une évaluation de niveau pour quelqu'un qui veut apprendre "${topic}" (activité libre, pas forcément scolaire). Réponds UNIQUEMENT en JSON valide.
 
-Crée exactement 5 questions QCM qui, ENSEMBLE, permettent de situer le niveau réel de la personne du grand débutant à l'avancé (varie la difficulté entre les questions : commence facile, monte progressivement). ${MATH_NOTATION_RULE}Format JSON exact :
+RÈGLE ABSOLUE : chaque question doit porter STRICTEMENT et DIRECTEMENT sur "${topic}" lui-même — jamais une question générique de culture générale, de calcul de base, ou d'un autre domaine, même "pour commencer facile". "Facile" veut dire une notion vraiment basique et fondatrice DE ${topic} (le tout premier concept qu'on apprend dans ce domaine précis), pas une question qui n'a aucun rapport avec ${topic}.
+
+Crée exactement 5 questions QCM qui, ENSEMBLE, testent les points ESSENTIELS et les plus structurants pour évaluer où en est la personne dans SA PROGRESSION en ${topic} précisément (du tout premier concept fondamental jusqu'à des notions plus avancées du domaine). Varie la difficulté en restant à chaque fois dans le domaine ${topic}. ${MATH_NOTATION_RULE}Format JSON exact :
 {"questions":[{"q":"énoncé de la question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"difficulty":"debutant"|"intermediaire"|"avance"}]}`;
 
  const res = await fetch(AI_ENDPOINT, {
