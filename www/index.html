@@ -1569,6 +1569,14 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <p style="font-size:13px">Construction de ton planning personnalisé...</p>
  </div>
 
+ <!-- ── ÉTAT 4bis : échec de génération du programme (les réponses restent utilisables) ── -->
+ <div id="spec-step-program-error" style="display:none">
+ <div class="card" style="margin-bottom:14px;text-align:center;padding:24px 20px">
+ <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Ton évaluation est bien enregistrée, mais la génération du planning a échoué (souci réseau ou IA momentané).</p>
+ <button onclick="retrySpecializationProgram()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Réessayer la génération du planning →</button>
+ </div>
+ </div>
+
  <!-- ── ÉTAT 5 : programme actif ── -->
  <div id="spec-step-active" style="display:none">
  <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#b45309,#f59e0b);border:none;color:#fff">
@@ -10398,6 +10406,10 @@ async function checkActivityAnswer() {
 // Persisté dans stats.specialization (une spécialisation active à la fois),
 // donc synchronisé cloud comme le reste sans plomberie supplémentaire.
 let _specEvalTopic = null, _specEvalQuestions = [];
+// Résultat calculé de l'éval (score, niveau, lacunes), conservé pour que
+// retrySpecializationProgram() puisse relancer uniquement la génération du
+// planning sans jamais faire perdre les réponses déjà données.
+let _specEvalResult = null;
 // Choix custom en JS plutôt que des <input type="radio"> natifs : le reset CSS
 // global (appearance:none sur tous les <input>) rend les radios natifs
 // invisibles/peu fiables au toucher sur pas mal de WebView Android — le reste
@@ -10417,7 +10429,7 @@ function selectSpecEvalAnswer(qIdx, optIdx) {
 }
 
 function renderSpecializationScreen() {
- ['spec-step-choose','spec-step-eval-loading','spec-step-eval-quiz','spec-step-program-loading','spec-step-active'].forEach(id => {
+ ['spec-step-choose','spec-step-eval-loading','spec-step-eval-quiz','spec-step-program-loading','spec-step-program-error','spec-step-active'].forEach(id => {
  const el = document.getElementById(id); if (el) el.style.display = 'none';
  });
  const s = getStats();
@@ -10445,7 +10457,7 @@ Ces questions doivent, ENSEMBLE avec d'autres déjà générées, tester les poi
  const res = await fetch(AI_ENDPOINT, {
  method: 'POST',
  headers: {'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: Math.max(800, n * 300), system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ body: JSON.stringify({ model: MODEL, max_tokens: Math.max(800, n * 450), system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
  });
  const data = await res.json();
  let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
@@ -10462,11 +10474,12 @@ Ces questions doivent, ENSEMBLE avec d'autres déjà générées, tester les poi
 // (6 tours) évite une boucle infinie si le service est vraiment en panne.
 async function fillSpecEvalToTarget(topic, target, updateProgress) {
  const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
+ const MAX_BATCH = 5; // jamais plus de 5 questions par appel IA : au-delà, risque réel de troncature (surtout sur des sujets techniques aux réponses plus longues)
  let questions = [];
  let rounds = 0;
- while (questions.length < target && rounds < 6) {
+ while (questions.length < target && rounds < 8) {
  if (rounds > 0) await sleepMs(900 * rounds);
- const missing = target - questions.length;
+ const missing = Math.min(MAX_BATCH, target - questions.length);
  updateProgress(questions.length, target, rounds);
  try {
  const extra = await generateSpecEvalBatch(missing, topic);
@@ -10526,57 +10539,97 @@ async function startSpecializationEval() {
 async function submitSpecializationEval() {
  let correct = 0;
  const unanswered = [];
+ const missedQuestions = []; // pour cibler précisément le programme généré ensuite
  _specEvalQuestions.forEach((q,i) => {
  if (!(i in _specEvalAnswers)) { unanswered.push(i); return; }
- if (Number(_specEvalAnswers[i]) === Number(q.correct)) correct++;
+ const given = Number(_specEvalAnswers[i]);
+ if (given === Number(q.correct)) correct++;
+ else missedQuestions.push({ q: q.q, wasDontKnow: given === -1 });
  });
  if (unanswered.length) { showToast('! Réponds à toutes les questions (même en devinant, ou "Je ne sais pas")'); return; }
 
  const scorePct = Math.round((correct / _specEvalQuestions.length) * 100);
  const levelLabel = scorePct >= 75 ? 'Avancé' : scorePct >= 40 ? 'Intermédiaire' : 'Débutant';
+ // Sauvegardés au niveau module pour que retrySpecializationProgram() puisse
+ // relancer UNIQUEMENT la génération du planning sans faire perdre les 15
+ // réponses déjà données en cas d'échec.
+ _specEvalResult = { topic: _specEvalTopic, levelLabel, scorePct, missedQuestions };
 
  document.getElementById('spec-step-eval-quiz').style.display = 'none';
+ await generateSpecializationProgram();
+}
+
+// Génère (ou régénère) le planning à partir du dernier résultat d'éval
+// stocké dans _specEvalResult. Séparé de submitSpecializationEval() pour que
+// l'utilisatrice puisse relancer seulement cette étape en cas d'échec, sans
+// jamais avoir à refaire les 15 questions.
+async function generateSpecializationProgram() {
+ const { topic, levelLabel, scorePct, missedQuestions } = _specEvalResult;
+ document.getElementById('spec-step-program-error').style.display = 'none';
  document.getElementById('spec-step-program-loading').style.display = 'block';
 
  try {
  const profile = getLearningProfile();
  const ai = (getStats().aiProfile) || {};
  const behaviorSummary = [`rythme : ${profile.rhythm}`, ai.learningStyle ? `style d'apprentissage : ${ai.learningStyle}` : null, ai.paceNote ? `rythme ressenti : ${ai.paceNote}` : null].filter(Boolean).join(' ; ');
+ // "Je ne sais pas" compte comme une lacune au même titre qu'une mauvaise
+ // réponse (déjà reflété dans le score ci-dessus) — en plus, on transmet
+ // explicitement CE SUR QUOI portaient les questions ratées/"Je ne sais pas",
+ // pour que le programme cible vraiment ces lacunes précises plutôt que de
+ // se baser uniquement sur le score global.
+ const gapsSummary = missedQuestions.length
+ ? missedQuestions.slice(0, 15).map(m => `- ${m.q}${m.wasDontKnow ? ' (réponse : "je ne sais pas")' : ' (réponse incorrecte)'}`).join('\n')
+ : 'aucune (score parfait à l\'évaluation)';
 
- const prompt = `Construis un planning d'apprentissage personnalisé pour "${_specEvalTopic}". Réponds UNIQUEMENT en JSON valide.
+ const prompt = `Construis un planning d'apprentissage personnalisé pour "${topic}". Réponds UNIQUEMENT en JSON valide.
 
 NIVEAU ÉVALUÉ : ${levelLabel} (${scorePct}% à l'évaluation initiale)
 COMPORTEMENT GÉNÉRAL DE L'APPRENANT : ${behaviorSummary || 'pas encore de données comportementales'}
 
-Crée un planning de 4 à 6 semaines, réaliste et progressif à partir de ce niveau. Adapte la charge de travail au rythme connu (si rythme irrégulier/inactif, reste léger et très accessible ; si assidu, tu peux pousser davantage). Réponds avec ce format JSON exact :
+QUESTIONS RATÉES OU MARQUÉES "JE NE SAIS PAS" À L'ÉVALUATION (lacunes précises à cibler en priorité dans le planning) :
+${gapsSummary}
+
+Crée un planning de 4 à 6 semaines, réaliste et progressif à partir de ce niveau, qui adresse en priorité les lacunes précises listées ci-dessus (pas seulement le niveau global). Adapte la charge de travail au rythme connu (si rythme irrégulier/inactif, reste léger et très accessible ; si assidu, tu peux pousser davantage). Réponds avec ce format JSON exact :
 {"program":[{"week":1,"title":"titre court de la semaine","objectives":["objectif concret 1","objectif concret 2","objectif concret 3"]}]}`;
 
+ // Jusqu'à 3 tentatives automatiques avant d'abandonner, pour ne jamais
+ // perdre les 15 réponses déjà données à cause d'un simple aléa réseau ou
+ // d'une réponse mal formée une fois sur trois.
+ let program = [];
+ let lastErr = null;
+ for (let attempt = 1; attempt <= 3 && !program.length; attempt++) {
+ try {
  const res = await fetch(AI_ENDPOINT, {
  method: 'POST',
  headers: {'Content-Type':'application/json'},
- body: JSON.stringify({ model: MODEL, max_tokens: 1500, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
+ body: JSON.stringify({ model: MODEL, max_tokens: 2500, system: 'Tu réponds uniquement en JSON valide, sans texte autour.', messages: [{role:'user', content: prompt}] })
  });
  const data = await res.json();
  let raw = (data.content && data.content[0] ? data.content[0].text : '') || '{}';
  raw = extractJsonBlock(raw);
  const parsed = JSON.parse(raw);
- const program = Array.isArray(parsed.program) ? parsed.program.filter(w => w && w.title) : [];
- if (!program.length) throw new Error('Aucun programme généré');
+ program = Array.isArray(parsed.program) ? parsed.program.filter(w => w && w.title) : [];
+ } catch(e) { lastErr = e; }
+ }
+ if (!program.length) throw lastErr || new Error('Aucun programme généré');
 
  const s = getStats();
- s.specialization = { topic: _specEvalTopic, level: levelLabel, score: scorePct, program, generatedAt: new Date().toISOString() };
+ s.specialization = { topic, level: levelLabel, score: scorePct, program, generatedAt: new Date().toISOString() };
  saveStats(s);
 
  document.getElementById('spec-step-program-loading').style.display = 'none';
  renderActiveSpecialization(s.specialization);
  document.getElementById('spec-step-active').style.display = 'block';
- showToast('✓ Ton planning ' + _specEvalTopic + ' est prêt');
+ showToast('✓ Ton planning ' + topic + ' est prêt');
  } catch(e) {
  console.error('Génération programme spécialisation échouée', e);
  document.getElementById('spec-step-program-loading').style.display = 'none';
- document.getElementById('spec-step-choose').style.display = 'block';
- showToast('! Impossible de générer le planning, réessaie');
+ document.getElementById('spec-step-program-error').style.display = 'block';
  }
+}
+
+function retrySpecializationProgram() {
+ generateSpecializationProgram();
 }
 
 function renderActiveSpecialization(spec) {
