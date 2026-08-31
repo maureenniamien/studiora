@@ -332,12 +332,19 @@ label.field-label{display:block;font-size:11px;font-weight:700;color:var(--text2
 .avatar-ai{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 2px 8px rgba(11,110,79,.2)}
 
 /* ── QUIZ ── */
-.quiz-option{width:100%;background:var(--white);border:2px solid var(--border);border-radius:14px;padding:14px 18px;text-align:left;display:flex;align-items:center;gap:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text);transition:all .2s;margin-bottom:10px}
+.quiz-option{width:100%;background:var(--white);border:2px solid var(--border);border-radius:14px;padding:14px 18px;text-align:left;display:flex;align-items:center;gap:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text);transition:all .2s;margin-bottom:10px;box-sizing:border-box;min-width:0}
+.quiz-option span{min-width:0;overflow-wrap:anywhere;word-break:break-word}
 .quiz-option:active{transform:scale(.98)}
 .quiz-option.correct{background:var(--em-soft);border-color:var(--em);color:var(--em)}
 .quiz-option.wrong{background:var(--red-soft);border-color:var(--red);color:var(--red)}
 .quiz-option.selected{background:var(--bg2);border-color:var(--text2);opacity:.85}
 .quiz-option.selected{background:var(--bg2);border-color:var(--em)}
+/* Options des évals/examens à choix (spec-eval-opt, spec-exam-opt, choix-rapide-opt) :
+ le texte peut contenir du code sans espaces (ex: document.getElementById(...))
+ qui déborderait sinon hors de l'écran sur mobile. */
+.spec-eval-opt,.spec-exam-opt,.choix-rapide-opt{box-sizing:border-box;min-width:0}
+.spec-eval-opt span,.spec-exam-opt span,.choix-rapide-opt{overflow-wrap:anywhere;word-break:break-word}
+.spec-eval-opt span:last-child,.spec-exam-opt span:last-child{flex:1;min-width:0}
 .option-letter{width:30px;height:30px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 
 /* ── PROGRESS SCREEN ── */
@@ -1486,7 +1493,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <div>
- <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">✍️ Exercice rédigé</h2>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Exercice rédigé</h2>
  <p id="custom-ex-subtitle" style="color:var(--text3);font-size:12px;margin:0">Corrigé par l'IA</p>
  </div>
  </div>
@@ -1622,7 +1629,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
  <div>
- <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">📖 Cours du jour</h2>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Cours du jour</h2>
  <p id="spec-lesson-subtitle" style="color:var(--text3);font-size:12px;margin:0">Généré par l'IA</p>
  </div>
  </div>
@@ -1634,8 +1641,9 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="spec-lesson-body" style="display:none">
  <div class="card" style="margin-bottom:14px">
  <p id="spec-lesson-content" style="font-size:13.5px;line-height:1.7;white-space:pre-wrap"></p>
+ <button id="spec-lesson-read-btn" onclick="toggleLessonReading()" style="display:none;margin-top:12px;width:100%;padding:9px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-weight:700;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Écouter le cours</button>
  </div>
- <button onclick="startSpecExercise()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer à l'exercice →</button>
+ <button onclick="startExerciseFromLesson()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer à l'exercice →</button>
  </div>
  </div>
 </div>
@@ -1672,13 +1680,52 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <button onclick="goBack()" class="back-btn">← Retour</button>
 
  <div>
- <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">🎮 Activité</h2>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Activité</h2>
  <p id="activity-subtitle" style="color:var(--text3);font-size:12px;margin:0">Apprendre en jouant</p>
  </div>
  </div>
  <div class="scroll-body" style="padding:0 20px 100px">
 
- <div id="activity-loading" style="text-align:center;padding:50px 0;color:var(--text3)">
+ <!-- Choix du type de jeu (l'utilisatrice choisit, l'IA ne décide plus toute seule) -->
+ <div id="activity-choose-type" style="display:none">
+ <p style="font-size:12.5px;color:var(--text3);margin-bottom:14px">Choisis le type de jeu :</p>
+ <div style="display:flex;flex-direction:column;gap:8px">
+ <button onclick="selectActivityType('association')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Association</div>
+ <div style="font-size:11.5px;color:var(--text3)">Relier des paires (terme ↔ définition)</div>
+ </button>
+ <button onclick="selectActivityType('ordre')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Remise en ordre</div>
+ <div style="font-size:11.5px;color:var(--text3)">Remettre des étapes dans le bon ordre</div>
+ </button>
+ <button onclick="selectActivityType('texte_a_trous')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Texte à trous</div>
+ <div style="font-size:11.5px;color:var(--text3)">Compléter un texte avec les bons mots</div>
+ </button>
+ <button onclick="selectActivityType('calcul_rapide')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Calcul rapide</div>
+ <div style="font-size:11.5px;color:var(--text3)">Petits calculs/réponses courtes contre la montre</div>
+ </button>
+ <button onclick="selectActivityType('choix_rapide')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Choix rapide</div>
+ <div style="font-size:11.5px;color:var(--text3)">Rafale de questions à choix courts, chronométrée</div>
+ </button>
+ <button onclick="selectActivityType('mots_meles')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Mots mêlés</div>
+ <div style="font-size:11.5px;color:var(--text3)">Retrouver les mots-clés cachés dans une grille</div>
+ </button>
+ <button onclick="selectActivityType('enigme')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Énigme</div>
+ <div style="font-size:11.5px;color:var(--text3)">Casse-tête de réflexion, réponse à deviner</div>
+ </button>
+ <button onclick="selectActivityType('scenario')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+ <div style="font-weight:700;font-size:13px">Étude de cas</div>
+ <div style="font-size:11.5px;color:var(--text3)">Situation avec décisions successives à prendre</div>
+ </button>
+ </div>
+ </div>
+
+ <div id="activity-loading" style="text-align:center;padding:50px 0;color:var(--text3);display:none">
  <div class="spinner" style="margin:0 auto 12px"></div>
  <p style="font-size:13px">Préparation de ton activité...</p>
  </div>
@@ -2952,13 +2999,20 @@ function renderLearningPlan() {
  const known = SUBJECTS.find(x=>x.id===it.subject) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===it.subject) : null);
  const subjName = known ? known.name : it.subject;
  const color = known ? known.color : '#6b7280';
- return `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+ const notionEsc = (it.notion||'').replace(/'/g,"\\'");
+ return `<div style="padding:9px 0;border-bottom:1px solid var(--border)">
+ <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
  <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:5px"></div>
  <div style="flex:1;min-width:0">
  <div style="font-size:13px;font-weight:700">${escapeHtml(it.notion)} <span style="font-weight:500;color:var(--text3);font-size:11px">· ${escapeHtml(subjName)}</span></div>
  <div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.4">${escapeHtml(it.reason || '')}</div>
  </div>
- <button onclick="startTargetedExercise('${it.subject}','${(it.notion||'').replace(/'/g,"\\'")}')" style="background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0;margin-top:2px">Go</button>
+ </div>
+ <div style="display:flex;gap:6px;padding-left:18px">
+ <button onclick="startLesson('${it.subject}','${notionEsc}')" style="flex:1;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cours</button>
+ <button onclick="startCustomExercise('${it.subject}','${notionEsc}')" style="flex:1;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Exercice</button>
+ <button onclick="startPedagogicalActivity('${it.subject}','${notionEsc}')" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
+ </div>
  </div>`;
  }).join('');
  refreshRemindersContentIfEnabled();
@@ -10064,12 +10118,12 @@ function startTargetedExercise(subjectId, notion) {
 // profil d'apprentissage bénéficie de ce signal en plus.
 let _customExSubject = null, _customExNotion = null, _customExStatement = null, _customExExpected = null;
 
-function startCustomExercise(subjectId, notion) {
+function startCustomExercise(subjectId, notion, lessonContext) {
  showScreen('screen-custom-exercise');
- loadCustomExercise(subjectId, notion);
+ loadCustomExercise(subjectId, notion, lessonContext);
 }
 
-async function loadCustomExercise(subjectId, notion) {
+async function loadCustomExercise(subjectId, notion, lessonContext) {
  _customExSubject = subjectId; _customExNotion = notion;
  const known = SUBJECTS.find(x=>x.id===subjectId) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===subjectId) : null);
  const subjName = known ? known.name : subjectId;
@@ -10085,8 +10139,15 @@ async function loadCustomExercise(subjectId, notion) {
  let adaptiveHint = '';
  if (ai.learningStyle) adaptiveHint += `Style d'apprentissage de l'élève : ${ai.learningStyle}. `;
  const level = (APP.user && APP.user.level) || '';
+ // Si un cours vient d'être suivi juste avant, l'exercice doit rester
+ // STRICTEMENT dans son périmètre (corrige le souci d'exercices portant sur
+ // des notions jamais enseignées) ; sinon on garde le cadrage précédent
+ // (notion faible détectée en quiz).
+ const scopeRule = lessonContext
+ ? `L'élève vient de suivre ce cours précis, reste STRICTEMENT dans ce qu'il couvre, ne mobilise aucune notion qui n'y est pas abordée :\n"""\n${lessonContext.slice(0,2500)}\n"""\n`
+ : `L'élève a déjà montré des difficultés sur cette notion en quiz, donc reste accessible et progressif. `;
 
- const prompt = `Rédige UN exercice ouvert (pas un QCM, pas de choix à cocher : une vraie question à réponse rédigée/développée) en ${subjName}, niveau ${level || 'non précisé'}, portant précisément sur la notion "${notion}". ${adaptiveHint}L'élève a déjà montré des difficultés sur cette notion en quiz, donc reste accessible et progressif. ${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide : {"statement":"énoncé complet de l'exercice, clair et autonome (peut inclure des données chiffrées si pertinent)","expectedElements":"pour ton usage interne uniquement : les 2-4 éléments clés qu'une bonne réponse doit contenir, pour te servir de grille de correction plus tard"}`;
+ const prompt = `Rédige UN exercice ouvert (pas un QCM, pas de choix à cocher : une vraie question à réponse rédigée/développée) en ${subjName}, niveau ${level || 'non précisé'}, portant précisément sur la notion "${notion}". ${adaptiveHint}${scopeRule}${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide : {"statement":"énoncé complet de l'exercice, clair et autonome (peut inclure des données chiffrées si pertinent)","expectedElements":"pour ton usage interne uniquement : les 2-4 éléments clés qu'une bonne réponse doit contenir, pour te servir de grille de correction plus tard"}`;
 
  const res = await fetch(AI_ENDPOINT, {
  method: 'POST',
@@ -10111,6 +10172,19 @@ async function loadCustomExercise(subjectId, notion) {
  showToast('! Impossible de générer l\'exercice, réessaie');
  goBack();
  }
+}
+
+// ── SCORE DU JOUR (spécialisation) ──
+// Appelée depuis chaque point de notation (exercice rédigé, jeu) : si le
+// sujet correspond à la spécialisation active, on retient le MEILLEUR score
+// obtenu aujourd'hui — condition requise (80%+) pour pouvoir valider la
+// journée et avancer dans le programme.
+function recordSpecDayScore(subjectId, scorePct) {
+ const s = getStats();
+ const spec = s.specialization;
+ if (!spec || spec.topic !== subjectId) return;
+ spec.currentDayScore = Math.max(spec.currentDayScore || 0, scorePct);
+ saveStats(s);
 }
 
 async function submitCustomExercise() {
@@ -10146,6 +10220,7 @@ Corrige et note sur 100. Réponds avec ce format JSON exact :
  // profil d'apprentissage (Phase 1) et le programme (Phase 3) en bénéficient.
  addSubjectScore(_customExSubject, score);
  incrementQuestions(1);
+ recordSpecDayScore(_customExSubject, score);
  if (score < 60) {
  const s = getStats();
  if (!s.weakPoints) s.weakPoints = [];
@@ -10191,11 +10266,35 @@ let _activityAssoc = { leftSel: null, matches: {} }; // état du jeu d'associati
 let _activityOrder = []; // état du jeu d'ordre (ordre courant proposé par l'élève)
 
 function startPedagogicalActivity(subjectId, notion) {
+ _activitySubject = subjectId; _activityNotion = notion;
  showScreen('screen-activity');
- loadPedagogicalActivity(subjectId, notion);
+ const known = SUBJECTS.find(x=>x.id===subjectId) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===subjectId) : null);
+ const subjName = known ? known.name : subjectId;
+ document.getElementById('activity-subtitle').textContent = subjName + ' · ' + notion;
+ ['activity-choose-type','activity-loading','activity-body','activity-result'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+ document.getElementById('activity-choose-type').style.display = 'block';
 }
 
-async function loadPedagogicalActivity(subjectId, notion) {
+// Choisi par l'utilisatrice (plus l'IA) : on force ce type précis dans le
+// prompt de génération, au lieu de laisser l'IA décider elle-même.
+function selectActivityType(type) {
+ document.getElementById('activity-choose-type').style.display = 'none';
+ document.getElementById('activity-loading').style.display = 'block';
+ loadPedagogicalActivity(_activitySubject, _activityNotion, type);
+}
+
+const ACTIVITY_TYPE_SCHEMAS = {
+ association: `l'élève relie des paires (ex: terme↔définition, notion↔exemple, cause↔conséquence). 4 à 6 paires. Format JSON : {"activity_type":"association","title":"titre court et engageant","instructions":"consigne courte pour l'élève","pairs":[{"left":"terme ou notion","right":"sa définition/correspondance"}]}`,
+ ordre: `l'élève remet des étapes/éléments dans le bon ordre logique ou chronologique. 4 à 6 éléments. Format JSON : {"activity_type":"ordre","title":"titre court et engageant","instructions":"consigne courte pour l'élève","items":["élément 1 dans le bon ordre","élément 2","..."]} (donne les items DANS LE BON ORDRE, ils seront mélangés automatiquement côté application)`,
+ texte_a_trous: `un texte explicatif avec des mots-clés à compléter. 3 à 6 trous. Format JSON : {"activity_type":"texte_a_trous","title":"titre court et engageant","instructions":"consigne courte pour l'élève","text_with_blanks":"Texte avec ___1___ des trous ___2___ numérotés.","blanks":["mot ou expression attendue pour le trou 1","mot ou expression attendue pour le trou 2"]}`,
+ calcul_rapide: `une série de petits calculs/questions à réponse courte, contre la montre. 5 à 8 items. Format JSON : {"activity_type":"calcul_rapide","title":"titre court et engageant","instructions":"consigne courte pour l'élève","time_limit_seconds":60,"items":[{"question":"énoncé court","answer":"réponse attendue (courte, comparable telle quelle)"}]}`,
+ choix_rapide: `une série de questions à choix rapide (2-3 options courtes chacune), en mode "rafale" chronométré. 5 à 8 items. Format JSON : {"activity_type":"choix_rapide","title":"titre court et engageant","instructions":"consigne courte pour l'élève","time_limit_seconds":45,"items":[{"question":"question courte","options":["opt A courte","opt B courte","opt C courte"],"correct":0}]}`,
+ enigme: `1 à 2 énigmes/casse-tête de réflexion qui mobilisent la notion de façon détournée et stratégique (pas juste une question directe). Réponse courte à deviner. Format JSON : {"activity_type":"enigme","title":"titre court et engageant","instructions":"consigne courte pour l'élève","riddles":[{"question":"énoncé de l'énigme","answer_keywords":["mot-clé attendu 1","synonyme accepté 2"]}]}`,
+ mots_meles: `une liste de 6 à 10 mots-clés (UN SEUL MOT chacun, sans espace ni accent, en lien direct avec la notion) à retrouver dans une grille de mots mêlés — la grille elle-même est générée par l'application, tu fournis seulement les mots. Format JSON : {"activity_type":"mots_meles","title":"titre court et engageant","instructions":"consigne courte pour l'élève","words":["MOT1","MOT2","..."]}`,
+ scenario: `une courte étude de cas/situation réaliste liée à la notion, avec 3 décisions successives à prendre (chacune influencée par le contexte, pas juste une question isolée), pour pousser à la réflexion et à la stratégie. Format JSON : {"activity_type":"scenario","title":"titre court et engageant","instructions":"consigne courte pour l'élève","situation":"description de la situation de départ (2-3 phrases)","steps":[{"question":"à ce stade, que ferais-tu ?","options":["choix A","choix B","choix C"],"correct":0,"feedback_correct":"pourquoi c'est le bon choix (1-2 phrases)","feedback_incorrect":"pourquoi ce n'était pas le meilleur choix (1-2 phrases)"}]} (exactement 3 steps)`,
+};
+
+async function loadPedagogicalActivity(subjectId, notion, forcedType) {
  _activitySubject = subjectId; _activityNotion = notion;
  _choixRapideAnswers = {}; // reset : évite qu'une réponse de l'activité précédente ne pollue la correction
  const known = SUBJECTS.find(x=>x.id===subjectId) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===subjectId) : null);
@@ -10207,29 +10306,10 @@ async function loadPedagogicalActivity(subjectId, notion) {
 
  try {
  const level = (APP.user && APP.user.level) || '';
- const prompt = `Crée une activité pédagogique LUDIQUE (pas un QCM classique) en ${subjName}, niveau ${level || 'non précisé'}, sur la notion "${notion}". Choisis le format le PLUS ADAPTÉ à cette notion précise parmi ces 6 types :
+ const schema = ACTIVITY_TYPE_SCHEMAS[forcedType] || ACTIVITY_TYPE_SCHEMAS.enigme;
+ const prompt = `Crée une activité pédagogique de type "${forcedType}" en ${subjName}, niveau ${level || 'non précisé'}, sur la notion "${notion}". ${schema}
 
-1. "association" : l'élève relie des paires (ex: terme↔définition, notion↔exemple, cause↔conséquence). 4 à 6 paires.
-2. "ordre" : l'élève remet des étapes/éléments dans le bon ordre logique ou chronologique. 4 à 6 éléments.
-3. "texte_a_trous" : un texte explicatif avec des mots-clés à compléter. 3 à 6 trous.
-4. "calcul_rapide" : une série de petits calculs/questions à réponse courte, contre la montre. 5 à 8 items. Adapté aux matières avec du calcul ou des réponses factuelles courtes.
-5. "choix_rapide" : une série de questions à choix rapide (2-3 options courtes chacune, pas 4 comme un QCM classique), en mode "rafale" chronométré. 5 à 8 items.
-6. "enigme" : 1 à 2 énigmes/casse-tête de réflexion qui mobilisent la notion de façon détournée et stratégique (pas juste une question directe). Réponse courte à deviner.
-
-${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide, avec EXACTEMENT un de ces 6 formats selon ton choix :
-
-Si "association" : {"activity_type":"association","title":"titre court et engageant","instructions":"consigne courte pour l'élève","pairs":[{"left":"terme ou notion","right":"sa définition/correspondance"}]}
-
-Si "ordre" : {"activity_type":"ordre","title":"titre court et engageant","instructions":"consigne courte pour l'élève","items":["élément 1 dans le bon ordre","élément 2","..."]}
-(donne les items DANS LE BON ORDRE, ils seront mélangés automatiquement côté application)
-
-Si "texte_a_trous" : {"activity_type":"texte_a_trous","title":"titre court et engageant","instructions":"consigne courte pour l'élève","text_with_blanks":"Texte avec ___1___ des trous ___2___ numérotés.","blanks":["mot ou expression attendue pour le trou 1","mot ou expression attendue pour le trou 2"]}
-
-Si "calcul_rapide" : {"activity_type":"calcul_rapide","title":"titre court et engageant","instructions":"consigne courte pour l'élève","time_limit_seconds":60,"items":[{"question":"énoncé court","answer":"réponse attendue (courte, comparable telle quelle)"}]}
-
-Si "choix_rapide" : {"activity_type":"choix_rapide","title":"titre court et engageant","instructions":"consigne courte pour l'élève","time_limit_seconds":45,"items":[{"question":"question courte","options":["opt A courte","opt B courte","opt C courte"],"correct":0}]}
-
-Si "enigme" : {"activity_type":"enigme","title":"titre court et engageant","instructions":"consigne courte pour l'élève","riddles":[{"question":"énoncé de l'énigme","answer_keywords":["mot-clé attendu 1","synonyme accepté 2"]}]}`;
+${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide, exactement dans ce format.`;
 
  const res = await fetch(AI_ENDPOINT, {
  method: 'POST',
@@ -10257,21 +10337,23 @@ Si "enigme" : {"activity_type":"enigme","title":"titre court et engageant","inst
 function renderPedagogicalActivity(a) {
  document.getElementById('activity-title').textContent = a.title;
  document.getElementById('activity-instructions').textContent = a.instructions || '';
+ const checkBtn = document.getElementById('activity-check-btn');
+ if (checkBtn) checkBtn.style.display = 'block'; // remis visible par défaut (scenario le masque lui-même)
  const contentEl = document.getElementById('activity-content');
 
  if (a.activity_type === 'association') {
- _activityAssoc = { leftSel: null, matches: {} };
- const shuffledRight = [...a.pairs.map((p,i)=>({text:p.right, origIdx:i}))].sort(()=>Math.random()-0.5);
+ _activityAssoc = { leftSel: null, matches: {}, shuffledRight: [...a.pairs.map((p,i)=>({text:p.right, origIdx:i}))].sort(()=>Math.random()-0.5) };
  contentEl.innerHTML = `
  <div class="card" style="margin-bottom:14px">
- <div style="display:flex;gap:14px">
+ <div style="display:flex;gap:14px;margin-bottom:14px">
  <div style="flex:1;display:flex;flex-direction:column;gap:8px" id="assoc-left">
  ${a.pairs.map((p,i)=>`<button class="assoc-item" data-idx="${i}" onclick="selectAssocLeft(${i})" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;text-align:left;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${escapeHtml(p.left)}</button>`).join('')}
  </div>
  <div style="flex:1;display:flex;flex-direction:column;gap:8px" id="assoc-right">
- ${shuffledRight.map((r)=>`<button class="assoc-item" data-orig="${r.origIdx}" onclick="selectAssocRight(${r.origIdx})" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;text-align:left;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${escapeHtml(r.text)}</button>`).join('')}
+ ${_activityAssoc.shuffledRight.map((r)=>`<button class="assoc-item" data-orig="${r.origIdx}" onclick="selectAssocRight(${r.origIdx})" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;text-align:left;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${escapeHtml(r.text)}</button>`).join('')}
  </div>
  </div>
+ <div id="assoc-pairings-list" style="display:flex;flex-direction:column;gap:6px"></div>
  </div>`;
  renderMathInChat(contentEl);
  } else if (a.activity_type === 'ordre') {
@@ -10330,9 +10412,190 @@ function renderPedagogicalActivity(a) {
  </div>`).join('')}
  </div>`;
  renderMathInChat(contentEl);
+ } else if (a.activity_type === 'mots_meles') {
+ renderMotsMelesActivity(a);
+ } else if (a.activity_type === 'scenario') {
+ _scenarioStep = 0; _scenarioCorrectCount = 0;
+ renderScenarioStep(a);
  } else {
  contentEl.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red)">Format d\'activité non reconnu.</p></div>';
  }
+}
+
+// ── MOTS MÊLÉS ──
+// La grille est générée entièrement côté client (jamais par l'IA) : bien
+// plus fiable qu'une grille "à la main" par un LLM, qui produit souvent des
+// grilles incohérentes (mots qui ne rentrent pas, chevauchements invalides).
+// L'IA ne fournit QUE la liste de mots-clés.
+function generateWordSearchGrid(words, size) {
+ size = size || 10;
+ const grid = Array.from({length:size}, () => Array(size).fill(null));
+ const dirs = [[0,1],[1,0],[1,1],[-1,1]]; // droite, bas, diag bas-droite, diag haut-droite
+ const placed = [];
+ const clean = words
+ .map(w => String(w).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,''))
+ .filter(w => w.length >= 3 && w.length <= size);
+ clean.sort((a,b) => b.length - a.length); // les plus longs d'abord : plus faciles à placer
+ clean.forEach(word => {
+ let ok = false;
+ for (let attempt = 0; attempt < 80 && !ok; attempt++) {
+ const dir = dirs[Math.floor(Math.random()*dirs.length)];
+ const row0 = Math.floor(Math.random()*size);
+ const col0 = Math.floor(Math.random()*size);
+ const endRow = row0 + dir[0]*(word.length-1);
+ const endCol = col0 + dir[1]*(word.length-1);
+ if (endRow < 0 || endRow >= size || endCol < 0 || endCol >= size) continue;
+ let fits = true;
+ for (let i = 0; i < word.length; i++) {
+ const r = row0 + dir[0]*i, c = col0 + dir[1]*i;
+ if (grid[r][c] !== null && grid[r][c] !== word[i]) { fits = false; break; }
+ }
+ if (!fits) continue;
+ const coords = [];
+ for (let i = 0; i < word.length; i++) {
+ const r = row0 + dir[0]*i, c = col0 + dir[1]*i;
+ grid[r][c] = word[i];
+ coords.push(r*size+c);
+ }
+ placed.push({ word, coords });
+ ok = true;
+ }
+ });
+ const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+ for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (grid[r][c] === null) grid[r][c] = ALPHA[Math.floor(Math.random()*ALPHA.length)];
+ return { grid, placed, size };
+}
+
+let _wordSearchState = null; // { grid, placed, size, found: Set, selection: [] }
+
+function renderMotsMelesActivity(a) {
+ const contentEl = document.getElementById('activity-content');
+ const { grid, placed, size } = generateWordSearchGrid(a.words || [], 8);
+ _wordSearchState = { grid, placed, size, found: new Set(), selection: [] };
+
+ contentEl.innerHTML = `
+ <div class="card" style="margin-bottom:14px">
+ <div style="display:grid;grid-template-columns:repeat(${size},1fr);gap:2px;margin-bottom:14px" id="wordsearch-grid">
+ ${grid.flat().map((letter,idx) => `<button data-idx="${idx}" onclick="tapWordSearchCell(${idx})" class="wordsearch-cell" style="aspect-ratio:1;border:1px solid var(--border);background:var(--bg2);font-size:11px;font-weight:700;cursor:pointer;padding:0;border-radius:3px;font-family:'Plus Jakarta Sans',sans-serif">${letter}</button>`).join('')}
+ </div>
+ <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="wordsearch-wordlist">
+ ${placed.map(p => `<span data-word="${escapeHtml(p.word)}" class="wordsearch-word-chip" style="padding:5px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2)">${escapeHtml(p.word)}</span>`).join('')}
+ </div>
+ <button onclick="clearWordSearchSelection()" style="width:100%;padding:9px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-weight:700;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Effacer la sélection</button>
+ </div>
+ <p style="font-size:11.5px;color:var(--text3);text-align:center">Touche les lettres dans l'ordre pour former un mot de la liste.</p>`;
+}
+
+function tapWordSearchCell(idx) {
+ const st = _wordSearchState;
+ if (!st) return;
+ if (st.selection.includes(idx)) return; // évite de compter 2x la même case
+ st.selection.push(idx);
+ const btn = document.querySelector(`.wordsearch-cell[data-idx="${idx}"]`);
+ if (btn) { btn.style.background = 'var(--em-soft)'; btn.style.borderColor = 'var(--em)'; }
+
+ const sequence = st.selection.map(i => st.grid.flat()[i]).join('');
+ const match = st.placed.find(p => !st.found.has(p.word) && (p.word === sequence || p.word === sequence.split('').reverse().join('')));
+ if (match) {
+ st.found.add(match.word);
+ st.selection.forEach(i => { const b = document.querySelector(`.wordsearch-cell[data-idx="${i}"]`); if (b) { b.style.background = '#bbf7d0'; b.style.borderColor = 'var(--em)'; } });
+ const chip = document.querySelector(`.wordsearch-word-chip[data-word="${match.word}"]`);
+ if (chip) { chip.style.background = '#bbf7d0'; chip.style.borderColor = 'var(--em)'; chip.style.textDecoration = 'line-through'; }
+ st.selection = [];
+ if (st.found.size === st.placed.length) showToast('✓ Tous les mots trouvés !');
+ }
+}
+function clearWordSearchSelection() {
+ const st = _wordSearchState;
+ if (!st) return;
+ st.selection.forEach(i => { const b = document.querySelector(`.wordsearch-cell[data-idx="${i}"]`); if (b && !st.found.has('')) { b.style.background = 'var(--bg2)'; b.style.borderColor = 'var(--border)'; } });
+ // Ne pas effacer les cases déjà validées (mots trouvés) : on ne réinitialise que la sélection en cours
+ st.selection = [];
+ document.querySelectorAll('.wordsearch-cell').forEach(b => {
+ const idx = Number(b.dataset.idx);
+ const isFound = st.placed.some(p => st.found.has(p.word) && p.coords.includes(idx));
+ if (!isFound) { b.style.background = 'var(--bg2)'; b.style.borderColor = 'var(--border)'; }
+ });
+}
+
+// ── ÉTUDE DE CAS (scenario) ──
+let _scenarioStep = 0, _scenarioCorrectCount = 0, _scenarioSelected = null;
+
+function renderScenarioStep(a) {
+ const contentEl = document.getElementById('activity-content');
+ const checkBtn = document.getElementById('activity-check-btn');
+ if (checkBtn) checkBtn.style.display = 'none'; // ce type se valide étape par étape, pas via le bouton global
+ _scenarioSelected = null;
+ const step = a.steps[_scenarioStep];
+ contentEl.innerHTML = `
+ ${_scenarioStep === 0 ? `<div class="card" style="margin-bottom:14px;background:var(--bg2)"><p style="font-size:13px;line-height:1.6">${escapeHtml(a.situation||'')}</p></div>` : ''}
+ <div class="card" style="margin-bottom:14px" id="scenario-step-card">
+ <div style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Décision ${_scenarioStep+1}/${a.steps.length}</div>
+ <p style="font-size:13.5px;font-weight:600;margin-bottom:10px">${escapeHtml(step.question)}</p>
+ <div style="display:flex;flex-direction:column;gap:8px" id="scenario-options">
+ ${step.options.map((opt,oi) => `<button data-opt="${oi}" onclick="selectScenarioOption(${oi})" class="scenario-opt" style="text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${escapeHtml(opt)}</button>`).join('')}
+ </div>
+ </div>`;
+ renderMathInChat(contentEl);
+}
+
+function selectScenarioOption(optIdx) {
+ if (_scenarioSelected !== null) return; // déjà répondu à cette étape
+ _scenarioSelected = optIdx;
+ const a = _activityData;
+ const step = a.steps[_scenarioStep];
+ const isCorrect = optIdx === step.correct;
+ if (isCorrect) _scenarioCorrectCount++;
+
+ document.querySelectorAll('.scenario-opt').forEach(btn => {
+ const oi = Number(btn.dataset.opt);
+ if (oi === step.correct) { btn.style.background = '#bbf7d0'; btn.style.borderColor = 'var(--em)'; }
+ else if (oi === optIdx) { btn.style.background = '#fecaca'; btn.style.borderColor = 'var(--red)'; }
+ btn.onclick = null; btn.style.cursor = 'default';
+ });
+
+ const feedback = isCorrect ? (step.feedback_correct||'') : (step.feedback_incorrect||'');
+ const cardEl = document.getElementById('scenario-step-card');
+ const feedbackEl = document.createElement('div');
+ feedbackEl.style.cssText = 'margin-top:10px;padding:10px 12px;border-radius:10px;background:' + (isCorrect ? '#ecfdf5' : '#fef2f2') + ';font-size:12.5px;color:' + (isCorrect ? '#065f46' : '#991b1b') + ';line-height:1.5';
+ feedbackEl.textContent = feedback;
+ cardEl.appendChild(feedbackEl);
+
+ const nextBtn = document.createElement('button');
+ const isLast = _scenarioStep >= a.steps.length - 1;
+ nextBtn.textContent = isLast ? 'Voir le résultat →' : 'Décision suivante →';
+ nextBtn.style.cssText = "width:100%;padding:11px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:12px";
+ nextBtn.onclick = () => {
+ if (isLast) { finishScenarioActivity(); }
+ else { _scenarioStep++; renderScenarioStep(a); }
+ };
+ cardEl.appendChild(nextBtn);
+}
+
+function finishScenarioActivity() {
+ const a = _activityData;
+ const total = a.steps.length;
+ const scorePct = Math.round((_scenarioCorrectCount / total) * 100);
+ addSubjectScore(_activitySubject, scorePct);
+ incrementQuestions(1);
+ recordSpecDayScore(_activitySubject, scorePct);
+ if (scorePct < 60) {
+ const s = getStats();
+ if (!s.weakPoints) s.weakPoints = [];
+ s.weakPoints.push({ subject: _activitySubject, notion: _activityNotion, q: a.title, date: new Date().toISOString().slice(0,10), source: 'activity' });
+ if (s.weakPoints.length > 200) s.weakPoints = s.weakPoints.slice(-200);
+ saveStats(s);
+ }
+ maybeSynthesizeLearningProfile();
+
+ document.getElementById('activity-body').style.display = 'none';
+ document.getElementById('activity-result').style.display = 'block';
+ const scoreEl = document.getElementById('activity-result-score');
+ scoreEl.textContent = `${_scenarioCorrectCount}/${total} bonnes décisions`;
+ scoreEl.style.color = scorePct >= 70 ? 'var(--em)' : scorePct >= 40 ? 'var(--amber)' : 'var(--red)';
+ document.getElementById('activity-result-feedback').textContent = scorePct >= 70
+ ? 'Excellente prise de décision sur ce cas !'
+ : 'Cette situation mérite d\'être revue — n\'hésite pas à en discuter avec le coach IA.';
 }
 
 // Minuteur partagé par calcul_rapide/choix_rapide : au lieu d'un chrono qui
@@ -10391,18 +10654,61 @@ function moveOrderItem(pos, dir) {
 function selectAssocLeft(i) {
  _activityAssoc.leftSel = i;
  document.querySelectorAll('#assoc-left .assoc-item').forEach((el,idx) => {
- el.style.borderColor = idx===i ? 'var(--em)' : 'var(--border)';
- el.style.background = idx===i ? 'var(--em-soft)' : (_activityAssoc.matches[idx]!==undefined ? '#e5e7eb' : 'var(--bg2)');
+ const isMatched = _activityAssoc.matches[idx] !== undefined;
+ el.style.borderColor = idx===i ? 'var(--em)' : (isMatched ? 'var(--em)' : 'var(--border)');
+ el.style.background = idx===i ? 'var(--em-soft)' : (isMatched ? '#ecfdf5' : 'var(--bg2)');
  });
 }
 function selectAssocRight(origIdx) {
  if (_activityAssoc.leftSel === null) { showToast('Choisis d\'abord un élément à gauche'); return; }
+ // Exclusivité : un élément de droite déjà relié à UN AUTRE élément de gauche
+ // ne peut pas être réutilisé — corrige le bug où un même terme pouvait être
+ // relié à plusieurs paires à la fois.
+ const usedBy = Object.keys(_activityAssoc.matches).find(k => _activityAssoc.matches[k] === origIdx && Number(k) !== _activityAssoc.leftSel);
+ if (usedBy !== undefined) { showToast('Cet élément est déjà relié à une autre réponse'); return; }
+
  _activityAssoc.matches[_activityAssoc.leftSel] = origIdx;
  const leftEl = document.querySelector(`#assoc-left .assoc-item[data-idx="${_activityAssoc.leftSel}"]`);
- if (leftEl) { leftEl.style.background = '#e5e7eb'; leftEl.style.borderColor = 'var(--border)'; leftEl.style.opacity = '0.7'; }
- const rightEl = document.querySelector(`#assoc-right .assoc-item[data-orig="${origIdx}"]`);
- if (rightEl) { rightEl.style.background = '#e5e7eb'; rightEl.style.opacity = '0.7'; }
+ if (leftEl) { leftEl.style.background = '#ecfdf5'; leftEl.style.borderColor = 'var(--em)'; }
  _activityAssoc.leftSel = null;
+ refreshAssocRightStyles();
+ renderAssocPairingsList();
+}
+
+// Grise/désactive côté droit tout élément déjà utilisé par une paire, pour
+// que l'exclusivité soit aussi visible qu'appliquée.
+function refreshAssocRightStyles() {
+ const usedRightIndexes = new Set(Object.values(_activityAssoc.matches));
+ document.querySelectorAll('#assoc-right .assoc-item').forEach(el => {
+ const origIdx = Number(el.dataset.orig);
+ const isUsed = usedRightIndexes.has(origIdx);
+ el.style.background = isUsed ? '#e5e7eb' : 'var(--bg2)';
+ el.style.borderColor = isUsed ? 'var(--border)' : 'var(--border)';
+ el.style.opacity = isUsed ? '0.55' : '1';
+ }
+ );
+}
+
+// Affiche les paires déjà faites "face à face" (gauche → droite sur la même
+// ligne), plus lisible que de devoir repérer les couleurs dans deux colonnes
+// mélangées séparées.
+function renderAssocPairingsList() {
+ const a = _activityData;
+ const listEl = document.getElementById('assoc-pairings-list');
+ if (!listEl) return;
+ const rows = Object.keys(_activityAssoc.matches).map(leftIdx => {
+ const rightIdx = _activityAssoc.matches[leftIdx];
+ return { left: a.pairs[leftIdx].left, right: a.pairs[rightIdx].right };
+ });
+ if (!rows.length) { listEl.innerHTML = ''; return; }
+ listEl.innerHTML = `<div style="border-top:1px dashed var(--border);padding-top:10px;margin-top:2px">
+ <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Tes associations</div>
+ ${rows.map(r => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px">
+ <span style="flex:1;font-weight:600;color:var(--text)">${escapeHtml(r.left)}</span>
+ <span style="color:var(--em);flex-shrink:0">→</span>
+ <span style="flex:1;color:var(--text2)">${escapeHtml(r.right)}</span>
+ </div>`).join('')}
+ </div>`;
 }
 
 async function checkActivityAnswer() {
@@ -10441,6 +10747,9 @@ async function checkActivityAnswer() {
  const keywords = (a.riddles[idx].answer_keywords || []).map(k => k.trim().toLowerCase());
  if (given && keywords.some(k => k && (given.includes(k) || k.includes(given)))) correct++;
  });
+ } else if (a.activity_type === 'mots_meles') {
+ total = (_wordSearchState && _wordSearchState.placed.length) || 1;
+ correct = (_wordSearchState && _wordSearchState.found.size) || 0;
  }
  clearInterval(_activityTimerInterval);
 
@@ -10449,6 +10758,7 @@ async function checkActivityAnswer() {
  // Pris en compte dans les mêmes statistiques que le QCM/l'exercice rédigé.
  addSubjectScore(_activitySubject, scorePct);
  incrementQuestions(1);
+ recordSpecDayScore(_activitySubject, scorePct);
  if (scorePct < 60) {
  const s = getStats();
  if (!s.weakPoints) s.weakPoints = [];
@@ -10744,15 +11054,26 @@ function renderActiveSpecialization(spec) {
  const examCard = document.getElementById('spec-exam-card');
  const weekDone = t.dayIdx >= t.daysPerWeek - 1;
  const alreadyPassed = spec.weekExams && spec.weekExams[t.weekIdx];
+ const dayScore = spec.currentDayScore || 0;
+ const dayBtn = document.getElementById('spec-day-done-btn');
  if (weekDone && !alreadyPassed) {
  examCard.style.display = 'block';
  document.getElementById('spec-exam-text').textContent = `Tu as fini les journées de la semaine ${t.weekIdx+1} (${(t.week&&t.week.title)||''}). Passe l'examen pour débloquer la suite.`;
- document.getElementById('spec-day-done-btn').style.display = 'none';
+ dayBtn.style.display = 'none';
  } else {
  examCard.style.display = 'none';
- document.getElementById('spec-day-done-btn').style.display = 'block';
+ dayBtn.style.display = 'block';
+ const passed = dayScore >= SPEC_DAY_PASS_THRESHOLD;
+ dayBtn.disabled = !passed;
+ dayBtn.style.opacity = passed ? '1' : '.6';
+ dayBtn.style.cursor = passed ? 'pointer' : 'not-allowed';
+ dayBtn.textContent = passed
+ ? `✓ Marquer la journée comme terminée (${dayScore}%)`
+ : `Fais l'exercice ou le jeu (${SPEC_DAY_PASS_THRESHOLD}%+ requis${dayScore > 0 ? ' — actuellement '+dayScore+'%' : ''})`;
  }
 }
+
+const SPEC_DAY_PASS_THRESHOLD = 80;
 
 function markSpecDayDone() {
  const s = getStats();
@@ -10760,7 +11081,15 @@ function markSpecDayDone() {
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  if (t.dayIdx >= t.daysPerWeek - 1) { showToast('Passe d\'abord l\'examen de la semaine pour avancer'); renderActiveSpecialization(spec); return; }
+ // Il faut au moins 80% à l'exercice OU au jeu du jour pour valider — évite
+ // de pouvoir avancer sans vraiment avoir travaillé la notion du jour.
+ const dayScore = spec.currentDayScore || 0;
+ if (dayScore < SPEC_DAY_PASS_THRESHOLD) {
+ showToast(`! Il faut au moins ${SPEC_DAY_PASS_THRESHOLD}% à l'exercice ou au jeu du jour pour valider (actuellement ${dayScore}%)`);
+ return;
+ }
  spec.currentDay = (spec.currentDay || 0) + 1;
+ spec.currentDayScore = 0; // reset pour la nouvelle journée
  saveStats(s);
  showToast('✓ Journée validée');
  renderActiveSpecialization(spec);
@@ -10782,21 +11111,37 @@ function advanceSpecWeek() {
  saveStats(s);
 }
 
+// Généralisé : utilisable aussi bien pour le "Aujourd'hui" de la
+// spécialisation que pour le "Programme de la semaine" de l'accueil (Phase 3).
+// Le texte du cours généré est mémorisé (_lastLessonText/_lastLessonSubject)
+// pour que l'exercice suivant reste strictement dans ce qui vient d'être
+// enseigné, au lieu de partir dans une notion adjacente non couverte.
+let _lastLessonText = null, _lastLessonSubject = null, _lastLessonNotion = null;
+let _lessonSpeaking = false;
+
 function startSpecLesson() {
- showScreen('screen-spec-lesson');
- loadSpecLesson();
+ const spec = getStats().specialization;
+ if (!spec) return;
+ const t = getSpecTodayFocus(spec);
+ startLesson(spec.topic, t.focus);
 }
 
-async function loadSpecLesson() {
- const spec = getStats().specialization;
- if (!spec) { goBack(); return; }
- const t = getSpecTodayFocus(spec);
- document.getElementById('spec-lesson-subtitle').textContent = spec.topic + ' · ' + t.focus;
+function startLesson(subjectId, notion) {
+ showScreen('screen-spec-lesson');
+ loadLesson(subjectId, notion);
+}
+
+async function loadLesson(subjectId, notion) {
+ const known = SUBJECTS.find(x=>x.id===subjectId) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===subjectId) : null);
+ const subjName = known ? known.name : subjectId;
+ const level = (APP.user && APP.user.level) || '';
+ document.getElementById('spec-lesson-subtitle').textContent = subjName + ' · ' + notion;
  document.getElementById('spec-lesson-loading').style.display = 'block';
  document.getElementById('spec-lesson-body').style.display = 'none';
+ stopLessonReading();
 
  try {
- const prompt = `Rédige un court cours clair et pédagogique en "${spec.topic}", niveau ${spec.level}, sur précisément : "${t.focus}". Structure-le avec quelques paragraphes courts (pas de titres markdown avec #, du texte simple), va droit à l'essentiel, donne au moins un exemple concret. ${MATH_NOTATION_RULE}Réponds uniquement avec le texte du cours (pas de JSON, pas de préambule).`;
+ const prompt = `Rédige un court cours clair et pédagogique en "${subjName}", niveau ${level || 'non précisé'}, sur précisément : "${notion}". Structure-le avec quelques paragraphes courts (pas de titres markdown avec #, du texte simple), va droit à l'essentiel, donne au moins un exemple concret. ${MATH_NOTATION_RULE}Réponds uniquement avec le texte du cours (pas de JSON, pas de préambule).`;
  const res = await fetch(AI_ENDPOINT, {
  method: 'POST',
  headers: {'Content-Type':'application/json'},
@@ -10804,26 +11149,63 @@ async function loadSpecLesson() {
  });
  const data = await res.json();
  const text = (data.content && data.content[0] ? data.content[0].text : '') || 'Contenu indisponible, réessaie.';
+ _lastLessonText = text; _lastLessonSubject = subjectId; _lastLessonNotion = notion;
  document.getElementById('spec-lesson-content').textContent = text;
  renderMathInChat(document.getElementById('spec-lesson-content'));
  document.getElementById('spec-lesson-loading').style.display = 'none';
  document.getElementById('spec-lesson-body').style.display = 'block';
+ updateLessonReadBtn();
  } catch(e) {
- console.error('Génération cours spécialisation échouée', e);
+ console.error('Génération cours échouée', e);
  showToast('! Impossible de générer le cours, réessaie');
  goBack();
  }
+}
+
+// Lecture audio du cours (synthèse vocale native du navigateur/WebView —
+// aucun appel réseau supplémentaire). Se dégrade proprement si l'appareil ne
+// supporte pas l'API : le bouton reste simplement invisible.
+function toggleLessonReading() {
+ if (!('speechSynthesis' in window)) return;
+ if (_lessonSpeaking) { stopLessonReading(); return; }
+ try {
+ window.speechSynthesis.cancel();
+ const utter = new SpeechSynthesisUtterance(_lastLessonText || '');
+ utter.lang = 'fr-FR';
+ utter.rate = 0.98;
+ utter.onend = () => { _lessonSpeaking = false; updateLessonReadBtn(); };
+ utter.onerror = () => { _lessonSpeaking = false; updateLessonReadBtn(); };
+ window.speechSynthesis.speak(utter);
+ _lessonSpeaking = true;
+ updateLessonReadBtn();
+ } catch(e) { console.warn('Lecture audio indisponible', e); }
+}
+function stopLessonReading() {
+ try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch(e) {}
+ _lessonSpeaking = false;
+ updateLessonReadBtn();
+}
+function updateLessonReadBtn() {
+ const btn = document.getElementById('spec-lesson-read-btn');
+ if (!btn) return;
+ if (!('speechSynthesis' in window)) { btn.style.display = 'none'; return; }
+ btn.style.display = 'block';
+ btn.textContent = _lessonSpeaking ? 'Arrêter la lecture' : 'Écouter le cours';
 }
 
 // Réutilise directement le générateur d'exercice rédigé déjà construit pour
 // "Points à travailler" — le topic libre de la spécialisation sert de
 // pseudo-identifiant de matière (fonctionne tel quel : addSubjectScore()
 // et l'affichage gèrent déjà un id inconnu des matières scolaires).
+// Si un cours vient d'être généré pour CE MÊME sujet/notion, son contenu est
+// transmis pour que l'exercice reste dans ce qui a été enseigné (corrige le
+// souci d'exercices sur des notions absentes du cours).
 function startSpecExercise() {
  const spec = getStats().specialization;
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
- startCustomExercise(spec.topic, t.focus);
+ const context = (_lastLessonSubject === spec.topic && _lastLessonNotion === t.focus) ? _lastLessonText : null;
+ startCustomExercise(spec.topic, t.focus, context);
 }
 
 function startSpecGame() {
@@ -10831,6 +11213,13 @@ function startSpecGame() {
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  startPedagogicalActivity(spec.topic, t.focus);
+}
+
+// Depuis l'écran "Cours" (générique, spécialisation ou programme de la
+// semaine) : enchaîne directement sur l'exercice à propos de CE cours précis.
+function startExerciseFromLesson() {
+ if (!_lastLessonSubject) return;
+ startCustomExercise(_lastLessonSubject, _lastLessonNotion, _lastLessonText);
 }
 
 // ── EXAMEN HEBDOMADAIRE ──
