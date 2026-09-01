@@ -724,7 +724,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
  <div style="display:flex;align-items:center;gap:7px">
  <span style="font-size:16px"></span>
- <span style="font-size:13px;font-weight:700">Programme de la semaine</span>
+ <span style="font-size:13px;font-weight:700">Ton point du jour</span>
  </div>
  <span style="font-size:11px;color:var(--text3)" id="learning-plan-week"></span>
  </div>
@@ -1545,6 +1545,10 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  <div class="scroll-body" style="padding:0 20px 100px">
 
+ <!-- Sélecteur de spécialisation(s) : passer de l'une à l'autre sans perdre
+ celles déjà créées, + bouton pour en ajouter une nouvelle -->
+ <div id="spec-switcher" style="display:none;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px"></div>
+
  <!-- ── ÉTAT 1 : choisir une activité à apprendre ── -->
  <div id="spec-step-choose" style="display:none">
  <div class="card" style="margin-bottom:14px">
@@ -1618,7 +1622,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Ton planning</h3>
  <div id="spec-program-list"></div>
  </div>
- <button onclick="confirmChangeSpecialization()" style="width:100%;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Changer de spécialisation</button>
+ <button onclick="startNewSpecialization()" style="width:100%;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Ajouter une autre spécialisation</button>
  </div>
 
  </div>
@@ -1628,10 +1632,13 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
 <div id="screen-spec-lesson" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
- <div>
+ <div style="flex:1;min-width:0">
  <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Cours du jour</h2>
  <p id="spec-lesson-subtitle" style="color:var(--text3);font-size:12px;margin:0">Généré par l'IA</p>
  </div>
+ <button id="spec-lesson-read-btn" class="tts-btn" onclick="toggleLessonReading()" title="Écouter le cours" style="display:none;width:42px;height:42px;border-radius:13px;flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;align-items:center;justify-content:center">
+ <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+ </button>
  </div>
  <div class="scroll-body" style="padding:0 20px 100px">
  <div id="spec-lesson-loading" style="text-align:center;padding:50px 0;color:var(--text3)">
@@ -1641,7 +1648,6 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="spec-lesson-body" style="display:none">
  <div class="card" style="margin-bottom:14px">
  <p id="spec-lesson-content" style="font-size:13.5px;line-height:1.7;white-space:pre-wrap"></p>
- <button id="spec-lesson-read-btn" onclick="toggleLessonReading()" style="display:none;margin-top:12px;width:100%;padding:9px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-weight:700;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Écouter le cours</button>
  </div>
  <button onclick="startExerciseFromLesson()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer à l'exercice →</button>
  </div>
@@ -1689,38 +1695,46 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <!-- Choix du type de jeu (l'utilisatrice choisit, l'IA ne décide plus toute seule) -->
  <div id="activity-choose-type" style="display:none">
  <p style="font-size:12.5px;color:var(--text3);margin-bottom:14px">Choisis le type de jeu :</p>
- <div style="display:flex;flex-direction:column;gap:8px">
- <button onclick="selectActivityType('association')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Association</div>
- <div style="font-size:11.5px;color:var(--text3)">Relier des paires (terme ↔ définition)</div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+ <button onclick="selectActivityType('association')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:var(--em-soft);color:var(--em);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Association</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Relier des paires (terme ↔ définition)</div></div>
  </button>
- <button onclick="selectActivityType('ordre')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Remise en ordre</div>
- <div style="font-size:11.5px;color:var(--text3)">Remettre des étapes dans le bon ordre</div>
+ <button onclick="selectActivityType('ordre')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:var(--purple-soft,#f3e8ff);color:var(--purple,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Remise en ordre</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Remettre des étapes dans le bon ordre</div></div>
  </button>
- <button onclick="selectActivityType('texte_a_trous')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Texte à trous</div>
- <div style="font-size:11.5px;color:var(--text3)">Compléter un texte avec les bons mots</div>
+ <button onclick="selectActivityType('texte_a_trous')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Texte à trous</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Compléter un texte avec les bons mots</div></div>
  </button>
- <button onclick="selectActivityType('calcul_rapide')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Calcul rapide</div>
- <div style="font-size:11.5px;color:var(--text3)">Petits calculs/réponses courtes contre la montre</div>
+ <button onclick="selectActivityType('calcul_rapide')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:#fee2e2;color:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Calcul rapide</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Réponses courtes contre la montre</div></div>
  </button>
- <button onclick="selectActivityType('choix_rapide')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Choix rapide</div>
- <div style="font-size:11.5px;color:var(--text3)">Rafale de questions à choix courts, chronométrée</div>
+ <button onclick="selectActivityType('choix_rapide')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Choix rapide</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Rafale de questions chronométrée</div></div>
  </button>
- <button onclick="selectActivityType('mots_meles')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Mots mêlés</div>
- <div style="font-size:11.5px;color:var(--text3)">Retrouver les mots-clés cachés dans une grille</div>
+ <button onclick="selectActivityType('mots_meles')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Mots mêlés</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Retrouver les mots dans une grille</div></div>
  </button>
- <button onclick="selectActivityType('enigme')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Énigme</div>
- <div style="font-size:11.5px;color:var(--text3)">Casse-tête de réflexion, réponse à deviner</div>
+ <button onclick="selectActivityType('enigme')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Énigme</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Casse-tête, réponse à deviner</div></div>
  </button>
- <button onclick="selectActivityType('scenario')" class="activity-type-btn" style="text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
- <div style="font-weight:700;font-size:13px">Étude de cas</div>
- <div style="font-size:11.5px;color:var(--text3)">Situation avec décisions successives à prendre</div>
+ <button onclick="selectActivityType('scenario')" class="activity-type-btn" style="text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:#e0f2fe;color:#0284c7;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Étude de cas</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">Décisions successives à prendre</div></div>
  </button>
  </div>
  </div>
@@ -2982,6 +2996,19 @@ Choisis 2 à 3 priorités CONCRÈTES pour cette semaine (des notions précises �
  }
 }
 
+// Retourne le point du programme de la semaine à travailler AUJOURD'HUI :
+// toujours le premier point pas encore marqué "fait" (plan.doneIdx). Tant
+// qu'un point n'est pas validé, c'est encore lui qui s'affiche le lendemain
+// — rien n'avance automatiquement avec la date, seule la validation fait
+// avancer au point suivant.
+function getTodayLearningPlanItem() {
+ const plan = getStats().learningPlan;
+ if (!plan || !plan.items || !plan.items.length) return null;
+ const doneIdx = Array.isArray(plan.doneIdx) ? plan.doneIdx : [];
+ const idx = plan.items.findIndex((_,i) => !doneIdx.includes(i));
+ return idx === -1 ? null : { idx, item: plan.items[idx] };
+}
+
 function renderLearningPlan() {
  const s = getStats();
  const plan = s.learningPlan;
@@ -2990,17 +3017,21 @@ function renderLearningPlan() {
  if (!plan || !plan.items || !plan.items.length) { wrap.style.display = 'none'; return; }
  wrap.style.display = 'block';
  const weekEl = document.getElementById('learning-plan-week');
- if (weekEl) {
- const d = new Date(plan.weekOf);
- weekEl.textContent = 'Semaine du ' + d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
- }
  const itemsEl = document.getElementById('learning-plan-items');
- itemsEl.innerHTML = plan.items.map(it => {
+ const today = getTodayLearningPlanItem();
+ if (!today) {
+ if (weekEl) weekEl.textContent = '';
+ itemsEl.innerHTML = `<div style="padding:12px 0;text-align:center;color:var(--text3);font-size:12px">✓ Tous les points de la semaine sont faits, bravo !</div>`;
+ refreshRemindersContentIfEnabled();
+ return;
+ }
+ if (weekEl) weekEl.textContent = "Aujourd'hui";
+ const it = today.item;
  const known = SUBJECTS.find(x=>x.id===it.subject) || (typeof ALL_SUBJECTS !== 'undefined' ? ALL_SUBJECTS.find(x=>x.id===it.subject) : null);
  const subjName = known ? known.name : it.subject;
  const color = known ? known.color : '#6b7280';
  const notionEsc = (it.notion||'').replace(/'/g,"\\'");
- return `<div style="padding:9px 0;border-bottom:1px solid var(--border)">
+ itemsEl.innerHTML = `<div style="padding:9px 0">
  <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
  <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:5px"></div>
  <div style="flex:1;min-width:0">
@@ -3008,14 +3039,29 @@ function renderLearningPlan() {
  <div style="font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.4">${escapeHtml(it.reason || '')}</div>
  </div>
  </div>
- <div style="display:flex;gap:6px;padding-left:18px">
+ <div style="padding-left:18px">
+ <div style="display:flex;gap:6px;margin-bottom:8px">
  <button onclick="startLesson('${it.subject}','${notionEsc}')" style="flex:1;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cours</button>
  <button onclick="startCustomExercise('${it.subject}','${notionEsc}')" style="flex:1;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Exercice</button>
  <button onclick="startPedagogicalActivity('${it.subject}','${notionEsc}')" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
  </div>
+ <button onclick="markLearningPlanItemDone(${today.idx})" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text2);font-weight:700;font-size:11.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✓ Marquer ce point comme fait</button>
+ </div>
  </div>`;
- }).join('');
  refreshRemindersContentIfEnabled();
+}
+
+// Si ce point n'est pas validé aujourd'hui, il n'avance pas : getTodayLearningPlanItem()
+// re-proposera exactement le même point demain, jusqu'à ce qu'il soit marqué fait.
+function markLearningPlanItemDone(idx) {
+ const s = getStats();
+ const plan = s.learningPlan;
+ if (!plan || !plan.items) return;
+ if (!Array.isArray(plan.doneIdx)) plan.doneIdx = [];
+ if (!plan.doneIdx.includes(idx)) plan.doneIdx.push(idx);
+ saveStats(s);
+ showToast('✓ Point validé pour aujourd\'hui');
+ renderLearningPlan();
 }
 // Clé de semaine ISO (ex: "2026-W04"), pour indexer l'historique par semaine.
 function getISOWeekKey(d) {
@@ -4335,7 +4381,7 @@ function showScreen(id, skipHistory) {
  try { stopMediaTranscription(); } catch(e) {}
  if (importedMediaEl) { try { importedMediaEl.pause(); } catch(e) {} }
  }
- if (curr && curr.id === 'screen-chat' && id !== 'screen-chat') {
+ if (curr && (curr.id === 'screen-chat' || curr.id === 'screen-spec-lesson') && id !== curr.id) {
  try { stopSpeaking(); } catch(e) {}
  }
  if (curr && curr.id !== id) {
@@ -10175,14 +10221,15 @@ async function loadCustomExercise(subjectId, notion, lessonContext) {
 }
 
 // ── SCORE DU JOUR (spécialisation) ──
-// Appelée depuis chaque point de notation (exercice rédigé, jeu) : si le
-// sujet correspond à la spécialisation active, on retient le MEILLEUR score
-// obtenu aujourd'hui — condition requise (80%+) pour pouvoir valider la
-// journée et avancer dans le programme.
+// Appelée depuis chaque point de notation (exercice rédigé, jeu) : on cherche
+// PARMI TOUTES les spécialisations celle dont le topic correspond (pas
+// seulement l'active à l'écran — l'exercice a pu être lancé juste avant un
+// changement d'onglet) et on retient le MEILLEUR score obtenu aujourd'hui —
+// condition requise (80%+) pour pouvoir valider la journée de CETTE spécialisation.
 function recordSpecDayScore(subjectId, scorePct) {
- const s = getStats();
- const spec = s.specialization;
- if (!spec || spec.topic !== subjectId) return;
+ const s = migrateSpecializations(getStats());
+ const spec = s.specializations.find(x => x.topic === subjectId);
+ if (!spec) return;
  spec.currentDayScore = Math.max(spec.currentDayScore || 0, scorePct);
  saveStats(s);
 }
@@ -10466,36 +10513,108 @@ function generateWordSearchGrid(words, size) {
  return { grid, placed, size };
 }
 
-let _wordSearchState = null; // { grid, placed, size, found: Set, selection: [] }
+let _wordSearchState = null; // { grid, placed, size, found: Set, selection: [], dragging, startCell }
 
+// Sélection par glissement (pointer events) : on part d'une lettre et on
+// glisse le doigt jusqu'à une autre, dans n'importe laquelle des 8
+// directions (droite, gauche, haut, bas, et les 4 diagonales) — plus besoin
+// de taper case par case. La ligne parcourue est recalculée en continu
+// pendant le glissement, la validation se fait au relâchement.
 function renderMotsMelesActivity(a) {
  const contentEl = document.getElementById('activity-content');
  const { grid, placed, size } = generateWordSearchGrid(a.words || [], 8);
- _wordSearchState = { grid, placed, size, found: new Set(), selection: [] };
+ _wordSearchState = { grid, placed, size, found: new Set(), selection: [], dragging: false, startCell: null };
 
  contentEl.innerHTML = `
  <div class="card" style="margin-bottom:14px">
- <div style="display:grid;grid-template-columns:repeat(${size},1fr);gap:2px;margin-bottom:14px" id="wordsearch-grid">
- ${grid.flat().map((letter,idx) => `<button data-idx="${idx}" onclick="tapWordSearchCell(${idx})" class="wordsearch-cell" style="aspect-ratio:1;border:1px solid var(--border);background:var(--bg2);font-size:11px;font-weight:700;cursor:pointer;padding:0;border-radius:3px;font-family:'Plus Jakarta Sans',sans-serif">${letter}</button>`).join('')}
+ <div style="display:grid;grid-template-columns:repeat(${size},1fr);gap:2px;margin-bottom:14px;touch-action:none;user-select:none;-webkit-user-select:none" id="wordsearch-grid">
+ ${grid.flat().map((letter,idx) => `<div data-idx="${idx}" data-row="${Math.floor(idx/size)}" data-col="${idx % size}" class="wordsearch-cell" style="aspect-ratio:1;border:1px solid var(--border);background:var(--bg2);font-size:11px;font-weight:700;padding:0;border-radius:3px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none">${letter}</div>`).join('')}
  </div>
- <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="wordsearch-wordlist">
+ <div style="display:flex;flex-wrap:wrap;gap:6px" id="wordsearch-wordlist">
  ${placed.map(p => `<span data-word="${escapeHtml(p.word)}" class="wordsearch-word-chip" style="padding:5px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2)">${escapeHtml(p.word)}</span>`).join('')}
  </div>
- <button onclick="clearWordSearchSelection()" style="width:100%;padding:9px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-weight:700;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Effacer la sélection</button>
  </div>
- <p style="font-size:11.5px;color:var(--text3);text-align:center">Touche les lettres dans l'ordre pour former un mot de la liste.</p>`;
+ <p style="font-size:11.5px;color:var(--text3);text-align:center">Glisse ton doigt sur les lettres, dans n'importe quelle direction, pour former un mot de la liste.</p>`;
+
+ const gridEl = document.getElementById('wordsearch-grid');
+ gridEl.addEventListener('pointerdown', _wsPointerDown);
+ gridEl.addEventListener('pointermove', _wsPointerMove);
+ window.addEventListener('pointerup', _wsPointerUp);
 }
 
-function tapWordSearchCell(idx) {
+function _wsCellAt(x, y) {
+ const el = document.elementFromPoint(x, y);
+ const cell = el && el.closest ? el.closest('.wordsearch-cell') : null;
+ return cell ? { idx: Number(cell.dataset.idx), row: Number(cell.dataset.row), col: Number(cell.dataset.col) } : null;
+}
+
+// Calcule la ligne droite (8 directions) entre deux cases. Si le doigt
+// dérape légèrement hors axe pendant le glissement, on se cale sur l'axe
+// dominant plutôt que d'annuler la sélection — plus tolérant au toucher.
+function _wsLineCells(r0, c0, r1, c1, size) {
+ let dr = r1 - r0, dc = c1 - c0;
+ if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) {
+ if (Math.abs(dr) > Math.abs(dc)) dc = 0; else dr = 0;
+ }
+ const steps = Math.max(Math.abs(dr), Math.abs(dc));
+ const stepR = steps ? Math.sign(dr) : 0, stepC = steps ? Math.sign(dc) : 0;
+ const cells = [];
+ for (let i = 0; i <= steps; i++) {
+ const r = r0 + stepR * i, c = c0 + stepC * i;
+ if (r < 0 || r >= size || c < 0 || c >= size) break;
+ cells.push(r * size + c);
+ }
+ return cells;
+}
+
+function _wsPointerDown(e) {
  const st = _wordSearchState;
  if (!st) return;
- if (st.selection.includes(idx)) return; // évite de compter 2x la même case
- st.selection.push(idx);
- const btn = document.querySelector(`.wordsearch-cell[data-idx="${idx}"]`);
- if (btn) { btn.style.background = 'var(--em-soft)'; btn.style.borderColor = 'var(--em)'; }
+ const cell = _wsCellAt(e.clientX, e.clientY);
+ if (!cell) return;
+ e.preventDefault();
+ st.dragging = true;
+ st.startCell = cell;
+ _wsApplySelection([cell.idx]);
+}
+function _wsPointerMove(e) {
+ const st = _wordSearchState;
+ if (!st || !st.dragging || !st.startCell) return;
+ e.preventDefault();
+ const cell = _wsCellAt(e.clientX, e.clientY);
+ if (!cell) return;
+ _wsApplySelection(_wsLineCells(st.startCell.row, st.startCell.col, cell.row, cell.col, st.size));
+}
+function _wsPointerUp() {
+ const st = _wordSearchState;
+ if (!st || !st.dragging) return;
+ st.dragging = false;
+ st.startCell = null;
+ _wsCheckSelection();
+}
 
- const sequence = st.selection.map(i => st.grid.flat()[i]).join('');
- const match = st.placed.find(p => !st.found.has(p.word) && (p.word === sequence || p.word === sequence.split('').reverse().join('')));
+function _wsResetUnfoundCells() {
+ const st = _wordSearchState;
+ document.querySelectorAll('.wordsearch-cell').forEach(b => {
+ const idx = Number(b.dataset.idx);
+ const isFound = st.placed.some(p => st.found.has(p.word) && p.coords.includes(idx));
+ if (!isFound) { b.style.background = 'var(--bg2)'; b.style.borderColor = 'var(--border)'; }
+ });
+}
+function _wsApplySelection(cells) {
+ const st = _wordSearchState;
+ if (!st) return;
+ _wsResetUnfoundCells();
+ st.selection = cells;
+ cells.forEach(idx => { const b = document.querySelector(`.wordsearch-cell[data-idx="${idx}"]`); if (b) { b.style.background = 'var(--em-soft)'; b.style.borderColor = 'var(--em)'; } });
+}
+function _wsCheckSelection() {
+ const st = _wordSearchState;
+ if (!st || !st.selection.length) return;
+ const flat = st.grid.flat();
+ const sequence = st.selection.map(i => flat[i]).join('');
+ const reversed = sequence.split('').reverse().join('');
+ const match = st.placed.find(p => !st.found.has(p.word) && (p.word === sequence || p.word === reversed));
  if (match) {
  st.found.add(match.word);
  st.selection.forEach(i => { const b = document.querySelector(`.wordsearch-cell[data-idx="${i}"]`); if (b) { b.style.background = '#bbf7d0'; b.style.borderColor = 'var(--em)'; } });
@@ -10503,19 +10622,18 @@ function tapWordSearchCell(idx) {
  if (chip) { chip.style.background = '#bbf7d0'; chip.style.borderColor = 'var(--em)'; chip.style.textDecoration = 'line-through'; }
  st.selection = [];
  if (st.found.size === st.placed.length) showToast('✓ Tous les mots trouvés !');
- }
-}
-function clearWordSearchSelection() {
- const st = _wordSearchState;
- if (!st) return;
- st.selection.forEach(i => { const b = document.querySelector(`.wordsearch-cell[data-idx="${i}"]`); if (b && !st.found.has('')) { b.style.background = 'var(--bg2)'; b.style.borderColor = 'var(--border)'; } });
- // Ne pas effacer les cases déjà validées (mots trouvés) : on ne réinitialise que la sélection en cours
+ } else {
+ const sel = st.selection.slice();
  st.selection = [];
- document.querySelectorAll('.wordsearch-cell').forEach(b => {
- const idx = Number(b.dataset.idx);
- const isFound = st.placed.some(p => st.found.has(p.word) && p.coords.includes(idx));
+ setTimeout(() => {
+ sel.forEach(i => {
+ const b = document.querySelector(`.wordsearch-cell[data-idx="${i}"]`);
+ if (!b) return;
+ const isFound = st.placed.some(p => st.found.has(p.word) && p.coords.includes(i));
  if (!isFound) { b.style.background = 'var(--bg2)'; b.style.borderColor = 'var(--border)'; }
  });
+ }, 180);
+ }
 }
 
 // ── ÉTUDE DE CAS (scenario) ──
@@ -10811,13 +10929,72 @@ function selectSpecEvalAnswer(qIdx, optIdx) {
  });
 }
 
+// ── PLUSIEURS SPÉCIALISATIONS EN PARALLÈLE ──
+// stats.specialization (objet unique) devient stats.specializations (tableau),
+// chacune avec son propre topic/niveau/programme/progression — pour ne plus
+// jamais perdre une spécialisation existante en en démarrant une nouvelle.
+// stats.activeSpecializationId indique laquelle est affichée/utilisée. La
+// migration se fait une seule fois, de façon transparente, sur l'ancien
+// format mono-spécialisation encore présent chez les utilisatrices existantes.
+function migrateSpecializations(s) {
+ if (!Array.isArray(s.specializations)) s.specializations = [];
+ if (s.specialization && s.specialization.topic) {
+ if (!s.specialization.id) s.specialization.id = 'spec_' + Date.now() + '_' + Math.floor(Math.random()*1e4);
+ if (!s.specializations.find(x => x.id === s.specialization.id)) s.specializations.push(s.specialization);
+ if (!s.activeSpecializationId) s.activeSpecializationId = s.specialization.id;
+ delete s.specialization;
+ }
+ if (!s.activeSpecializationId && s.specializations.length) s.activeSpecializationId = s.specializations[0].id;
+ return s;
+}
+function getActiveSpecialization(s) {
+ if (!s.activeSpecializationId) return null;
+ return s.specializations.find(x => x.id === s.activeSpecializationId) || null;
+}
+function setActiveSpecializationId(id) {
+ const s = migrateSpecializations(getStats());
+ if (!s.specializations.find(x => x.id === id)) return;
+ s.activeSpecializationId = id;
+ saveStats(s);
+ renderSpecializationScreen();
+}
+function startNewSpecialization() {
+ ['spec-step-choose','spec-step-eval-loading','spec-step-eval-quiz','spec-step-program-loading','spec-step-program-error','spec-step-active'].forEach(id => {
+ const el = document.getElementById(id); if (el) el.style.display = 'none';
+ });
+ document.getElementById('spec-topic-input').value = '';
+ document.getElementById('spec-step-choose').style.display = 'block';
+}
+function confirmRemoveSpecialization(id) {
+ const s = migrateSpecializations(getStats());
+ const spec = s.specializations.find(x => x.id === id);
+ if (!spec) return;
+ if (!confirm(`Supprimer la spécialisation "${spec.topic}" ? Ton historique de progression scolaire, lui, reste intact.`)) return;
+ s.specializations = s.specializations.filter(x => x.id !== id);
+ if (s.activeSpecializationId === id) s.activeSpecializationId = s.specializations.length ? s.specializations[0].id : null;
+ saveStats(s);
+ renderSpecializationScreen();
+}
+function renderSpecializationSwitcher(s) {
+ const el = document.getElementById('spec-switcher');
+ if (!el) return;
+ if (!s.specializations.length) { el.style.display = 'none'; return; }
+ el.style.display = 'flex';
+ el.innerHTML = s.specializations.map(sp => {
+ const isActive = sp.id === s.activeSpecializationId;
+ return `<span onclick="setActiveSpecializationId('${sp.id}')" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px solid ${isActive ? 'var(--em)' : 'var(--border)'};background:${isActive ? 'var(--em-soft)' : 'var(--white)'};color:${isActive ? 'var(--em)' : 'var(--text2)'}">${escapeHtml(sp.topic)}${isActive ? `<span onclick="event.stopPropagation();confirmRemoveSpecialization('${sp.id}')" style="color:var(--text3);font-weight:400">✕</span>` : ''}</span>`;
+ }).join('') + `<span onclick="startNewSpecialization()" style="flex-shrink:0;display:flex;align-items:center;padding:7px 14px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px dashed var(--border);color:var(--text2)">+ Nouvelle</span>`;
+}
+
 function renderSpecializationScreen() {
  ['spec-step-choose','spec-step-eval-loading','spec-step-eval-quiz','spec-step-program-loading','spec-step-program-error','spec-step-active'].forEach(id => {
  const el = document.getElementById(id); if (el) el.style.display = 'none';
  });
- const s = getStats();
- if (s.specialization && s.specialization.topic) {
- renderActiveSpecialization(s.specialization);
+ const s = migrateSpecializations(getStats());
+ renderSpecializationSwitcher(s);
+ const active = getActiveSpecialization(s);
+ if (active && active.topic) {
+ renderActiveSpecialization(active);
  document.getElementById('spec-step-active').style.display = 'block';
  } else {
  document.getElementById('spec-topic-input').value = '';
@@ -10996,12 +11173,15 @@ Crée un planning de 4 à 6 semaines, réaliste et progressif à partir de ce ni
  }
  if (!program.length) throw lastErr || new Error('Aucun programme généré');
 
- const s = getStats();
- s.specialization = { topic, level: levelLabel, score: scorePct, program, generatedAt: new Date().toISOString() };
+ const s = migrateSpecializations(getStats());
+ const newSpec = { id: 'spec_' + Date.now() + '_' + Math.floor(Math.random()*1e4), topic, level: levelLabel, score: scorePct, program, generatedAt: new Date().toISOString() };
+ s.specializations.push(newSpec);
+ s.activeSpecializationId = newSpec.id; // n'affecte que la spécialisation qu'on vient de créer, les autres restent intactes
  saveStats(s);
 
  document.getElementById('spec-step-program-loading').style.display = 'none';
- renderActiveSpecialization(s.specialization);
+ renderSpecializationSwitcher(s);
+ renderActiveSpecialization(newSpec);
  document.getElementById('spec-step-active').style.display = 'block';
  showToast('✓ Ton planning ' + topic + ' est prêt');
  } catch(e) {
@@ -11076,8 +11256,8 @@ function renderActiveSpecialization(spec) {
 const SPEC_DAY_PASS_THRESHOLD = 80;
 
 function markSpecDayDone() {
- const s = getStats();
- const spec = s.specialization;
+ const s = migrateSpecializations(getStats());
+ const spec = getActiveSpecialization(s);
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  if (t.dayIdx >= t.daysPerWeek - 1) { showToast('Passe d\'abord l\'examen de la semaine pour avancer'); renderActiveSpecialization(spec); return; }
@@ -11099,8 +11279,8 @@ function markSpecDayDone() {
 // ailleurs dans l'app) : on débloque la semaine suivante en repartant à
 // currentDay=0, sauf si c'était la dernière semaine du programme.
 function advanceSpecWeek() {
- const s = getStats();
- const spec = s.specialization;
+ const s = migrateSpecializations(getStats());
+ const spec = getActiveSpecialization(s);
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  if (!spec.weekExams) spec.weekExams = {};
@@ -11117,10 +11297,9 @@ function advanceSpecWeek() {
 // pour que l'exercice suivant reste strictement dans ce qui vient d'être
 // enseigné, au lieu de partir dans une notion adjacente non couverte.
 let _lastLessonText = null, _lastLessonSubject = null, _lastLessonNotion = null;
-let _lessonSpeaking = false;
 
 function startSpecLesson() {
- const spec = getStats().specialization;
+ const spec = getActiveSpecialization(migrateSpecializations(getStats()));
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  startLesson(spec.topic, t.focus);
@@ -11162,35 +11341,28 @@ async function loadLesson(subjectId, notion) {
  }
 }
 
-// Lecture audio du cours (synthèse vocale native du navigateur/WebView —
-// aucun appel réseau supplémentaire). Se dégrade proprement si l'appareil ne
-// supporte pas l'API : le bouton reste simplement invisible.
+// Lecture audio du cours — réutilise exactement le même moteur que la
+// lecture des messages du coach (speakMessage/stopSpeaking) : priorité au
+// pont natif AndroidTTS (fiable en WebView), repli sur l'API Web Speech du
+// navigateur seulement s'il n'existe pas. L'ancienne version de ce bouton
+// appelait directement window.speechSynthesis sans jamais passer par
+// AndroidTTS, ce qui explique qu'elle ne fonctionnait pas sur les appareils
+// où seul le pont natif marche (Web Speech y est souvent silencieux/vide).
 function toggleLessonReading() {
- if (!('speechSynthesis' in window)) return;
- if (_lessonSpeaking) { stopLessonReading(); return; }
- try {
- window.speechSynthesis.cancel();
- const utter = new SpeechSynthesisUtterance(_lastLessonText || '');
- utter.lang = 'fr-FR';
- utter.rate = 0.98;
- utter.onend = () => { _lessonSpeaking = false; updateLessonReadBtn(); };
- utter.onerror = () => { _lessonSpeaking = false; updateLessonReadBtn(); };
- window.speechSynthesis.speak(utter);
- _lessonSpeaking = true;
- updateLessonReadBtn();
- } catch(e) { console.warn('Lecture audio indisponible', e); }
-}
-function stopLessonReading() {
- try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch(e) {}
- _lessonSpeaking = false;
- updateLessonReadBtn();
+ const btn = document.getElementById('spec-lesson-read-btn');
+ const b64 = btoa(unescape(encodeURIComponent(_lastLessonText || '')));
+ if (ttsActiveKey === b64) { stopSpeaking(); return; }
+ speakMessage(b64, btn);
 }
 function updateLessonReadBtn() {
  const btn = document.getElementById('spec-lesson-read-btn');
  if (!btn) return;
- if (!('speechSynthesis' in window)) { btn.style.display = 'none'; return; }
- btn.style.display = 'block';
- btn.textContent = _lessonSpeaking ? 'Arrêter la lecture' : 'Écouter le cours';
+ const hasNative = window.AndroidTTS && typeof window.AndroidTTS.speak === 'function';
+ const hasWebSpeech = 'speechSynthesis' in window;
+ if (!hasNative && !hasWebSpeech) { btn.style.display = 'none'; return; }
+ btn.style.display = 'flex';
+ btn.innerHTML = TTS_ICON_PLAY;
+ btn.title = 'Écouter le cours';
 }
 
 // Réutilise directement le générateur d'exercice rédigé déjà construit pour
@@ -11201,7 +11373,7 @@ function updateLessonReadBtn() {
 // transmis pour que l'exercice reste dans ce qui a été enseigné (corrige le
 // souci d'exercices sur des notions absentes du cours).
 function startSpecExercise() {
- const spec = getStats().specialization;
+ const spec = getActiveSpecialization(migrateSpecializations(getStats()));
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  const context = (_lastLessonSubject === spec.topic && _lastLessonNotion === t.focus) ? _lastLessonText : null;
@@ -11209,7 +11381,7 @@ function startSpecExercise() {
 }
 
 function startSpecGame() {
- const spec = getStats().specialization;
+ const spec = getActiveSpecialization(migrateSpecializations(getStats()));
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  startPedagogicalActivity(spec.topic, t.focus);
@@ -11232,7 +11404,7 @@ function startSpecWeekExam() {
 }
 
 async function loadSpecWeekExam() {
- const spec = getStats().specialization;
+ const spec = getActiveSpecialization(migrateSpecializations(getStats()));
  if (!spec) { goBack(); return; }
  const t = getSpecTodayFocus(spec);
  _specExamAnswers = {};
@@ -11309,8 +11481,9 @@ function submitSpecWeekExam() {
  _specExamQuestions.forEach((q,i) => { if (Number(_specExamAnswers[i]) === Number(q.correct)) correct++; });
  const scorePct = Math.round((correct / _specExamQuestions.length) * 100);
 
- const s = getStats();
- const spec = s.specialization;
+ const s = migrateSpecializations(getStats());
+ const spec = getActiveSpecialization(s);
+ if (!spec) return;
  const t = getSpecTodayFocus(spec);
  if (!spec.weekExams) spec.weekExams = {};
  spec.weekExams[t.weekIdx] = { score: scorePct, passedAt: new Date().toISOString() };
@@ -11330,13 +11503,6 @@ function submitSpecWeekExam() {
  : (scorePct >= 50 ? 'Bien joué ! La semaine suivante est débloquée.' : 'La semaine suivante est débloquée — n\'hésite pas à revoir les points ratés avec le coach IA.');
 }
 
-function confirmChangeSpecialization() {
- if (!confirm('Changer de spécialisation ? Le planning actuel sera remplacé (ton historique de progression scolaire, lui, reste intact).')) return;
- const s = getStats();
- delete s.specialization;
- saveStats(s);
- renderSpecializationScreen();
-}
 function selectDiff(btn, d) {
  selectedDiff = d;
  document.querySelectorAll('.diff-btn').forEach(b=>{b.style.background='var(--bg2)';b.style.borderColor='var(--border)';b.style.color='var(--text2)';b.style.fontWeight='600'});
@@ -12560,13 +12726,13 @@ async function scheduleStudyReminders() {
  try {
  await LN.cancel({ notifications: STUDIORA_REMINDER_IDS.map(id => ({ id })) });
 
- const planItems = (getStats().learningPlan || {}).items || [];
+ const todayItem = getTodayLearningPlanItem();
  const profile = getLearningProfile();
  // Pas d'emoji dans le texte des notifications : certains téléphones/claviers
  // les affichent mal dans la barre de notification système (glyphes écrasés/
  // superposés), contrairement à l'intérieur de l'app où ça passe bien.
  let body = "Prends 10 minutes pour réviser aujourd'hui";
- if (planItems.length) body = `Aujourd'hui : ${planItems[0].notion} (${planItems[0].subject})`;
+ if (todayItem) body = `Aujourd'hui : ${todayItem.item.notion} (${todayItem.item.subject})`;
  else if (profile.topWeakNotions.length) body = `À travailler : ${profile.topWeakNotions[0].notion}`;
 
  const notifications = [{
@@ -14140,7 +14306,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-08-29 (session jeux+correctifs radios)';
+const BUILD_STAMP = '2026-09-01 (lecture cours, jeux grille, mots meles glisse, accueil jour, multi-specialisation)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
