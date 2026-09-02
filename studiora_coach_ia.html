@@ -732,6 +732,11 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  </div>
 
+ <!-- Cours du jour de chaque spécialisation active (pas seulement une seule) -->
+ <div style="padding:0 20px 18px;display:none" class="a2" id="home-specs-today-wrap">
+ <div id="home-specs-today-items" style="display:flex;flex-direction:column;gap:10px"></div>
+ </div>
+
  <!-- Matières -->
  <div style="padding:0 20px 6px" class="a3">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1123,7 +1128,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <!-- Points à travailler (profil d'apprentissage) -->
  <div class="card" style="margin-bottom:14px">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
- <div style="font-size:14px;font-weight:700">🎯 Points à travailler</div>
+ <div style="font-size:14px;font-weight:700">Points à travailler</div>
  <span id="learning-rhythm-badge" class="badge badge-em" style="display:none"></span>
  </div>
  <p style="font-size:11px;color:var(--text3);margin-bottom:12px">Les notions qui reviennent le plus souvent dans tes erreurs de quiz</p>
@@ -1385,7 +1390,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <!-- Lien permanent de telechargement de l'APK : le bouton flottant peut etre
  ferme definitivement par l'utilisateur (localStorage), qui perd alors tout
  moyen de retrouver l'app native. Ce bouton reste toujours accessible ici. -->
- <button id="profile-apk-download-btn" onclick="downloadStudioraApk()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📲 Télécharger l'app Android</button>
+ <button id="profile-apk-download-btn" onclick="downloadStudioraApk()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Télécharger l'app Android</button>
  </div>
 </div>
 
@@ -1568,7 +1573,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <!-- ── ÉTAT 3 : quiz d'évaluation ── -->
  <div id="spec-step-eval-quiz" style="display:none">
  <div class="card" style="margin-bottom:14px;background:var(--em-soft);border:1px solid var(--em-mid)">
- <p style="font-size:12px;color:var(--text)">Réponds du mieux que tu peux — même si tu ne sais pas, essaie. C'est pour situer ton niveau, pas pour te juger 🙂</p>
+ <p style="font-size:12px;color:var(--text)">Réponds du mieux que tu peux — même si tu ne sais pas, essaie. C'est pour situer ton niveau, pas pour te juger</p>
  </div>
  <div id="spec-eval-questions"></div>
  <button onclick="submitSpecializationEval()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-top:6px">Valider mon évaluation →</button>
@@ -1604,9 +1609,9 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  <p id="spec-today-focus" style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5"></p>
  <div style="display:flex;gap:6px;margin-bottom:8px">
- <button onclick="startSpecLesson()" style="flex:1;padding:9px 6px;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">📖 Cours</button>
- <button onclick="startSpecExercise()" style="flex:1;padding:9px 6px;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✍️ Exercice</button>
- <button onclick="startSpecGame()" style="flex:1;padding:9px 6px;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🎮 Jeu</button>
+ <button onclick="startSpecLesson()" style="flex:1;padding:9px 6px;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cours</button>
+ <button onclick="startSpecExercise()" style="flex:1;padding:9px 6px;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Exercice</button>
+ <button onclick="startSpecGame()" style="flex:1;padding:9px 6px;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
  </div>
  <button onclick="markSpecDayDone()" id="spec-day-done-btn" style="width:100%;padding:10px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✓ Marquer la journée comme terminée</button>
  </div>
@@ -1863,7 +1868,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div style="position:relative;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
  <button id="canvas-shapes-toggle-btn" onclick="toggleShapesPopover()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:5px">▭ Formes <span style="font-size:9px">▾</span></button>
  <button onclick="canvasAddText()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">T Texte</button>
- <button onclick="document.getElementById('canvas-image-input').click()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🖼 Image</button>
+ <button onclick="document.getElementById('canvas-image-input').click()" style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Image</button>
  <input type="file" id="canvas-image-input" accept="image/*" style="display:none" onchange="canvasAddImage(this)">
  <!-- Popover groupant toutes les formes (cercle, triangle, rectangle...) au lieu
  d'une longue rangée de boutons séparés qui poussait le reste de l'éditeur
@@ -1910,7 +1915,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
 
  <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden">
- <summary style="padding:11px 14px;font-size:13px;font-weight:700;cursor:pointer;list-style:none;background:var(--bg2)">🎨 Style, couleurs & calques</summary>
+ <summary style="padding:11px 14px;font-size:13px;font-weight:700;cursor:pointer;list-style:none;background:var(--bg2)">Style, couleurs & calques</summary>
  <div style="padding:14px">
  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
  <span style="font-size:11px;color:var(--text3);width:100%">Couleur</span>
@@ -3191,7 +3196,7 @@ function claimTreeReward() {
  if (!d.rewardsClaimed) d.rewardsClaimed = [];
  d.rewardsClaimed.push(stage.idx);
  saveTreeData(d);
- showToast('🍎 Récompense récupérée : ' + stage.reward.label);
+ showToast('Récompense récupérée : ' + stage.reward.label);
  renderKnowledgeTreeWidget();
  const modal = document.getElementById('tree-detail-overlay');
  if (modal) modal.remove();
@@ -3253,8 +3258,8 @@ function renderKnowledgeTreeWidget() {
  const el = document.getElementById('knowledge-tree-widget');
  if (!el) return;
  const stage = getTreeStage();
- const statusLine = stage.sick ? '🥀 Affaibli — reprends ta série pour le soigner'
- : stage.rewardAvailable ? '🍎 Une récompense t\'attend, appuie ici !'
+ const statusLine = stage.sick ? 'Affaibli — reprends ta série pour le soigner'
+ : stage.rewardAvailable ? 'Une récompense t\'attend, appuie ici !'
  : stage.next ? 'Encore un peu pour évoluer' : 'Stade maximum atteint';
  el.innerHTML = `
  <div style="background:linear-gradient(135deg,#E3F2EB 0%,#fff 55%,#FEF3DC 100%);border:1px solid var(--em-mid);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden">
@@ -3287,7 +3292,7 @@ function showTreeDetail() {
  overlay.innerHTML = `
  <div style="background:var(--white);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;text-align:center;animation:slideUp .3s ease">
  <div style="width:130px;margin:0 auto 12px">${renderKnowledgeTreeSVG(stage.idx, stage.sick)}</div>
- <h2 style="font-size:20px;font-weight:800;margin-bottom:6px">${stage.label}${stage.sick?' — affaibli 🥀':''}</h2>
+ <h2 style="font-size:20px;font-weight:800;margin-bottom:6px">${stage.label}${stage.sick?' — affaibli':''}</h2>
  <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">${stage.sick ? 'Ta série s\'est interrompue trop longtemps. Reviens étudier 2 jours de suite pour le guérir.' : stage.desc}</p>
  <div style="height:8px;background:var(--bg2);border-radius:5px;overflow:hidden;margin-bottom:6px">
  <div style="height:100%;width:${stage.progressPct}%;background:linear-gradient(90deg,var(--em),var(--amber));border-radius:5px"></div>
@@ -3295,11 +3300,11 @@ function showTreeDetail() {
  <div style="font-size:11px;color:var(--text3);margin-bottom:20px">${stage.next ? stage.progressPct + '% vers "' + stage.next.label + '" (' + stage.score + '/' + stage.next.min + ' pts)' : 'Stade maximum — bravo !'}</div>
  ${stage.rewardAvailable ? `
  <div style="background:var(--amb-soft);border:1px solid rgba(196,122,11,.25);border-radius:14px;padding:14px;margin-bottom:16px;text-align:left">
- <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:4px">🍎 Fruit disponible</div>
+ <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:4px">Fruit disponible</div>
  <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${stage.reward.label}</div>
  <button class="btn-em" onclick="claimTreeReward()" style="width:100%">Récupérer</button>
  </div>` : ''}
- <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:4px">🎁 Fais grandir ton arbre chaque jour pour débloquer des bonus.</div>
+ <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:4px">Fais grandir ton arbre chaque jour pour débloquer des bonus.</div>
  <button class="btn-em" onclick="document.getElementById('tree-detail-overlay').remove()" style="width:100%;margin-top:18px;background:var(--bg2);color:var(--text2)">Fermer</button>
  </div>`;
  document.body.appendChild(overlay);
@@ -4621,6 +4626,7 @@ function renderHome() {
  safeSet('tip-text', TIPS[Math.floor(Math.random()*TIPS.length)]);
  renderKnowledgeTreeWidget();
  maybeGenerateLearningPlan(); // Phase 3 : affiche le plan existant tout de suite, régénère en tâche de fond si besoin
+ renderHomeSpecializationsToday();
 
  const el = document.getElementById('subjects-list');
  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
@@ -6749,12 +6755,12 @@ function sheetToolbarHTML() {
  <div class="doc-tb-panel active" data-tab="accueil">
  <button class="doc-tb-btn" onclick="sheetUndo()" title="Annuler">↶</button>
  <button class="doc-tb-btn" onclick="sheetRedo()" title="Rétablir">↷</button>
- <button class="doc-tb-btn" onclick="sheetClearCells()" title="Effacer">🧹</button>
+ <button class="doc-tb-btn" onclick="sheetClearCells()" title="Effacer">Effacer</button>
  <button class="doc-tb-btn" style="font-weight:800" onclick="sheetToggleStyle('fontWeight','700')" title="Gras">G</button>
  <button class="doc-tb-btn" style="font-style:italic" onclick="sheetToggleStyle('fontStyle','italic')" title="Italique">I</button>
  <button class="doc-tb-btn" style="text-decoration:underline" onclick="sheetToggleStyle('textDecoration','underline')" title="Souligné">S</button>
  <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-font')">A <span style="width:12px;height:12px;border-radius:3px;background:#000;display:inline-block;border:1px solid var(--border)" id="sheet-dd-font-swatch"></span> ▾</button>
- <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-fill')">🎨 Fond ▾</button>
+ <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-fill')">Fond ▾</button>
  <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-border')">▦ Bordure ▾</button>
  <button class="doc-tb-btn sheet-dd-toggle" onclick="toggleSheetDropdown('sheet-dd-align')">≡ Aligner ▾</button>
 
@@ -8532,14 +8538,14 @@ function _startContinuousMicViaSTT() {
  if (effectiveMaxSec > 0 && isFinite(effectiveMaxSec)) {
  _micAutoStopTimer = setTimeout(() => { _stopContinuousSTT(); }, effectiveMaxSec * 1000);
  let remaining = effectiveMaxSec;
- if (label) label.textContent = '🔴 ' + formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ if (label) label.textContent = formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
  _micCountdownInterval = setInterval(() => {
  remaining--;
- if (label && remaining >= 0) label.textContent = '🔴 ' + formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ if (label && remaining >= 0) label.textContent = formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
  if (remaining <= 0) clearInterval(_micCountdownInterval);
  }, 1000);
  } else if (label) {
- label.textContent = '🔴 Enregistrement en cours... appuie pour arrêter';
+ label.textContent = 'Enregistrement en cours... appuie pour arrêter';
  }
  toggleVoiceInput('transcript-textarea', 'transcribe-mic-btn');
 }
@@ -8592,7 +8598,7 @@ async function toggleMicWhisperTranscription() {
  const startBtn = document.getElementById('mic-start-btn');
  if (startBtn) { startBtn.textContent = '⏹ Arrêter l\'enregistrement'; startBtn.style.background = 'var(--amber)'; }
  const label = document.getElementById('transcribe-quota-label');
- if (label) label.textContent = '🔴 Enregistrement en cours... appuie pour arrêter';
+ if (label) label.textContent = 'Enregistrement en cours... appuie pour arrêter';
  // Arrêt automatique : durée choisie par l'utilisateur, plafonnée dans tous
  // les cas par la limite de session du forfait (même en "illimité", un
  // compte Standard/Premium ne peut pas dépasser 3h/6h par enregistrement —
@@ -8602,10 +8608,10 @@ async function toggleMicWhisperTranscription() {
  if (effectiveMaxSec > 0 && isFinite(effectiveMaxSec)) {
  _micAutoStopTimer = setTimeout(() => { if (_micRecording) stopMicWhisperRecording(); }, effectiveMaxSec * 1000);
  let remaining = effectiveMaxSec;
- if (label) label.textContent = '🔴 ' + formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ if (label) label.textContent = formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
  _micCountdownInterval = setInterval(() => {
  remaining--;
- if (label && remaining >= 0) label.textContent = '🔴 ' + formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ if (label && remaining >= 0) label.textContent = formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
  if (remaining <= 0) clearInterval(_micCountdownInterval);
  }, 1000);
  }
@@ -9594,7 +9600,7 @@ async function loadCustomFilieres(niveau, selectEl) {
  rows.forEach(r => {
  if (!r.filiere || selectEl.querySelector(`option[value="${CSS.escape(r.filiere)}"]`)) return;
  const o = document.createElement('option');
- o.value = r.filiere; o.textContent = r.filiere + ' ✨';
+ o.value = r.filiere; o.textContent = r.filiere;
  selectEl.insertBefore(o, autreOpt || null);
  if (!FILIERES_BY_NIVEAU[niveau].includes(r.filiere)) FILIERES_BY_NIVEAU[niveau].push(r.filiere);
  });
@@ -10052,16 +10058,15 @@ function showWelcomeModal() {
  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
  overlay.innerHTML = `
  <div style="background:var(--white);border-radius:24px 24px 0 0;padding:32px 24px 40px;width:100%;max-width:480px;text-align:center;animation:slideUp .3s ease">
- <div style="font-size:40px;margin-bottom:8px">🎉</div>
  <h2 style="font-size:22px;font-weight:800;margin-bottom:8px">Bienvenue ${escHtml(APP.user.prenom)} !</h2>
  <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:18px">
- Pour célébrer ton arrivée, on t'offre <strong style="color:var(--amber)">2 semaines VIP gratuites</strong> 🎁<br>
+ Pour célébrer ton arrivée, on t'offre <strong style="color:var(--amber)">2 semaines VIP gratuites</strong><br>
  Accès illimité aux quiz, cartes mémo et à ton coach IA — profites-en à fond !
  </p>
  <div style="background:var(--bg2);border-radius:16px;padding:16px;margin-bottom:20px;text-align:left;display:flex;gap:12px;align-items:center">
  <div style="width:56px;flex-shrink:0">${renderKnowledgeTreeSVG(0, false)}</div>
  <div style="font-size:12px;color:var(--text2);line-height:1.6">
- <strong>Aujourd'hui, tu plantes ta graine 🌱</strong><br>
+ <strong>Aujourd'hui, tu plantes ta graine</strong><br>
  Chaque jour de régularité la fait grandir. Étudie, fais des quiz, garde ta série — et regarde ton <strong>Arbre de connaissance</strong> évoluer sur l'accueil, mois après mois.
  </div>
  </div>
@@ -10152,7 +10157,7 @@ function startTargetedExercise(subjectId, notion) {
  setTimeout(() => {
  const topicInput = document.getElementById('quiz-topic');
  if (topicInput) topicInput.value = notion;
- showToast('🎯 Exercice ciblé prêt sur : ' + notion);
+ showToast('Exercice ciblé prêt sur : ' + notion);
  }, 60);
 }
 
@@ -10337,7 +10342,7 @@ const ACTIVITY_TYPE_SCHEMAS = {
  calcul_rapide: `une série de petits calculs/questions à réponse courte, contre la montre. 5 à 8 items. Format JSON : {"activity_type":"calcul_rapide","title":"titre court et engageant","instructions":"consigne courte pour l'élève","time_limit_seconds":60,"items":[{"question":"énoncé court","answer":"réponse attendue (courte, comparable telle quelle)"}]}`,
  choix_rapide: `une série de questions à choix rapide (2-3 options courtes chacune), en mode "rafale" chronométré. 5 à 8 items. Format JSON : {"activity_type":"choix_rapide","title":"titre court et engageant","instructions":"consigne courte pour l'élève","time_limit_seconds":45,"items":[{"question":"question courte","options":["opt A courte","opt B courte","opt C courte"],"correct":0}]}`,
  enigme: `1 à 2 énigmes/casse-tête de réflexion qui mobilisent la notion de façon détournée et stratégique (pas juste une question directe). Réponse courte à deviner. Format JSON : {"activity_type":"enigme","title":"titre court et engageant","instructions":"consigne courte pour l'élève","riddles":[{"question":"énoncé de l'énigme","answer_keywords":["mot-clé attendu 1","synonyme accepté 2"]}]}`,
- mots_meles: `une liste de 6 à 10 mots-clés (UN SEUL MOT chacun, sans espace ni accent, en lien direct avec la notion) à retrouver dans une grille de mots mêlés — la grille elle-même est générée par l'application, tu fournis seulement les mots. Format JSON : {"activity_type":"mots_meles","title":"titre court et engageant","instructions":"consigne courte pour l'élève","words":["MOT1","MOT2","..."]}`,
+ mots_meles: `une liste de 6 à 10 mots-clés (UN SEUL MOT chacun, sans espace ni accent, en lien direct avec la notion) à retrouver dans une grille de mots mêlés — la grille elle-même est générée par l'application, tu fournis seulement les mots. Varie vraiment le choix des mots à chaque génération (angle différent sur la notion) plutôt que de toujours ressortir les mêmes termes les plus évidents. Format JSON : {"activity_type":"mots_meles","title":"titre court et engageant","instructions":"consigne courte pour l'élève","words":["MOT1","MOT2","..."]}`,
  scenario: `une courte étude de cas/situation réaliste liée à la notion, avec 3 décisions successives à prendre (chacune influencée par le contexte, pas juste une question isolée), pour pousser à la réflexion et à la stratégie. Format JSON : {"activity_type":"scenario","title":"titre court et engageant","instructions":"consigne courte pour l'élève","situation":"description de la situation de départ (2-3 phrases)","steps":[{"question":"à ce stade, que ferais-tu ?","options":["choix A","choix B","choix C"],"correct":0,"feedback_correct":"pourquoi c'est le bon choix (1-2 phrases)","feedback_incorrect":"pourquoi ce n'était pas le meilleur choix (1-2 phrases)"}]} (exactement 3 steps)`,
 };
 
@@ -10477,7 +10482,7 @@ function renderPedagogicalActivity(a) {
 function generateWordSearchGrid(words, size) {
  size = size || 10;
  const grid = Array.from({length:size}, () => Array(size).fill(null));
- const dirs = [[0,1],[1,0],[1,1],[-1,1]]; // droite, bas, diag bas-droite, diag haut-droite
+ const dirs = [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]; // les 8 directions : droite, gauche, bas, haut, et les 4 diagonales
  const placed = [];
  const clean = words
  .map(w => String(w).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,''))
@@ -10606,7 +10611,15 @@ function _wsApplySelection(cells) {
  if (!st) return;
  _wsResetUnfoundCells();
  st.selection = cells;
- cells.forEach(idx => { const b = document.querySelector(`.wordsearch-cell[data-idx="${idx}"]`); if (b) { b.style.background = 'var(--em-soft)'; b.style.borderColor = 'var(--em)'; } });
+ cells.forEach(idx => {
+ // Ne jamais recolorer une case qui fait déjà partie d'un mot validé, même si
+ // le glissement en cours passe dessus — sinon elle "perd" temporairement sa
+ // couleur verte le temps du geste, ce qui donnait l'impression d'un bug.
+ const isFound = st.placed.some(p => st.found.has(p.word) && p.coords.includes(idx));
+ if (isFound) return;
+ const b = document.querySelector(`.wordsearch-cell[data-idx="${idx}"]`);
+ if (b) { b.style.background = 'var(--em-soft)'; b.style.borderColor = 'var(--em)'; }
+ });
 }
 function _wsCheckSelection() {
  const st = _wordSearchState;
@@ -10892,7 +10905,7 @@ async function checkActivityAnswer() {
  scoreEl.textContent = `${correct}/${total} correct${correct>1?'s':''}`;
  scoreEl.style.color = scorePct >= 70 ? 'var(--em)' : scorePct >= 40 ? 'var(--amber)' : 'var(--red)';
  document.getElementById('activity-result-feedback').textContent = scorePct >= 70
- ? 'Bien joué ! Cette notion a l\'air bien maîtrisée. 🎉'
+ ? 'Bien joué ! Cette notion a l\'air bien maîtrisée.'
  : scorePct >= 40
  ? 'Pas mal, mais il reste des points à revoir sur cette notion.'
  : 'Cette notion mérite d\'être retravaillée — n\'hésite pas à relire le cours ou à demander au coach IA.';
@@ -10936,6 +10949,55 @@ function selectSpecEvalAnswer(qIdx, optIdx) {
 // stats.activeSpecializationId indique laquelle est affichée/utilisée. La
 // migration se fait une seule fois, de façon transparente, sur l'ancien
 // format mono-spécialisation encore présent chez les utilisatrices existantes.
+// ── OUTILS DE L'APP ACCESSIBLES DEPUIS LES EXERCICES ──
+// Bouton flottant (cours, exercice rédigé, jeu, examen) ouvrant un accès rapide
+// aux outils existants de l'app (calculatrice, diagrammes, éditeur de
+// documents, dictionnaire, bibliothèque) sans quitter le flux d'exercice —
+// on navigue vers l'outil via showScreen normal, et goBack() ramène ensuite
+// exactement là où on était, l'état de l'écran restant en mémoire dans le DOM.
+function openExerciseTools() {
+ if (document.getElementById('exercise-tools-overlay')) return;
+ const overlay = document.createElement('div');
+ overlay.id = 'exercise-tools-overlay';
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;display:flex;align-items:flex-end;justify-content:center';
+ overlay.onclick = (e) => { if (e.target === overlay) closeExerciseTools(); };
+ const btnStyle = 'width:100%;text-align:left;padding:13px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);color:var(--text);font-weight:700;font-size:13px;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif';
+ overlay.innerHTML = `
+ <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:18px 20px calc(20px + env(safe-area-inset-bottom,0px));width:100%;max-width:480px;max-height:70vh;overflow-y:auto">
+ <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px"></div>
+ <h3 style="font-size:15px;font-weight:800;margin-bottom:12px">Outils</h3>
+ <div style="display:flex;flex-direction:column;gap:8px">
+ <button style="${btnStyle}" onclick="closeExerciseTools();showScreen('screen-calc')">Calculatrice</button>
+ <button style="${btnStyle}" onclick="closeExerciseTools();showScreen('screen-diagrams')">Diagrammes</button>
+ <button style="${btnStyle}" onclick="closeExerciseTools();showScreen('screen-dict')">Dictionnaire</button>
+ <button style="${btnStyle}" onclick="closeExerciseTools();showScreen('screen-doceditor')">Éditeur de documents</button>
+ <button style="${btnStyle}" onclick="closeExerciseTools();showScreen('screen-library')">Ma bibliothèque</button>
+ <button style="${btnStyle}" onclick="closeExerciseTools();showScreen('screen-travaux')">Tous les outils (terminaux, transcription...)</button>
+ </div>
+ </div>`;
+ document.body.appendChild(overlay);
+}
+function closeExerciseTools() {
+ const el = document.getElementById('exercise-tools-overlay');
+ if (el) el.remove();
+}
+const EXERCISE_TOOLS_FAB = `<button onclick="openExerciseTools()" title="Outils" style="position:absolute;right:16px;bottom:96px;z-index:60;width:48px;height:48px;border-radius:50%;background:var(--em);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></button>`;
+function _insertExerciseToolsFabs() {
+ ['screen-quiz','screen-custom-exercise','screen-spec-lesson','screen-spec-exam','screen-activity'].forEach(id => {
+ const el = document.getElementById(id);
+ if (el && !el.querySelector('[title="Outils"]')) el.insertAdjacentHTML('afterbegin', EXERCISE_TOOLS_FAB);
+ });
+}
+// Même garde-fou que le reste de l'app (voir ligne ~102) : si le DOM est déjà
+// prêt au moment où ce script s'exécute, DOMContentLoaded ne se déclenchera
+// jamais — on insère alors directement au lieu d'attendre un événement qui
+// ne viendra pas.
+if (document.readyState === 'loading') {
+ document.addEventListener('DOMContentLoaded', _insertExerciseToolsFabs);
+} else {
+ _insertExerciseToolsFabs();
+}
+
 function migrateSpecializations(s) {
  if (!Array.isArray(s.specializations)) s.specializations = [];
  if (s.specialization && s.specialization.topic) {
@@ -10959,6 +11021,14 @@ function setActiveSpecializationId(id) {
  renderSpecializationScreen();
 }
 function startNewSpecialization() {
+ const s = migrateSpecializations(getStats());
+ const limit = getSpecializationLimit();
+ if (s.specializations.length >= limit) {
+ const p = getPlan();
+ const nextStep = p === 'premium' ? 'Passe VIP pour aller jusqu\'à 5.' : (p === 'vip' ? 'Limite VIP atteinte (5).' : 'Passe Premium pour débloquer les spécialisations.');
+ showToast(`! Limite de ${limit === Infinity ? '' : limit} spécialisation(s) atteinte. ${nextStep}`);
+ return;
+ }
  ['spec-step-choose','spec-step-eval-loading','spec-step-eval-quiz','spec-step-program-loading','spec-step-program-error','spec-step-active'].forEach(id => {
  const el = document.getElementById(id); if (el) el.style.display = 'none';
  });
@@ -10975,6 +11045,35 @@ function confirmRemoveSpecialization(id) {
  saveStats(s);
  renderSpecializationScreen();
 }
+// À l'accueil, on affiche le point du jour de CHAQUE spécialisation active,
+// pas seulement une carte générique — sinon avoir plusieurs spécialisations
+// en parallèle (Anglais + Programmation Web par ex.) n'apporterait rien
+// puisque l'accueil ne montrerait toujours qu'un seul planning à la fois.
+function renderHomeSpecializationsToday() {
+ const wrap = document.getElementById('home-specs-today-wrap');
+ const itemsEl = document.getElementById('home-specs-today-items');
+ if (!wrap || !itemsEl) return;
+ const s = migrateSpecializations(getStats());
+ if (!s.specializations.length) { wrap.style.display = 'none'; return; }
+ wrap.style.display = 'block';
+ itemsEl.innerHTML = s.specializations.map(spec => {
+ const t = getSpecTodayFocus(spec);
+ const focusEsc = (t.focus || '').replace(/'/g,"\\'");
+ return `<div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+ <span style="font-size:12px;font-weight:800;color:var(--em)">${escapeHtml(spec.topic)}</span>
+ <span style="font-size:10.5px;color:var(--text3)">Semaine ${t.weekIdx+1} · Jour ${t.dayIdx+1}/6</span>
+ </div>
+ <div style="font-size:12.5px;color:var(--text2);margin-bottom:10px;line-height:1.4">${escapeHtml(t.focus || '')}</div>
+ <div style="display:flex;gap:6px">
+ <button onclick="setActiveSpecializationId('${spec.id}');startLesson('${spec.topic}','${focusEsc}')" style="flex:1;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cours</button>
+ <button onclick="setActiveSpecializationId('${spec.id}');startSpecExercise()" style="flex:1;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Exercice</button>
+ <button onclick="setActiveSpecializationId('${spec.id}');startSpecGame()" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
+ </div>
+ </div>`;
+ }).join('');
+}
+
 function renderSpecializationSwitcher(s) {
  const el = document.getElementById('spec-switcher');
  if (!el) return;
@@ -11006,12 +11105,19 @@ function renderSpecializationScreen() {
 // (domaine strict, notation math, options jamais vides). Paramétré par `n`
 // pour pouvoir être appelé aussi bien pour les 15 questions initiales que
 // pour ne redemander que les questions manquantes (voir fillSpecEvalToTarget).
-async function generateSpecEvalBatch(n, topic) {
+// `avoidQuestions` (textes déjà générés lors des tours précédents) est injecté
+// dans le prompt pour empêcher l'IA de reposer la même question ou une simple
+// reformulation — sans ça, chaque tour supplémentaire tend à reproduire les
+// questions "évidentes" déjà posées (ex: pluriel de "child", passé de "go").
+async function generateSpecEvalBatch(n, topic, avoidQuestions) {
+ const avoidBlock = (avoidQuestions && avoidQuestions.length)
+ ? `\n\nNE RÉPÈTE JAMAIS une question déjà posée, ni une simple reformulation d'une question déjà posée. Questions déjà posées à éviter absolument :\n${avoidQuestions.map(q => '- ' + q).join('\n')}\n`
+ : '';
  const prompt = `Génère ${n} question(s) QCM d'évaluation de niveau pour quelqu'un qui veut apprendre "${topic}" (activité libre, pas forcément scolaire). Réponds UNIQUEMENT en JSON valide.
 
 RÈGLE ABSOLUE : chaque question doit porter STRICTEMENT et DIRECTEMENT sur "${topic}" lui-même — jamais une question générique de culture générale, de calcul de base, ou d'un autre domaine, même "pour commencer facile". "Facile" veut dire une notion vraiment basique et fondatrice DE ${topic} (le tout premier concept qu'on apprend dans ce domaine précis), pas une question qui n'a aucun rapport avec ${topic}.
 
-Ces questions doivent, ENSEMBLE avec d'autres déjà générées, tester les points ESSENTIELS et les plus structurants pour évaluer où en est la personne dans SA PROGRESSION en ${topic} précisément (du tout premier concept fondamental jusqu'à des notions avancées du domaine). Varie la difficulté, en restant à chaque fois strictement dans le domaine ${topic}. IMPORTANT : chaque option de réponse doit être COMPLÈTE (jamais tronquée ou vide) — n'écris "A)" que suivi immédiatement du texte de la réponse. ${MATH_NOTATION_RULE}Format JSON exact :
+Ces questions doivent, ENSEMBLE avec d'autres déjà générées, tester les points ESSENTIELS et les plus structurants pour évaluer où en est la personne dans SA PROGRESSION en ${topic} précisément (du tout premier concept fondamental jusqu'à des notions avancées du domaine). Varie la difficulté, en restant à chaque fois strictement dans le domaine ${topic}. IMPORTANT : chaque option de réponse doit être COMPLÈTE (jamais tronquée ou vide) — n'écris "A)" que suivi immédiatement du texte de la réponse.${avoidBlock} ${MATH_NOTATION_RULE}Format JSON exact :
 {"questions":[{"q":"énoncé de la question","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"difficulty":"debutant"|"intermediaire"|"avance"}]}`;
 
  const res = await fetch(AI_ENDPOINT, {
@@ -11028,10 +11134,19 @@ Ces questions doivent, ENSEMBLE avec d'autres déjà générées, tester les poi
  : [];
 }
 
+// Normalise un énoncé pour la comparaison anti-doublon (insensible à la casse,
+// aux accents et à la ponctuation) — attrape aussi les questions quasi-identiques
+// que l'IA reformule légèrement d'un tour à l'autre.
+function _normQuestionText(s) {
+ return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+}
+
 // Même principe que le remplissage incrémental des quiz normaux (fillToTarget) :
 // on ne redemande JAMAIS tout depuis zéro — seulement le nombre de questions
-// qu'il manque encore, en accumulant au fil des tours. Une limite de sécurité
-// (6 tours) évite une boucle infinie si le service est vraiment en panne.
+// qu'il manque encore, en accumulant au fil des tours. On transmet aussi la liste
+// des questions déjà obtenues (comme garde-fou dans le prompt ET comme filtre
+// côté code) pour éviter les répétitions d'un tour à l'autre. Une limite de
+// sécurité (8 tours) évite une boucle infinie si le service est vraiment en panne.
 async function fillSpecEvalToTarget(topic, target, updateProgress) {
  const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
  const MAX_BATCH = 5; // jamais plus de 5 questions par appel IA : au-delà, risque réel de troncature (surtout sur des sujets techniques aux réponses plus longues)
@@ -11042,9 +11157,11 @@ async function fillSpecEvalToTarget(topic, target, updateProgress) {
  const missing = Math.min(MAX_BATCH, target - questions.length);
  updateProgress(questions.length, target, rounds);
  try {
- const extra = await generateSpecEvalBatch(missing, topic);
- if (extra && extra.length) questions = questions.concat(extra);
- else rounds++;
+ const extra = await generateSpecEvalBatch(missing, topic, questions.map(q => q.q));
+ const existingNorm = new Set(questions.map(q => _normQuestionText(q.q)));
+ const deduped = (extra || []).filter(q => !existingNorm.has(_normQuestionText(q.q)));
+ if (deduped.length) questions = questions.concat(deduped);
+ else rounds++; // tout le lot était un doublon : on compte comme un tour raté pour ne pas boucler indéfiniment
  } catch(e) { rounds++; }
  }
  return questions.slice(0, target);
@@ -11317,7 +11434,7 @@ async function loadLesson(subjectId, notion) {
  document.getElementById('spec-lesson-subtitle').textContent = subjName + ' · ' + notion;
  document.getElementById('spec-lesson-loading').style.display = 'block';
  document.getElementById('spec-lesson-body').style.display = 'none';
- stopLessonReading();
+ try { stopSpeaking(); } catch(e) {}
 
  try {
  const prompt = `Rédige un court cours clair et pédagogique en "${subjName}", niveau ${level || 'non précisé'}, sur précisément : "${notion}". Structure-le avec quelques paragraphes courts (pas de titres markdown avec #, du texte simple), va droit à l'essentiel, donne au moins un exemple concret. ${MATH_NOTATION_RULE}Réponds uniquement avec le texte du cours (pas de JSON, pas de préambule).`;
@@ -11425,7 +11542,10 @@ async function loadSpecWeekExam() {
  const missing = Math.min(5, target - questions.length);
  document.getElementById('spec-exam-loading-text').textContent = questions.length > 0 ? `Génération en cours... (${questions.length}/${target})` : 'Préparation de l\'examen...';
  try {
- const prompt = `Génère ${missing} question(s) QCM pour un EXAMEN de fin de semaine en "${spec.topic}", niveau ${spec.level}, portant STRICTEMENT sur ces objectifs de la semaine : ${objectives.join(' ; ')}. Ne sors jamais de ces objectifs précis. Chaque option doit être complète (jamais tronquée ou vide). ${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide : {"questions":[{"q":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0}]}`;
+ const avoidBlock = questions.length
+ ? `\n\nNE RÉPÈTE JAMAIS une question déjà posée, ni une simple reformulation d'une question déjà posée. Questions déjà posées à éviter absolument :\n${questions.map(q => '- ' + q.q).join('\n')}\n`
+ : '';
+ const prompt = `Génère ${missing} question(s) QCM pour un EXAMEN de fin de semaine en "${spec.topic}", niveau ${spec.level}, portant STRICTEMENT sur ces objectifs de la semaine : ${objectives.join(' ; ')}. Ne sors jamais de ces objectifs précis. Chaque option doit être complète (jamais tronquée ou vide).${avoidBlock} ${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide : {"questions":[{"q":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0}]}`;
  const res = await fetch(AI_ENDPOINT, {
  method: 'POST',
  headers: {'Content-Type':'application/json'},
@@ -11436,7 +11556,9 @@ async function loadSpecWeekExam() {
  raw = extractJsonBlock(raw);
  const parsed = JSON.parse(raw);
  const extra = Array.isArray(parsed.questions) ? parsed.questions.filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2 && q.options.every(o => typeof o === 'string' && o.trim().length > 2) && Number.isInteger(q.correct)) : [];
- if (extra.length) questions = questions.concat(extra); else rounds++;
+ const existingNorm = new Set(questions.map(q => _normQuestionText(q.q)));
+ const deduped = extra.filter(q => !existingNorm.has(_normQuestionText(q.q)));
+ if (deduped.length) questions = questions.concat(deduped); else rounds++;
  } catch(e) { rounds++; }
  }
  _specExamQuestions = questions.slice(0, target);
@@ -12631,7 +12753,7 @@ function renderProgress() {
 
  // Profil d'apprentissage : notions récurrentes à travailler + rythme
  const profile = getLearningProfile();
- const rhythmLabels = { assidu: '🔥 Assidu', irregulier: '📉 Irrégulier', inactif: '😴 Inactif', nouveau: '✨ Nouveau' };
+ const rhythmLabels = { assidu: '🔥 Assidu', irregulier: '📉 Irrégulier', inactif: '😴 Inactif', nouveau: 'Nouveau' };
  const rhythmBadge = document.getElementById('learning-rhythm-badge');
  if (rhythmBadge && rhythmLabels[profile.rhythm]) { rhythmBadge.textContent = rhythmLabels[profile.rhythm]; rhythmBadge.style.display = 'inline-flex'; }
  const weakListEl = document.getElementById('weak-notions-list');
@@ -12652,8 +12774,8 @@ function renderProgress() {
  </div>
  <div style="display:flex;gap:6px">
  <button onclick="startTargetedExercise('${w.subject}','${notionEsc}')" style="flex:1;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">QCM</button>
- <button onclick="startCustomExercise('${w.subject}','${notionEsc}')" style="flex:1;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">✍️ Rédigé</button>
- <button onclick="startPedagogicalActivity('${w.subject}','${notionEsc}')" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🎮 Jeu</button>
+ <button onclick="startCustomExercise('${w.subject}','${notionEsc}')" style="flex:1;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Rédigé</button>
+ <button onclick="startPedagogicalActivity('${w.subject}','${notionEsc}')" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
  </div>
  </div>`;
  }).join('') : '<div style="font-size:12px;color:var(--text3)">Fais quelques quiz pour que tes points à travailler apparaissent ici.</div>';
@@ -12777,7 +12899,7 @@ function renderProfile() {
  if (!APP.user || !APP.user.prenom) return;
  const st = getStats();
  const specCard = document.getElementById('specialization-card');
- if (specCard) specCard.style.display = isVipOrAdmin() ? 'block' : 'none';
+ if (specCard) specCard.style.display = canAccessSpecialization() ? 'block' : 'none';
  function safeSet(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
  safeSet('stat-sessions', st.sessions || 0);
  safeSet('stat-questions', st.questions || 0);
@@ -13533,6 +13655,17 @@ function getPlanLimits() {
 }
 function isAdmin() { return APP.user.email === ADMIN_EMAIL; }
 function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'||isExceptionUser(); }
+// La Spécialisation est désormais ouverte aux Premium aussi (plus seulement
+// VIP/Admin), chaque palier ayant simplement un nombre max différent de
+// spécialisations en parallèle (voir getSpecializationLimit).
+function canAccessSpecialization() { const p=getPlan(); return p==='premium'||p==='vip'||p==='admin'||isExceptionUser(); }
+function getSpecializationLimit() {
+ const p = getPlan();
+ if (p === 'admin' || isExceptionUser()) return Infinity;
+ if (p === 'vip') return 5;
+ if (p === 'premium') return 3;
+ return 0;
+}
 
 // Repasse l'utilisateur en Gratuit si son plan (essai VIP, Premium, VIP payant)
 // a dépassé sa date d'expiration. À appeler à chaque chargement de session.
@@ -13550,7 +13683,7 @@ function grantRetroactiveTrialIfNeeded() {
  APP.user.plan_expiry = new Date(Date.now() + 14*24*3600*1000).toISOString();
  APP.user.trial_type = 'signup_vip_14d';
  saveSession();
- showToast('🎁 Cadeau ! Tu profites de 2 semaines VIP offertes');
+ showToast('Cadeau ! Tu profites de 2 semaines VIP offertes');
  } else {
  saveSession();
  }
@@ -14306,7 +14439,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-01 (lecture cours, jeux grille, mots meles glisse, accueil jour, multi-specialisation)';
+const BUILD_STAMP = '2026-09-02 (anti-doublons eval/examen, fix cours bloque, mots meles 8 dir + bug couleur, sans emoji, outils dans exercices, accueil multi-spe, limites plan)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
@@ -16363,7 +16496,7 @@ async function sendFeedback() {
 <!-- Bulle flottante "Passer à l'app" — visible uniquement en navigateur web (jamais dans l'app
  Android installée), persiste sur tous les écrans, style bulle façon icône flottante -->
 <div id="web-to-app-fab" style="display:none;position:fixed;right:16px;bottom:96px;z-index:9999">
- <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer">📲</button>
+ <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer"></button>
  <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--text3);color:#fff;border:2px solid var(--white,#fff);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
 </div>
 
