@@ -97,12 +97,44 @@ public class MainActivity extends BridgeActivity {
         runOnUiThread(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show());
     }
 
+    // Correctif natif langues : convertit un tag BCP47 (ex. "en-US", venant de
+    // getLanguageLocale() côté JS) en Locale Android. Retombe sur le français
+    // si le tag est vide/invalide, pour ne jamais casser l'usage par défaut
+    // (chat, cours) qui n'envoie aucune locale.
+    private Locale localeFromTag(String tag) {
+        if (tag == null || tag.trim().isEmpty()) return new Locale("fr", "FR");
+        try {
+            Locale l = Locale.forLanguageTag(tag);
+            if (l != null && l.getLanguage() != null && !l.getLanguage().isEmpty()) return l;
+        } catch (Exception ignored) {}
+        return new Locale("fr", "FR");
+    }
+
     private class WebAppInterface {
         @JavascriptInterface
         public void speak(String text) {
-            if (tts != null && text != null && !text.isEmpty()) {
+            speak(text, null);
+        }
+
+        // Correctif natif langues : variante avec locale (ex. "en-US") pour
+        // l'entraînement à la prononciation des spécialisations langues.
+        // Sans locale (appel à 1 argument ci-dessus, utilisé partout ailleurs
+        // dans l'app : chat, cours...), on repasse explicitement en français à
+        // chaque appel pour ne jamais laisser le moteur TTS "coincé" dans une
+        // langue étrangère après une session de prononciation.
+        @JavascriptInterface
+        public void speak(String text, String lang) {
+            if (tts == null || text == null || text.isEmpty()) return;
+            new Handler(Looper.getMainLooper()).post(() -> {
+                Locale target = localeFromTag(lang);
+                int result = tts.setLanguage(target);
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    // Voix non installée pour cette langue sur l'appareil : on
+                    // parle quand même, en français, plutôt que de rester muet.
+                    tts.setLanguage(new Locale("fr", "FR"));
+                }
                 tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "studiora_tts");
-            }
+            });
         }
 
         @JavascriptInterface
@@ -114,7 +146,15 @@ public class MainActivity extends BridgeActivity {
 
         @JavascriptInterface
         public void startListening() {
-            new Handler(Looper.getMainLooper()).post(() -> startNativeListening());
+            new Handler(Looper.getMainLooper()).post(() -> startNativeListening(null));
+        }
+
+        // Correctif natif langues : variante avec locale (ex. "en-US") pour
+        // reconnaître la voix de l'élève dans la langue de la spécialisation
+        // au lieu du français par défaut.
+        @JavascriptInterface
+        public void startListening(String lang) {
+            new Handler(Looper.getMainLooper()).post(() -> startNativeListening(lang));
         }
 
         @JavascriptInterface
@@ -499,7 +539,10 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private void startNativeListening() {
+    // Correctif natif langues : accepte désormais une locale BCP47 optionnelle
+    // (ex. "en-US") pour reconnaître la voix dans la langue cible au lieu du
+    // français fixe. `lang` null ou vide → comportement inchangé (français).
+    private void startNativeListening(String lang) {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             runJs("window.onAndroidSTTError && window.onAndroidSTTError('unavailable');");
             return;
@@ -546,9 +589,10 @@ public class MainActivity extends BridgeActivity {
             });
         }
 
+        String recogLang = (lang != null && !lang.trim().isEmpty()) ? lang : "fr-FR";
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR");
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, recogLang);
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
         try {
             speechRecognizer.startListening(intent);
