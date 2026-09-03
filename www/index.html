@@ -1512,7 +1512,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="custom-ex-body" style="display:none">
  <div class="card" style="margin-bottom:14px">
  <div style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Énoncé</div>
- <p id="custom-ex-statement" style="font-size:14px;line-height:1.6;white-space:pre-wrap"></p>
+ <div id="custom-ex-statement" style="font-size:14px;line-height:1.6"></div>
  </div>
 
  <div id="custom-ex-answer-block" class="card" style="margin-bottom:14px">
@@ -1530,7 +1530,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  <div class="card" style="margin-bottom:14px">
  <div style="font-size:11px;font-weight:700;color:var(--em);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Correction détaillée</div>
- <p id="custom-ex-feedback" style="font-size:13.5px;line-height:1.6;white-space:pre-wrap"></p>
+ <div id="custom-ex-feedback" style="font-size:13.5px;line-height:1.6"></div>
  </div>
  <button onclick="loadCustomExercise(_customExSubject,_customExNotion)" style="width:100%;padding:12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text);font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Nouvel exercice sur cette notion</button>
  </div>
@@ -1652,7 +1652,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  <div id="spec-lesson-body" style="display:none">
  <div class="card" style="margin-bottom:14px">
- <p id="spec-lesson-content" style="font-size:13.5px;line-height:1.7;white-space:pre-wrap"></p>
+ <div id="spec-lesson-content" style="font-size:13.5px;line-height:1.7"></div>
  </div>
  <button onclick="startExerciseFromLesson()" style="width:100%;padding:12px;background:var(--em);border:none;border-radius:var(--r2);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Passer à l'exercice →</button>
  </div>
@@ -1740,6 +1740,11 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <span style="width:32px;height:32px;border-radius:9px;background:#e0f2fe;color:#0284c7;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
  <div><div style="font-weight:700;font-size:12.5px">Étude de cas</div>
  <div style="font-size:11px;color:var(--text3);line-height:1.35">Décisions successives à prendre</div></div>
+ </button>
+ <button id="activity-type-prononciation-btn" onclick="selectActivityType('prononciation')" class="activity-type-btn" style="display:none;text-align:left;padding:12px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;flex-direction:column;gap:8px">
+ <span style="width:32px;height:32px;border-radius:9px;background:#e0f2fe;color:#0284c7;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></span>
+ <div><div style="font-weight:700;font-size:12.5px">Prononciation</div>
+ <div style="font-size:11px;color:var(--text3);line-height:1.35">S'entraîner à parler à voix haute</div></div>
  </button>
  </div>
  </div>
@@ -8055,6 +8060,11 @@ let isListening = false;
 let micStream = null; // garde le flux micro ouvert le temps de l'écoute
 let _voiceTargetId = 'chat-input'; // champ où insérer le texte reconnu
 let _voiceMicBtnId = 'mic-btn'; // bouton dont on change l'apparence pendant l'écoute
+// Locale BCP47 (ex. 'en-US') à utiliser pour LE PROCHAIN appel micro
+// uniquement — mise à null automatiquement après lecture par toggleVoiceInput.
+// Utilisé par l'entraînement à la prononciation pour écouter dans la langue
+// de la spécialisation au lieu du français par défaut.
+let _voiceLocaleOverride = null;
 let _voiceAppendNewline = false; // true pour l'outil de transcription (une ligne par prise de parole)
 let _voiceSessionIsTranscription = false; // capture figée au démarrage (le quota s'applique seulement à l'outil de transcription)
 let _voiceSessionStartTs = 0;
@@ -8698,6 +8708,11 @@ async function toggleVoiceInput(targetId, micBtnId) {
  _voiceTargetId = targetId || 'chat-input';
  _voiceMicBtnId = micBtnId || 'mic-btn';
  _voiceAppendNewline = (_voiceTargetId === 'transcript-textarea');
+ // Correctif natif langues : `_voiceLocaleOverride` permet à un appelant
+ // (ex. l'entraînement à la prononciation) de préciser la locale BCP47 pour
+ // CETTE session d'écoute uniquement (ex. 'en-US'). Laissé à null partout
+ // ailleurs → comportement inchangé (français par défaut côté natif).
+ const localeForThisCall = _voiceLocaleOverride; _voiceLocaleOverride = null;
 
  if (_voiceAppendNewline && !isListening && !canUseTranscription()) {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
@@ -8718,7 +8733,16 @@ async function toggleVoiceInput(targetId, micBtnId) {
  // onAndroidSTTStart — rend le bouton réactif au tap et empêche la fenêtre
  // de course décrite ci-dessus.
  _voiceSetMicActive(true);
- window.AndroidSTT.startListening();
+ // Filet de sécurité : sur une ancienne build native (avant réinstallation
+ // de l'APK avec le correctif langues), startListening(locale) à 1 argument
+ // n'existe pas côté Java → repli sur l'appel sans argument (français) au
+ // lieu de planter le bouton micro.
+ try {
+ if (localeForThisCall) window.AndroidSTT.startListening(localeForThisCall);
+ else window.AndroidSTT.startListening();
+ } catch (e) {
+ try { window.AndroidSTT.startListening(); } catch (e2) { /* pont natif indisponible */ }
+ }
  // CORRECTIF : filet de sécurité côté JS. Si le pont natif Android ne
  // rappelle jamais onAndroidSTTResult/onAndroidSTTError (ex: bug natif
  // silencieux sur certains appareils), le bouton restait bloqué en mode
@@ -8764,7 +8788,7 @@ async function toggleVoiceInput(targetId, micBtnId) {
  }
 
  voiceRecognition = new SpeechRecognitionAPI();
- voiceRecognition.lang = 'fr-FR';
+ voiceRecognition.lang = localeForThisCall || 'fr-FR';
  voiceRecognition.interimResults = false;
  voiceRecognition.maxAlternatives = 1;
 
@@ -10213,7 +10237,7 @@ async function loadCustomExercise(subjectId, notion, lessonContext) {
 
  _customExStatement = parsed.statement;
  _customExExpected = parsed.expectedElements || '';
- document.getElementById('custom-ex-statement').textContent = parsed.statement;
+ document.getElementById('custom-ex-statement').innerHTML = formatAiMsg(parsed.statement);
  renderMathInChat(document.getElementById('custom-ex-statement'));
  document.getElementById('custom-ex-loading').style.display = 'none';
  document.getElementById('custom-ex-body').style.display = 'block';
@@ -10285,7 +10309,7 @@ Corrige et note sur 100. Réponds avec ce format JSON exact :
  const scoreBadge = document.getElementById('custom-ex-score-badge');
  scoreBadge.textContent = score + '/100';
  scoreBadge.style.color = score >= 70 ? 'var(--em)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
- document.getElementById('custom-ex-feedback').textContent = feedback;
+ document.getElementById('custom-ex-feedback').innerHTML = formatAiMsg(feedback);
  renderMathInChat(document.getElementById('custom-ex-feedback'));
  document.getElementById('custom-ex-answer-block').style.display = 'none';
  document.getElementById('custom-ex-result-block').style.display = 'block';
@@ -10317,6 +10341,32 @@ let _activitySubject = null, _activityNotion = null, _activityData = null;
 let _activityAssoc = { leftSel: null, matches: {} }; // état du jeu d'association en cours
 let _activityOrder = []; // état du jeu d'ordre (ordre courant proposé par l'élève)
 
+// Détecte si une matière/spécialisation est une langue, pour proposer les
+// activités spécifiques à l'apprentissage d'une langue (prononciation).
+// Volontairement large (accents ignorés) : mieux vaut proposer l'option en
+// trop sur un cas limite que la cacher sur une vraie spécialisation langue.
+function isLanguageTopic(name) {
+ if (!name) return false;
+ const n = String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ const langs = ['anglais','espagnol','allemand','italien','portugais','chinois','mandarin','japonais','coreen','arabe','russe','neerlandais','turc','wolof','dioula','baoule','swahili','hindi','langue','vietnamien','grec','polonais','suedois','norvegien'];
+ return langs.some(l => n.includes(l));
+}
+// Correspondance approximative langue → code BCP47, pour orienter la
+// synthèse/reconnaissance vocale web (repli navigateur) vers la bonne langue.
+// Le pont natif Android (AndroidTTS/AndroidSTT) ne prend pas encore de
+// paramètre de langue — voir le commentaire dans startPronunciationPractice().
+const LANGUAGE_LOCALE_MAP = {
+ anglais:'en-US', espagnol:'es-ES', allemand:'de-DE', italien:'it-IT', portugais:'pt-PT',
+ chinois:'zh-CN', mandarin:'zh-CN', japonais:'ja-JP', coreen:'ko-KR', arabe:'ar-SA',
+ russe:'ru-RU', neerlandais:'nl-NL', turc:'tr-TR', vietnamien:'vi-VN', grec:'el-GR',
+ polonais:'pl-PL', suedois:'sv-SE', norvegien:'no-NO', hindi:'hi-IN', swahili:'sw-KE',
+};
+function getLanguageLocale(name) {
+ const n = String(name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ for (const key in LANGUAGE_LOCALE_MAP) { if (n.includes(key)) return LANGUAGE_LOCALE_MAP[key]; }
+ return 'fr-FR';
+}
+
 function startPedagogicalActivity(subjectId, notion) {
  _activitySubject = subjectId; _activityNotion = notion;
  showScreen('screen-activity');
@@ -10325,6 +10375,19 @@ function startPedagogicalActivity(subjectId, notion) {
  document.getElementById('activity-subtitle').textContent = subjName + ' · ' + notion;
  ['activity-choose-type','activity-loading','activity-body','activity-result'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
  document.getElementById('activity-choose-type').style.display = 'block';
+ const pronoBtn = document.getElementById('activity-type-prononciation-btn');
+ if (pronoBtn) pronoBtn.style.display = isLanguageTopic(subjName) ? 'flex' : 'none';
+}
+
+// Entrée directe (bouton "🗣 Parler" sur les cartes de spécialisation langue) :
+// saute le choix de type et lance tout de suite l'activité de prononciation.
+function startPronunciationPractice(subjectId, notion) {
+ _activitySubject = subjectId; _activityNotion = notion;
+ showScreen('screen-activity');
+ document.getElementById('activity-subtitle').textContent = subjectId + ' · ' + notion;
+ ['activity-choose-type','activity-loading','activity-body','activity-result'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+ document.getElementById('activity-loading').style.display = 'block';
+ loadPedagogicalActivity(subjectId, notion, 'prononciation');
 }
 
 // Choisi par l'utilisatrice (plus l'IA) : on force ce type précis dans le
@@ -10344,6 +10407,7 @@ const ACTIVITY_TYPE_SCHEMAS = {
  enigme: `1 à 2 énigmes/casse-tête de réflexion qui mobilisent la notion de façon détournée et stratégique (pas juste une question directe). Réponse courte à deviner. Format JSON : {"activity_type":"enigme","title":"titre court et engageant","instructions":"consigne courte pour l'élève","riddles":[{"question":"énoncé de l'énigme","answer_keywords":["mot-clé attendu 1","synonyme accepté 2"]}]}`,
  mots_meles: `une liste de 6 à 10 mots-clés (UN SEUL MOT chacun, sans espace ni accent, en lien direct avec la notion) à retrouver dans une grille de mots mêlés — la grille elle-même est générée par l'application, tu fournis seulement les mots. Varie vraiment le choix des mots à chaque génération (angle différent sur la notion) plutôt que de toujours ressortir les mêmes termes les plus évidents. Format JSON : {"activity_type":"mots_meles","title":"titre court et engageant","instructions":"consigne courte pour l'élève","words":["MOT1","MOT2","..."]}`,
  scenario: `une courte étude de cas/situation réaliste liée à la notion, avec 3 décisions successives à prendre (chacune influencée par le contexte, pas juste une question isolée), pour pousser à la réflexion et à la stratégie. Format JSON : {"activity_type":"scenario","title":"titre court et engageant","instructions":"consigne courte pour l'élève","situation":"description de la situation de départ (2-3 phrases)","steps":[{"question":"à ce stade, que ferais-tu ?","options":["choix A","choix B","choix C"],"correct":0,"feedback_correct":"pourquoi c'est le bon choix (1-2 phrases)","feedback_incorrect":"pourquoi ce n'était pas le meilleur choix (1-2 phrases)"}]} (exactement 3 steps)`,
+ prononciation: `un exercice ORAL de prononciation dans la langue de la matière : 5 mots ou courtes phrases à prononcer à voix haute, du plus simple au plus complexe, en lien avec la notion. Pour chaque item donne aussi sa traduction en français et une prononciation simplifiée intuitive (en lettres françaises, PAS l'alphabet phonétique international). Format JSON : {"activity_type":"prononciation","title":"titre court et engageant","instructions":"consigne courte pour l'élève","items":[{"phrase":"mot ou phrase dans la langue cible","translation":"traduction en français","phonetic_hint":"prononciation simplifiée intuitive, ex: 'siou plait' pour 'thank you'"}]}`,
 };
 
 async function loadPedagogicalActivity(subjectId, notion, forcedType) {
@@ -10390,7 +10454,7 @@ function renderPedagogicalActivity(a) {
  document.getElementById('activity-title').textContent = a.title;
  document.getElementById('activity-instructions').textContent = a.instructions || '';
  const checkBtn = document.getElementById('activity-check-btn');
- if (checkBtn) checkBtn.style.display = 'block'; // remis visible par défaut (scenario le masque lui-même)
+ if (checkBtn) { checkBtn.style.display = 'block'; checkBtn.textContent = 'Vérifier →'; } // remis à l'état par défaut (scenario le masque, prononciation change son texte)
  const contentEl = document.getElementById('activity-content');
 
  if (a.activity_type === 'association') {
@@ -10469,9 +10533,102 @@ function renderPedagogicalActivity(a) {
  } else if (a.activity_type === 'scenario') {
  _scenarioStep = 0; _scenarioCorrectCount = 0;
  renderScenarioStep(a);
+ } else if (a.activity_type === 'prononciation') {
+ renderPronunciationActivity(a);
  } else {
  contentEl.innerHTML = '<div class="card"><p style="font-size:12px;color:var(--red)">Format d\'activité non reconnu.</p></div>';
  }
+}
+
+// ── PRONONCIATION (spécialisations langues) ──
+// Pour chaque phrase : bouton "Écouter" (TTS) pour le modèle, bouton micro
+// (réutilise directement toggleVoiceInput/AndroidSTT — mêmes ponts natifs
+// fiables que partout ailleurs dans l'app) pour que l'élève s'enregistre, puis
+// comparaison texte reconnu ↔ phrase cible pour un score immédiat par item.
+// La locale cible (ex. 'en-US', via getLanguageLocale()) est transmise au
+// pont natif Android pour le TTS (AndroidTTS.speak(text, locale)) et la
+// reconnaissance vocale (_voiceLocaleOverride lu par toggleVoiceInput, passé
+// à AndroidSTT.startListening(locale)) — nécessite la version de
+// MainActivity.java avec le correctif natif langues (locale par appel au
+// lieu du français fixe). Avec une ancienne build native sans ce correctif,
+// l'app retombe automatiquement sur l'appel à 1 argument (français par
+// défaut) sans planter.
+let _pronoResults = {};
+function renderPronunciationActivity(a) {
+ _pronoResults = {};
+ const contentEl = document.getElementById('activity-content');
+ const checkBtn = document.getElementById('activity-check-btn');
+ if (checkBtn) checkBtn.textContent = 'Terminer →';
+ contentEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
+ ${a.items.map((it,i) => `
+ <div class="card" style="margin-bottom:0" id="prono-card-${i}">
+ <div style="font-size:15px;font-weight:800;margin-bottom:2px">${escapeHtml(it.phrase)}</div>
+ <div style="font-size:11.5px;color:var(--text3);margin-bottom:2px">${escapeHtml(it.translation||'')}</div>
+ <div style="font-size:11px;color:var(--text3);font-style:italic;margin-bottom:10px">🔊 se prononce : ${escapeHtml(it.phonetic_hint||'')}</div>
+ <div style="display:flex;gap:8px;align-items:center">
+ <button onclick="speakPronunciationItem(${i})" title="Écouter le modèle" style="width:40px;height:40px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+ </button>
+ <button id="prono-mic-${i}" onclick="_voiceLocaleOverride=getLanguageLocale(_activitySubject);toggleVoiceInput('prono-target-${i}','prono-mic-${i}')" title="S'enregistrer" style="width:40px;height:40px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+ <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+ </button>
+ <input type="text" id="prono-target-${i}" oninput="handlePronunciationResult(${i}, '${escAttr(it.phrase)}')" style="position:absolute;left:-9999px" tabindex="-1" aria-hidden="true">
+ <div id="prono-feedback-${i}" style="flex:1;font-size:11.5px;color:var(--text3);text-align:right">Tape le micro et prononce la phrase</div>
+ </div>
+ </div>`).join('')}
+ </div>`;
+}
+function escAttr(t) { return String(t||'').replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
+function speakPronunciationItem(i) {
+ const a = _activityData;
+ if (!a || !a.items || !a.items[i]) return;
+ stopSpeaking();
+ const text = a.items[i].phrase;
+ const locale = getLanguageLocale(_activitySubject);
+ if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
+ // Correctif natif langues : passe la locale (ex. 'en-US') au pont Android
+ // pour que le TTS prononce dans la langue cible au lieu du français par
+ // défaut. Repli sur l'appel à 1 argument (français) si l'app installée
+ // sur le téléphone n'a pas encore ce correctif natif (ancien MainActivity.java).
+ try { window.AndroidTTS.speak(text, locale); return; } catch(e) {
+ try { window.AndroidTTS.speak(text); return; } catch(e2) { /* repli ci-dessous */ }
+ }
+ }
+ if ('speechSynthesis' in window) {
+ window.speechSynthesis.cancel();
+ const utter = new SpeechSynthesisUtterance(text);
+ utter.lang = locale;
+ window.speechSynthesis.speak(utter);
+ } else {
+ showToast('⚠ Synthèse vocale indisponible sur cet appareil');
+ }
+}
+// Comparaison simple par distance de Levenshtein normalisée (accents/casse/
+// ponctuation ignorés) — suffisant pour donner un retour utile sans dépendre
+// d'un appel IA supplémentaire à chaque tentative.
+function _pronoSimilarity(a, b) {
+ const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim();
+ a = norm(a); b = norm(b);
+ if (!a || !b) return 0;
+ const m = a.length, n = b.length;
+ const dp = Array.from({length:m+1}, () => Array(n+1).fill(0));
+ for (let i=0;i<=m;i++) dp[i][0] = i;
+ for (let j=0;j<=n;j++) dp[0][j] = j;
+ for (let i=1;i<=m;i++) for (let j=1;j<=n;j++) dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+ return Math.max(0, Math.round((1 - dp[m][n]/Math.max(m,n)) * 100));
+}
+function handlePronunciationResult(i, targetPhrase) {
+ const input = document.getElementById(`prono-target-${i}`);
+ const feedbackEl = document.getElementById(`prono-feedback-${i}`);
+ if (!input || !feedbackEl) return;
+ const transcript = input.value || '';
+ input.value = ''; // prêt pour une nouvelle tentative
+ if (!transcript.trim()) { feedbackEl.textContent = '⚠ Rien entendu, réessaie'; feedbackEl.style.color = 'var(--text3)'; return; }
+ const score = _pronoSimilarity(transcript, targetPhrase);
+ _pronoResults[i] = Math.max(_pronoResults[i] || 0, score);
+ if (score >= 75) { feedbackEl.textContent = `✓ Bien prononcé ! (« ${transcript} »)`; feedbackEl.style.color = 'var(--em)'; }
+ else if (score >= 45) { feedbackEl.textContent = `Presque : « ${transcript} » — réessaie`; feedbackEl.style.color = 'var(--amber,#d97706)'; }
+ else { feedbackEl.textContent = `À retravailler : « ${transcript} »`; feedbackEl.style.color = 'var(--red)'; }
 }
 
 // ── MOTS MÊLÉS ──
@@ -10881,6 +11038,9 @@ async function checkActivityAnswer() {
  } else if (a.activity_type === 'mots_meles') {
  total = (_wordSearchState && _wordSearchState.placed.length) || 1;
  correct = (_wordSearchState && _wordSearchState.found.size) || 0;
+ } else if (a.activity_type === 'prononciation') {
+ total = a.items.length;
+ correct = a.items.reduce((sum, _, i) => sum + (_pronoResults[i] || 0) / 100, 0);
  }
  clearInterval(_activityTimerInterval);
 
@@ -10902,13 +11062,18 @@ async function checkActivityAnswer() {
  document.getElementById('activity-body').style.display = 'none';
  document.getElementById('activity-result').style.display = 'block';
  const scoreEl = document.getElementById('activity-result-score');
+ if (a.activity_type === 'prononciation') {
+ const wellPronounced = a.items.filter((_,i) => (_pronoResults[i]||0) >= 75).length;
+ scoreEl.textContent = `${wellPronounced}/${total} phrase${wellPronounced>1?'s':''} bien prononcée${wellPronounced>1?'s':''} (${scorePct}%)`;
+ } else {
  scoreEl.textContent = `${correct}/${total} correct${correct>1?'s':''}`;
+ }
  scoreEl.style.color = scorePct >= 70 ? 'var(--em)' : scorePct >= 40 ? 'var(--amber)' : 'var(--red)';
  document.getElementById('activity-result-feedback').textContent = scorePct >= 70
- ? 'Bien joué ! Cette notion a l\'air bien maîtrisée.'
+ ? (a.activity_type === 'prononciation' ? 'Bien joué ! Ta prononciation est solide sur ces phrases.' : 'Bien joué ! Cette notion a l\'air bien maîtrisée.')
  : scorePct >= 40
- ? 'Pas mal, mais il reste des points à revoir sur cette notion.'
- : 'Cette notion mérite d\'être retravaillée — n\'hésite pas à relire le cours ou à demander au coach IA.';
+ ? (a.activity_type === 'prononciation' ? 'Pas mal, mais certaines phrases méritent d\'être reprises — réécoute le modèle et réessaie.' : 'Pas mal, mais il reste des points à revoir sur cette notion.')
+ : (a.activity_type === 'prononciation' ? 'Continue à t\'entraîner : réécoute chaque phrase et répète-la plusieurs fois avant de valider.' : 'Cette notion mérite d\'être retravaillée — n\'hésite pas à relire le cours ou à demander au coach IA.');
 }
 
 // ── SPÉCIALISATION SUR-MESURE (VIP/admin) ──
@@ -11025,8 +11190,10 @@ function startNewSpecialization() {
  const limit = getSpecializationLimit();
  if (s.specializations.length >= limit) {
  const p = getPlan();
- const nextStep = p === 'premium' ? 'Passe VIP pour aller jusqu\'à 5.' : (p === 'vip' ? 'Limite VIP atteinte (5).' : 'Passe Premium pour débloquer les spécialisations.');
- showToast(`! Limite de ${limit === Infinity ? '' : limit} spécialisation(s) atteinte. ${nextStep}`);
+ const nextStep = p === 'vip' ? 'Limite VIP atteinte (5).'
+ : p === 'premium' ? 'Passe VIP pour aller jusqu\'à 5.'
+ : 'Passe Premium pour aller jusqu\'à 3 en parallèle, ou VIP pour aller jusqu\'à 5.';
+ showToast(`! Limite de ${limit === Infinity ? '' : limit} spécialisation(s) simultanée(s) atteinte. ${nextStep}`);
  return;
  }
  ['spec-step-choose','spec-step-eval-loading','spec-step-eval-quiz','spec-step-program-loading','spec-step-program-error','spec-step-active'].forEach(id => {
@@ -11059,17 +11226,24 @@ function renderHomeSpecializationsToday() {
  itemsEl.innerHTML = s.specializations.map(spec => {
  const t = getSpecTodayFocus(spec);
  const focusEsc = (t.focus || '').replace(/'/g,"\\'");
+ const dayScore = spec.currentDayScore || 0;
+ const ready = dayScore >= SPEC_DAY_PASS_THRESHOLD;
+ const langBtn = isLanguageTopic(spec.topic)
+ ? `<button onclick="setActiveSpecializationId('${spec.id}');startPronunciationPractice('${spec.topic}','${focusEsc}')" style="flex:1;background:#e0f2fe;border:1px solid #0284c7;color:#0369a1;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🗣 Parler</button>`
+ : '';
  return `<div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)">
  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
  <span style="font-size:12px;font-weight:800;color:var(--em)">${escapeHtml(spec.topic)}</span>
  <span style="font-size:10.5px;color:var(--text3)">Semaine ${t.weekIdx+1} · Jour ${t.dayIdx+1}/6</span>
  </div>
  <div style="font-size:12.5px;color:var(--text2);margin-bottom:10px;line-height:1.4">${escapeHtml(t.focus || '')}</div>
- <div style="display:flex;gap:6px">
+ <div style="display:flex;gap:6px;margin-bottom:8px">
  <button onclick="setActiveSpecializationId('${spec.id}');startLesson('${spec.topic}','${focusEsc}')" style="flex:1;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cours</button>
  <button onclick="setActiveSpecializationId('${spec.id}');startSpecExercise()" style="flex:1;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Exercice</button>
  <button onclick="setActiveSpecializationId('${spec.id}');startSpecGame()" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
+ ${langBtn}
  </div>
+ <button onclick="markSpecDayDone('${spec.id}')" style="width:100%;padding:7px;background:${ready ? 'var(--em)' : 'var(--bg2)'};border:1.5px solid ${ready ? 'var(--em)' : 'var(--border)'};border-radius:8px;color:${ready ? '#fff' : 'var(--text3)'};font-weight:700;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${ready ? '✓ Valider la journée' : `Valider (${dayScore}%/${SPEC_DAY_PASS_THRESHOLD}% requis)`}</button>
  </div>`;
  }).join('');
 }
@@ -11372,12 +11546,18 @@ function renderActiveSpecialization(spec) {
 
 const SPEC_DAY_PASS_THRESHOLD = 80;
 
-function markSpecDayDone() {
+// `specId` optionnel : permet de valider une spécialisation précise sans la
+// rendre "active" au préalable — utilisé par les cartes de l'accueil, qui
+// affichent TOUTES les spécialisations en parallèle et doivent pouvoir
+// valider chacune indépendamment. Sans lui, on retombe sur le comportement
+// d'origine (valide la spécialisation actuellement active, utilisé par
+// l'écran Spécialisation lui-même).
+function markSpecDayDone(specId) {
  const s = migrateSpecializations(getStats());
- const spec = getActiveSpecialization(s);
+ const spec = specId ? s.specializations.find(x => x.id === specId) : getActiveSpecialization(s);
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
- if (t.dayIdx >= t.daysPerWeek - 1) { showToast('Passe d\'abord l\'examen de la semaine pour avancer'); renderActiveSpecialization(spec); return; }
+ if (t.dayIdx >= t.daysPerWeek - 1) { showToast('Passe d\'abord l\'examen de la semaine pour avancer'); if (!specId) renderActiveSpecialization(spec); return; }
  // Il faut au moins 80% à l'exercice OU au jeu du jour pour valider — évite
  // de pouvoir avancer sans vraiment avoir travaillé la notion du jour.
  const dayScore = spec.currentDayScore || 0;
@@ -11389,7 +11569,8 @@ function markSpecDayDone() {
  spec.currentDayScore = 0; // reset pour la nouvelle journée
  saveStats(s);
  showToast('✓ Journée validée');
- renderActiveSpecialization(spec);
+ if (!specId) renderActiveSpecialization(spec);
+ if (typeof renderHomeSpecializationsToday === 'function') renderHomeSpecializationsToday();
 }
 
 // Après un examen réussi (ou tenté, dans l'esprit "jamais jugé" déjà présent
@@ -11446,7 +11627,10 @@ async function loadLesson(subjectId, notion) {
  const data = await res.json();
  const text = (data.content && data.content[0] ? data.content[0].text : '') || 'Contenu indisponible, réessaie.';
  _lastLessonText = text; _lastLessonSubject = subjectId; _lastLessonNotion = notion;
- document.getElementById('spec-lesson-content').textContent = text;
+ // Même moteur de rendu que la discussion avec le coach (gras/italique/titres/
+ // code/formules), au lieu d'un textContent brut qui affichait les ** et # tels
+ // quels au lieu de les mettre en forme.
+ document.getElementById('spec-lesson-content').innerHTML = formatAiMsg(text);
  renderMathInChat(document.getElementById('spec-lesson-content'));
  document.getElementById('spec-lesson-loading').style.display = 'none';
  document.getElementById('spec-lesson-body').style.display = 'block';
@@ -13658,13 +13842,17 @@ function isVipOrAdmin() { const p=getPlan(); return p==='vip'||p==='admin'||isEx
 // La Spécialisation est désormais ouverte aux Premium aussi (plus seulement
 // VIP/Admin), chaque palier ayant simplement un nombre max différent de
 // spécialisations en parallèle (voir getSpecializationLimit).
-function canAccessSpecialization() { const p=getPlan(); return p==='premium'||p==='vip'||p==='admin'||isExceptionUser(); }
+// La Spécialisation est désormais ouverte à TOUS les paliers, y compris
+// Gratuit/Standard (1 spécialisation à la fois) — seul le nombre max de
+// spécialisations EN PARALLÈLE (simultanées) varie par palier, jamais
+// l'accès à la fonctionnalité elle-même.
+function canAccessSpecialization() { return getSpecializationLimit() > 0; }
 function getSpecializationLimit() {
  const p = getPlan();
  if (p === 'admin' || isExceptionUser()) return Infinity;
  if (p === 'vip') return 5;
  if (p === 'premium') return 3;
- return 0;
+ return 1; // Gratuit/Standard
 }
 
 // Repasse l'utilisateur en Gratuit si son plan (essai VIP, Premium, VIP payant)
@@ -14439,7 +14627,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-02 (anti-doublons eval/examen, fix cours bloque, mots meles 8 dir + bug couleur, sans emoji, outils dans exercices, accueil multi-spe, limites plan)';
+const BUILD_STAMP = '2026-09-02c (icone bouton flottant app manquante restauree en SVG)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
@@ -16496,7 +16684,7 @@ async function sendFeedback() {
 <!-- Bulle flottante "Passer à l'app" — visible uniquement en navigateur web (jamais dans l'app
  Android installée), persiste sur tous les écrans, style bulle façon icône flottante -->
 <div id="web-to-app-fab" style="display:none;position:fixed;right:16px;bottom:96px;z-index:9999">
- <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer"></button>
+ <button onclick="downloadStudioraApk()" aria-label="Installer l'app Android" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--em),var(--em2));border:none;box-shadow:0 6px 18px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06170c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/><path d="M12 7v6"/><polyline points="9.5 10.5 12 13 14.5 10.5"/></svg></button>
  <button onclick="dismissWebToAppBanner()" aria-label="Fermer" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--text3);color:#fff;border:2px solid var(--white,#fff);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
 </div>
 
