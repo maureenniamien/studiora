@@ -8940,13 +8940,15 @@ function speakMessage(b64text, btn, locale) {
  if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; }
 
  // 1) Priorité au TTS natif Android (plus fiable dans une WebView que l'API Web Speech)
- // CORRECTIF : sans argument de langue explicite, le moteur TTS Android
- // pouvait garder la dernière langue utilisée (ex. anglais après une leçon
- // de langue ou l'activité Prononciation) au lieu de revenir au français —
- // on précise donc toujours une langue, y compris le français par défaut.
+ // CORRECTIF (rollback partiel) : appeler systématiquement speak(texte, langue)
+ // avec 2 arguments a cassé TOUTE la lecture audio — le pont natif Android
+ // n'accepte apparemment que speak(texte) à un seul argument. On ne passe
+ // donc la langue que quand elle est explicitement demandée (ex. activité
+ // Prononciation), comme avant, pour ne pas casser le cas général.
  if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
  try {
- window.AndroidTTS.speak(clean, locale || 'fr-FR');
+ if (locale) window.AndroidTTS.speak(clean, locale);
+ else window.AndroidTTS.speak(clean);
  return;
  } catch(e) { /* on retente en JS pur */ }
  }
@@ -10296,11 +10298,16 @@ async function loadCustomExercise(subjectId, notion, lessonContext) {
 // seulement l'active à l'écran — l'exercice a pu être lancé juste avant un
 // changement d'onglet) et on retient le MEILLEUR score obtenu aujourd'hui —
 // condition requise (80%+) pour pouvoir valider la journée de CETTE spécialisation.
-function recordSpecDayScore(subjectId, scorePct) {
+function recordSpecDayScore(subjectId, scorePct, fromExercise) {
  const s = migrateSpecializations(getStats());
  const spec = s.specializations.find(x => x.topic === subjectId);
  if (!spec) return;
  spec.currentDayScore = Math.max(spec.currentDayScore || 0, scorePct);
+ // CORRECTIF : valider la journée était possible en ne faisant QUE le quiz ou
+ // le jeu, sans jamais passer par l'exercice rédigé — pourtant demandé comme
+ // étape obligatoire. On note maintenant explicitement si l'exercice rédigé
+ // a été fait aujourd'hui (indépendamment du score obtenu).
+ if (fromExercise) spec.exerciseDoneToday = true;
  saveStats(s);
 }
 
@@ -10337,7 +10344,7 @@ Corrige et note sur 100. Réponds avec ce format JSON exact :
  // profil d'apprentissage (Phase 1) et le programme (Phase 3) en bénéficient.
  addSubjectScore(_customExSubject, score);
  incrementQuestions(1);
- recordSpecDayScore(_customExSubject, score);
+ recordSpecDayScore(_customExSubject, score, true);
  if (score < 60) {
  const s = getStats();
  if (!s.weakPoints) s.weakPoints = [];
@@ -11268,7 +11275,10 @@ function renderHomeSpecializationsToday() {
  const t = getSpecTodayFocus(spec);
  const focusEsc = (t.focus || '').replace(/'/g,"\\'");
  const dayScore = spec.currentDayScore || 0;
- const ready = dayScore >= SPEC_DAY_PASS_THRESHOLD;
+ // CORRECTIF : le score seul (obtenu via quiz OU jeu) suffisait à valider la
+ // journée, sans jamais passer par l'exercice rédigé — désormais obligatoire.
+ const exerciseDone = !!spec.exerciseDoneToday;
+ const ready = dayScore >= SPEC_DAY_PASS_THRESHOLD && exerciseDone;
  const langBtn = isLanguageTopic(spec.topic)
  ? `<button onclick="setActiveSpecializationId('${spec.id}');startPronunciationPractice('${spec.topic}','${focusEsc}')" style="flex:1;background:#e0f2fe;border:1px solid #0284c7;color:#0369a1;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">🗣 Parler</button>`
  : '';
@@ -11284,7 +11294,7 @@ function renderHomeSpecializationsToday() {
  <button onclick="setActiveSpecializationId('${spec.id}');startSpecGame()" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
  ${langBtn}
  </div>
- <button onclick="markSpecDayDone('${spec.id}')" style="width:100%;padding:7px;background:${ready ? 'var(--em)' : 'var(--bg2)'};border:1.5px solid ${ready ? 'var(--em)' : 'var(--border)'};border-radius:8px;color:${ready ? '#fff' : 'var(--text3)'};font-weight:700;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${ready ? '✓ Valider la journée' : `Valider (${dayScore}%/${SPEC_DAY_PASS_THRESHOLD}% requis)`}</button>
+ <button onclick="markSpecDayDone('${spec.id}')" style="width:100%;padding:7px;background:${ready ? 'var(--em)' : 'var(--bg2)'};border:1.5px solid ${ready ? 'var(--em)' : 'var(--border)'};border-radius:8px;color:${ready ? '#fff' : 'var(--text3)'};font-weight:700;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${ready ? '✓ Valider la journée' : (!exerciseDone ? "Fais d'abord l'Exercice" : `Valider (${dayScore}%/${SPEC_DAY_PASS_THRESHOLD}% requis)`)}</button>
  </div>`;
  }).join('');
 }
@@ -11567,6 +11577,7 @@ function renderActiveSpecialization(spec) {
  const weekDone = t.dayIdx >= t.daysPerWeek - 1;
  const alreadyPassed = spec.weekExams && spec.weekExams[t.weekIdx];
  const dayScore = spec.currentDayScore || 0;
+ const exerciseDoneDetail = !!spec.exerciseDoneToday;
  const dayBtn = document.getElementById('spec-day-done-btn');
  if (weekDone && !alreadyPassed) {
  examCard.style.display = 'block';
@@ -11575,13 +11586,17 @@ function renderActiveSpecialization(spec) {
  } else {
  examCard.style.display = 'none';
  dayBtn.style.display = 'block';
- const passed = dayScore >= SPEC_DAY_PASS_THRESHOLD;
+ // CORRECTIF : l'exercice rédigé est désormais une étape obligatoire (pas
+ // seulement le quiz ou le jeu) pour valider la journée.
+ const passed = dayScore >= SPEC_DAY_PASS_THRESHOLD && exerciseDoneDetail;
  dayBtn.disabled = !passed;
  dayBtn.style.opacity = passed ? '1' : '.6';
  dayBtn.style.cursor = passed ? 'pointer' : 'not-allowed';
  dayBtn.textContent = passed
  ? `✓ Marquer la journée comme terminée (${dayScore}%)`
- : `Fais l'exercice ou le jeu (${SPEC_DAY_PASS_THRESHOLD}%+ requis${dayScore > 0 ? ' — actuellement '+dayScore+'%' : ''})`;
+ : (!exerciseDoneDetail
+ ? `Fais d'abord l'Exercice (${SPEC_DAY_PASS_THRESHOLD}%+ requis au total)`
+ : `Fais le quiz ou le jeu (${SPEC_DAY_PASS_THRESHOLD}%+ requis${dayScore > 0 ? ' — actuellement '+dayScore+'%' : ''})`);
  }
 }
 
@@ -11599,15 +11614,21 @@ function markSpecDayDone(specId) {
  if (!spec) return;
  const t = getSpecTodayFocus(spec);
  if (t.dayIdx >= t.daysPerWeek - 1) { showToast('Passe d\'abord l\'examen de la semaine pour avancer'); if (!specId) renderActiveSpecialization(spec); return; }
- // Il faut au moins 80% à l'exercice OU au jeu du jour pour valider — évite
- // de pouvoir avancer sans vraiment avoir travaillé la notion du jour.
+ // CORRECTIF : il fallait auparavant 80%+ à l'exercice OU au jeu, ce qui
+ // permettait de valider sans jamais avoir fait l'exercice rédigé. Ce
+ // dernier est désormais une étape obligatoire, en plus du score.
  const dayScore = spec.currentDayScore || 0;
+ if (!spec.exerciseDoneToday) {
+ showToast('! Fais d\'abord l\'Exercice du jour avant de valider');
+ return;
+ }
  if (dayScore < SPEC_DAY_PASS_THRESHOLD) {
- showToast(`! Il faut au moins ${SPEC_DAY_PASS_THRESHOLD}% à l'exercice ou au jeu du jour pour valider (actuellement ${dayScore}%)`);
+ showToast(`! Il faut au moins ${SPEC_DAY_PASS_THRESHOLD}% (exercice, quiz ou jeu) pour valider (actuellement ${dayScore}%)`);
  return;
  }
  spec.currentDay = (spec.currentDay || 0) + 1;
  spec.currentDayScore = 0; // reset pour la nouvelle journée
+ spec.exerciseDoneToday = false; // reset pour la nouvelle journée
  saveStats(s);
  showToast('✓ Journée validée');
  if (!specId) renderActiveSpecialization(spec);
@@ -14702,7 +14723,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-04a (retire point du jour, TTS francais force sur cours langue, nettoyage lecture chat, exercice ecrit langue instructions en francais, update-check desactive sur web)';
+const BUILD_STAMP = '2026-09-04b (rollback TTS 2-arguments qui cassait toute lecture audio, exercice redige obligatoire pour valider la journee)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
