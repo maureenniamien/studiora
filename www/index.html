@@ -718,20 +718,6 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  </div>
  </div>
 
- <!-- Programme de la semaine (Phase 3 adaptative) -->
- <div style="padding:0 20px 18px;display:none" class="a2" id="learning-plan-wrap">
- <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)">
- <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
- <div style="display:flex;align-items:center;gap:7px">
- <span style="font-size:16px"></span>
- <span style="font-size:13px;font-weight:700">Ton point du jour</span>
- </div>
- <span style="font-size:11px;color:var(--text3)" id="learning-plan-week"></span>
- </div>
- <div id="learning-plan-items"></div>
- </div>
- </div>
-
  <!-- Cours du jour de chaque spécialisation active (pas seulement une seule) -->
  <div style="padding:0 20px 18px;display:none" class="a2" id="home-specs-today-wrap">
  <div id="home-specs-today-items" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -2966,7 +2952,7 @@ async function maybeGenerateLearningPlan() {
  // Pas assez de données encore (élève tout nouveau) : on n'appelle pas l'IA pour rien.
  const profile = getLearningProfile();
  const hasSignal = profile.topWeakNotions.length > 0 || profile.subjectAverages.length > 0 || (s.aiProfile && (s.aiProfile.strugglingTopics||[]).length > 0);
- if (!hasSignal) { document.getElementById('learning-plan-wrap').style.display = 'none'; return; }
+ if (!hasSignal) { const w = document.getElementById('learning-plan-wrap'); if (w) w.style.display = 'none'; return; }
 
  try {
  const weakSummary = profile.topWeakNotions.map(w => `${w.notion} (${w.subject}, ${w.count} erreurs)`).join(', ') || 'aucune';
@@ -8933,16 +8919,34 @@ function speakMessage(b64text, btn, locale) {
  stopSpeaking();
 
  const text = decodeURIComponent(escape(atob(b64text)));
- const clean = text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1');
+ // CORRECTIF : la lecture vocale incluait tout le "bruit" markdown/LaTeX
+ // (blocs de code entiers, #, -, liens, formules $...$) au lieu du seul
+ // texte utile, rendant l'écoute confuse sans regarder l'écran.
+ const clean = text
+ .replace(/```[\s\S]*?```/g, ' ') // blocs de code entiers : pas utiles à l'oral
+ .replace(/^\s{0,3}#{1,6}\s+/gm, '') // titres markdown (#, ##...)
+ .replace(/^\s{0,3}[-*•]\s+/gm, '') // puces de liste
+ .replace(/^\s{0,3}\d+[.)]\s+/gm, '') // listes numérotées
+ .replace(/^\s{0,3}-{3,}\s*$/gm, ' ') // lignes horizontales ---
+ .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // liens [texte](url) → texte
+ .replace(/\$\$[\s\S]*?\$\$/g, ' ') // formules LaTeX en bloc
+ .replace(/\$(.+?)\$/g, '$1') // formules LaTeX en ligne
+ .replace(/\\[a-zA-Z]+\{([^}]*)\}/g, '$1') // commandes LaTeX \frac{a}{b} etc.
+ .replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`(.+?)`/g,'$1')
+ .replace(/\n{2,}/g, '. ') // paragraphes → pause naturelle
+ .trim();
 
  ttsActiveKey = b64text;
  if (btn) { btn.innerHTML = TTS_ICON_STOP; btn.title = 'Arrêter'; }
 
  // 1) Priorité au TTS natif Android (plus fiable dans une WebView que l'API Web Speech)
+ // CORRECTIF : sans argument de langue explicite, le moteur TTS Android
+ // pouvait garder la dernière langue utilisée (ex. anglais après une leçon
+ // de langue ou l'activité Prononciation) au lieu de revenir au français —
+ // on précise donc toujours une langue, y compris le français par défaut.
  if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
  try {
- if (locale) window.AndroidTTS.speak(clean, locale);
- else window.AndroidTTS.speak(clean);
+ window.AndroidTTS.speak(clean, locale || 'fr-FR');
  return;
  } catch(e) { /* on retente en JS pur */ }
  }
@@ -10250,8 +10254,16 @@ async function loadCustomExercise(subjectId, notion, lessonContext) {
  const scopeRule = lessonContext
  ? `L'élève vient de suivre ce cours précis, reste STRICTEMENT dans ce qu'il couvre, ne mobilise aucune notion qui n'y est pas abordée :\n"""\n${lessonContext.slice(0,2500)}\n"""\n`
  : `L'élève a déjà montré des difficultés sur cette notion en quiz, donc reste accessible et progressif. `;
+ // CORRECTIF : pour une spécialisation langue, l'énoncé entier (consignes
+ // comprises) était rédigé dans la langue cible, ce qui le rendait illisible
+ // pour un élève qui n'a pas encore le niveau. Les consignes restent en
+ // français ; seul le contenu à manipuler (phrases à écrire, scénarios en
+ // langue cible s'il y en a) est dans la langue cible.
+ const langMix = isLanguageTopic(subjName)
+ ? ` Comme "${subjName}" est une langue étrangère : rédige les CONSIGNES de l'énoncé (ce qu'on demande de faire, le contexte) en français. Les phrases ou scénarios que l'élève doit lire/manipuler dans "${subjName}" peuvent rester dans cette langue, mais jamais l'énoncé entier en langue étrangère.`
+ : '';
 
- const prompt = `Rédige UN exercice ouvert (pas un QCM, pas de choix à cocher : une vraie question à réponse rédigée/développée) en ${subjName}, niveau ${level || 'non précisé'}, portant précisément sur la notion "${notion}". ${adaptiveHint}${scopeRule}${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide : {"statement":"énoncé complet de l'exercice, clair et autonome (peut inclure des données chiffrées si pertinent)","expectedElements":"pour ton usage interne uniquement : les 2-4 éléments clés qu'une bonne réponse doit contenir, pour te servir de grille de correction plus tard"}`;
+ const prompt = `Rédige UN exercice ouvert (pas un QCM, pas de choix à cocher : une vraie question à réponse rédigée/développée) en ${subjName}, niveau ${level || 'non précisé'}, portant précisément sur la notion "${notion}". ${adaptiveHint}${scopeRule}${langMix}${MATH_NOTATION_RULE}Réponds UNIQUEMENT en JSON valide : {"statement":"énoncé complet de l'exercice, clair et autonome (peut inclure des données chiffrées si pertinent)","expectedElements":"pour ton usage interne uniquement : les 2-4 éléments clés qu'une bonne réponse doit contenir, pour te servir de grille de correction plus tard"}`;
 
  const res = await fetch(AI_ENDPOINT, {
  method: 'POST',
@@ -11654,7 +11666,7 @@ async function loadLesson(subjectId, notion) {
  // On force maintenant explicitement le français pour les explications, la
  // langue cible n'apparaissant que dans les exemples (avec traduction).
  const langMix = isLanguageTopic(subjName)
- ? ` Comme "${subjName}" est une langue étrangère et que l'élève peut être débutant : rédige les explications ET les titres en français, et n'utilise "${subjName}" que pour les exemples concrets, phrases modèles ou mots de vocabulaire à apprendre — toujours suivis de leur traduction française entre parenthèses. Jamais un cours entièrement en langue étrangère.`
+ ? ` Comme "${subjName}" est une langue étrangère et que l'élève peut être débutant : rédige les explications, les titres et les CONSIGNES en français. Mais si le cours contient un exercice pratique ou des phrases d'exemple à manipuler, ces phrases elles-mêmes doivent être rédigées entièrement en "${subjName}" (pas des phrases françaises avec juste un mot cible à deviner), chacune suivie de sa traduction française entre parenthèses.`
  : '';
  const prompt = `Rédige, en français, un court cours clair et pédagogique sur la matière "${subjName}", niveau ${level || 'non précisé'}, sur précisément : "${notion}".${langMix} Structure-le avec quelques paragraphes courts (pas de titres markdown avec #, du texte simple), va droit à l'essentiel, donne au moins un exemple concret. ${MATH_NOTATION_RULE}Réponds uniquement avec le texte du cours (pas de JSON, pas de préambule).`;
  const res = await fetch(AI_ENDPOINT, {
@@ -11710,12 +11722,13 @@ function toggleLessonReading() {
  const btn = document.getElementById('spec-lesson-read-btn');
  const b64 = btoa(unescape(encodeURIComponent(_lastLessonText || '')));
  if (ttsActiveKey === b64) { stopSpeaking(); return; }
- // Lit dans la langue de la spécialisation si c'en est une (ex. Anglais),
- // sinon dans la langue de l'app (français) — comme demandé : le coach
- // (discussion générale) reste toujours en français, seules les
- // spécialisations langues se lisent dans leur propre langue.
- const locale = isLanguageTopic(_lastLessonSubject) ? getLanguageLocale(_lastLessonSubject) : null;
- speakMessage(b64, btn, locale);
+ // CORRECTIF : le cours (même pour une spécialisation langue) est rédigé
+ // principalement en français, avec seulement quelques phrases d'exemple
+ // dans la langue cible — le lire entièrement avec l'accent de la langue
+ // cible rendait les explications françaises incompréhensibles. On lit donc
+ // toujours en français ; seule l'activité dédiée "Prononciation" (phrases
+ // ciblées, générées à part) utilise encore la langue cible.
+ speakMessage(b64, btn, null);
 }
 function updateLessonReadBtn() {
  const btn = document.getElementById('spec-lesson-read-btn');
@@ -14689,7 +14702,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-02d (fix melange langue cours + filet erreur, TTS cours selon langue spe, dedoublonnage accueil generique/specialisation)';
+const BUILD_STAMP = '2026-09-04a (retire point du jour, TTS francais force sur cours langue, nettoyage lecture chat, exercice ecrit langue instructions en francais, update-check desactive sur web)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
@@ -14697,6 +14710,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function checkForAppUpdate() {
  try {
+ // CORRECTIF : cette vérification proposait de télécharger l'APK même
+ // quand l'app tourne dans un simple navigateur web (Netlify/Vercel) —
+ // une page web n'a pas d'APK à mettre à jour, ce bandeau n'a de sens
+ // que dans l'app Android installée.
+ if (typeof isRunningInNativeApp === 'function' && !isRunningInNativeApp()) return;
  // CORRECTIF (conflits) : si une modale est déjà affichée, ou qu'un
  // téléchargement est déjà en cours, on ne relance jamais une deuxième
  // vérification par-dessus — sinon deux invites de mise à jour ou deux
