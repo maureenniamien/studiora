@@ -8958,32 +8958,53 @@ function speakMessage(b64text, btn, locale) {
  // échoue souvent silencieusement (l'énoncé "termine" aussitôt, sans son).
  // Un court délai après cancel() contourne ce bug connu du navigateur.
  window.speechSynthesis.cancel();
- setTimeout(function() {
+ // CORRECTIF (confirmé par diagnostic : erreur "synthesis-failed") : Chrome
+ // Android échoue à synthétiser un texte trop long en un seul bloc (un
+ // cours fait souvent plusieurs milliers de caractères). On découpe donc en
+ // petits morceaux (par phrase, ~180 caractères max) lus l'un après l'autre
+ // en file — bien plus fiable qu'un unique énoncé géant.
+ const CHUNK_MAX = 180;
+ const rawParts = clean.split(/(?<=[.!?:])\s+/);
+ const chunks = [];
+ let cur = '';
+ for (const part of rawParts) {
+ if ((cur + ' ' + part).trim().length > CHUNK_MAX && cur) { chunks.push(cur.trim()); cur = part; }
+ else cur = (cur ? cur + ' ' : '') + part;
+ }
+ if (cur.trim()) chunks.push(cur.trim());
+ if (chunks.length === 0) { stopSpeaking(); return; }
+
+ let chunkIdx = 0;
+ let anyStarted = false;
+ function speakNextChunk() {
+ if (chunkIdx >= chunks.length) { stopSpeaking(); return; }
+ // Un arrêt manuel entre-temps (ttsActiveKey remis à null par stopSpeaking) coupe la file
+ if (ttsActiveKey !== b64text) return;
  try {
- const utter = new SpeechSynthesisUtterance(clean);
+ const utter = new SpeechSynthesisUtterance(chunks[chunkIdx]);
  utter.lang = locale || 'fr-FR';
  utter.rate = 1;
- // DIAGNOSTIC TEMPORAIRE : la lecture web échouait sans jamais dire
- // pourquoi (stopSpeaking() était appelé silencieusement au moindre
- // souci). On distingue maintenant "a démarré puis s'est arrêté
- // normalement" de "n'a jamais démarré / a levé une vraie erreur", et on
- // affiche la raison exacte fournie par le navigateur dans ce 2e cas.
- let started = false;
- utter.onstart = function() { started = true; };
- utter.onend = stopSpeaking;
+ utter.onstart = function() { anyStarted = true; };
+ utter.onend = function() { chunkIdx++; speakNextChunk(); };
  utter.onerror = function(ev) {
- showToast('⚠ Diagnostic lecture : ' + (ev && ev.error ? ev.error : 'erreur inconnue') + (started ? '' : ' (jamais démarrée)'));
+ // DIAGNOSTIC TEMPORAIRE : si même un petit morceau échoue, affiche la
+ // vraie raison au lieu d'échouer en silence — aide à distinguer un
+ // souci de longueur (déjà traité ci-dessus) d'une autre cause.
+ showToast('⚠ Diagnostic lecture : ' + (ev && ev.error ? ev.error : 'erreur inconnue') + (anyStarted ? ' (après un ou plusieurs segments lus)' : ' (dès le premier segment)'));
  stopSpeaking();
  };
- const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
- if (!voices || voices.length === 0) {
- showToast('⚠ Diagnostic : 0 voix disponible pour la synthèse vocale sur cet appareil/navigateur');
- }
  window.speechSynthesis.speak(utter);
  } catch(e) {
  showToast('⚠ Diagnostic lecture : exception JS — ' + e);
  stopSpeaking();
  }
+ }
+ setTimeout(function() {
+ const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+ if (!voices || voices.length === 0) {
+ showToast('⚠ Diagnostic : 0 voix disponible pour la synthèse vocale sur cet appareil/navigateur');
+ }
+ speakNextChunk();
  }, 150);
 }
 
@@ -14747,7 +14768,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-04d (filet de securite diagnostic sur lecture audio web : affiche la vraie erreur du navigateur au lieu d\'echouer en silence)';
+const BUILD_STAMP = '2026-09-04e (fix confirme : lecture web decoupee en petits segments, Chrome Android echouait avec synthesis-failed sur un texte trop long)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
