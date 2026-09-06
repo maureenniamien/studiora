@@ -8976,6 +8976,7 @@ function speakMessage(b64text, btn, locale) {
 
  let chunkIdx = 0;
  let anyStarted = false;
+ let errorShown = false;
  function speakNextChunk() {
  if (chunkIdx >= chunks.length) { stopSpeaking(); return; }
  // Un arrêt manuel entre-temps (ttsActiveKey remis à null par stopSpeaking) coupe la file
@@ -8985,18 +8986,28 @@ function speakMessage(b64text, btn, locale) {
  utter.lang = locale || 'fr-FR';
  utter.rate = 1;
  utter.onstart = function() { anyStarted = true; };
- utter.onend = function() { chunkIdx++; speakNextChunk(); };
+ // CORRECTIF : enchaîner speak() immédiatement dans onend (sans délai)
+ // reproduit le même bug Android que cancel()+speak() immédiat — on
+ // espace donc chaque segment d'un court délai.
+ utter.onend = function() { chunkIdx++; setTimeout(speakNextChunk, 200); };
  utter.onerror = function(ev) {
- // DIAGNOSTIC TEMPORAIRE : si même un petit morceau échoue, affiche la
- // vraie raison au lieu d'échouer en silence — aide à distinguer un
- // souci de longueur (déjà traité ci-dessus) d'une autre cause.
- showToast('⚠ Diagnostic lecture : ' + (ev && ev.error ? ev.error : 'erreur inconnue') + (anyStarted ? ' (après un ou plusieurs segments lus)' : ' (dès le premier segment)'));
- stopSpeaking();
+ // CORRECTIF : si un segment précis échoue (ex. un extrait de code avec
+ // des caractères que le moteur n'aime pas), on ne coupe plus toute la
+ // lecture — on passe au segment suivant, pour ne pas perdre le reste
+ // du cours à cause d'un seul passage problématique. On garde quand
+ // même le diagnostic visible (une seule fois) pour repérer un souci récurrent.
+ if (!errorShown) {
+ errorShown = true;
+ showToast('⚠ Diagnostic lecture : ' + (ev && ev.error ? ev.error : 'erreur inconnue') + (anyStarted ? ' (segment ignoré, suite en cours)' : ' (dès le premier segment)'));
+ }
+ chunkIdx++;
+ setTimeout(speakNextChunk, 200);
  };
  window.speechSynthesis.speak(utter);
  } catch(e) {
  showToast('⚠ Diagnostic lecture : exception JS — ' + e);
- stopSpeaking();
+ chunkIdx++;
+ setTimeout(speakNextChunk, 200);
  }
  }
  setTimeout(function() {
@@ -14768,7 +14779,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-04e (fix confirme : lecture web decoupee en petits segments, Chrome Android echouait avec synthesis-failed sur un texte trop long)';
+const BUILD_STAMP = '2026-09-04f (lecture web : delai entre segments + on ignore un segment en echec au lieu de tout arreter)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
