@@ -8959,12 +8959,31 @@ function speakMessage(b64text, btn, locale) {
  // Un court délai après cancel() contourne ce bug connu du navigateur.
  window.speechSynthesis.cancel();
  setTimeout(function() {
+ try {
  const utter = new SpeechSynthesisUtterance(clean);
  utter.lang = locale || 'fr-FR';
  utter.rate = 1;
+ // DIAGNOSTIC TEMPORAIRE : la lecture web échouait sans jamais dire
+ // pourquoi (stopSpeaking() était appelé silencieusement au moindre
+ // souci). On distingue maintenant "a démarré puis s'est arrêté
+ // normalement" de "n'a jamais démarré / a levé une vraie erreur", et on
+ // affiche la raison exacte fournie par le navigateur dans ce 2e cas.
+ let started = false;
+ utter.onstart = function() { started = true; };
  utter.onend = stopSpeaking;
- utter.onerror = stopSpeaking;
+ utter.onerror = function(ev) {
+ showToast('⚠ Diagnostic lecture : ' + (ev && ev.error ? ev.error : 'erreur inconnue') + (started ? '' : ' (jamais démarrée)'));
+ stopSpeaking();
+ };
+ const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+ if (!voices || voices.length === 0) {
+ showToast('⚠ Diagnostic : 0 voix disponible pour la synthèse vocale sur cet appareil/navigateur');
+ }
  window.speechSynthesis.speak(utter);
+ } catch(e) {
+ showToast('⚠ Diagnostic lecture : exception JS — ' + e);
+ stopSpeaking();
+ }
  }, 150);
 }
 
@@ -14728,7 +14747,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-04c (fix lecture audio web : delai apres cancel() qui bloquait speechSynthesis sur Chrome Android)';
+const BUILD_STAMP = '2026-09-04d (filet de securite diagnostic sur lecture audio web : affiche la vraie erreur du navigateur au lieu d\'echouer en silence)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
