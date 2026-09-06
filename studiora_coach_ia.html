@@ -8954,13 +8954,18 @@ function speakMessage(b64text, btn, locale) {
  }
  // 2) Repli : API Web Speech du navigateur
  if (!('speechSynthesis' in window)) { showToast('⚠ Synthèse vocale indisponible sur cet appareil'); stopSpeaking(); return; }
+ // CORRECTIF : sur Chrome Android, appeler speak() juste après cancel()
+ // échoue souvent silencieusement (l'énoncé "termine" aussitôt, sans son).
+ // Un court délai après cancel() contourne ce bug connu du navigateur.
  window.speechSynthesis.cancel();
+ setTimeout(function() {
  const utter = new SpeechSynthesisUtterance(clean);
  utter.lang = locale || 'fr-FR';
  utter.rate = 1;
  utter.onend = stopSpeaking;
  utter.onerror = stopSpeaking;
  window.speechSynthesis.speak(utter);
+ }, 150);
 }
 
 
@@ -14723,7 +14728,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-04b (rollback TTS 2-arguments qui cassait toute lecture audio, exercice redige obligatoire pour valider la journee)';
+const BUILD_STAMP = '2026-09-04c (fix lecture audio web : delai apres cancel() qui bloquait speechSynthesis sur Chrome Android)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
