@@ -352,50 +352,86 @@ public class MainActivity extends BridgeActivity {
 
     private void silentlyRefreshLiveCopy() {
         if (!isNetworkAvailable()) return;
-        downloadExecutor.execute(() -> {
-            HttpURLConnection conn = null;
-            try {
-                URL u = new URL(LIVE_INDEX_URL + "?t=" + System.currentTimeMillis());
-                conn = (HttpURLConnection) u.openConnection();
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(20000);
-                conn.setRequestMethod("GET");
-                conn.connect();
-                int code = conn.getResponseCode();
-                if (code < 200 || code >= 300) throw new Exception("HTTP " + code);
+        downloadExecutor.execute(this::downloadLiveCopyOnce);
+    }
 
-                InputStream is = conn.getInputStream();
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                byte[] chunk = new byte[8192];
-                int n;
-                while ((n = is.read(chunk)) != -1) buffer.write(chunk, 0, n);
-                is.close();
-                byte[] bytes = buffer.toByteArray();
+    // BUGFIX (2026-09-10) : extrait de silentlyRefreshLiveCopy() pour être
+    // réutilisable par le bouton "Forcer la mise à jour du contenu" côté JS.
+    // Avant ce correctif, ce bouton se contentait de NAVIGUER vers
+    // studiora-education.netlify.app (une origine complètement différente,
+    // sans le compte/la session en cours) sans jamais toucher au fichier
+    // local (www-live/index.html) que l'app recharge à chaque ouverture —
+    // donc la mise à jour "marchait" à l'écran, mais disparaissait dès la
+    // fermeture/réouverture de l'app, qui rechargeait l'ancien fichier resté
+    // intact sur le disque.
+    private boolean downloadLiveCopyOnce() {
+        HttpURLConnection conn = null;
+        try {
+            URL u = new URL(LIVE_INDEX_URL + "?t=" + System.currentTimeMillis());
+            conn = (HttpURLConnection) u.openConnection();
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(20000);
+            conn.setRequestMethod("GET");
+            conn.connect();
+            int code = conn.getResponseCode();
+            if (code < 200 || code >= 300) throw new Exception("HTTP " + code);
 
-                if (bytes.length < 1024) {
-                    Log.w(TAG, "Reponse suspecte (" + bytes.length + " octets), mise a jour ignoree");
-                    return;
-                }
+            InputStream is = conn.getInputStream();
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int n;
+            while ((n = is.read(chunk)) != -1) buffer.write(chunk, 0, n);
+            is.close();
+            byte[] bytes = buffer.toByteArray();
 
-                File dir = new File(getFilesDir(), "www-live");
-                if (!dir.exists()) dir.mkdirs();
-                File tmp = new File(dir, "index.html.tmp");
-                FileOutputStream fos = new FileOutputStream(tmp);
-                fos.write(bytes);
-                fos.close();
-
-                File index = new File(dir, "index.html");
-                if (!tmp.renameTo(index)) {
-                    Log.w(TAG, "Echec du remplacement atomique de index.html");
-                } else {
-                    Log.i(TAG, "Copie locale mise a jour depuis GitHub Pages (" + bytes.length + " octets)");
-                }
-            } catch (Exception e) {
-                Log.w(TAG, "silentlyRefreshLiveCopy: " + safeMsg(e));
-            } finally {
-                if (conn != null) conn.disconnect();
+            if (bytes.length < 1024) {
+                Log.w(TAG, "Reponse suspecte (" + bytes.length + " octets), mise a jour ignoree");
+                return false;
             }
-        });
+
+            File dir = new File(getFilesDir(), "www-live");
+            if (!dir.exists()) dir.mkdirs();
+            File tmp = new File(dir, "index.html.tmp");
+            FileOutputStream fos = new FileOutputStream(tmp);
+            fos.write(bytes);
+            fos.close();
+
+            File index = new File(dir, "index.html");
+            if (!tmp.renameTo(index)) {
+                Log.w(TAG, "Echec du remplacement atomique de index.html");
+                return false;
+            }
+            Log.i(TAG, "Copie locale mise a jour depuis GitHub Pages (" + bytes.length + " octets)");
+            return true;
+        } catch (Exception e) {
+            Log.w(TAG, "downloadLiveCopyOnce: " + safeMsg(e));
+            return false;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
+    // BUGFIX (2026-09-10) : pont JS exposé sous "AndroidUpdater" — télécharge
+    // réellement la dernière copie ET recharge la WebView sur cette copie
+    // fraîchement écrite, sur la MÊME origine (appassets.androidplatform.net)
+    // que l'app utilise normalement, pour ne pas perdre la session/le
+    // compte connecté comme le faisait l'ancien bouton.
+    private class UpdaterInterface {
+        @JavascriptInterface
+        public void forceRefreshNow() {
+            runJs("window.onContentUpdateStatus && window.onContentUpdateStatus('checking');");
+            downloadExecutor.execute(() -> {
+                boolean ok = downloadLiveCopyOnce();
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (ok && getBridge() != null && getBridge().getWebView() != null) {
+                        getBridge().getWebView().clearCache(true);
+                        getBridge().getWebView().loadUrl("https://" + ASSET_DOMAIN + "/live/index.html");
+                    } else {
+                        runJs("window.onContentUpdateStatus && window.onContentUpdateStatus('error');");
+                    }
+                });
+            });
+        }
     }
 
     @Override
@@ -435,6 +471,7 @@ public class MainActivity extends BridgeActivity {
                 getBridge().getWebView().addJavascriptInterface(new WebAppInterface(), "AndroidSTT");
                 getBridge().getWebView().addJavascriptInterface(new DownloadInterface(), "AndroidDownload");
                 getBridge().getWebView().addJavascriptInterface(new GoogleAuthInterface(), "AndroidGoogleAuth");
+                getBridge().getWebView().addJavascriptInterface(new UpdaterInterface(), "AndroidUpdater");
                 androidx.core.content.ContextCompat.registerReceiver(
                     this, downloadReceiver,
                     new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),

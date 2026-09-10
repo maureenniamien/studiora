@@ -1372,7 +1372,7 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  contourne complètement ce mécanisme : il navigue directement vers la copie
  web réellement à jour (Netlify, seule source confirmée fiable), sans passer
  par la copie locale mise en cache. Ne nécessite aucune modification native / rebuild APK. -->
- <button onclick="location.href='https://studiora-education.netlify.app/?t=' + Date.now()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Forcer la mise à jour du contenu</button>
+ <button id="force-update-btn" onclick="forceContentUpdate()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text2);font-weight:600;font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">↻ Forcer la mise à jour du contenu</button>
  <!-- Lien permanent de telechargement de l'APK : le bouton flottant peut etre
  ferme definitivement par l'utilisateur (localStorage), qui perd alors tout
  moyen de retrouver l'app native. Ce bouton reste toujours accessible ici. -->
@@ -4602,6 +4602,36 @@ function showToast(msg) {
  clearTimeout(toastTimer);
  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
 }
+
+// BUGFIX (2026-09-10) : l'ancien bouton "Forcer la mise à jour" se contentait
+// de naviguer vers studiora-education.netlify.app — une origine différente,
+// sans la session en cours — et ne touchait jamais au fichier local que
+// l'app native recharge à chaque ouverture. Résultat : la mise à jour
+// "marchait" à l'écran mais disparaissait à la prochaine ouverture. Cette
+// fonction appelle maintenant le vrai pont natif (AndroidUpdater), qui
+// télécharge la dernière copie sur le disque puis recharge la même page —
+// donc ça persiste après fermeture/réouverture. Hors de l'app (navigateur
+// web pur, Vercel/Netlify), il n'y a pas de cache local à rafraîchir : un
+// simple rechargement de la page suffit, puisque le navigateur va de toute
+// façon récupérer la dernière version en ligne.
+function forceContentUpdate() {
+ const btn = document.getElementById('force-update-btn');
+ if (window.AndroidUpdater && typeof window.AndroidUpdater.forceRefreshNow === 'function') {
+ if (btn) { btn.disabled = true; btn.textContent = '↻ Mise à jour en cours…'; }
+ window.AndroidUpdater.forceRefreshNow();
+ } else {
+ location.reload();
+ }
+}
+// Appelé par le natif une fois le téléchargement terminé (avant le
+// rechargement de la page en cas de succès, ou en cas d'échec réseau).
+window.onContentUpdateStatus = function(status) {
+ const btn = document.getElementById('force-update-btn');
+ if (status === 'error') {
+ if (btn) { btn.disabled = false; btn.textContent = '↻ Forcer la mise à jour du contenu'; }
+ showToast('⚠ Mise à jour impossible — vérifie ta connexion et réessaie');
+ }
+};
 
 // CORRECTIF : les échecs réseau pendant une génération IA (quiz, cartes mémo,
 // sujet, analyse de cours...) étaient tous avalés en silence puis relancés
@@ -14856,7 +14886,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-10 (voix francaise explicite en repli web speech, diagnostic si absente)';
+const BUILD_STAMP = '2026-09-10';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
