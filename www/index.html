@@ -8977,6 +8977,18 @@ function speakMessage(b64text, btn, locale) {
  let chunkIdx = 0;
  let anyStarted = false;
  let errorShown = false;
+ // BUGFIX (2026-09-10) : `utter.lang = 'fr-FR'` ne suffit pas — sur ce
+ // téléphone, aucune voix française n'est installée côté navigateur/Android,
+ // donc Chrome substitue SILENCIEUSEMENT une voix anglaise par défaut (pas
+ // d'erreur, pas de warning : le texte est lu, juste avec un accent anglais).
+ // On sélectionne maintenant explicitement une voix dont la langue commence
+ // par "fr" si une existe, et on prévient clairement sinon au lieu de laisser
+ // deviner que "tout est lu en anglais".
+ let frenchVoice = null;
+ function pickFrenchVoice() {
+ const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+ return voices.find(v => (v.lang || '').toLowerCase().startsWith((locale || 'fr').slice(0,2).toLowerCase())) || null;
+ }
  function speakNextChunk() {
  if (chunkIdx >= chunks.length) { stopSpeaking(); return; }
  // Un arrêt manuel entre-temps (ttsActiveKey remis à null par stopSpeaking) coupe la file
@@ -8984,6 +8996,7 @@ function speakMessage(b64text, btn, locale) {
  try {
  const utter = new SpeechSynthesisUtterance(chunks[chunkIdx]);
  utter.lang = locale || 'fr-FR';
+ if (frenchVoice) utter.voice = frenchVoice;
  utter.rate = 1;
  utter.onstart = function() { anyStarted = true; };
  // CORRECTIF : enchaîner speak() immédiatement dans onend (sans délai)
@@ -9014,6 +9027,14 @@ function speakMessage(b64text, btn, locale) {
  const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
  if (!voices || voices.length === 0) {
  showToast('⚠ Diagnostic : 0 voix disponible pour la synthèse vocale sur cet appareil/navigateur');
+ }
+ frenchVoice = pickFrenchVoice();
+ if (!frenchVoice && voices.length > 0 && (locale || 'fr').slice(0,2).toLowerCase() === 'fr') {
+ // BUGFIX (2026-09-10) : avant, on continuait en silence avec la voix par
+ // défaut (souvent anglaise) — désormais on le dit clairement, avec la
+ // vraie cause (pas de voix française installée) plutôt qu'un symptôme
+ // ("tout est lu en anglais") difficile à diagnostiquer pour elle.
+ showToast('⚠ Aucune voix française trouvée sur cet appareil — Réglages Android > Langues et saisie > Synthèse vocale > installer le français');
  }
  speakNextChunk();
  }, 150);
@@ -14835,7 +14856,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-09 (sync matiere perso app_state + flush cloud avant deconnexion/arriere-plan)';
+const BUILD_STAMP = '2026-09-10 (voix francaise explicite en repli web speech, diagnostic si absente)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
