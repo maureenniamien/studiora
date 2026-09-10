@@ -13605,21 +13605,49 @@ const SESSION_KEY = 'studiora_session';
 function getLocalStateBlob() {
  let days = [];
  try { days = JSON.parse(localStorage.getItem('studiora_days') || '[]'); } catch(e) {}
- return { stats: getStats(), curriculum: getCurriculumCache(), subjectCustom: getSubjectCustomizations(), days, tree: getTreeData(), updatedAt: getLocalStateUpdatedAt() };
+ // BUGFIX (2026-09-09) : le "catalogue" des matières tapées à la main
+ // (id/nom/couleur, créé par addCustomUserSubject dans CUSTOM_CATALOG_KEY)
+ // n'était JAMAIS inclus dans ce blob — seul le fait qu'elle soit "ajoutée à
+ // mes matières" (subjectCustom.added/customNames) l'était. Sur un autre
+ // déploiement (Vercel/Netlify/app, localStorage isolé par origine) ou après
+ // un vidage local (déconnexion), rien ne restaurait la définition réelle de
+ // la matière — seule une reconstruction partielle par nom était possible.
+ // On synchronise donc aussi ce catalogue perso, pour que la matière soit
+ // identique partout, pas seulement sur l'appareil qui l'a créée.
+ return { stats: getStats(), curriculum: getCurriculumCache(), subjectCustom: getSubjectCustomizations(), customCatalog: getCustomCatalogSubjects(), days, tree: getTreeData(), updatedAt: getLocalStateUpdatedAt() };
 }
 let _cloudSyncTimer = null;
-function pushCloudSync() {
+// BUGFIX (2026-09-09) : envoie IMMÉDIATEMENT (sans le débounce de 800ms) le
+// dernier état local vers le cloud. Nécessaire avant toute action qui va
+// effacer ou quitter les données locales (déconnexion, mise en arrière-plan
+// de l'app) : avant ce correctif, ajouter une matière puis se déconnecter
+// (ou que l'app passe en arrière-plan) juste après pouvait couper le minuteur
+// de 800ms avant qu'il ne se déclenche — la modification n'était alors
+// JAMAIS envoyée au cloud, et clearAccountLocalData() l'effaçait ensuite en
+// local : la matière disparaissait purement et simplement, jusqu'à la
+// recréer manuellement.
+function flushCloudSyncNow() {
  if (!APP.user || !APP.user.email) return;
  clearTimeout(_cloudSyncTimer);
- // debounce : évite une rafale de requêtes si plusieurs écritures locales arrivent d'affilée
- _cloudSyncTimer = setTimeout(() => {
  fetch(`${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(APP.user.email)}`, {
  method: 'PATCH',
  headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY, 'Authorization':`Bearer ${SUPABASE_ANON_KEY}`, 'Prefer':'return=minimal' },
  body: JSON.stringify({ app_state: getLocalStateBlob() })
- }).catch(()=>{}); // colonne absente / hors-ligne : on continue avec le localStorage seul
- }, 800);
+ }).catch(()=>{});
 }
+function pushCloudSync() {
+ if (!APP.user || !APP.user.email) return;
+ clearTimeout(_cloudSyncTimer);
+ // debounce : évite une rafale de requêtes si plusieurs écritures locales arrivent d'affilée
+ _cloudSyncTimer = setTimeout(() => { flushCloudSyncNow(); }, 800);
+}
+// Filet de sécurité supplémentaire : si l'app/l'onglet passe en arrière-plan
+// (verrouillage écran, changement d'app, fermeture) alors qu'un envoi cloud
+// est encore en attente (debounce de 800ms non écoulé), on force l'envoi
+// immédiat — les timers JS peuvent être gelés/tués par le système dès la mise
+// en arrière-plan, avant d'avoir eu la chance de se déclencher normalement.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushCloudSyncNow(); });
+window.addEventListener('pagehide', () => flushCloudSyncNow());
 // Recalcule le total de points de l'arbre à partir de l'historique fusionné
 // des attributions journalières (2 pts série + 4 pts défi + 2 pts score, par
 // jour où le flag est vrai). Évite de perdre des points gagnés sur un autre
@@ -13678,6 +13706,28 @@ async function pullCloudSync() {
  if (mergedPoints !== (localTree.points||0) || JSON.stringify(mergedAwarded) !== JSON.stringify(localTree.awarded||{})) {
  const mergedRewards = Array.from(new Set([...(localTree.rewardsClaimed||[]), ...(cloud.tree.rewardsClaimed||[])]));
  localStorage.setItem('studiora_tree', JSON.stringify({ ...localTree, awarded: mergedAwarded, points: mergedPoints, rewardsClaimed: mergedRewards }));
+ changed = true;
+ }
+ }
+
+ // BUGFIX (2026-09-09) : le catalogue des matières perso (customCatalog) est
+ // FUSIONNÉ (union par id, jamais remplacé) plutôt que traité comme le reste
+ // ("le plus récent gagne") — sans ça, une matière créée sur l'app puis une
+ // autre créée sur Vercel avant la prochaine synchro pouvait voir l'une des
+ // deux écrasée. Fusionné à chaque pull, indépendamment de updatedAt, pour
+ // que le catalogue soit toujours identique partout (app/Vercel/Netlify).
+ if (Array.isArray(cloud.customCatalog) && cloud.customCatalog.length) {
+ const localCatalog = getCustomCatalogSubjects();
+ const norm = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ const mergedCatalog = localCatalog.slice();
+ cloud.customCatalog.forEach(cs => {
+ if (!cs || !cs.id) return;
+ const dup = mergedCatalog.find(x => x.id === cs.id || norm(x.name) === norm(cs.name));
+ if (!dup) mergedCatalog.push(cs);
+ });
+ if (mergedCatalog.length !== localCatalog.length) {
+ localStorage.setItem(CUSTOM_CATALOG_KEY, JSON.stringify(mergedCatalog));
+ mergeCustomCatalogSubjects();
  changed = true;
  }
  }
@@ -14705,6 +14755,12 @@ function guardAccountSwitch(email) {
  try { localStorage.setItem(ACTIVE_ACCOUNT_KEY, email); } catch(e) {}
 }
 function doLogout() {
+ // BUGFIX (2026-09-09) : force l'envoi cloud du dernier état AVANT de vider
+ // les données locales (clearAccountLocalData efface subjectCustom etc.) —
+ // sinon une modification récente (ex. matière tout juste ajoutée) encore en
+ // attente dans le débounce de 800ms était perdue : jamais envoyée au cloud,
+ // puis effacée en local par la déconnexion.
+ flushCloudSyncNow();
  localStorage.removeItem(SESSION_KEY);
  localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
  clearAccountLocalData();
@@ -14779,7 +14835,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-04f (lecture web : delai entre segments + on ignore un segment en echec au lieu de tout arreter)';
+const BUILD_STAMP = '2026-09-09 (sync matiere perso app_state + flush cloud avant deconnexion/arriere-plan)';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
