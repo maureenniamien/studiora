@@ -323,7 +323,21 @@ public class MainActivity extends BridgeActivity {
     private void ensureLocalCopyFromAssets() {
         File dir = new File(getFilesDir(), "www-live");
         File index = new File(dir, "index.html");
-        if (index.exists()) return;
+        android.content.SharedPreferences prefs = getSharedPreferences("studiora_native", MODE_PRIVATE);
+        int lastCopiedVersion = prefs.getInt("last_bundled_asset_version", -1);
+        int currentVersion = BuildConfig.VERSION_CODE;
+        // BUGFIX (2026-09-11) : avant, on ne recopiait les assets embarqués
+        // vers www-live QUE si aucun fichier n'existait encore là — donc une
+        // MISE À JOUR de l'app (installer un nouvel APK par-dessus l'ancien,
+        // sans désinstallation complète) ne rafraîchissait JAMAIS le contenu
+        // local : l'ancienne copie de www-live (créée à l'installation
+        // précédente, ou par un rafraîchissement silencieux antérieur)
+        // restait chargée indéfiniment, même si le nouvel APK embarquait un
+        // HTML plus récent avec des correctifs. On recopie donc maintenant
+        // aussi quand le versionCode de l'APK a changé depuis la dernière
+        // copie, pour que chaque nouvel APK installé démarre bien sur son
+        // propre contenu à jour.
+        if (index.exists() && lastCopiedVersion == currentVersion) return;
         try {
             if (!dir.exists()) dir.mkdirs();
             InputStream is = getAssets().open("public/index.html");
@@ -333,7 +347,8 @@ public class MainActivity extends BridgeActivity {
             while ((n = is.read(buf)) != -1) fos.write(buf, 0, n);
             is.close();
             fos.close();
-            Log.i(TAG, "Copie initiale des assets embarques vers le stockage modifiable");
+            prefs.edit().putInt("last_bundled_asset_version", currentVersion).apply();
+            Log.i(TAG, "Copie des assets embarques vers le stockage modifiable (version " + currentVersion + ")");
         } catch (Exception e) {
             Log.e(TAG, "ensureLocalCopyFromAssets error", e);
         }
