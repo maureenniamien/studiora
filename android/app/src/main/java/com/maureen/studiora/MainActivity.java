@@ -325,7 +325,17 @@ public class MainActivity extends BridgeActivity {
         File index = new File(dir, "index.html");
         android.content.SharedPreferences prefs = getSharedPreferences("studiora_native", MODE_PRIVATE);
         int lastCopiedVersion = prefs.getInt("last_bundled_asset_version", -1);
-        int currentVersion = BuildConfig.VERSION_CODE;
+        // BUGFIX (2026-09-11, v2) : BuildConfig.VERSION_CODE ne compile pas
+        // dans ce projet (buildFeatures.buildConfig n'est pas active cote
+        // Gradle) — on recupere le versionCode via PackageManager a la
+        // place, qui marche toujours sans configuration Gradle
+        // supplementaire.
+        int currentVersion;
+        try {
+            currentVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+        } catch (Exception e) {
+            currentVersion = -1;
+        }
         // BUGFIX (2026-09-11) : avant, on ne recopiait les assets embarqués
         // vers www-live QUE si aucun fichier n'existait encore là — donc une
         // MISE À JOUR de l'app (installer un nouvel APK par-dessus l'ancien,
