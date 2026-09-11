@@ -13783,6 +13783,34 @@ async function pullCloudSync() {
  }
  }
 
+ // BUGFIX (2026-09-11) : les spécialisations (dans stats.specializations)
+ // n'étaient synchronisées que via la logique "le plus récent gagne" sur
+ // TOUT le blob stats plus bas — donc une spécialisation démarrée sur un
+ // appareil (ex. web), suivie d'une activité quelconque sur un AUTRE
+ // appareil (ex. app, qui rend son horodatage local plus récent), faisait
+ // disparaître purement et simplement la première au prochain pull, sans
+ // jamais réapparaître : le "plus récent" gagnait le blob ENTIER, pas
+ // seulement ce qu'il avait de plus récent. On fusionne donc maintenant les
+ // spécialisations par id en plus de cette logique — jamais un
+ // remplacement, uniquement l'ajout de celles manquantes localement.
+ if (cloud.stats && Array.isArray(cloud.stats.specializations) && cloud.stats.specializations.length) {
+ if (!Array.isArray(local.stats.specializations)) local.stats.specializations = [];
+ const existingIds = new Set(local.stats.specializations.map(x => x.id));
+ let addedSpec = false;
+ cloud.stats.specializations.forEach(spec => {
+ if (spec && spec.id && !existingIds.has(spec.id)) {
+ local.stats.specializations.push(spec);
+ existingIds.add(spec.id);
+ addedSpec = true;
+ }
+ });
+ if (addedSpec) {
+ if (!local.stats.activeSpecializationId) local.stats.activeSpecializationId = local.stats.specializations[0].id;
+ localStorage.setItem('studiora_stats', JSON.stringify(local.stats));
+ changed = true;
+ }
+ }
+
  // Stats / curriculum / matières perso : le plus récent des deux gagne
  if ((cloud.updatedAt||0) > (local.updatedAt||0)) {
  if (cloud.stats) saveStats(cloud.stats);
@@ -14886,7 +14914,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-10';
+const BUILD_STAMP = '2026-09-11';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
