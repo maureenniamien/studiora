@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Layout du widget d'accueil Studiora.
+  IMPORTANT : les widgets (RemoteViews) n'acceptent qu'un sous-ensemble
+  limité de vues Android (LinearLayout, RelativeLayout, FrameLayout,
+  GridLayout, TextView, ImageView, Button...) — pas de ConstraintLayout, pas
+  de vues custom. On reste donc volontairement simple : un LinearLayout
+  horizontal (mascotte à gauche, texte à droite) qui s'adapte tout seul via
+  layout_weight quelle que soit la taille choisie par l'utilisateur.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/studiora_widget_bg"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/widget_mascot"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:adjustViewBounds="true"
+        android:scaleType="fitStart"
+        android:contentDescription="Mascotte Studiora"
+        android:src="@drawable/studiora_widget_mascot" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:orientation="vertical"
+        android:paddingStart="10dp">
+
+        <TextView
+            android:id="@+id/widget_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Conseil du jour"
+            android:textColor="#166534"
+            android:textStyle="bold"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_tip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Chargement..."
+            android:textColor="#3A3A3A"
+            android:textSize="13sp"
+            android:maxLines="4"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+</LinearLayout>

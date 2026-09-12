@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fond en dégradé (vert doux -> blanc -> or doux), inspiré des couleurs de
+  l'app, plutôt qu'une image bitmap : un widget peut être redimensionné à
+  n'importe quel format par l'utilisateur (carré, large, haut...), et une
+  image figée s'étirerait mal dans ces cas, alors qu'un dégradé vectoriel
+  reste net et proportionné quelle que soit la taille choisie.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="20dp" />
+    <gradient
+        android:type="linear"
+        android:angle="315"
+        android:startColor="#E8F5EC"
+        android:centerColor="#FFFFFF"
+        android:endColor="#FDF3E3" />
+</shape>

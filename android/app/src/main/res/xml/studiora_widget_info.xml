@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  minWidth/minHeight = taille de départ quand l'utilisateur pose le widget
+  (environ 3x1 cellules). resizeMode="horizontal|vertical" + minResizeWidth/
+  Height plus petits = l'utilisateur peut ensuite l'agrandir OU le réduire
+  librement dans les deux sens, jusqu'à un simple carré 1x1 ou un grand
+  rectangle — c'est ça qui rend la taille "adaptative" demandée.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="60dp"
+    android:minResizeWidth="60dp"
+    android:minResizeHeight="60dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="21600000"
+    android:initialLayout="@layout/studiora_widget"
+    android:previewImage="@drawable/studiora_widget_mascot"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen">
+</appwidget-provider>
