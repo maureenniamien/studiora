@@ -457,6 +457,33 @@ public class MainActivity extends BridgeActivity {
                 });
             });
         }
+
+        // AJOUT (2026-09-12) : propose directement depuis l'app d'épingler
+        // le widget sur l'écran d'accueil, au lieu de laisser l'utilisateur
+        // le chercher lui-même dans le sélecteur de widgets du système.
+        // Nécessite Android 8.0 (API 26) minimum et un lanceur qui supporte
+        // cette API — on vérifie les deux avant de tenter, et on prévient
+        // proprement en JS si ce n'est pas possible plutôt que d'échouer en
+        // silence.
+        @JavascriptInterface
+        public void requestPinWidget() {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                runJs("window.onPinWidgetStatus && window.onPinWidgetStatus('unsupported');");
+                return;
+            }
+            android.appwidget.AppWidgetManager awm = android.appwidget.AppWidgetManager.getInstance(MainActivity.this);
+            android.content.ComponentName provider = new android.content.ComponentName(MainActivity.this, StudioraWidgetProvider.class);
+            if (awm == null || !awm.isRequestPinAppWidgetSupported()) {
+                runJs("window.onPinWidgetStatus && window.onPinWidgetStatus('unsupported');");
+                return;
+            }
+            try {
+                awm.requestPinAppWidget(provider, null, null);
+            } catch (Exception e) {
+                Log.w(TAG, "requestPinWidget: " + safeMsg(e));
+                runJs("window.onPinWidgetStatus && window.onPinWidgetStatus('error');");
+            }
+        }
     }
 
     @Override

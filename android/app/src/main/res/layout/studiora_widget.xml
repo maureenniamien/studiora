@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Layout du widget d'accueil Studiora.
-  IMPORTANT : les widgets (RemoteViews) n'acceptent qu'un sous-ensemble
-  limité de vues Android (LinearLayout, RelativeLayout, FrameLayout,
-  GridLayout, TextView, ImageView, Button...) — pas de ConstraintLayout, pas
-  de vues custom. On reste donc volontairement simple : un LinearLayout
-  horizontal (mascotte à gauche, texte à droite) qui s'adapte tout seul via
-  layout_weight quelle que soit la taille choisie par l'utilisateur.
+  BUGFIX (2026-09-12) : la mascotte était mal cadrée — combiner
+  layout_weight (largeur en 0dp+poids) avec adjustViewBounds="true" est
+  connu pour mal se comporter dans les widgets (RemoteViews) selon les
+  lanceurs. On utilise maintenant scaleType="centerInside" (jamais
+  d'étirement, l'image est simplement centrée et réduite si besoin) sur des
+  ImageView en wrap_content, ce qui reste stable quelle que soit la taille
+  du widget. On ajoute aussi un petit arbre (même esprit que l'Arbre de
+  connaissance affiché dans l'app) à côté de la mascotte.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
@@ -17,15 +18,30 @@
     android:gravity="center_vertical"
     android:padding="12dp">
 
-    <ImageView
-        android:id="@+id/widget_mascot"
+    <FrameLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:adjustViewBounds="true"
-        android:scaleType="fitStart"
-        android:contentDescription="Mascotte Studiora"
-        android:src="@drawable/studiora_widget_mascot" />
+        android:layout_weight="1">
+
+        <ImageView
+            android:id="@+id/widget_tree"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start|center_vertical"
+            android:scaleType="centerInside"
+            android:contentDescription="Arbre de connaissance"
+            android:src="@drawable/studiora_widget_tree" />
+
+        <ImageView
+            android:id="@+id/widget_mascot"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="end|bottom"
+            android:scaleType="centerInside"
+            android:contentDescription="Mascotte Studiora"
+            android:src="@drawable/studiora_widget_mascot" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"
@@ -38,7 +54,7 @@
             android:id="@+id/widget_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Conseil du jour"
+            android:text="Studiora"
             android:textColor="#166534"
             android:textStyle="bold"
             android:textSize="12sp" />

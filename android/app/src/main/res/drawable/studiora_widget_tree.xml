@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Petit arbre dans le même esprit que l'Arbre de connaissance de l'app
+     (tronc + grappe de feuillage arrondi), en vecteur pour rester net à
+     n'importe quelle taille de widget. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="60dp"
+    android:height="66dp"
+    android:viewportWidth="120"
+    android:viewportHeight="130">
+    <path
+        android:fillColor="#7A5230"
+        android:pathData="M55,130 L55,85 L65,85 L65,130 Z" />
+    <path
+        android:fillColor="#2F9E44"
+        android:pathData="M60,10 m-22,0 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0" />
+    <path
+        android:fillColor="#2F9E44"
+        android:pathData="M28,45 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0" />
+    <path
+        android:fillColor="#2F9E44"
+        android:pathData="M92,45 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0" />
+    <path
+        android:fillColor="#37B24D"
+        android:pathData="M60,55 m-25,0 a25,25 0 1,0 50,0 a25,25 0 1,0 -50,0" />
+</vector>
