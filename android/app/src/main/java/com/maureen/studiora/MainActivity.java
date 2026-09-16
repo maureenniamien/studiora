@@ -6,6 +6,7 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -54,6 +55,9 @@ public class MainActivity extends BridgeActivity {
     private static final String TAG = "StudioraMain";
     private static final int MIC_PERMISSION_CODE = 2001;
     private static final int STORAGE_PERMISSION_CODE = 2002;
+    private MediaRecorder nativeMicRecorder;
+    private File nativeMicRecordingFile;
+    private File nativeRecDir;
     private Intent pendingIntent = null;
     private TextToSpeech tts;
     private SpeechRecognizer speechRecognizer;
@@ -486,6 +490,86 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // AJOUT (2026-09-14) : enregistrement micro 100% natif (MediaRecorder),
+    // utilisé UNIQUEMENT en repli quand navigator.mediaDevices.getUserMedia()
+    // échoue dans la WebView — bug connu sur certains appareils où l'audio
+    // brut n'est pas accessible depuis la page web malgré la permission
+    // Android déjà accordée. Avant ce correctif, ce cas de figure retombait
+    // sur l'écoute continue AndroidSTT (fiabilité très faible, coupures à
+    // chaque redémarrage de segment) — désormais il retombe sur un vrai
+    // enregistrement fichier, envoyé ensuite au MÊME pipeline Whisper que les
+    // fichiers importés, pour une qualité identique.
+    private class NativeRecorderInterface {
+        @JavascriptInterface
+        public void startRecording() {
+            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.RECORD_AUDIO}, MIC_PERMISSION_CODE);
+                runJs("window.onNativeRecordingError && window.onNativeRecordingError('permission_refusee');");
+                return;
+            }
+            try {
+                if (nativeMicRecorder != null) {
+                    try { nativeMicRecorder.release(); } catch (Exception ignored) {}
+                    nativeMicRecorder = null;
+                }
+                if (nativeRecDir != null && !nativeRecDir.exists()) nativeRecDir.mkdirs();
+                nativeMicRecordingFile = new File(nativeRecDir, "rec_" + System.currentTimeMillis() + ".m4a");
+                nativeMicRecorder = new MediaRecorder();
+                nativeMicRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                nativeMicRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                nativeMicRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+                nativeMicRecorder.setAudioEncodingBitRate(32000);
+                nativeMicRecorder.setAudioSamplingRate(16000);
+                nativeMicRecorder.setOutputFile(nativeMicRecordingFile.getAbsolutePath());
+                nativeMicRecorder.prepare();
+                nativeMicRecorder.start();
+                runJs("window.onNativeRecordingStarted && window.onNativeRecordingStarted();");
+            } catch (Exception e) {
+                Log.w(TAG, "NativeRecorder.startRecording: " + safeMsg(e));
+                nativeMicRecorder = null;
+                runJs("window.onNativeRecordingError && window.onNativeRecordingError('start_failed');");
+            }
+        }
+
+        @JavascriptInterface
+        public void stopRecording() {
+            if (nativeMicRecorder == null) {
+                runJs("window.onNativeRecordingError && window.onNativeRecordingError('not_recording');");
+                return;
+            }
+            String fileName = nativeMicRecordingFile != null ? nativeMicRecordingFile.getName() : null;
+            try {
+                nativeMicRecorder.stop();
+            } catch (Exception e) {
+                Log.w(TAG, "NativeRecorder.stopRecording (stop): " + safeMsg(e));
+                fileName = null; // stop() a échoué : fichier probablement invalide/vide
+            }
+            try { nativeMicRecorder.release(); } catch (Exception ignored) {}
+            nativeMicRecorder = null;
+            if (fileName == null) {
+                runJs("window.onNativeRecordingError && window.onNativeRecordingError('stop_failed');");
+                return;
+            }
+            // Le fichier est servi via WebViewAssetLoader (/rec/) — la page web le
+            // récupère elle-même par fetch(), pas besoin de base64 ici (évite de
+            // gonfler une chaîne JS géante pour un enregistrement de plusieurs minutes).
+            runJs("window.onNativeRecordingReady && window.onNativeRecordingReady(" + org.json.JSONObject.quote(fileName) + ");");
+        }
+
+        @JavascriptInterface
+        public void deleteRecording(String fileName) {
+            try {
+                if (fileName == null || nativeRecDir == null) return;
+                File f = new File(nativeRecDir, fileName);
+                if (f.exists()) f.delete();
+            } catch (Exception e) {
+                Log.w(TAG, "NativeRecorder.deleteRecording: " + safeMsg(e));
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -524,6 +608,7 @@ public class MainActivity extends BridgeActivity {
                 getBridge().getWebView().addJavascriptInterface(new DownloadInterface(), "AndroidDownload");
                 getBridge().getWebView().addJavascriptInterface(new GoogleAuthInterface(), "AndroidGoogleAuth");
                 getBridge().getWebView().addJavascriptInterface(new UpdaterInterface(), "AndroidUpdater");
+                getBridge().getWebView().addJavascriptInterface(new NativeRecorderInterface(), "AndroidRecorder");
                 androidx.core.content.ContextCompat.registerReceiver(
                     this, downloadReceiver,
                     new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
@@ -574,9 +659,17 @@ public class MainActivity extends BridgeActivity {
                 ensureLocalCopyFromAssets();
 
                 File liveDir = new File(getFilesDir(), "www-live");
+                // AJOUT (2026-09-14) : dossier servi pour que la page web puisse récupérer
+                // (via fetch) un enregistrement audio fait par le micro NATIF — voir
+                // NativeRecorderInterface plus bas, utilisé quand getUserMedia() échoue
+                // dans la WebView (bug connu sur certains appareils/versions).
+                File recDir = new File(getFilesDir(), "native-recordings");
+                if (!recDir.exists()) recDir.mkdirs();
+                nativeRecDir = recDir;
                 WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
                         .setDomain(ASSET_DOMAIN)
                         .addPathHandler("/live/", new WebViewAssetLoader.InternalStoragePathHandler(this, liveDir))
+                        .addPathHandler("/rec/", new WebViewAssetLoader.InternalStoragePathHandler(this, recDir))
                         .build();
 
                 getBridge().getWebView().setWebViewClient(new WebViewClientCompat() {

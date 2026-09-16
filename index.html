@@ -8543,6 +8543,111 @@ let _micStream = null;
 let _micChunks = [];
 let _micRecording = false;
 let _micStartTs = 0;
+// AJOUT (2026-09-14) : état du repli d'enregistrement 100% natif (voir
+// toggleMicWhisperTranscription) — distinct de _micRecording (qui gère le
+// chemin MediaRecorder web normal) pour ne jamais confondre les deux.
+let _micRecordingNative = false;
+function _startNativeMicRecording() {
+ if (!window.AndroidRecorder || typeof window.AndroidRecorder.startRecording !== 'function') {
+ // Dernier recours si même le pont natif d'enregistrement est absent
+ // (APK pas encore à jour avec ce correctif) : ancien comportement.
+ _startContinuousMicViaSTT();
+ return;
+ }
+ _micRecordingNative = true;
+ _micStartTs = Date.now();
+ window.AndroidRecorder.startRecording();
+ const btn = document.getElementById('transcribe-mic-btn');
+ if (btn) { btn.style.background = 'var(--amber)'; btn.style.color = '#fff'; btn.innerHTML = _STOP_ICON_SVG; }
+ const startBtn = document.getElementById('mic-start-btn');
+ if (startBtn) { startBtn.textContent = '⏹ Arrêter l\'enregistrement'; startBtn.style.background = 'var(--amber)'; }
+ const label = document.getElementById('transcribe-quota-label');
+ if (label) label.textContent = 'Enregistrement en cours... appuie pour arrêter';
+ const planCap = getSessionMaxSec();
+ const effectiveMaxSec = isFinite(planCap) ? (_micMaxDurationSec > 0 ? Math.min(_micMaxDurationSec, planCap) : planCap) : _micMaxDurationSec;
+ if (effectiveMaxSec > 0 && isFinite(effectiveMaxSec)) {
+ _micAutoStopTimer = setTimeout(() => { if (_micRecordingNative) _stopNativeMicRecording(); }, effectiveMaxSec * 1000);
+ let remaining = effectiveMaxSec;
+ if (label) label.textContent = formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ _micCountdownInterval = setInterval(() => {
+ remaining--;
+ if (label && remaining >= 0) label.textContent = formatDurationHMS(remaining) + ' restantes · appuie pour arrêter avant';
+ if (remaining <= 0) clearInterval(_micCountdownInterval);
+ }, 1000);
+ }
+}
+function _stopNativeMicRecording() {
+ if (!_micRecordingNative) return;
+ _micRecordingNative = false;
+ if (_micAutoStopTimer) { clearTimeout(_micAutoStopTimer); _micAutoStopTimer = null; }
+ if (_micCountdownInterval) { clearInterval(_micCountdownInterval); _micCountdownInterval = null; }
+ const startBtn = document.getElementById('mic-start-btn');
+ if (startBtn) { startBtn.textContent = '⏳ Transcription en cours...'; startBtn.style.background = 'var(--text3)'; }
+ if (window.AndroidRecorder && typeof window.AndroidRecorder.stopRecording === 'function') {
+ window.AndroidRecorder.stopRecording();
+ }
+}
+window.onNativeRecordingStarted = function() {};
+window.onNativeRecordingError = function(reason) {
+ _micRecordingNative = false;
+ const btn = document.getElementById('transcribe-mic-btn');
+ if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ resetMicStartBtn();
+ updateTranscriptionQuotaLabel();
+ if (reason === 'permission_refusee') showToast('⚠ Autorise le micro dans les réglages Android pour utiliser cette fonction');
+ else showToast('⚠ Enregistrement impossible, réessaie');
+};
+// Le fichier natif est servi par le WebView (chemin /rec/, voir MainActivity.java) —
+// on le récupère par un simple fetch relatif puis on l'envoie au même pipeline
+// Whisper que les fichiers importés (_uploadForTranscription), pour la même qualité.
+window.onNativeRecordingReady = async function(fileName) {
+ const rawMs = Date.now() - _micStartTs;
+ const durationSec = Math.round(rawMs / 1000);
+ const btn = document.getElementById('transcribe-mic-btn');
+ const cleanup = () => { if (window.AndroidRecorder && typeof window.AndroidRecorder.deleteRecording === 'function') window.AndroidRecorder.deleteRecording(fileName); };
+ // CORRECTIF anti-hallucination : voir stopMicWhisperRecording, même logique.
+ if (rawMs < 800) {
+ cleanup();
+ if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ resetMicStartBtn();
+ showToast('⚠ Enregistrement trop court, réessaie');
+ updateTranscriptionQuotaLabel();
+ return;
+ }
+ let blob;
+ try {
+ const resp = await fetch('/rec/' + fileName);
+ blob = await resp.blob();
+ } catch(e) {
+ cleanup();
+ if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ resetMicStartBtn();
+ showToast('⚠ Erreur de lecture de l\'enregistrement, réessaie');
+ updateTranscriptionQuotaLabel();
+ return;
+ }
+ cleanup();
+ let result;
+ try {
+ result = await _uploadForTranscription(blob, fileName, btn);
+ } catch(e) {
+ if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ resetMicStartBtn();
+ showToast('⚠ Erreur réseau, réessaie');
+ updateTranscriptionQuotaLabel();
+ return;
+ }
+ if (btn) { btn.disabled = false; btn.innerHTML = _MIC_ICON_SVG; }
+ resetMicStartBtn();
+ if (result.notDeployed) { showToast('⚠ Fonction de transcription indisponible, réessaie plus tard'); updateTranscriptionQuotaLabel(); return; }
+ if (result.error) { showToast('⚠ Erreur de transcription, réessaie'); updateTranscriptionQuotaLabel(); return; }
+ if (result.emptyText) { showToast('⚠ Aucun texte détecté, parle plus fort ou réessaie'); updateTranscriptionQuotaLabel(); return; }
+ const ta = document.getElementById('transcript-textarea');
+ if (ta) { ta.value = (ta.value ? ta.value + '\n' : '') + result.text; ta.scrollTop = ta.scrollHeight; }
+ addTranscriptionUsageSec(durationSec);
+ showToast('✓ Transcription terminée');
+ updateTranscriptionQuotaLabel();
+};
 // Durée max d'enregistrement choisie par l'utilisateur (0 = illimité, arrêt
 // manuel uniquement). Sélecteur h/min/s pour couvrir aussi bien une note
 // rapide (quelques secondes) qu'un cours entier (jusqu'à 5h) — un simple
@@ -8623,32 +8728,28 @@ function _startContinuousMicViaSTT() {
 }
 async function toggleMicWhisperTranscription() {
  if (_micRecording) { stopMicWhisperRecording(); return; }
+ if (_micRecordingNative) { _stopNativeMicRecording(); return; }
  if (!canUseTranscription()) {
  showUpgradeModal('Tu as atteint ton temps de transcription du jour (' + Math.round(getTranscriptionQuotaSec()/60) + ' min). Reset demain, ou passe Premium pour plus de temps.');
  return;
  }
- // Repli automatique si l'environnement ne permet pas d'enregistrer l'audio brut
- // (ex: WebView restreinte sans getUserMedia/MediaRecorder) : on garde l'ancien
- // comportement d'écoute live plutôt que de bloquer l'utilisateur.
+ // CORRECTIF (2026-09-14) : sur certains appareils, getUserMedia/MediaRecorder
+ // échouent dans la WebView même avec la permission Android accordée (bug
+ // connu). Avant, ce cas retombait sur l'écoute continue AndroidSTT — très
+ // peu fiable (coupures à chaque redémarrage de segment, ~2% de réussite
+ // rapporté). On retombe maintenant sur un enregistreur 100% natif
+ // (AndroidRecorder), qui produit un vrai fichier envoyé au même pipeline
+ // Whisper que les fichiers importés — même qualité que "Transcrire pendant
+ // la lecture". AndroidSTT ne reste qu'en tout dernier recours (ni
+ // getUserMedia, ni AndroidRecorder disponibles — ancien APK par exemple).
  if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
- _startContinuousMicViaSTT();
+ _startNativeMicRecording();
  return;
  }
  try {
  _micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
  } catch(e) {
- // CORRECTIF : sur cet appareil, l'API brute getUserMedia/MediaRecorder
- // échoue en WebView même quand la permission Android est accordée (bug
- // connu de certaines versions de WebView) — alors que le pont natif
- // AndroidSTT, lui, fonctionne (confirmé côté discussion). On bascule donc
- // automatiquement dessus au lieu de laisser l'utilisateur bloqué avec
- // juste un message d'erreur.
- if (window.AndroidSTT && typeof window.AndroidSTT.startListening === 'function') {
- _startContinuousMicViaSTT();
- return;
- }
- var reason = (e && (e.name || e.message)) ? (e.name || '') + (e.message ? ' — ' + e.message : '') : 'raison inconnue';
- showToast('⚠ Micro indisponible : ' + reason);
+ _startNativeMicRecording();
  return;
  }
  const mimeType = (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) ? 'audio/webm;codecs=opus' : 'audio/webm';
@@ -14940,7 +15041,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-12';
+const BUILD_STAMP = '2026-09-14';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
