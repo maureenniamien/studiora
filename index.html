@@ -723,6 +723,20 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
  <div id="home-specs-today-items" style="display:flex;flex-direction:column;gap:10px"></div>
  </div>
 
+ <!-- Suivi quotidien (2026-09-17) : créneaux du jour définis par l'élève dans son propre planning, indépendant de la Spécialisation -->
+ <div style="padding:0 20px 18px" class="a2">
+ <div onclick="showDailyTrackingScreen()" style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between">
+ <div>
+ <div style="font-size:13px;font-weight:700">Suivi quotidien</div>
+ <div style="font-size:11px;color:var(--text3);margin-top:2px">Ton emploi du temps, matière par créneau</div>
+ </div>
+ <span style="font-size:12px;color:var(--em);font-weight:700">Gérer →</span>
+ </div>
+ </div>
+ <div style="padding:0 20px 18px;display:none" class="a2" id="home-daily-tracking-wrap">
+ <div id="home-daily-tracking-items" style="display:flex;flex-direction:column;gap:10px"></div>
+ </div>
+
  <!-- Matières -->
  <div style="padding:0 20px 6px" class="a3">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1529,6 +1543,56 @@ setTimeout(hideAppSplash, 6000); // filet de sécurité : jamais bloqué sur le 
 </div>
 
 <!-- ═══════════════════ SPÉCIALISATION (VIP/admin) ═══════════════════ -->
+<div id="screen-daily-tracking" class="screen hidden">
+ <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
+ <button onclick="goBack()" class="back-btn">← Retour</button>
+ <div>
+ <h2 class="display" style="font-size:20px;font-weight:700;margin-bottom:2px;line-height:1">Suivi quotidien</h2>
+ <p style="color:var(--text3);font-size:12px;margin:0">Ton propre emploi du temps, semaine après semaine</p>
+ </div>
+ </div>
+ <div class="scroll-body" style="padding:0 20px 100px">
+
+ <div id="dt-empty-msg" style="display:none;text-align:center;padding:30px 10px;color:var(--text3);font-size:13px">Aucun créneau pour l'instant. Ajoute ta première matière à suivre.</div>
+ <div id="dt-slots-list"></div>
+
+ <button onclick="openDailyTrackingForm(null)" style="width:100%;padding:12px;margin-top:6px;background:var(--em-soft);border:1.5px dashed var(--em);border-radius:12px;color:var(--em);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Ajouter un créneau</button>
+
+ <div id="dt-form-wrap" style="display:none;margin-top:16px;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)">
+ <div id="dt-form-title" style="font-size:14px;font-weight:700;margin-bottom:12px">Nouveau créneau</div>
+
+ <label style="font-size:11.5px;color:var(--text3);font-weight:700">Matière</label>
+ <input id="dt-input-subject" type="text" placeholder="Ex. Mathématiques" style="width:100%;padding:10px 12px;margin:5px 0 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);color:var(--text)"/>
+
+ <label style="font-size:11.5px;color:var(--text3);font-weight:700">Niveau (optionnel)</label>
+ <input id="dt-input-level" type="text" placeholder="Ex. Terminale" style="width:100%;padding:10px 12px;margin:5px 0 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);color:var(--text)"/>
+
+ <label style="font-size:11.5px;color:var(--text3);font-weight:700">Thème précis (optionnel)</label>
+ <input id="dt-input-theme" type="text" placeholder="Ex. Suites numériques" style="width:100%;padding:10px 12px;margin:5px 0 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);color:var(--text)"/>
+
+ <label style="font-size:11.5px;color:var(--text3);font-weight:700">Jours</label>
+ <div style="display:flex;gap:6px;margin:6px 0 12px;flex-wrap:wrap">
+ <span id="dt-day-DI" onclick="toggleDtDayChip('DI')" data-active="0" style="padding:7px 10px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--text2)">Dim</span>
+ <span id="dt-day-LU" onclick="toggleDtDayChip('LU')" data-active="0" style="padding:7px 10px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--text2)">Lun</span>
+ <span id="dt-day-MA" onclick="toggleDtDayChip('MA')" data-active="0" style="padding:7px 10px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--text2)">Mar</span>
+ <span id="dt-day-ME" onclick="toggleDtDayChip('ME')" data-active="0" style="padding:7px 10px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--text2)">Mer</span>
+ <span id="dt-day-JE" onclick="toggleDtDayChip('JE')" data-active="0" style="padding:7px 10px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--text2)">Jeu</span>
+ <span id="dt-day-VE" onclick="toggleDtDayChip('VE')" data-active="0" style="padding:7px 10px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--text2)">Ven</span>
+ <span id="dt-day-SA" onclick="toggleDtDayChip('SA')" data-active="0" style="padding:7px 10px;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--text2)">Sam</span>
+ </div>
+
+ <label style="font-size:11.5px;color:var(--text3);font-weight:700">Heure de rappel</label>
+ <input id="dt-input-time" type="time" style="width:100%;padding:10px 12px;margin:5px 0 16px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg2);color:var(--text)"/>
+
+ <div style="display:flex;gap:8px">
+ <button onclick="closeDailyTrackingForm()" style="flex:1;padding:11px;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Annuler</button>
+ <button onclick="saveDailyTrackingForm()" style="flex:1;padding:11px;background:var(--em);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Enregistrer</button>
+ </div>
+ </div>
+
+ </div>
+</div>
+
 <div id="screen-specialization" class="screen hidden">
  <div style="padding:max(env(safe-area-inset-top,0px) + 16px, 48px) 20px 12px;display:flex;align-items:flex-start;gap:10px">
  <button onclick="goBack()" class="back-btn">← Retour</button>
@@ -4343,14 +4407,14 @@ window.onAndroidBackPressed = function() {
 // Screens qui affichent la nav globale
 const NAV_SCREENS = new Set(['screen-home',
  'screen-progress','screen-profile','screen-travaux','screen-upload',
- 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor','screen-transcription','screen-school','screen-custom-exercise','screen-specialization','screen-activity','screen-spec-lesson','screen-spec-exam']);
+ 'screen-calc','screen-dict','screen-diagrams','screen-media','screen-library','screen-doceditor','screen-transcription','screen-school','screen-custom-exercise','screen-specialization','screen-activity','screen-spec-lesson','screen-spec-exam','screen-daily-tracking']);
 const NAV_ACTIVE_MAP = {
  'screen-home':'nav-home',
  'screen-progress':'nav-home','screen-upload':'nav-travaux',
  'screen-calc':'nav-travaux','screen-dict':'nav-travaux','screen-diagrams':'nav-travaux',
  'screen-travaux':'nav-travaux','screen-media':'nav-travaux','screen-profile':'nav-profile',
  'screen-library':'nav-travaux','screen-doceditor':'nav-travaux','screen-transcription':'nav-travaux',
- 'screen-school':'nav-profile','screen-custom-exercise':'nav-home','screen-specialization':'nav-profile','screen-activity':'nav-home','screen-spec-lesson':'nav-profile','screen-spec-exam':'nav-profile',
+ 'screen-school':'nav-profile','screen-custom-exercise':'nav-home','screen-specialization':'nav-profile','screen-activity':'nav-home','screen-spec-lesson':'nav-profile','screen-spec-exam':'nav-profile','screen-daily-tracking':'nav-home',
 };
 
 function updateGlobalNav(id) {
@@ -4694,6 +4758,7 @@ function renderHome() {
  renderKnowledgeTreeWidget();
  maybeGenerateLearningPlan(); // Phase 3 : affiche le plan existant tout de suite, régénère en tâche de fond si besoin
  renderHomeSpecializationsToday();
+ renderHomeDailyTrackingToday();
 
  const el = document.getElementById('subjects-list');
  el.innerHTML = SUBJECTS.slice(0,5).map(s=>`
@@ -8551,9 +8616,11 @@ function _startNativeMicRecording() {
  if (!window.AndroidRecorder || typeof window.AndroidRecorder.startRecording !== 'function') {
  // Dernier recours si même le pont natif d'enregistrement est absent
  // (APK pas encore à jour avec ce correctif) : ancien comportement.
+ showToast('🔍 Diag: AndroidRecorder absent → ancien mode par segments (peu fiable)');
  _startContinuousMicViaSTT();
  return;
  }
+ showToast('🔍 Diag: AndroidRecorder utilisé (natif)');
  _micRecordingNative = true;
  _micStartTs = Date.now();
  window.AndroidRecorder.startRecording();
@@ -8595,7 +8662,7 @@ window.onNativeRecordingError = function(reason) {
  resetMicStartBtn();
  updateTranscriptionQuotaLabel();
  if (reason === 'permission_refusee') showToast('⚠ Autorise le micro dans les réglages Android pour utiliser cette fonction');
- else showToast('⚠ Enregistrement impossible, réessaie');
+ else showToast('🔍 Diag: AndroidRecorder a démarré puis a échoué (' + reason + ')');
 };
 // Le fichier natif est servi par le WebView (chemin /rec/, voir MainActivity.java) —
 // on le récupère par un simple fetch relatif puis on l'envoie au même pipeline
@@ -8742,13 +8809,19 @@ async function toggleMicWhisperTranscription() {
  // Whisper que les fichiers importés — même qualité que "Transcrire pendant
  // la lecture". AndroidSTT ne reste qu'en tout dernier recours (ni
  // getUserMedia, ni AndroidRecorder disponibles — ancien APK par exemple).
+ // DIAG TEMPORAIRE (à retirer une fois la cause du hachage confirmée) : un
+ // toast unique par tentative indique quel chemin est réellement emprunté sur
+ // CET appareil, pour distinguer "web cassé dès le départ" / "web ok mais
+ // MediaRecorder échoue" / "AndroidRecorder absent" sans avoir à deviner.
  if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+ showToast('🔍 Diag: API web indisponible → AndroidRecorder');
  _startNativeMicRecording();
  return;
  }
  try {
  _micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
  } catch(e) {
+ showToast('🔍 Diag: getUserMedia échoué (' + (e && e.name || e) + ') → AndroidRecorder');
  _startNativeMicRecording();
  return;
  }
@@ -8757,11 +8830,17 @@ async function toggleMicWhisperTranscription() {
  try {
  _micRecorder = new MediaRecorder(_micStream, { mimeType, audioBitsPerSecond: 32000 });
  } catch(e) {
- showToast('⚠ Enregistrement audio indisponible sur cet appareil');
+ // CORRECTIF : avant, un échec de construction de MediaRecorder arrêtait
+ // tout net (toast + retour) sans jamais essayer le repli natif fiable,
+ // alors que getUserMedia avait pourtant réussi juste avant — on tente
+ // maintenant AndroidRecorder ici aussi au lieu d'abandonner.
+ showToast('🔍 Diag: MediaRecorder web échoué → AndroidRecorder');
  _micStream.getTracks().forEach(t=>t.stop());
  _micStream = null;
+ _startNativeMicRecording();
  return;
  }
+ showToast('🔍 Diag: MediaRecorder web OK, enregistrement en cours');
  _micRecorder.ondataavailable = (e) => { if (e.data && e.data.size) _micChunks.push(e.data); };
  _micRecorder.start();
  _micRecording = true;
@@ -10545,6 +10624,270 @@ function recordSpecDayScore(subjectId, scorePct, fromExercise) {
  saveStats(s);
 }
 
+// ── SUIVI QUOTIDIEN (2026-09-17) ──
+// Planning que l'élève construit lui-même (matière/niveau/thème par
+// créneau, jours de la semaine, heure de rappel), distinct et INDÉPENDANT
+// de la Spécialisation (les deux coexistent, demande explicite de Maureen).
+// Réutilise tel quel le moteur de contenu existant (startLesson /
+// startCustomExercise / startPedagogicalActivity) — seul ce bloc de
+// stockage/état/rendu est nouveau. Jours codés DI/LU/MA/ME/JE/VE/SA.
+const DT_DAY_CODES = ['DI','LU','MA','ME','JE','VE','SA']; // aligné sur Date.getDay() (0=dimanche)
+const DT_DAY_LABELS = { DI:'Dim', LU:'Lun', MA:'Mar', ME:'Mer', JE:'Jeu', VE:'Ven', SA:'Sam' };
+const DT_WEEKDAY_MAP = { DI:1, LU:2, MA:3, ME:4, JE:5, VE:6, SA:7 }; // convention Capacitor LocalNotifications (1=dimanche)
+
+function getDailyTracking(s) {
+ if (!s.dailyTracking || typeof s.dailyTracking !== 'object') s.dailyTracking = { slots: [] };
+ if (!Array.isArray(s.dailyTracking.slots)) s.dailyTracking.slots = [];
+ return s.dailyTracking;
+}
+function dtTodayCode() { return DT_DAY_CODES[new Date().getDay()]; }
+function dtTodayKey() { return new Date().toISOString().slice(0,10); }
+
+function addDailyTrackingSlot(data) {
+ const s = getStats();
+ const dt = getDailyTracking(s);
+ const slot = {
+ id: 'dt_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+ subject: (data.subject||'').trim(),
+ level: (data.level||'').trim(),
+ theme: (data.theme||'').trim(),
+ days: Array.isArray(data.days) ? data.days.filter(d=>DT_DAY_CODES.includes(d)) : [],
+ reminderTime: data.reminderTime || null,
+ history: {},
+ createdAt: Date.now()
+ };
+ dt.slots.push(slot);
+ saveStats(s);
+ scheduleDailyTrackingReminders();
+ return slot;
+}
+function updateDailyTrackingSlot(id, patch) {
+ const s = getStats(); const dt = getDailyTracking(s);
+ const slot = dt.slots.find(x=>x.id===id); if (!slot) return;
+ if (patch.subject !== undefined) slot.subject = (patch.subject||'').trim();
+ if (patch.level !== undefined) slot.level = (patch.level||'').trim();
+ if (patch.theme !== undefined) slot.theme = (patch.theme||'').trim();
+ if (patch.days !== undefined) slot.days = Array.isArray(patch.days) ? patch.days.filter(d=>DT_DAY_CODES.includes(d)) : [];
+ if (patch.reminderTime !== undefined) slot.reminderTime = patch.reminderTime || null;
+ saveStats(s);
+ scheduleDailyTrackingReminders();
+}
+function deleteDailyTrackingSlot(id) {
+ const s = getStats(); const dt = getDailyTracking(s);
+ const slot = dt.slots.find(x=>x.id===id);
+ dt.slots = dt.slots.filter(x=>x.id!==id);
+ saveStats(s);
+ if (slot) cancelDailyTrackingReminder(slot);
+ renderDailyTrackingScreen();
+ renderHomeDailyTrackingToday();
+}
+function getTodayDailyTrackingSlots() {
+ const s = getStats(); const dt = getDailyTracking(s);
+ const code = dtTodayCode();
+ return dt.slots.filter(x => Array.isArray(x.days) && x.days.includes(code));
+}
+function _dtTodayEntry(slot, create) {
+ const key = dtTodayKey();
+ if (!slot.history) slot.history = {};
+ if (!slot.history[key] && create) slot.history[key] = { score:0, exerciseDone:false, done:false };
+ return slot.history[key] || { score:0, exerciseDone:false, done:false };
+}
+// Appelé depuis les mêmes points de correction que recordSpecDayScore
+// (exercice rédigé, activité/jeu) : met à jour, indépendamment de toute
+// spécialisation, TOUS les créneaux de suivi quotidien programmés
+// aujourd'hui pour cette matière (même logique de correspondance par nom
+// de matière que recordSpecDayScore, volontairement simple pour cette V1).
+function recordDailyTrackingScore(subjectId, scorePct, fromExercise) {
+ const s = getStats(); const dt = getDailyTracking(s);
+ const code = dtTodayCode(); const key = dtTodayKey();
+ let changed = false;
+ dt.slots.forEach(slot => {
+ if (slot.subject !== subjectId) return;
+ if (!Array.isArray(slot.days) || !slot.days.includes(code)) return;
+ if (!slot.history) slot.history = {};
+ if (!slot.history[key]) slot.history[key] = { score:0, exerciseDone:false, done:false };
+ slot.history[key].score = Math.max(slot.history[key].score||0, scorePct);
+ if (fromExercise) slot.history[key].exerciseDone = true;
+ changed = true;
+ });
+ if (changed) { saveStats(s); renderHomeDailyTrackingToday(); }
+}
+function markDailyTrackingDone(slotId) {
+ const s = getStats(); const dt = getDailyTracking(s);
+ const slot = dt.slots.find(x=>x.id===slotId); if (!slot) return;
+ const h = _dtTodayEntry(slot, true);
+ if (!h.exerciseDone) { showToast("! Fais d'abord l'Exercice du jour avant de valider"); return; }
+ if ((h.score||0) < SPEC_DAY_PASS_THRESHOLD) { showToast(`! Il faut au moins ${SPEC_DAY_PASS_THRESHOLD}% pour valider (actuellement ${h.score||0}%)`); return; }
+ h.done = true;
+ saveStats(s);
+ showToast('✓ Journée validée');
+ renderHomeDailyTrackingToday();
+ if (document.getElementById('screen-daily-tracking') && !document.getElementById('screen-daily-tracking').classList.contains('hidden')) renderDailyTrackingScreen();
+}
+
+// ── Rappels (réutilise le même plugin Capacitor LocalNotifications que
+// scheduleStudyReminders, avec une plage d'IDs distincte de [9001,9002]
+// pour ne jamais entrer en conflit). Un créneau sur plusieurs jours = une
+// notification répétée par jour choisi (l'API Capacitor ne prend qu'un seul
+// "weekday" par notification programmée).
+function _dtHashId(str) {
+ let h = 0;
+ for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i)) >>> 0;
+ return h % 900;
+}
+function _dtNotifIds(slot) {
+ const base = 30000 + _dtHashId(slot.id) * 10;
+ return (slot.days||[]).map(d => base + (DT_WEEKDAY_MAP[d]||1));
+}
+async function cancelDailyTrackingReminder(slot) {
+ const LN = getLocalNotificationsPlugin();
+ if (!LN || !slot) return;
+ try { await LN.cancel({ notifications: _dtNotifIds(slot).map(id=>({id})) }); } catch(e) {}
+}
+async function scheduleDailyTrackingReminders() {
+ const LN = getLocalNotificationsPlugin();
+ if (!LN) return; // web ou plugin absent : silencieux
+ if (getPrefs().notif === false) return; // respecte le réglage général "Notifications de rappel"
+ const granted = await ensureNotificationPermission();
+ if (!granted) return;
+ const s = getStats(); const dt = getDailyTracking(s);
+ try {
+ for (const slot of dt.slots) {
+ await LN.cancel({ notifications: _dtNotifIds(slot).map(id=>({id})) });
+ if (!slot.reminderTime || !Array.isArray(slot.days) || !slot.days.length) continue;
+ const parts = slot.reminderTime.split(':').map(Number);
+ const hh = isFinite(parts[0]) ? parts[0] : 18, mm = isFinite(parts[1]) ? parts[1] : 0;
+ const notifications = slot.days.map(d => ({
+ id: 30000 + _dtHashId(slot.id)*10 + (DT_WEEKDAY_MAP[d]||1),
+ title: 'Studiora — Suivi quotidien',
+ body: `${slot.subject}${slot.theme ? ' · ' + slot.theme : ''} — c'est l'heure !`,
+ schedule: { on: { weekday: DT_WEEKDAY_MAP[d]||1, hour: hh, minute: mm }, allowWhileIdle: true, repeats: true }
+ }));
+ await LN.schedule({ notifications });
+ }
+ } catch(e) { console.error('Programmation rappels suivi quotidien échouée', e); }
+}
+
+// ── Rendu de la carte "Aujourd'hui" sur l'accueil ──
+function renderHomeDailyTrackingToday() {
+ const wrap = document.getElementById('home-daily-tracking-wrap');
+ const itemsEl = document.getElementById('home-daily-tracking-items');
+ if (!wrap || !itemsEl) return;
+ const slots = getTodayDailyTrackingSlots();
+ if (!slots.length) { wrap.style.display = 'none'; return; }
+ wrap.style.display = 'block';
+ itemsEl.innerHTML = slots.map(slot => {
+ const h = _dtTodayEntry(slot, false);
+ const score = h.score || 0;
+ const exerciseDone = !!h.exerciseDone;
+ const done = !!h.done;
+ const ready = score >= SPEC_DAY_PASS_THRESHOLD && exerciseDone;
+ const subjEsc = escapeHtml(slot.subject);
+ const themeOrSubj = (slot.theme || slot.subject).replace(/'/g,"\\'");
+ const subjJs = slot.subject.replace(/'/g,"\\'");
+ return `<div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)">
+ <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+ <span style="font-size:12px;font-weight:800;color:var(--em2,var(--em))">${subjEsc}${slot.level ? ' · ' + escapeHtml(slot.level) : ''}</span>
+ ${done ? '<span style="font-size:10.5px;color:var(--em);font-weight:700">✓ Fait</span>' : ''}
+ </div>
+ ${slot.theme ? `<div style="font-size:12.5px;color:var(--text2);margin-bottom:10px;line-height:1.4">${escapeHtml(slot.theme)}</div>` : '<div style="margin-bottom:10px"></div>'}
+ <div style="display:flex;gap:6px;margin-bottom:8px">
+ <button onclick="startLesson('${subjJs}','${themeOrSubj}')" style="flex:1;background:var(--em-soft);border:1px solid var(--em);color:var(--em);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cours</button>
+ <button onclick="startCustomExercise('${subjJs}','${themeOrSubj}', (_lastLessonSubject==='${subjJs}' && _lastLessonNotion==='${themeOrSubj}') ? _lastLessonText : null)" style="flex:1;background:var(--purple-soft,#f3e8ff);border:1px solid var(--purple);color:var(--purple);border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Exercice</button>
+ <button onclick="startPedagogicalActivity('${subjJs}','${themeOrSubj}')" style="flex:1;background:#fef3c7;border:1px solid #d97706;color:#b45309;border-radius:8px;padding:6px 4px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Jeu</button>
+ </div>
+ <button onclick="markDailyTrackingDone('${slot.id}')" style="width:100%;padding:7px;background:${ready ? 'var(--em)' : 'var(--bg2)'};border:1.5px solid ${ready ? 'var(--em)' : 'var(--border)'};border-radius:8px;color:${ready ? '#fff' : 'var(--text3)'};font-weight:700;font-size:11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${done ? '✓ Journée validée' : (ready ? '✓ Valider la journée' : (!exerciseDone ? "Fais d'abord l'Exercice" : `Valider (${score}%/${SPEC_DAY_PASS_THRESHOLD}% requis)`))}</button>
+ </div>`;
+ }).join('');
+}
+
+// ── Écran de gestion (liste + formulaire d'ajout/édition) ──
+let _dtEditingId = null;
+function showDailyTrackingScreen() {
+ showScreen('screen-daily-tracking');
+ renderDailyTrackingScreen();
+}
+function renderDailyTrackingScreen() {
+ const s = getStats(); const dt = getDailyTracking(s);
+ const listEl = document.getElementById('dt-slots-list');
+ const emptyEl = document.getElementById('dt-empty-msg');
+ if (!listEl) return;
+ if (!dt.slots.length) {
+ listEl.innerHTML = '';
+ if (emptyEl) emptyEl.style.display = 'block';
+ } else {
+ if (emptyEl) emptyEl.style.display = 'none';
+ listEl.innerHTML = dt.slots.map(slot => {
+ const daysLabel = (slot.days||[]).map(d=>DT_DAY_LABELS[d]).join(' · ') || 'Aucun jour choisi';
+ return `<div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px">
+ <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+ <div>
+ <div style="font-size:13px;font-weight:700">${escapeHtml(slot.subject)}${slot.level ? ' · ' + escapeHtml(slot.level) : ''}</div>
+ ${slot.theme ? `<div style="font-size:11.5px;color:var(--text2);margin-top:2px">${escapeHtml(slot.theme)}</div>` : ''}
+ <div style="font-size:11px;color:var(--text3);margin-top:4px">${daysLabel}${slot.reminderTime ? ' · rappel ' + escapeHtml(slot.reminderTime) : ''}</div>
+ </div>
+ <div style="display:flex;gap:10px;flex-shrink:0">
+ <span onclick="openDailyTrackingForm('${slot.id}')" style="font-size:11.5px;color:var(--em);font-weight:700;cursor:pointer">Modifier</span>
+ <span onclick="deleteDailyTrackingSlot('${slot.id}')" style="font-size:11.5px;color:var(--red,#dc2626);font-weight:700;cursor:pointer">Suppr.</span>
+ </div>
+ </div>
+ </div>`;
+ }).join('');
+ }
+ document.getElementById('dt-form-wrap').style.display = 'none';
+}
+function openDailyTrackingForm(id) {
+ _dtEditingId = id || null;
+ const s = getStats(); const dt = getDailyTracking(s);
+ const slot = id ? dt.slots.find(x=>x.id===id) : null;
+ document.getElementById('dt-form-title').textContent = slot ? 'Modifier le créneau' : 'Nouveau créneau';
+ document.getElementById('dt-input-subject').value = slot ? slot.subject : '';
+ document.getElementById('dt-input-level').value = slot ? slot.level : ((APP.user && APP.user.level) || '');
+ document.getElementById('dt-input-theme').value = slot ? slot.theme : '';
+ document.getElementById('dt-input-time').value = slot ? (slot.reminderTime || '') : '18:00';
+ DT_DAY_CODES.forEach(d => {
+ const chip = document.getElementById('dt-day-' + d);
+ if (!chip) return;
+ const active = slot ? (slot.days||[]).includes(d) : ['LU','MA','ME','JE','VE'].includes(d);
+ chip.dataset.active = active ? '1' : '0';
+ chip.style.background = active ? 'var(--em)' : 'var(--white)';
+ chip.style.color = active ? '#fff' : 'var(--text2)';
+ chip.style.borderColor = active ? 'var(--em)' : 'var(--border)';
+ });
+ document.getElementById('dt-form-wrap').style.display = 'block';
+}
+function toggleDtDayChip(d) {
+ const chip = document.getElementById('dt-day-' + d);
+ if (!chip) return;
+ const active = chip.dataset.active === '1';
+ chip.dataset.active = active ? '0' : '1';
+ chip.style.background = !active ? 'var(--em)' : 'var(--white)';
+ chip.style.color = !active ? '#fff' : 'var(--text2)';
+ chip.style.borderColor = !active ? 'var(--em)' : 'var(--border)';
+}
+function closeDailyTrackingForm() {
+ document.getElementById('dt-form-wrap').style.display = 'none';
+ _dtEditingId = null;
+}
+function saveDailyTrackingForm() {
+ const subject = document.getElementById('dt-input-subject').value.trim();
+ if (!subject) { showToast('! Indique une matière'); return; }
+ const level = document.getElementById('dt-input-level').value.trim();
+ const theme = document.getElementById('dt-input-theme').value.trim();
+ const reminderTime = document.getElementById('dt-input-time').value.trim();
+ const days = DT_DAY_CODES.filter(d => {
+ const chip = document.getElementById('dt-day-' + d);
+ return chip && chip.dataset.active === '1';
+ });
+ if (!days.length) { showToast('! Choisis au moins un jour'); return; }
+ if (_dtEditingId) updateDailyTrackingSlot(_dtEditingId, { subject, level, theme, days, reminderTime });
+ else addDailyTrackingSlot({ subject, level, theme, days, reminderTime });
+ showToast('✓ Créneau enregistré');
+ closeDailyTrackingForm();
+ renderDailyTrackingScreen();
+ renderHomeDailyTrackingToday();
+}
+
 async function submitCustomExercise() {
  const answerEl = document.getElementById('custom-ex-answer');
  const answer = answerEl.value.trim();
@@ -10579,6 +10922,7 @@ Corrige et note sur 100. Réponds avec ce format JSON exact :
  addSubjectScore(_customExSubject, score);
  incrementQuestions(1);
  recordSpecDayScore(_customExSubject, score, true);
+ recordDailyTrackingScore(_customExSubject, score, true);
  if (score < 60) {
  const s = getStats();
  if (!s.weakPoints) s.weakPoints = [];
@@ -11149,6 +11493,7 @@ function finishScenarioActivity() {
  addSubjectScore(_activitySubject, scorePct);
  incrementQuestions(1);
  recordSpecDayScore(_activitySubject, scorePct);
+ recordDailyTrackingScore(_activitySubject, scorePct);
  if (scorePct < 60) {
  const s = getStats();
  if (!s.weakPoints) s.weakPoints = [];
@@ -11332,6 +11677,7 @@ async function checkActivityAnswer() {
  addSubjectScore(_activitySubject, scorePct);
  incrementQuestions(1);
  recordSpecDayScore(_activitySubject, scorePct);
+ recordDailyTrackingScore(_activitySubject, scorePct);
  if (scorePct < 60) {
  const s = getStats();
  if (!s.weakPoints) s.weakPoints = [];
@@ -15041,7 +15387,7 @@ const APP_VERSION = '1.0.6'; // ⚠️ à incrémenter à CHAQUE build (doit tou
 // vérifier visuellement (écran Profil) qu'un appareil a bien récupéré la
 // dernière version web déployée, au lieu de deviner si un problème persiste
 // réellement ou si c'est juste une ancienne copie encore en cache.
-const BUILD_STAMP = '2026-09-14';
+const BUILD_STAMP = '2026-09-17-suivi-quotidien';
 document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('build-stamp');
  if (el) el.textContent = 'Build fichier : ' + BUILD_STAMP;
