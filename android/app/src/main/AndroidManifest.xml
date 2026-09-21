@@ -52,6 +52,15 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/studiora_widget_info" />
         </receiver>
+
+        <!-- AJOUT (2026-09-19) : service au premier plan pour que la Transcription
+             vocale continue même app en arrière-plan/écran verrouillé, avec la
+             notification permanente exigée par Android pour l'accès micro en
+             arrière-plan. Voir TranscriptionRecordingService.java. -->
+        <service
+            android:name=".TranscriptionRecordingService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
     </application>
 
     <!-- Permissions -->
@@ -59,6 +68,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>
