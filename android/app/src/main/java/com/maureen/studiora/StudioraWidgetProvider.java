@@ -3,8 +3,10 @@ package com.maureen.studiora;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.widget.RemoteViews;
 
@@ -15,14 +17,25 @@ import java.util.Calendar;
  * Taille adaptative (voir studiora_widget_info.xml) — l'utilisateur peut le
  * redimensionner librement. Tap n'importe où sur le widget = ouvre l'app
  * (aucune autre action, comme demandé).
+ *
+ * MISE À JOUR (2026-09-17) : la mascotte affiche désormais l'un de 4 états
+ * du jour, poussés par la WebView via le pont "AndroidWidgetSync"
+ * (WidgetSyncInterface dans MainActivity.java) puisqu'un widget ne peut pas
+ * lire le localStorage/IndexedDB de la page :
+ *  - "todo"  : rien fait aujourd'hui -> mascotte au bureau, pas encore arrosé
+ *  - "bravo" : juste après une validation -> célébration, redescend seule
+ *              vers "done" au bout de BRAVO_DURATION_MS
+ *  - "done"  : session du jour terminée -> jeune pousse arrosée
+ *  - "sick"  : série interrompue -> arbre fané qu'on ré-arrose (convalescence)
  */
 public class StudioraWidgetProvider extends AppWidgetProvider {
 
-    // Liste volontairement statique et embarquée (pas d'appel réseau depuis
-    // un widget : ça doit rester instantané et fonctionner hors-ligne). Le
-    // message du jour est choisi par un index basé sur le jour de l'année,
-    // donc stable toute la journée et identique pour tous les widgets posés,
-    // et change automatiquement le lendemain sans action de l'utilisateur.
+    public static final String PREFS_NAME = "studiora_widget";
+    public static final String KEY_STATE = "state"; // "todo" | "done" | "sick" | "bravo"
+    public static final String KEY_DATE = "state_date"; // "yyyy-DDD" (année-jour de l'année)
+    public static final String KEY_BRAVO_TS = "bravo_ts";
+    private static final long BRAVO_DURATION_MS = 20 * 60 * 1000; // 20 minutes
+
     private static final String[] TIPS = {
         "Ton arbre de connaissance attend d'être arrosé — viens faire un cours aujourd'hui !",
         "Révise 15 minutes par jour plutôt que 3h une seule fois : la mémoire aime la répétition.",
@@ -51,6 +64,23 @@ public class StudioraWidgetProvider extends AppWidgetProvider {
         return TIPS[dayOfYear % TIPS.length];
     }
 
+    public static String todayDateStr() {
+        Calendar c = Calendar.getInstance();
+        return c.get(Calendar.YEAR) + "-" + c.get(Calendar.DAY_OF_YEAR);
+    }
+
+    // Appelé par WidgetSyncInterface juste après avoir écrit le nouvel état,
+    // pour rafraîchir le widget tout de suite au lieu d'attendre le prochain
+    // cycle périodique du système (qui peut prendre jusqu'à 30 minutes).
+    public static void refreshAll(Context context) {
+        AppWidgetManager mgr = AppWidgetManager.getInstance(context);
+        ComponentName cn = new ComponentName(context, StudioraWidgetProvider.class);
+        int[] ids = mgr.getAppWidgetIds(cn);
+        if (ids != null && ids.length > 0) {
+            new StudioraWidgetProvider().onUpdate(context, mgr, ids);
+        }
+    }
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
@@ -58,9 +88,40 @@ public class StudioraWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    // Décide quelle scène afficher, et gère les deux transitions automatiques
+    // (nouveau jour -> "todo", "bravo" expiré -> "done") pour que le widget
+    // reste cohérent même si l'app n'est pas réouverte entre deux passages.
+    private int sceneDrawableFor(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String state = prefs.getString(KEY_STATE, "todo");
+        String storedDate = prefs.getString(KEY_DATE, "");
+        String today = todayDateStr();
+        if (!today.equals(storedDate) && !"sick".equals(state)) {
+            // Nouveau jour : on repart sur "todo" tant que rien n'a encore été
+            // validé aujourd'hui. Si la série est cassée, c'est la WebView qui
+            // repositionnera "sick" elle-même dès qu'elle sera rouverte.
+            state = "todo";
+            prefs.edit().putString(KEY_STATE, state).putString(KEY_DATE, today).apply();
+        }
+        if ("bravo".equals(state)) {
+            long ts = prefs.getLong(KEY_BRAVO_TS, 0);
+            if (System.currentTimeMillis() - ts > BRAVO_DURATION_MS) {
+                state = "done";
+                prefs.edit().putString(KEY_STATE, state).apply();
+            }
+        }
+        switch (state) {
+            case "sick": return R.drawable.studiora_widget_scene_sick;
+            case "done": return R.drawable.studiora_widget_scene_done;
+            case "bravo": return R.drawable.studiora_widget_scene_bravo;
+            default: return R.drawable.studiora_widget_scene_todo;
+        }
+    }
+
     private void updateOneWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.studiora_widget);
         views.setTextViewText(R.id.widget_tip, tipOfToday());
+        views.setImageViewResource(R.id.widget_scene, sceneDrawableFor(context));
 
         Intent launchIntent = new Intent(context, MainActivity.class);
         launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -72,3 +133,4 @@ public class StudioraWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 }
+

@@ -4,6 +4,7 @@ import android.Manifest;
 import androidx.activity.OnBackPressedCallback;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaRecorder;
@@ -570,6 +571,26 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // AJOUT (2026-09-17) : pont JS "AndroidWidgetSync" — la WebView pousse ici
+    // l'état du jour (arrosage) car le widget natif ne peut pas lire le
+    // localStorage/IndexedDB de la page. Écrit dans une SharedPreferences
+    // dédiée (lue par StudioraWidgetProvider) puis force un rafraîchissement
+    // immédiat du widget au lieu d'attendre le prochain cycle périodique.
+    private class WidgetSyncInterface {
+        @JavascriptInterface
+        public void setState(String state) {
+            if (state == null) return;
+            if (!state.equals("todo") && !state.equals("done") && !state.equals("sick") && !state.equals("bravo")) return;
+            SharedPreferences prefs = getSharedPreferences(StudioraWidgetProvider.PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit()
+                    .putString(StudioraWidgetProvider.KEY_STATE, state)
+                    .putString(StudioraWidgetProvider.KEY_DATE, StudioraWidgetProvider.todayDateStr());
+            if (state.equals("bravo")) editor.putLong(StudioraWidgetProvider.KEY_BRAVO_TS, System.currentTimeMillis());
+            editor.apply();
+            StudioraWidgetProvider.refreshAll(MainActivity.this);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -609,6 +630,7 @@ public class MainActivity extends BridgeActivity {
                 getBridge().getWebView().addJavascriptInterface(new GoogleAuthInterface(), "AndroidGoogleAuth");
                 getBridge().getWebView().addJavascriptInterface(new UpdaterInterface(), "AndroidUpdater");
                 getBridge().getWebView().addJavascriptInterface(new NativeRecorderInterface(), "AndroidRecorder");
+                getBridge().getWebView().addJavascriptInterface(new WidgetSyncInterface(), "AndroidWidgetSync");
                 androidx.core.content.ContextCompat.registerReceiver(
                     this, downloadReceiver,
                     new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
