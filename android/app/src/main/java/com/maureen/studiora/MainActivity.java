@@ -2,13 +2,11 @@ package com.maureen.studiora;
 
 import android.Manifest;
 import androidx.activity.OnBackPressedCallback;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -57,29 +55,9 @@ public class MainActivity extends BridgeActivity {
     private static final String TAG = "StudioraMain";
     private static final int MIC_PERMISSION_CODE = 2001;
     private static final int STORAGE_PERMISSION_CODE = 2002;
+    private MediaRecorder nativeMicRecorder;
+    private File nativeMicRecordingFile;
     private File nativeRecDir;
-
-    // AJOUT (2026-09-19) : voir TranscriptionRecordingService — capte la fin
-    // d'un enregistrement de transcription (fichier prêt ou erreur), qu'il
-    // ait été arrêté depuis l'app ou depuis la notification.
-    private final BroadcastReceiver recordingStoppedReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String file = intent.getStringExtra(TranscriptionRecordingService.EXTRA_FILE);
-            String error = intent.getStringExtra(TranscriptionRecordingService.EXTRA_ERROR);
-            // Le Service a déjà écrit la même info dans SharedPreferences (pour le
-            // cas où ce receiver ne serait pas encore enregistré) ; on la retire
-            // ici pour qu'onResume() ne la retraite pas une seconde fois.
-            getSharedPreferences(TranscriptionRecordingService.PREFS_NAME, MODE_PRIVATE)
-                    .edit().remove(TranscriptionRecordingService.KEY_PENDING_FILE)
-                    .remove(TranscriptionRecordingService.KEY_PENDING_ERROR).apply();
-            if (file != null) {
-                runJs("window.onNativeRecordingReady && window.onNativeRecordingReady(" + org.json.JSONObject.quote(file) + ");");
-            } else if (error != null) {
-                runJs("window.onNativeRecordingError && window.onNativeRecordingError(" + org.json.JSONObject.quote(error) + ");");
-            }
-        }
-    };
     private Intent pendingIntent = null;
     private TextToSpeech tts;
     private SpeechRecognizer speechRecognizer;
@@ -531,32 +509,53 @@ public class MainActivity extends BridgeActivity {
                 runJs("window.onNativeRecordingError && window.onNativeRecordingError('permission_refusee');");
                 return;
             }
-            // MODIFIÉ (2026-09-19) : l'enregistrement tourne maintenant dans
-            // TranscriptionRecordingService (foreground service) au lieu d'un
-            // MediaRecorder tenu directement par l'Activity, pour continuer
-            // même app en arrière-plan ou écran verrouillé — Android coupe
-            // sinon l'accès au micro dès que l'Activity n'est plus au premier
-            // plan. Démarrage/arrêt confirmés de façon asynchrone (voir
-            // recordingStoppedReceiver / onResume) plutôt que synchrone ici.
             try {
-                Intent svc = new Intent(MainActivity.this, TranscriptionRecordingService.class)
-                        .setAction(TranscriptionRecordingService.ACTION_START);
-                ContextCompat.startForegroundService(MainActivity.this, svc);
+                if (nativeMicRecorder != null) {
+                    try { nativeMicRecorder.release(); } catch (Exception ignored) {}
+                    nativeMicRecorder = null;
+                }
+                if (nativeRecDir != null && !nativeRecDir.exists()) nativeRecDir.mkdirs();
+                nativeMicRecordingFile = new File(nativeRecDir, "rec_" + System.currentTimeMillis() + ".m4a");
+                nativeMicRecorder = new MediaRecorder();
+                nativeMicRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                nativeMicRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                nativeMicRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+                nativeMicRecorder.setAudioEncodingBitRate(32000);
+                nativeMicRecorder.setAudioSamplingRate(16000);
+                nativeMicRecorder.setOutputFile(nativeMicRecordingFile.getAbsolutePath());
+                nativeMicRecorder.prepare();
+                nativeMicRecorder.start();
                 runJs("window.onNativeRecordingStarted && window.onNativeRecordingStarted();");
             } catch (Exception e) {
                 Log.w(TAG, "NativeRecorder.startRecording: " + safeMsg(e));
+                nativeMicRecorder = null;
                 runJs("window.onNativeRecordingError && window.onNativeRecordingError('start_failed');");
             }
         }
 
         @JavascriptInterface
         public void stopRecording() {
-            Intent svc = new Intent(MainActivity.this, TranscriptionRecordingService.class)
-                    .setAction(TranscriptionRecordingService.ACTION_STOP);
-            startService(svc);
-            // Pas de callback JS synchrone ici : la confirmation (fichier prêt
-            // ou erreur) arrive via recordingStoppedReceiver dès que le
-            // Service a fini de l'écrire.
+            if (nativeMicRecorder == null) {
+                runJs("window.onNativeRecordingError && window.onNativeRecordingError('not_recording');");
+                return;
+            }
+            String fileName = nativeMicRecordingFile != null ? nativeMicRecordingFile.getName() : null;
+            try {
+                nativeMicRecorder.stop();
+            } catch (Exception e) {
+                Log.w(TAG, "NativeRecorder.stopRecording (stop): " + safeMsg(e));
+                fileName = null; // stop() a échoué : fichier probablement invalide/vide
+            }
+            try { nativeMicRecorder.release(); } catch (Exception ignored) {}
+            nativeMicRecorder = null;
+            if (fileName == null) {
+                runJs("window.onNativeRecordingError && window.onNativeRecordingError('stop_failed');");
+                return;
+            }
+            // Le fichier est servi via WebViewAssetLoader (/rec/) — la page web le
+            // récupère elle-même par fetch(), pas besoin de base64 ici (évite de
+            // gonfler une chaîne JS géante pour un enregistrement de plusieurs minutes).
+            runJs("window.onNativeRecordingReady && window.onNativeRecordingReady(" + org.json.JSONObject.quote(fileName) + ");");
         }
 
         @JavascriptInterface
@@ -569,53 +568,6 @@ public class MainActivity extends BridgeActivity {
                 Log.w(TAG, "NativeRecorder.deleteRecording: " + safeMsg(e));
             }
         }
-    }
-
-    // AJOUT (2026-09-17) : pont JS "AndroidWidgetSync" — la WebView pousse ici
-    // l'état du jour (arrosage) car le widget natif ne peut pas lire le
-    // localStorage/IndexedDB de la page. Écrit dans une SharedPreferences
-    // dédiée (lue par StudioraWidgetProvider) puis force un rafraîchissement
-    // immédiat du widget au lieu d'attendre le prochain cycle périodique.
-    private class WidgetSyncInterface {
-        @JavascriptInterface
-        public void setState(String state) {
-            if (state == null) return;
-            if (!state.equals("todo") && !state.equals("done") && !state.equals("sick") && !state.equals("bravo")) return;
-            SharedPreferences prefs = getSharedPreferences(StudioraWidgetProvider.PREFS_NAME, MODE_PRIVATE);
-            SharedPreferences.Editor editor = prefs.edit()
-                    .putString(StudioraWidgetProvider.KEY_STATE, state)
-                    .putString(StudioraWidgetProvider.KEY_DATE, StudioraWidgetProvider.todayDateStr());
-            if (state.equals("bravo")) editor.putLong(StudioraWidgetProvider.KEY_BRAVO_TS, System.currentTimeMillis());
-            editor.apply();
-            StudioraWidgetProvider.refreshAll(MainActivity.this);
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // AJOUT (2026-09-19) : rattrapage si l'enregistrement a été arrêté
-        // (notification ou arrêt système) pendant que l'app n'était pas au
-        // premier plan et n'a donc pas pu recevoir recordingStoppedReceiver.
-        SharedPreferences prefs = getSharedPreferences(TranscriptionRecordingService.PREFS_NAME, MODE_PRIVATE);
-        String file = prefs.getString(TranscriptionRecordingService.KEY_PENDING_FILE, null);
-        String error = prefs.getString(TranscriptionRecordingService.KEY_PENDING_ERROR, null);
-        if (file != null || error != null) {
-            prefs.edit().remove(TranscriptionRecordingService.KEY_PENDING_FILE)
-                    .remove(TranscriptionRecordingService.KEY_PENDING_ERROR).apply();
-            if (file != null) {
-                runJs("window.onNativeRecordingReady && window.onNativeRecordingReady(" + org.json.JSONObject.quote(file) + ");");
-            } else {
-                runJs("window.onNativeRecordingError && window.onNativeRecordingError(" + org.json.JSONObject.quote(error) + ");");
-            }
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        try { unregisterReceiver(recordingStoppedReceiver); } catch (Exception ignored) {}
-        try { unregisterReceiver(downloadReceiver); } catch (Exception ignored) {}
-        super.onDestroy();
     }
 
     @Override
@@ -657,19 +609,10 @@ public class MainActivity extends BridgeActivity {
                 getBridge().getWebView().addJavascriptInterface(new GoogleAuthInterface(), "AndroidGoogleAuth");
                 getBridge().getWebView().addJavascriptInterface(new UpdaterInterface(), "AndroidUpdater");
                 getBridge().getWebView().addJavascriptInterface(new NativeRecorderInterface(), "AndroidRecorder");
-                getBridge().getWebView().addJavascriptInterface(new WidgetSyncInterface(), "AndroidWidgetSync");
                 androidx.core.content.ContextCompat.registerReceiver(
                     this, downloadReceiver,
                     new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
                     androidx.core.content.ContextCompat.RECEIVER_EXPORTED
-                );
-                // AJOUT (2026-09-19) : reçoit la confirmation de TranscriptionRecordingService
-                // (fichier prêt ou erreur) même si l'enregistrement a été arrêté depuis la
-                // notification pendant que l'app était en arrière-plan.
-                androidx.core.content.ContextCompat.registerReceiver(
-                    this, recordingStoppedReceiver,
-                    new android.content.IntentFilter(TranscriptionRecordingService.ACTION_STOPPED_BROADCAST),
-                    androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
                 );
 
                 getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
